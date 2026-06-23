@@ -75,6 +75,10 @@ def client_ip(request: Request) -> str:
 
 
 def verify_turnstile(token: str, remote_ip: str) -> bool:
+    from core.egress_policy import egress_feature_enabled
+
+    if not egress_feature_enabled("turnstile"):
+        return True
     if not TURNSTILE_SECRET:
         return True
     if not token:
@@ -87,7 +91,8 @@ def verify_turnstile(token: str, remote_ip: str) -> bool:
         )
         return bool(r.json().get("success"))
     except Exception as e:
-        logger.warning(f"turnstile verify failed: {e}")
+        from core.logging_policy import safe_exception_label
+        logger.warning(f"turnstile verify failed: {safe_exception_label(e)}")
         return False
 
 

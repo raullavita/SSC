@@ -22,6 +22,10 @@ def _log():
 
 
 def is_configured() -> bool:
+    from core.egress_policy import egress_feature_enabled
+
+    if not egress_feature_enabled("fcm"):
+        return False
     return _init_firebase() is True
 
 
@@ -50,7 +54,7 @@ def _init_firebase() -> bool:
         _firebase_ready = True
         return True
     except Exception as e:
-        _log().warning(f"Firebase Admin init failed: {e} — native push disabled")
+        _log().warning(f"Firebase Admin init failed: {type(e).__name__} — native push disabled")
         _firebase_ready = False
         return False
 
@@ -148,4 +152,5 @@ async def send_native_to_users(
             if "not-found" in err or "unregistered" in err or "invalid" in err:
                 await db.native_push_tokens.delete_one({"token": fcm_token})
             else:
-                _log().warning(f"native push failed user={uid}: {e}")
+                from core.logging_policy import safe_exception_label
+                _log().warning(f"native push failed user={uid}: {safe_exception_label(e)}")

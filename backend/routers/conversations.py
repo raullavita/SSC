@@ -10,6 +10,14 @@ from core.logging_config import logger
 from core.models import CreateConversationIn
 from core.push_helpers import send_push_for_group_added
 from core.realtime import manager
+from core.conversation_meta import (
+    last_activity_from_message,
+    peer_summary,
+    project_message_for_viewer,
+    sanitize_conversation_for_api,
+)
+from core.retention import conversation_activity_fields
+from core.retention_db import bump_conversation_activity
 from core.utils import iso, now_utc
 from security import rate_limit_check
 
@@ -46,22 +54,29 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
         if len(peers) < 2:
             raise HTTPException(400, "Group needs at least 2 other participants")
         participants = sorted({current["user_id"], *[p["user_id"] for p in peers]})
+        created = now_utc()
         conv = {
             "conversation_id": f"g_{uuid.uuid4().hex[:14]}",
             "participants": participants,
             "is_group": True,
-            "name": (body.name or "Untitled group")[:60],
             "admin_id": current["user_id"],
-            "created_at": iso(now_utc()),
+            "created_at": iso(created),
             "created_by": current["user_id"],
+            **conversation_activity_fields(created),
         }
         await db.conversations.insert_one(conv)
         conv.pop("_id", None)
-        for p in participants:
-            await manager.send_to_user(p, {"type": "conversation-created", "data": conv})
+        member_map = {current["user_id"]: peer_summary(current)}
+        for peer_doc in peers:
+            member_map[peer_doc["user_id"]] = peer_summary(peer_doc)
+        for pid in participants:
+            members = [member_map[uid] for uid in participants if uid != pid and uid in member_map]
+            members = [m for m in members if m]
+            payload = sanitize_conversation_for_api({**conv, "members": members}, pid)
+            await manager.send_to_user(pid, {"type": "conversation-created", "data": payload})
             if p != current["user_id"]:
                 asyncio.create_task(send_push_for_group_added(p, current, conv))
-        return conv
+        return sanitize_conversation_for_api(conv, current["user_id"])
 
     if not body.peer_username:
         raise HTTPException(400, "peer_username is required")
@@ -78,17 +93,24 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
         {"participants": participants, "is_group": {"$ne": True}}, {"_id": 0}
     )
     if existing:
-        return existing
+        await bump_conversation_activity(existing["conversation_id"])
+        refreshed = await db.conversations.find_one(
+            {"conversation_id": existing["conversation_id"]}, {"_id": 0},
+        )
+        base = refreshed or existing
+        return sanitize_conversation_for_api(base, current["user_id"])
+    created = now_utc()
     conv = {
         "conversation_id": f"c_{uuid.uuid4().hex[:14]}",
         "participants": participants,
         "is_group": False,
-        "created_at": iso(now_utc()),
+        "created_at": iso(created),
         "created_by": current["user_id"],
+        **conversation_activity_fields(created),
     }
     await db.conversations.insert_one(conv)
     conv.pop("_id", None)
-    return conv
+    return sanitize_conversation_for_api(conv, current["user_id"])
 
 
 @router.get("")
@@ -107,21 +129,23 @@ async def list_conversations(current=Depends(get_current_user)):
     ).to_list(500)
     peers_by_id = {p["user_id"]: p for p in peers_list}
     result = []
+    me = current["user_id"]
     for c in convs:
         is_group = bool(c.get("is_group"))
         if is_group:
-            members = [peers_by_id.get(p) for p in c["participants"] if p != current["user_id"]]
+            members = [peers_by_id.get(p) for p in c["participants"] if p != me]
             c["members"] = [m for m in members if m]
             c["peer"] = None
         else:
-            peer_id = next((p for p in c["participants"] if p != current["user_id"]), None)
+            peer_id = next((p for p in c["participants"] if p != me), None)
             c["peer"] = peers_by_id.get(peer_id) if peer_id else None
         last_msg = await db.messages.find_one(
-            {"conversation_id": c["conversation_id"]}, {"_id": 0},
+            {"conversation_id": c["conversation_id"]},
+            {"_id": 0, "created_at": 1, "message_type": 1},
             sort=[("created_at", -1)],
         )
-        c["last_message"] = last_msg
-        result.append(c)
+        c["last_activity"] = last_activity_from_message(last_msg)
+        result.append(sanitize_conversation_for_api(c, me))
     return result
 
 
@@ -133,7 +157,7 @@ async def list_messages(conversation_id: str, current=Depends(get_current_user))
     msgs = await db.messages.find(
         {"conversation_id": conversation_id}, {"_id": 0}
     ).sort("created_at", 1).to_list(500)
-    return msgs
+    return [project_message_for_viewer(m, current["user_id"]) for m in msgs]
 
 
 @router.get("/{conversation_id}/reads")
@@ -151,5 +175,6 @@ async def delete_conversation(conversation_id: str, current=Depends(get_current_
     if not conv or current["user_id"] not in conv["participants"]:
         raise HTTPException(404, "Conversation not found")
     await db.messages.delete_many({"conversation_id": conversation_id})
+    await db.message_reads.delete_many({"conversation_id": conversation_id})
     await db.conversations.delete_one({"conversation_id": conversation_id})
     return {"ok": True}

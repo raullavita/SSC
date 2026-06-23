@@ -195,6 +195,7 @@ const STRINGS = {
     // Create group
     newGroup: 'NEW_GROUP',
     groupNamePlaceholder: 'Group name (optional)',
+    groupPrivacyHint: 'Groups use a generic label on the server — no custom titles stored.',
     groupSearchPlaceholder: 'search to add members…',
     groupPickMin: 'Pick at least 2 people',
     groupCreated: 'Group created',
@@ -394,6 +395,7 @@ const STRINGS = {
 
     newGroup: 'NUEVO_GRUPO',
     groupNamePlaceholder: 'Nombre del grupo (opcional)',
+    groupPrivacyHint: 'Los grupos usan una etiqueta genérica en el servidor — sin títulos personalizados.',
     groupSearchPlaceholder: 'buscar miembros…',
     groupPickMin: 'Elige al menos 2 personas',
     groupCreated: 'Grupo creado',
@@ -593,6 +595,7 @@ const STRINGS = {
 
     newGroup: 'GRUP_NOU',
     groupNamePlaceholder: 'Nume grup (opțional)',
+    groupPrivacyHint: 'Grupurile folosesc o etichetă generică pe server — fără titluri personalizate.',
     groupSearchPlaceholder: 'caută membri…',
     groupPickMin: 'Alege minim 2 persoane',
     groupCreated: 'Grup creat',

@@ -19,11 +19,16 @@ try:
     if _redis_url:
         _redis = redis.from_url(_redis_url, decode_responses=True)
         _redis.ping()
-        logger.info(f"Rate limiting: Redis ({_redis_url.split('@')[-1]})")
+        from core.logging_policy import safe_redis_label
+        logger.info(f"Rate limiting: Redis ({safe_redis_label(_redis_url)})")
 except Exception as e:
     _redis = None
     if _redis_url:
-        logger.warning(f"REDIS_URL set but connection failed: {e} — falling back to in-memory rate limits")
+        from core.logging_policy import safe_exception_label
+        logger.warning(
+            f"REDIS_URL set but connection failed: {safe_exception_label(e)} "
+            "— falling back to in-memory rate limits"
+        )
 
 
 def get_rate_limit_backend() -> str:
@@ -94,6 +99,18 @@ def validate_environment():
     turn_cred = os.environ.get("TURN_CREDENTIAL", "")
     if not (turn_user and turn_cred):
         logger.warning("TURN credentials not set — WebRTC calls may fail across networks")
+
+    from core.translation_access import is_translation_allowed, translation_provider
+    if is_translation_allowed():
+        logger.warning(
+            f"TRANSLATION_ENABLED=true — decrypted message text may be sent to "
+            f"{translation_provider()} (E2E privacy tradeoff)"
+        )
+    else:
+        logger.info("Server-side translation disabled (default — preserves E2E privacy)")
+
+    from core.egress_policy import validate_air_gap_at_startup
+    validate_air_gap_at_startup(logger)
 
     env = os.environ.get("ENV", "development").lower()
     if env == "production":

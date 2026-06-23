@@ -3,7 +3,7 @@ Statuses / Stories router.
 """
 import asyncio
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -14,6 +14,8 @@ from core.logging_config import logger
 from core.models import CreateStatusIn, MarkStatusViewedIn
 from core.push_helpers import send_push_for_status
 from core.realtime import manager
+from core.api_integrity import project_status_for_viewer, sanitize_status_for_storage
+from core.retention import expires_at_from_now
 from core.utils import iso, now_utc
 from security import rate_limit_check
 
@@ -35,8 +37,8 @@ async def create_status(body: CreateStatusIn, current=Depends(get_current_user))
             raise HTTPException(403, "Can only send status to mutual contacts")
 
     created = now_utc()
-    expires = created + timedelta(hours=24)
-    doc = {
+    expires = expires_at_from_now()
+    doc = sanitize_status_for_storage({
         "status_id": f"s_{uuid.uuid4().hex[:14]}",
         "author_id": current["user_id"],
         "author_username": current["username"],
@@ -46,11 +48,10 @@ async def create_status(body: CreateStatusIn, current=Depends(get_current_user))
         "status_type": body.status_type,
         "attachment_id": body.attachment_id,
         "background": body.background or "#1E2A38",
-        "plaintext_length": body.plaintext_length,
         "viewers": [],
         "created_at": iso(created),
         "expires_at": expires,
-    }
+    })
     await db.statuses.insert_one(doc)
     doc["expires_at"] = iso(expires)
     doc.pop("_id", None)
@@ -65,7 +66,7 @@ async def create_status(body: CreateStatusIn, current=Depends(get_current_user))
                 },
             })
             asyncio.create_task(send_push_for_status(uid, current))
-    return doc
+    return project_status_for_viewer(doc, current["user_id"])
 
 
 @router.get("")
@@ -75,14 +76,7 @@ async def list_statuses(current=Depends(get_current_user)):
     ).sort("created_at", -1).limit(200)
     items = await cur.to_list(200)
     me_id = current["user_id"]
-    for it in items:
-        if isinstance(it.get("expires_at"), datetime):
-            it["expires_at"] = iso(it["expires_at"])
-        own_key = (it.get("encrypted_keys") or {}).get(me_id)
-        it["encrypted_keys"] = {me_id: own_key} if own_key else {}
-        if it.get("author_id") != me_id:
-            it.pop("viewers", None)
-    return items
+    return [project_status_for_viewer(it, me_id) for it in items]
 
 
 @router.post("/viewed")

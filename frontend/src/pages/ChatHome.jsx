@@ -5,7 +5,9 @@ import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Pap
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { ChatSocket } from '../lib/socket';
-import { decryptMessage, encryptBytesForRecipients, encryptMessageForRecipients, publicKeyFingerprint, b64ToBytes } from '../lib/crypto';
+import { decryptMessage, encryptBytesForRecipients, encryptMessageForRecipients, b64ToBytes } from '../lib/crypto';
+import { isPeerVerified } from '../lib/verification';
+import VerifyHandshakeModal from '../components/VerifyHandshakeModal';
 import { subscribePush } from '../lib/push';
 import { subscribeNativePush } from '../lib/native-push';
 import Message from '../components/Message';
@@ -21,6 +23,7 @@ import { StoriesBar, StoryViewer } from '../components/Stories';
 import ContactsModal from '../components/ContactsModal';
 import { formatLastSeen, isOnline } from '../lib/presence';
 import { consumePendingInvite } from '../lib/invites';
+import { registerMemoryWipeHandler, registerSocketCloser } from '../lib/memoryWipe';
 
 const PENDING_CALL_KEY = 'ssc_pending_call';
 
@@ -34,8 +37,15 @@ export default function ChatHome() {
   const [messageFilter, setMessageFilter] = useState('');
   const [decryptedBodies, setDecryptedBodies] = useState({});
   const [draft, setDraft] = useState('');
-  const [autoTranslate, setAutoTranslate] = useState(true);
-  const [unlockOpen, setUnlockOpen] = useState(!privateKey);
+  const [autoTranslate, setAutoTranslate] = useState(false);
+  const [translationEnabled, setTranslationEnabled] = useState(false);
+  const [unlockOpen, setUnlockOpen] = useState(false);
+
+  useEffect(() => {
+    if (user?.encrypted_private_key && !privateKey) {
+      setUnlockOpen(true);
+    }
+  }, [user?.encrypted_private_key, privateKey]);
   const [unlockPwd, setUnlockPwd] = useState('');
   const [unlockBusy, setUnlockBusy] = useState(false);
   const [unlockErr, setUnlockErr] = useState('');
@@ -58,19 +68,60 @@ export default function ChatHome() {
   const [storyGroup, setStoryGroup] = useState(null);
   const [groupCallState, setGroupCallState] = useState(null); // {mode, direction, members, signal}
   const [reads, setReads] = useState([]); // [{user_id, last_read_message_id}]
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [peerVerified, setPeerVerified] = useState(false);
   const socketRef = useRef(null);
   const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const closeSocket = () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+    };
+    const unsubSocket = registerSocketCloser(closeSocket);
+    const unsubWipe = registerMemoryWipeHandler(() => {
+      closeSocket();
+      setMessages([]);
+      setDecryptedBodies({});
+      setDraft('');
+      setConversations([]);
+      setReads([]);
+      setMessageFilter('');
+      setTypingFrom(null);
+      setStoryGroup(null);
+      setCallState(null);
+      setGroupCallState(null);
+      setActiveId(null);
+    });
+    return () => {
+      unsubSocket();
+      unsubWipe();
+    };
+  }, []);
 
   const activeConv = useMemo(() => conversations.find((c) => c.conversation_id === activeId), [conversations, activeId]);
   const peer = activeConv?.peer;
   const isGroup = !!activeConv?.is_group;
   const { t } = useLocale();
-  const headerTitle = isGroup ? (activeConv?.name || t('group')) : (peer ? `@${peer.username}` : '');
+  const headerTitle = isGroup ? (activeConv?.display_label || t('group')) : (peer ? `@${peer.username}` : '');
   const isMobile = useMobileLayout();
   const showList = !isMobile || !activeId;
   const showChatPanel = !isMobile || !!activeId;
   const sameLangAsPeer = !isGroup && peer?.language && user?.language
     && peer.language.toLowerCase() === user.language.toLowerCase();
+  const showTranslateControls = translationEnabled && !sameLangAsPeer;
+
+  useEffect(() => {
+    api.get('/config')
+      .then(({ data }) => setTranslationEnabled(!!data?.translation_enabled))
+      .catch(() => setTranslationEnabled(false));
+  }, []);
+
+  useEffect(() => {
+    if (!translationEnabled) setAutoTranslate(false);
+  }, [translationEnabled]);
 
   const leaveChat = () => {
     setChatMenuOpen(false);
@@ -101,11 +152,15 @@ export default function ChatHome() {
     const q = messageFilter.trim().toLowerCase();
     if (!q) return messages;
     return messages.filter((m) => {
-      if (m.sender_username?.toLowerCase().includes(q)) return true;
+      if (m.sender_id === user?.user_id && user?.username?.toLowerCase().includes(q)) return true;
+      if (isGroup && activeConv?.members) {
+        const sender = activeConv.members.find((mem) => mem.user_id === m.sender_id);
+        if (sender?.username?.toLowerCase().includes(q)) return true;
+      } else if (m.sender_id !== user?.user_id && peer?.username?.toLowerCase().includes(q)) return true;
       const body = decryptedBodies[m.message_id];
       return body && body.toLowerCase().includes(q);
     });
-  }, [messages, messageFilter, decryptedBodies]);
+  }, [messages, messageFilter, decryptedBodies, user, peer, isGroup, activeConv]);
 
   // Build recipients map for outgoing message encryption
   const recipientsForActive = useMemo(() => {
@@ -441,7 +496,7 @@ export default function ChatHome() {
       await api.post('/messages', {
         conversation_id: activeId,
         ciphertext: enc.ciphertext, iv: enc.iv, encrypted_keys: enc.encrypted_keys,
-        message_type: type, attachment_id: attachmentId, plaintext_length: enc.plaintext_length,
+        message_type: type, attachment_id: attachmentId,
         attachment_iv: attachmentEnc?.iv,
         attachment_encrypted_keys: attachmentEnc?.encrypted_keys,
         attachment_content_type: attachmentEnc?.content_type,
@@ -594,10 +649,29 @@ export default function ChatHome() {
     }
   };
 
-  const myPubFingerprint = useMemo(async () => {
-    if (!user?.public_key) return '';
-    try { return await publicKeyFingerprint(typeof user.public_key === 'string' ? JSON.parse(user.public_key) : user.public_key); } catch { return ''; }
-  }, [user?.public_key]);
+  const refreshPeerVerified = useCallback(async () => {
+    if (!peer?.public_key || !user?.public_key) {
+      setPeerVerified(false);
+      return;
+    }
+    try {
+      const myPub = typeof user.public_key === 'string' ? JSON.parse(user.public_key) : user.public_key;
+      const peerPub = typeof peer.public_key === 'string' ? JSON.parse(peer.public_key) : peer.public_key;
+      setPeerVerified(await isPeerVerified(peer.user_id, myPub, peerPub));
+    } catch {
+      setPeerVerified(false);
+    }
+  }, [peer, user]);
+
+  useEffect(() => {
+    refreshPeerVerified();
+  }, [refreshPeerVerified]);
+
+  useEffect(() => {
+    const onChange = () => refreshPeerVerified();
+    window.addEventListener('ssc-verified-change', onChange);
+    return () => window.removeEventListener('ssc-verified-change', onChange);
+  }, [refreshPeerVerified]);
 
   const peerContact = peer ? myContacts.find((c) => c.user_id === peer.user_id) : null;
 
@@ -682,14 +756,14 @@ export default function ChatHome() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium truncate">
-                    {c.is_group ? (c.name || t('group')) : `@${c.peer?.username}`}
+                    {c.is_group ? (c.display_label || t('group')) : `@${c.peer?.username}`}
                   </span>
                   <span className="text-[10px] font-mono text-[#A1A1AA]">
                     {c.is_group ? `${c.participants.length}P` : c.peer?.language?.toUpperCase()}
                   </span>
                 </div>
                 <div className="text-[11px] text-[#A1A1AA] truncate font-mono">
-                  {c.last_message ? `· ${t('encryptedMessage')} ·` : t('noMessagesYet')}
+                  {c.last_activity?.has_messages ? `· ${t('encryptedMessage')} ·` : t('noMessagesYet')}
                 </div>
               </div>
             </button>
@@ -735,12 +809,12 @@ export default function ChatHome() {
                   <div className="text-sm font-medium truncate" data-testid="chat-peer-username">
                     {headerTitle}
                   </div>
-                  <div className="text-[10px] font-mono text-[#34C759] tracking-wider truncate flex items-center gap-1">
+                  <div className={`text-[10px] font-mono tracking-wider truncate flex items-center gap-1 ${peerVerified && !isGroup ? 'text-[#34C759]' : 'text-[#34C759]'}`}>
                     <ShieldCheck size={10} weight="fill" className="shrink-0" />
-                    <span className="truncate">
+                    <span className="truncate" data-testid="chat-peer-status">
                       {isGroup
                         ? `E2E · ${activeConv.participants.length} ${t('members')}`
-                        : `${formatLastSeen(peer?.last_seen)} · ${peer?.language?.toUpperCase() || '—'}`}
+                        : `${peerVerified ? 'VERIFIED · ' : ''}${formatLastSeen(peer?.last_seen)} · ${peer?.language?.toUpperCase() || '—'}`}
                     </span>
                   </div>
                 </div>
@@ -754,7 +828,7 @@ export default function ChatHome() {
                         onToggle={() => setChatMenuOpen((v) => !v)}
                         onClose={() => setChatMenuOpen(false)}
                       >
-                        {!sameLangAsPeer && (
+                        {showTranslateControls && (
                           <MenuAction
                             testId="mobile-toggle-autotranslate"
                             onClick={() => {
@@ -768,6 +842,12 @@ export default function ChatHome() {
                             {t('autoTr')} {autoTranslate ? t('on') : t('off')}
                           </MenuAction>
                         )}
+                        <MenuAction
+                          testId="mobile-verify-identity"
+                          onClick={() => { setChatMenuOpen(false); setVerifyOpen(true); }}
+                        >
+                          VERIFY IDENTITY
+                        </MenuAction>
                         <MenuAction
                           testId="mobile-block"
                           onClick={() => { setChatMenuOpen(false); toggleBlock(peer.user_id); }}
@@ -800,6 +880,9 @@ export default function ChatHome() {
                   <>
                     {!isGroup && peer && (
                       <>
+                        <button onClick={() => setVerifyOpen(true)} className="text-[10px] px-2 py-1 tac-border rounded text-[#34C759]" data-testid="verify-identity-button">
+                          VERIFY
+                        </button>
                         <button onClick={() => toggleBlock(peer.user_id)} className="text-[10px] px-2 py-1 tac-border rounded" data-testid="block-button">
                           {peerContact?.blocked ? t('unblock').toUpperCase() : t('block').toUpperCase()}
                         </button>
@@ -811,7 +894,7 @@ export default function ChatHome() {
                         </button>
                       </>
                     )}
-                    {!sameLangAsPeer && (
+                    {showTranslateControls && (
                       <button onClick={() => {
                         setAutoTranslate((v) => {
                           if (!v) toast.warning(t('autoTranslateWarning'));
@@ -849,7 +932,8 @@ export default function ChatHome() {
                   isMine={m.sender_id === user?.user_id}
                   myUserId={user?.user_id}
                   privateKey={privateKey}
-                  autoTranslate={autoTranslate && !sameLangAsPeer}
+                  autoTranslate={translationEnabled && autoTranslate && !sameLangAsPeer}
+                  translationEnabled={translationEnabled}
                   targetLang={user?.language || 'en'}
                   sourceLang={peer?.language}
                   reads={reads}
@@ -1033,6 +1117,12 @@ export default function ChatHome() {
         onGenerateInvite={generateInvite}
       />
 
+      <VerifyHandshakeModal
+        open={verifyOpen && !isGroup && !!peer}
+        onClose={() => setVerifyOpen(false)}
+        me={user}
+        peer={peer}
+      />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <CreateGroupModal open={groupOpen} onClose={() => setGroupOpen(false)} myUserId={user?.user_id}
         onCreated={(c) => { loadConversations(); goToConversation(c.conversation_id); }} />

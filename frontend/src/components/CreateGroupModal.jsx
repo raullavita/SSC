@@ -9,12 +9,11 @@ export default function CreateGroupModal({ open, onClose, onCreated, myUserId })
   const [q, setQ] = useState('');
   const [results, setResults] = useState([]);
   const [picked, setPicked] = useState([]);
-  const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const debRef = useRef(null);
 
   useEffect(() => {
-    if (!open) { setQ(''); setResults([]); setPicked([]); setName(''); }
+    if (!open) { setQ(''); setResults([]); setPicked([]); }
   }, [open]);
 
   useEffect(() => {
@@ -42,7 +41,6 @@ export default function CreateGroupModal({ open, onClose, onCreated, myUserId })
       const { data } = await api.post('/conversations', {
         is_group: true,
         peer_usernames: picked.map((p) => p.username),
-        name: name || `${t('group')} ${picked.length + 1}`,
       });
       toast.success(t('groupCreated'));
       onCreated && onCreated(data);
@@ -63,8 +61,9 @@ export default function CreateGroupModal({ open, onClose, onCreated, myUserId })
           <button onClick={onClose} className="text-[#A1A1AA] hover:text-white" data-testid="group-close"><X size={16} /></button>
         </div>
 
-        <input value={name} onChange={(e) => setName(e.target.value.slice(0, 60))} placeholder={t('groupNamePlaceholder')}
-          className="w-full px-3 py-2.5 text-sm mb-3" data-testid="group-name-input" />
+        <p className="text-[10px] font-mono text-[#A1A1AA] mb-3 tracking-wide">
+          {t('groupPrivacyHint')}
+        </p>
 
         <div className="flex items-center gap-2 bg-[#1A1A1A] rounded-md px-3 py-2 tac-border mb-2">
           <MagnifyingGlass size={14} className="text-[#A1A1AA]" />

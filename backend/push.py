@@ -3,10 +3,13 @@ Push notification helpers - extracted for organization.
 """
 import json
 import asyncio
+import logging
 from pywebpush import webpush, WebPushException
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
+
+_logger = logging.getLogger("ssc")
 
 # Will be set by server
 db = None
@@ -29,7 +32,9 @@ async def send_push(recipients: list, payload: dict, sender_id: str = None):
         return
 
     # Web Push (PWA / browser)
-    if VAPID_PRIVATE:
+    from core.egress_policy import egress_feature_enabled
+
+    if VAPID_PRIVATE and egress_feature_enabled("web_push"):
         subs = await db.push_subscriptions.find({"user_id": {"$in": recipients}}).to_list(500)
         for s in subs:
             p = dict(payload)
@@ -52,7 +57,7 @@ async def send_push(recipients: list, payload: dict, sender_id: str = None):
                 if e.response is not None and e.response.status_code in (404, 410):
                     await db.push_subscriptions.delete_one({"endpoint": s["endpoint"]})
             except Exception as e:
-                print(f"push failed: {e}")
+                _logger.warning(f"push failed: {type(e).__name__}")
 
     # Native FCM / APNs (Capacitor Android & iOS)
     try:
@@ -60,11 +65,14 @@ async def send_push(recipients: list, payload: dict, sender_id: str = None):
         if np.is_configured():
             await np.send_native_to_users(recipients, payload, sender_id)
     except Exception as e:
-        print(f"native push dispatch failed: {e}")
+        _logger.warning(f"native push dispatch failed: {type(e).__name__}")
 
 async def send_push_for_message(conv: dict, sender: dict, msg: dict):
     recipients = [u for u in conv["participants"] if u != sender["user_id"]]
-    title = conv.get("name") or f"@{sender['username']}"
+    if conv.get("is_group"):
+        title = "Group chat"
+    else:
+        title = f"@{sender['username']}"
     body_text = "New encrypted message"
     if msg.get("message_type") == "image":
         body_text = "Sent a photo"
@@ -151,7 +159,7 @@ async def send_push_for_group_added(to_user_id: str, from_user: dict, conv: dict
         return
     if to_user_id in manager.user_sockets:
         return
-    group_name = conv.get("name") or "Group"
+    group_name = "Group chat"
     payload = {
         "title": "Added to group",
         "body": f"@{from_user.get('username', 'user')} added you to {group_name}",

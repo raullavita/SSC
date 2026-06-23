@@ -3,6 +3,7 @@ import { Plus, Eye, X, Trash } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { encryptMessageForRecipients, decryptMessage } from '../lib/crypto';
+import { subscribeMemoryWipe } from '../lib/memoryWipe';
 
 /**
  * Stories bar: horizontal scroll at top of sidebar with avatars.
@@ -100,7 +101,7 @@ function StoryCreator({ open, onClose, me, onCreated }) {
       const enc = await encryptMessageForRecipients(text.trim(), recipients);
       await api.post('/statuses', {
         ciphertext: enc.ciphertext, iv: enc.iv, encrypted_keys: enc.encrypted_keys,
-        status_type: 'text', background: bg, plaintext_length: enc.plaintext_length,
+        status_type: 'text', background: bg,
       });
       toast.success('Status posted · auto-deletes in 24h');
       onCreated && onCreated();
@@ -149,6 +150,13 @@ export function StoryViewer({ group, onClose, me, privateKey }) {
   const timerRef = useRef(null);
 
   const cur = group?.items?.[idx];
+
+  useEffect(() => subscribeMemoryWipe(() => {
+    setDecoded('');
+    setIdx(0);
+    setProgress(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+  }), []);
 
   useEffect(() => {
     if (!cur || !privateKey) return;

@@ -1,15 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import { Translate, Image as ImageIcon, Paperclip, ShieldCheck, Check, Checks } from '@phosphor-icons/react';
 import { decryptMessage, decryptBytes } from '../lib/crypto';
-import { api, fileUrl } from '../lib/api';
+import { api } from '../lib/api';
+import { fetchFileBytes } from '../lib/files';
+import { registerBlobUrl, subscribeMemoryWipe, unregisterBlobUrl } from '../lib/memoryWipe';
 import CountdownBadge from './CountdownBadge';
 
-export default function Message({ msg, isMine, myUserId, privateKey, autoTranslate, targetLang, sourceLang, reads = [], participantsCount = 2 }) {
+export default function Message({
+  msg, isMine, myUserId, privateKey, autoTranslate, translationEnabled = false,
+  targetLang, sourceLang, reads = [], participantsCount = 2,
+}) {
   const [plaintext, setPlaintext] = useState(null);
   const [translated, setTranslated] = useState(null);
   const [translating, setTranslating] = useState(false);
   const [showTranslated, setShowTranslated] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => subscribeMemoryWipe(() => {
+    setPlaintext(null);
+    setTranslated(null);
+    setTranslating(false);
+    setShowTranslated(false);
+    setError(null);
+  }), []);
 
   useEffect(() => {
     let mounted = true;
@@ -37,14 +50,14 @@ export default function Message({ msg, isMine, myUserId, privateKey, autoTransla
       setShowTranslated(false);
       return;
     }
-    if (autoTranslate && plaintext && !isMine && targetLang) {
+    if (translationEnabled && autoTranslate && plaintext && !isMine && targetLang) {
       translateNow();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoTranslate, plaintext, targetLang, sourceLang, sameLanguage]);
+  }, [translationEnabled, autoTranslate, plaintext, targetLang, sourceLang, sameLanguage]);
 
   const translateNow = async () => {
-    if (!plaintext || translating || sameLanguage) return;
+    if (!translationEnabled || !plaintext || translating || sameLanguage) return;
     setTranslating(true);
     try {
       const payload = { text: plaintext, target_language: targetLang };
@@ -95,19 +108,19 @@ export default function Message({ msg, isMine, myUserId, privateKey, autoTransla
               attachmentEncrypted ? (
                 <EncryptedImageAttachment msg={msg} fileId={msg.attachment_id} caption={plaintext} privateKey={privateKey} myUserId={myUserId} />
               ) : (
-                <ImageAttachment fileId={msg.attachment_id} caption={plaintext} />
+                <LegacyAttachmentPlaceholder kind="image" caption={plaintext} />
               )
             ) : msg.message_type === 'file' && msg.attachment_id ? (
               attachmentEncrypted ? (
                 <EncryptedFileAttachment msg={msg} fileId={msg.attachment_id} caption={plaintext} privateKey={privateKey} myUserId={myUserId} />
               ) : (
-                <FileAttachment fileId={msg.attachment_id} caption={plaintext} />
+                <LegacyAttachmentPlaceholder kind="file" caption={plaintext} />
               )
             ) : msg.message_type === 'voice' && msg.attachment_id ? (
               attachmentEncrypted ? (
                 <EncryptedVoiceAttachment msg={msg} fileId={msg.attachment_id} privateKey={privateKey} myUserId={myUserId} />
               ) : (
-                <audio controls src={fileUrl(msg.attachment_id)} className="w-full max-w-[220px]" />
+                <LegacyAttachmentPlaceholder kind="voice" />
               )
             ) : (
               <div>{showTranslated && translated ? translated : plaintext}</div>
@@ -142,7 +155,7 @@ export default function Message({ msg, isMine, myUserId, privateKey, autoTransla
           }
           return <Check size={12} className="text-[#A1A1AA]" data-testid={`delivered-${msg.message_id}`} title="Sent" />;
         })()}
-        {!isMine && !sameLanguage && plaintext && !translated && !translating && (
+        {translationEnabled && !isMine && !sameLanguage && plaintext && !translated && !translating && (
           <button onClick={translateNow} className="ml-1 hover:text-[#FFD600] flex items-center gap-1" data-testid={`translate-button-${msg.message_id}`}>
             <Translate size={10} /> translate
           </button>
@@ -154,8 +167,7 @@ export default function Message({ msg, isMine, myUserId, privateKey, autoTransla
 }
 
 async function fetchAttachmentBytes(fileId) {
-  const { data } = await api.get(`/files/${fileId}`, { responseType: 'arraybuffer' });
-  return new Uint8Array(data);
+  return fetchFileBytes(fileId);
 }
 
 async function decryptAttachment(msg, fileId, privateKey, myUserId) {
@@ -180,6 +192,7 @@ function useDecryptedAttachment(msg, fileId, privateKey, myUserId) {
       try {
         const blob = await decryptAttachment(msg, fileId, privateKey, myUserId);
         url = URL.createObjectURL(blob);
+        registerBlobUrl(url);
         if (mounted) {
           setObjectUrl(url);
           setError(null);
@@ -190,9 +203,17 @@ function useDecryptedAttachment(msg, fileId, privateKey, myUserId) {
         if (mounted) setLoading(false);
       }
     })();
+    const unsubWipe = subscribeMemoryWipe(() => {
+      if (url) unregisterBlobUrl(url);
+      url = null;
+      setObjectUrl(null);
+      setError(null);
+      setLoading(false);
+    });
     return () => {
       mounted = false;
-      if (url) URL.revokeObjectURL(url);
+      unsubWipe();
+      if (url) unregisterBlobUrl(url);
     };
   }, [msg, fileId, privateKey, myUserId]);
 
@@ -230,22 +251,12 @@ function EncryptedVoiceAttachment({ msg, fileId, privateKey, myUserId }) {
   return <audio controls src={objectUrl} className="w-full max-w-[220px]" />;
 }
 
-function ImageAttachment({ fileId, caption }) {
-  const src = fileUrl(fileId);
+function LegacyAttachmentPlaceholder({ kind, caption }) {
+  const label = kind === 'voice' ? 'voice note' : kind === 'file' ? 'file' : 'image';
   return (
-    <div>
-      <img src={src} alt={caption || 'attachment'} className="rounded-md max-w-[280px] max-h-[280px] object-cover" data-testid={`image-${fileId}`} />
-      {caption && <div className="mt-1 text-sm">{caption}</div>}
+    <div className="font-mono text-xs text-[#A1A1AA]" data-testid={`legacy-attachment-${kind}`}>
+      [legacy {label} — E2E encryption required]
+      {caption && kind !== 'voice' && <div className="mt-1 text-sm text-[#F0F0F0]">{caption}</div>}
     </div>
-  );
-}
-
-function FileAttachment({ fileId, caption }) {
-  const href = fileUrl(fileId);
-  return (
-    <a href={href} target="_blank" rel="noreferrer" className="flex items-center gap-2 underline hover:text-[#00E5FF]" data-testid={`file-${fileId}`}>
-      <Paperclip size={14} />
-      <span className="text-sm">{caption || 'attachment'}</span>
-    </a>
   );
 }

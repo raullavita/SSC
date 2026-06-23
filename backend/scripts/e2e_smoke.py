@@ -100,9 +100,11 @@ def main():
     msg_id = r.json()["message_id"]
     ok(f"message {msg_id}")
 
-    step("File upload + message attach + peer download")
-    files = {"file": ("smoke.txt", io.BytesIO(b"e2e smoke file"), "text/plain")}
-    r = requests.post(f"{API}/files/upload", files=files, headers=auth(token_a), timeout=20)
+    step("E2E file upload + message attach + peer download")
+    cipher = b"e2e smoke file ciphertext"
+    files = {"file": ("smoke.enc", io.BytesIO(cipher), "application/octet-stream")}
+    form = {"encrypted": "true", "original_content_type": "text/plain"}
+    r = requests.post(f"{API}/files/upload", files=files, data=form, headers=auth(token_a), timeout=20)
     if r.status_code == 503:
         print("  SKIP storage unavailable")
     else:
@@ -115,12 +117,14 @@ def main():
             "encrypted_keys": {user_a["user_id"]: "Aw==", user_b["user_id"]: "Bw=="},
             "message_type": "file",
             "attachment_id": file_id,
-            "plaintext_length": 4,
+            "attachment_iv": "aXY=",
+            "attachment_encrypted_keys": {user_a["user_id"]: "Aw==", user_b["user_id"]: "Bw=="},
+            "attachment_content_type": "text/plain",
         }
         r = requests.post(f"{API}/messages", json=attach_msg, headers=auth(token_a), timeout=15)
         assert r.status_code == 200, r.text
         r2 = requests.get(f"{API}/files/{file_id}", headers=auth(token_b), timeout=20)
-        assert r2.status_code == 200 and r2.content == b"e2e smoke file", (r2.status_code, r2.text[:200])
+        assert r2.status_code == 200 and r2.content == cipher, (r2.status_code, r2.text[:200])
         ok(f"file {file_id} (ACL via message)")
 
     step("Status create + list")

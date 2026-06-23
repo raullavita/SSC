@@ -332,7 +332,8 @@ def test_group_create_success():
     assert r.status_code == 200, r.text
     conv = r.json()
     assert conv.get("is_group") is True
-    assert conv.get("name") == "Test group"
+    assert conv.get("display_label") == "Group (3)"
+    assert "name" not in conv
     assert conv["conversation_id"].startswith("g_")
     parts = conv["participants"]
     assert isinstance(parts, list) and len(parts) == 3
@@ -367,7 +368,10 @@ def test_list_conversations_has_both():
 
     g = by_id[state["group_id"]]
     assert g.get("is_group") is True
-    assert g.get("name") == "Test group"
+    assert g.get("display_label") == "Group (3)"
+    assert "name" not in g
+    assert "last_activity" in g
+    assert "last_message" not in g
     assert g.get("peer") is None
     assert isinstance(g.get("members"), list) and len(g["members"]) == 2
     # member dicts shaped like public user

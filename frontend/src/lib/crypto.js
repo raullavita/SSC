@@ -102,8 +102,7 @@ async function decryptPayload(privateKey, ciphertextBytes, ivB64, encryptedKeyB6
 }
 
 export async function encryptMessageForRecipients(plaintext, recipientPublicJwks) {
-  const result = await encryptPayloadForRecipients(enc.encode(plaintext), recipientPublicJwks);
-  return { ...result, plaintext_length: plaintext.length };
+  return encryptPayloadForRecipients(enc.encode(plaintext), recipientPublicJwks);
 }
 
 /** Encrypt raw file/voice bytes before upload (E2E attachments). */

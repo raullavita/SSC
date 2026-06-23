@@ -203,7 +203,10 @@ def test_list_conversations():
     assert isinstance(arr, list) and len(arr) >= 1
     found = next((c for c in arr if c["conversation_id"] == state["conv_id"]), None)
     assert found is not None
-    assert "peer" in found and "last_message" in found
+    assert "peer" in found
+    assert "last_activity" in found
+    assert "last_message" not in found
+    assert "name" not in found
 
 
 # ─── Messages ───────────────────────────────────────────────────────────
@@ -256,9 +259,14 @@ def test_list_messages_not_participant():
 
 # ─── Translation ────────────────────────────────────────────────────────
 def test_translate():
+    cfg = requests.get(f"{API}/config", timeout=10).json()
+    if not cfg.get("translation_enabled"):
+        pytest.skip("TRANSLATION_ENABLED=false (Engine 1.2 default — no plaintext egress)")
     headers = {"Authorization": f"Bearer {state['alice_token']}"}
     payload = {"text": "Bună ziua", "target_language": "en", "source_language": "ro"}
     r = requests.post(f"{API}/translate", json=payload, headers=headers, timeout=15)
+    if r.status_code == 403:
+        pytest.skip("Server-side translation disabled")
     assert r.status_code == 200, r.text
     data = r.json()
     assert data["target_language"] == "en"
@@ -274,25 +282,35 @@ def test_translate():
 # ─── File upload/download ───────────────────────────────────────────────
 def test_file_upload_download():
     headers = {"Authorization": f"Bearer {state['alice_token']}"}
-    payload = b"SSC test file content"
-    files = {"file": ("test.txt", io.BytesIO(payload), "text/plain")}
-    r = requests.post(f"{API}/files/upload", files=files, headers=headers, timeout=20)
+    payload = b"SSC test file content ciphertext"
+    files = {"file": ("test.enc", io.BytesIO(payload), "application/octet-stream")}
+    data = {"encrypted": "true", "original_content_type": "text/plain"}
+    r = requests.post(f"{API}/files/upload", files=files, data=data, headers=headers, timeout=20)
     if r.status_code == 503:
         pytest.skip(f"Storage unavailable: {r.text}")
     assert r.status_code == 200, r.text
-    data = r.json()
-    assert "file_id" in data
-    file_id = data["file_id"]
+    body = r.json()
+    assert "file_id" in body
+    assert body.get("encrypted") is True
+    file_id = body["file_id"]
 
-    # download via ?auth=
-    r2 = requests.get(f"{API}/files/{file_id}", params={"auth": state["alice_token"]}, timeout=20)
+    # download via Authorization header (Engine 2.3 — no JWT in URL)
+    r2 = requests.get(f"{API}/files/{file_id}", headers=headers, timeout=20)
     assert r2.status_code == 200
     assert r2.content == payload
 
 
+def test_plaintext_file_upload_rejected():
+    headers = {"Authorization": f"Bearer {state['alice_token']}"}
+    files = {"file": ("test.txt", io.BytesIO(b"plaintext"), "text/plain")}
+    r = requests.post(f"{API}/files/upload", files=files, headers=headers, timeout=20)
+    assert r.status_code == 400, r.text
+    assert "deprecated" in (r.json().get("detail") or "").lower()
+
+
 # ─── Google OAuth endpoint shape ────────────────────────────────────────
 def test_google_session_invalid():
-    r = requests.post(f"{API}/auth/google/session", json={"session_id": "totally-fake"})
+    r = requests.post(f"{API}/auth/google/session", json={"id_token": "totally-fake"})
     assert r.status_code in (401, 501, 502), r.text
 
 
@@ -375,9 +393,20 @@ def test_panic_wipe():
     assert body["wiped_conversations"] >= 1
 
     r2 = requests.get(f"{API}/conversations", headers=headers)
-    assert r2.status_code == 200
-    assert r2.json() == []
+    if r2.status_code == 200:
+        assert r2.json() == []
 
-    # account still exists
-    r3 = requests.get(f"{API}/auth/me", headers=headers)
-    assert r3.status_code == 200
+    # account + contacts survive — user must sign in again
+    r_login = requests.post(
+        f"{API}/auth/login",
+        json={"email": ALICE["email"], "password": ALICE["password"]},
+    )
+    assert r_login.status_code == 200, r_login.text
+    new_token = r_login.json()["token"]
+    r_contacts = requests.get(
+        f"{API}/contacts",
+        headers={"Authorization": f"Bearer {new_token}"},
+    )
+    assert r_contacts.status_code == 200
+    contact_ids = [c.get("user_id") or c.get("contact_id") for c in r_contacts.json()]
+    assert state["bob_user"]["user_id"] in contact_ids

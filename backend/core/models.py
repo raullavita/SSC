@@ -61,7 +61,6 @@ class SendMessageIn(BaseModel):
     attachment_iv: Optional[str] = None
     attachment_encrypted_keys: Optional[Dict[str, str]] = None
     attachment_content_type: Optional[str] = None
-    plaintext_length: Optional[int] = None
 
 
 class TwoFASetupVerifyIn(BaseModel):
@@ -113,7 +112,6 @@ class CreateStatusIn(BaseModel):
     status_type: str = "text"
     attachment_id: Optional[str] = None
     background: Optional[str] = "#1E2A38"
-    plaintext_length: Optional[int] = None
 
 
 class MarkStatusViewedIn(BaseModel):

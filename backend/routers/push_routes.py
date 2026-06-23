@@ -38,7 +38,7 @@ async def push_subscribe(body: PushSubscribeIn, current=Depends(get_current_user
             {"endpoint": body.endpoint}, {"$set": sub}, upsert=True
         )
     except Exception as e:
-        logger.warning(f"push subscribe upsert failed: {e}")
+        logger.warning(f"push subscribe upsert failed: {type(e).__name__}")
     return {"ok": True}
 
 

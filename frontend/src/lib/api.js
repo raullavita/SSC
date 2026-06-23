@@ -11,12 +11,6 @@ export const api = axios.create({
   withCredentials: !isNativeApp(),
 });
 
-/** Authenticated file download URL (works in web + Capacitor builds). */
-export function fileUrl(fileId) {
-  const token = localStorage.getItem('ssc_token') || '';
-  return `${API}/files/${fileId}?auth=${encodeURIComponent(token)}`;
-}
-
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('ssc_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;

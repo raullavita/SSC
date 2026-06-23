@@ -75,7 +75,7 @@ def _mymemory(text: str, target: str, source: Optional[str]) -> Optional[str]:
                 if translated.lower() != text.lower():
                     return translated
     except Exception as e:
-        logger.warning(f"MyMemory translate failed: {e}")
+        logger.warning(f"MyMemory translate failed: {type(e).__name__}")
     return None
 
 
@@ -104,7 +104,7 @@ def _google(text: str, target: str, source: Optional[str]) -> Optional[str]:
         else:
             logger.warning(f"Google translate HTTP {r.status_code}")
     except Exception as e:
-        logger.warning(f"Google translate failed: {e}")
+        logger.warning(f"Google translate failed: {type(e).__name__}")
     return None
 
 

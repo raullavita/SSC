@@ -12,6 +12,7 @@ from core.database import db
 from core.logging_config import logger
 from core.models import FriendRequestActionIn, SendFriendRequestIn
 from core.push_helpers import send_push_for_friend_accept, send_push_for_friend_request
+from core.retention import friend_request_pending_expires_at, friend_request_resolved_expires_at
 from core.utils import iso, now_utc
 from security import rate_limit_check
 
@@ -59,6 +60,7 @@ async def send_friend_request(body: SendFriendRequestIn, current=Depends(get_cur
         "to_username": target["username"],
         "status": "pending",
         "created_at": iso(now_utc()),
+        "expires_at": friend_request_pending_expires_at(),
     })
     asyncio.create_task(send_push_for_friend_request(target["user_id"], current))
     return {"ok": True, "request_id": req_id}
@@ -94,7 +96,7 @@ async def accept_friend_request(body: FriendRequestActionIn, current=Depends(get
 
     await db.friend_requests.update_one(
         {"request_id": body.request_id},
-        {"$set": {"status": "accepted"}},
+        {"$set": {"status": "accepted", "expires_at": friend_request_resolved_expires_at()}},
     )
     logger.info(f"friend request accepted: {body.request_id} by {current['user_id']}")
 
@@ -120,7 +122,7 @@ async def accept_friend_request(body: FriendRequestActionIn, current=Depends(get
 async def reject_friend_request(body: FriendRequestActionIn, current=Depends(get_current_user)):
     await db.friend_requests.update_one(
         {"request_id": body.request_id, "to_user_id": current["user_id"], "status": "pending"},
-        {"$set": {"status": "rejected"}},
+        {"$set": {"status": "rejected", "expires_at": friend_request_resolved_expires_at()}},
     )
     logger.info(f"friend request rejected: {body.request_id} by {current['user_id']}")
     return {"ok": True}

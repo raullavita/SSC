@@ -10,7 +10,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from core.auth import get_current_user
 from core.database import db
 from core.logging_config import logger
+from core.logging_policy import token_log_ref
 from core.models import CreateInviteIn
+from core.retention import expires_at_from_now, friend_request_pending_expires_at, retention_hours
 from core.utils import iso, now_utc
 from security import rate_limit_check
 
@@ -22,7 +24,8 @@ async def create_invite(body: CreateInviteIn, current=Depends(get_current_user))
     if not rate_limit_check(f"invite:{current['user_id']}", max_hits=5, window_sec=3600):
         raise HTTPException(429, "Too many invites")
     token = secrets.token_urlsafe(16)
-    expires = now_utc() + timedelta(hours=body.expires_hours)
+    hours = body.expires_hours if body.expires_hours is not None else retention_hours()
+    expires = now_utc() + timedelta(hours=hours)
     await db.invites.insert_one({
         "token": token,
         "from_user_id": current["user_id"],
@@ -65,7 +68,11 @@ async def use_invite(token: str, current=Depends(get_current_user)):
         "to_username": current["username"],
         "status": "pending",
         "created_at": iso(now_utc()),
+        "expires_at": friend_request_pending_expires_at(),
     })
-    await db.invites.update_one({"token": token}, {"$set": {"used": True}})
-    logger.info(f"invite used: {token} by {current['user_id']}")
+    await db.invites.update_one(
+        {"token": token},
+        {"$set": {"used": True, "expires_at": expires_at_from_now()}},
+    )
+    logger.info(f"invite used: {token_log_ref(token)} by {current['user_id']} req={req_id}")
     return {"ok": True, "message": "Friend request sent from inviter", "request_id": req_id}

@@ -1,49 +1,61 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { X, ShieldCheck, Check, QrCode, Camera } from '@phosphor-icons/react';
-import { publicKeyFingerprint } from '../lib/crypto';
+import { X, ShieldCheck, Check, QrCode } from '@phosphor-icons/react';
+import {
+  clearPeerVerification,
+  computeSafetyNumber,
+  isPeerVerified,
+  markPeerVerified,
+} from '../lib/verification';
 
 /**
- * Verified Handshake — shows a Safety Number (fingerprint of both public keys),
- * a QR code containing the same number, and lets the user mark the peer as verified.
- * Verification is stored locally per device (localStorage).
+ * Verified Handshake — safety number + crypto-bound local verification record (Engine 2.6).
  */
 export default function VerifyHandshakeModal({ open, onClose, me, peer }) {
   const [code, setCode] = useState('');
   const [verified, setVerified] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!open || !me?.public_key || !peer?.public_key) return;
+    let mounted = true;
     (async () => {
       try {
         const myPub = typeof me.public_key === 'string' ? JSON.parse(me.public_key) : me.public_key;
         const peerPub = typeof peer.public_key === 'string' ? JSON.parse(peer.public_key) : peer.public_key;
-        const a = await publicKeyFingerprint(myPub);
-        const b = await publicKeyFingerprint(peerPub);
-        // canonicalize order so both sides see the same number
-        const [first, second] = a < b ? [a, b] : [b, a];
-        // group into 5-digit blocks (numeric, easier to compare verbally)
-        const combined = (first + second).replace(/[^a-fA-F0-9]/g, '').toUpperCase();
-        const blocks = [];
-        for (let i = 0; i < 60; i += 5) blocks.push(combined.slice(i, i + 5));
-        setCode(blocks.join(' '));
-      } catch (e) {
-        setCode('');
+        const { display } = await computeSafetyNumber(myPub, peerPub);
+        if (mounted) setCode(display);
+        if (mounted) setVerified(await isPeerVerified(peer.user_id, myPub, peerPub));
+      } catch {
+        if (mounted) {
+          setCode('');
+          setVerified(false);
+        }
       }
     })();
-    setVerified(!!localStorage.getItem(`ssc_verified_${peer?.user_id}`));
+    return () => { mounted = false; };
   }, [open, me, peer]);
 
-  const markVerified = () => {
-    localStorage.setItem(`ssc_verified_${peer.user_id}`, '1');
-    setVerified(true);
-    toast.success('Identity verified');
-    window.dispatchEvent(new Event('ssc-verified-change'));
+  const markVerified = async () => {
+    if (busy || !peer?.user_id) return;
+    setBusy(true);
+    try {
+      const myPub = typeof me.public_key === 'string' ? JSON.parse(me.public_key) : me.public_key;
+      const peerPub = typeof peer.public_key === 'string' ? JSON.parse(peer.public_key) : peer.public_key;
+      await markPeerVerified(peer.user_id, myPub, peerPub);
+      setVerified(true);
+      toast.success('Identity verified');
+    } catch {
+      toast.error('Could not save verification');
+    } finally {
+      setBusy(false);
+    }
   };
+
   const unverify = () => {
-    localStorage.removeItem(`ssc_verified_${peer.user_id}`);
+    clearPeerVerification(peer.user_id);
     setVerified(false);
-    window.dispatchEvent(new Event('ssc-verified-change'));
+    toast.message('Verification cleared');
   };
 
   const qrSrc = code ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&bgcolor=121212&color=00E5FF&qzone=1&data=${encodeURIComponent('SSC:' + code.replace(/ /g, ''))}` : '';
@@ -62,7 +74,7 @@ export default function VerifyHandshakeModal({ open, onClose, me, peer }) {
 
         <p className="text-xs text-[#A1A1AA] mb-4">
           Compare this 60-character safety number with <span className="text-white">@{peer?.username}</span> in person, via voice/video call, or another trusted channel.
-          If they match, you have proven you're talking to the real person — not a man-in-the-middle.
+          If they match, you have proven you&apos;re talking to the real person — not a man-in-the-middle.
         </p>
 
         <div className="flex justify-center mb-3">
@@ -82,8 +94,8 @@ export default function VerifyHandshakeModal({ open, onClose, me, peer }) {
             <button onClick={unverify} data-testid="verify-unverify-button" className="w-full py-2 text-xs font-mono text-[#A1A1AA] hover:text-[#FF3B30]">CLEAR_VERIFICATION</button>
           </div>
         ) : (
-          <button onClick={markVerified} data-testid="verify-mark-button"
-            className="w-full py-2.5 bg-[#34C759] text-black font-medium text-sm rounded-md hover:brightness-110 transition">
+          <button onClick={markVerified} disabled={busy || !code} data-testid="verify-mark-button"
+            className="w-full py-2.5 bg-[#34C759] text-black font-medium text-sm rounded-md hover:brightness-110 transition disabled:opacity-50">
             MARK AS VERIFIED
           </button>
         )}

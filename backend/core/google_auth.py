@@ -22,6 +22,10 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 
 
 def is_configured() -> bool:
+    from core.egress_policy import egress_feature_enabled
+
+    if not egress_feature_enabled("google_oauth"):
+        return False
     return bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI)
 
 

@@ -89,7 +89,7 @@ def register_websocket(app):
         except WebSocketDisconnect:
             pass
         except Exception as e:
-            logger.warning(f"ws error: {e}")
+            logger.warning(f"ws error: {type(e).__name__}")
         finally:
             manager.disconnect(user_id, ws)
             logger.info(f"WS disconnected user={user_id}")

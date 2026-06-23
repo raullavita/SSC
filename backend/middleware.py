@@ -9,12 +9,14 @@ from fastapi.responses import JSONResponse
 import os
 
 from core.logging_config import logger
+from core.logging_policy import format_client_ip, safe_request_path
 
 
 def setup_middleware(app: FastAPI):
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
-        logger.warning(f"validation error on {request.url.path}: {exc}")
+        path = safe_request_path(request.url.path)
+        logger.warning(f"validation error on {path}: {len(exc.errors())} field(s)")
         return JSONResponse(
             status_code=422,
             content={"detail": "Invalid input", "errors": exc.errors()},
@@ -22,7 +24,7 @@ def setup_middleware(app: FastAPI):
 
     @app.exception_handler(Exception)
     async def generic_exception_handler(request: Request, exc: Exception):
-        logger.error(f"unhandled error on {request.url.path}: {type(exc).__name__}")
+        logger.error(f"unhandled error on {safe_request_path(request.url.path)}: {type(exc).__name__}")
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"},
@@ -49,9 +51,11 @@ def setup_middleware(app: FastAPI):
         start_time = time.time()
         response = await call_next(request)
         process_time = (time.time() - start_time) * 1000
+        client = format_client_ip(request.client.host if request.client else None)
+        path = safe_request_path(request.url.path)
         logger.info(
-            f"[{request_id}] {request.method} {request.url.path} "
+            f"[{request_id}] {request.method} {path} "
             f"status={response.status_code} time_ms={process_time:.1f} "
-            f"client={request.client.host if request.client else 'unknown'}"
+            f"client={client}"
         )
         return response

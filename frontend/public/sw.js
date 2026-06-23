@@ -1,5 +1,14 @@
 /* SSC service worker — push notifications + offline shell */
 const CACHE = 'ssc-v1';
+const PURGE_CACHES_MESSAGE = 'SSC_PURGE_CACHES';
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type !== PURGE_CACHES_MESSAGE) return;
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys.map((key) => caches.delete(key)));
+  })());
+});
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();

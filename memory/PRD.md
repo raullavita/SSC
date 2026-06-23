@@ -36,7 +36,7 @@ Build a WhatsApp/Telegram-like app with:
 - ✅ Countdown badge + MongoDB TTL for 24h recycle
 - ✅ File upload (Mongo GridFS, 24h TTL)
 - ✅ WebRTC voice + video calls (P2P)
-- ✅ Panic wipe (1.5s hold)
+- ✅ Panic wipe (1.5s hold) — wipes chats/files/calls; **account + friends survive**; auto logout
 - ✅ Encrypted vault unlock prompt
 - ✅ 35/35 backend tests pass
 

@@ -3,6 +3,16 @@ import { api } from '../lib/api';
 import { unwrapPrivateKey } from '../lib/crypto';
 import { unsubscribePush } from '../lib/push';
 import { unsubscribeNativePush } from '../lib/native-push';
+import { purgeLegacyPrivateKeyFromSession } from '../lib/vault';
+import {
+  authHeaders,
+  LOGOUT_SERVER_PATH,
+  PANIC_SERVER_PATH,
+  runLogoutOrchestrator,
+  runPanicOrchestrator,
+} from '../lib/clientFootprintOrchestrator';
+import { registerMemoryWipeHandler } from '../lib/memoryWipe';
+import { purgeLegacyVerificationFlags } from '../lib/verification';
 
 const AuthCtx = createContext(null);
 
@@ -22,49 +32,31 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const restorePrivateKeyFromSession = useCallback(async () => {
-    if (privateKey || sessionStorage.getItem('ssc_pk_unlocked') !== '1') return;
-    const raw = sessionStorage.getItem('ssc_pk_jwk');
-    if (!raw) return;
-    try {
-      const jwk = JSON.parse(raw);
-      const pk = await crypto.subtle.importKey(
-        'jwk', jwk, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt'],
-      );
-      setPrivateKey(pk);
-    } catch {
-      sessionStorage.removeItem('ssc_pk_jwk');
-      sessionStorage.removeItem('ssc_pk_unlocked');
-    }
-  }, [privateKey]);
-
   useEffect(() => {
-    // Note: Emergent OAuth removed. This was for platform-specific flow.
-    // AuthCallback handles session exchange first.
+    purgeLegacyPrivateKeyFromSession();
+    purgeLegacyVerificationFlags();
     if (typeof window !== 'undefined' && window.location.hash?.includes('session_id=')) {
       setLoading(false);
       return;
     }
-    refreshUser()
-      .then((u) => { if (u) return restorePrivateKeyFromSession(); })
-      .finally(() => setLoading(false));
-  }, [refreshUser, restorePrivateKeyFromSession]);
+    refreshUser().finally(() => setLoading(false));
+  }, [refreshUser]);
+
+  useEffect(() => {
+    return registerMemoryWipeHandler(() => {
+      setUser(null);
+      setPrivateKey(null);
+    });
+  }, []);
 
   const loginWithToken = async (token, userObj) => {
     localStorage.setItem('ssc_token', token);
     setUser(userObj);
   };
 
+  /** Hold decrypted key in React state only — never written to storage (Engine 2.2). */
   const persistPrivateKey = async (pk) => {
     setPrivateKey(pk);
-    try {
-      const jwk = await crypto.subtle.exportKey('jwk', pk);
-      sessionStorage.setItem('ssc_pk_jwk', JSON.stringify(jwk));
-      sessionStorage.setItem('ssc_pk_unlocked', '1');
-    } catch {
-      sessionStorage.removeItem('ssc_pk_jwk');
-      sessionStorage.removeItem('ssc_pk_unlocked');
-    }
     return pk;
   };
 
@@ -82,27 +74,17 @@ export function AuthProvider({ children }) {
   const setPK = (pk) => setPrivateKey(pk);
 
   const logout = async () => {
-    try { await unsubscribePush(); } catch {}
-    try {
-      const nativeToken = localStorage.getItem('ssc_native_push_token');
-      await unsubscribeNativePush(nativeToken);
-    } catch {}
-    try { await api.post('/auth/logout'); } catch {}
-    localStorage.removeItem('ssc_token');
-    localStorage.removeItem('ssc_native_push_token');
-    sessionStorage.removeItem('ssc_pk_jwk');
-    sessionStorage.removeItem('ssc_pk_unlocked');
-    sessionStorage.clear();
-    setUser(null);
-    setPrivateKey(null);
+    await runLogoutOrchestrator({
+      unsubscribePush: () => unsubscribePush(),
+      unsubscribeNativePush: (token) => unsubscribeNativePush(token),
+      postLogout: (token) => api.post(LOGOUT_SERVER_PATH, {}, authHeaders(token)),
+    });
   };
 
   const panicWipe = async () => {
-    try { await api.post('/panic-wipe'); } catch {}
-    localStorage.removeItem('ssc_token');
-    localStorage.removeItem('ssc_native_push_token');
-    sessionStorage.clear();
-    window.location.href = '/login?panic=1';
+    await runPanicOrchestrator({
+      postPanicWipe: (token) => api.post(PANIC_SERVER_PATH, {}, authHeaders(token)),
+    });
   };
 
   return (
