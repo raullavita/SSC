@@ -98,10 +98,8 @@ android-sdk/
 .env.*
 !.env.example
 !**/.env.example
-!*.env.example
-!**/*.env.example
-*.env
-!*.env.example
+!.env.mobile.example
+!**/.env.mobile.example
 backend/tests/_login.json
 credentials.json
 *.key
