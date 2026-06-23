@@ -158,7 +158,7 @@ git commit -m "Initial commit: SSC chat app"
 Remote (when you have a repo):
 
 ```powershell
-git remote add origin <your-repo-url>
+git remote add origin https://github.com/raullavita/SSC.git
 git push -u origin main
 ```
 
