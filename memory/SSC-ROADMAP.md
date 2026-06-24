@@ -175,11 +175,15 @@ cd C:\Users\smash\SSC-main\backend
 - [x] HTTPS production API (Cloud Run)
 - [x] Google OAuth + Cloud Run redirect URI
 - [x] APK bakes Cloud Run URL (`yarn cap:sync` / `SSC-BUILD-APK.bat`)
+- [ ] **Redeploy** latest `main` + `CONTACT_GRAPH_PEPPER` in `cloud_run.env` (see PRD deploy checklist)
 - [ ] Custom domain + Turnstile (~28 Jun)
-- [x] Sync PRD intro text (`memory/PRD.md` updated 24 Jun 2026)
+- [x] Sync PRD (`memory/PRD.md` — 24 Jun 2026, incl. deploy checklist)
 - [x] Automated smoke: `e2e_smoke.py` + Engine 1–5/8/9 gates + production `/api/health` (24 Jun 2026)
+- [x] Settings Security hub + 2FA wired (`SettingsModal` + `TwoFAModal`)
+- [x] First-run onboarding coach (3 steps)
 - [ ] Two-phone smoke: Signal chat + call + on-device translate (founder manual — APK on device)
 - [ ] TURN verification on cellular/Wi‑Fi mix (founder manual — same session as two-phone)
+- [ ] Reset 3 tester accounts after production redeploy (unified identity)
 
 ### P1 — Product / security
 - [x] Engine 8.9: Signal attachments (1:1 Android)
@@ -219,7 +223,7 @@ cd C:\Users\smash\SSC-main\backend
 | `e2e_smoke.py` | **PASS** (health, contacts, messages, files, statuses, panic wipe) |
 | Production `/api/health` | **PASS** (`env=production`, mongo + redis ok) |
 | WS fan-out | Redis pub-sub when `REDIS_URL` set · `ws_fanout` in `/api/health` |
-| Frontend tests | **23 passed** (`yarn test:ci`) |
+| Frontend tests | **26+ passed** (`yarn test:ci`) |
 | AGPL gate | **PASS** (`run_agpl_gate.py`) |
 | Engine 10 gate | **PASS** (`run_engine10_gate.py`) |
 | Unified identity gate | **PASS** (`run_unified_identity_gate.py`) |
@@ -260,3 +264,4 @@ cd C:\Users\smash\SSC-main\backend
 | 2026-06-24 | Web/PWA chat retired — download landing + `InstalledClientGate` |
 | 2026-06-24 | Unified identity — `identity_primary` signal_v1, prekeys required on installed clients |
 | 2026-06-24 | Contact graph privacy — blind seals, encrypted rosters, M4 closed |
+| 2026-06-24 | UX gaps — Settings Security + 2FA, onboarding coach, PRD sync, Engine 3 proof fix |

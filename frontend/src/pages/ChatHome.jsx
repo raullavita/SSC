@@ -14,6 +14,7 @@ import Message from '../components/Message';
 import PanicButton from '../components/PanicButton';
 import CallModal from '../components/CallModal';
 import SettingsModal from '../components/SettingsModal';
+import OnboardingCoach, { hasCompletedOnboarding } from '../components/OnboardingCoach';
 import CreateGroupModal from '../components/CreateGroupModal';
 import { useLocale } from '../context/LocaleContext';
 import { useMobileLayout } from '../lib/use-mobile';
@@ -86,6 +87,7 @@ export default function ChatHome() {
   const [typingFrom, setTypingFrom] = useState(null);
   const [callState, setCallState] = useState(null); // { mode, direction, peer, signal }
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
   const [storyGroup, setStoryGroup] = useState(null);
@@ -353,6 +355,13 @@ export default function ChatHome() {
       await loadConversations();
     } catch {}
   };
+
+  useEffect(() => {
+    if (!user?.user_id) return;
+    if (!hasCompletedOnboarding(user.user_id)) {
+      setOnboardingOpen(true);
+    }
+  }, [user?.user_id]);
 
   // Register push as soon as user is logged in (does not require vault unlock)
   useEffect(() => {
@@ -1300,6 +1309,11 @@ export default function ChatHome() {
         peer={peer}
       />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <OnboardingCoach
+        open={onboardingOpen}
+        userId={user?.user_id}
+        onComplete={() => setOnboardingOpen(false)}
+      />
       <CreateGroupModal open={groupOpen} onClose={() => setGroupOpen(false)} myUserId={user?.user_id}
         onCreated={(c) => { loadConversations(); goToConversation(c.conversation_id); }} />
 

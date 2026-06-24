@@ -113,7 +113,8 @@ def _check_engine3_gaps() -> ProofCheck:
 def _check_panic_wipe_scope() -> ProofCheck:
     ok = (
         "users" in PANIC_PRESERVE_COLLECTIONS
-        and "contacts" in PANIC_PRESERVE_COLLECTIONS
+        and "contact_seals" in PANIC_PRESERVE_COLLECTIONS
+        and "contact_rosters" in PANIC_PRESERVE_COLLECTIONS
         and "conversations" in PANIC_WIPE_COLLECTIONS
         and "messages" in PANIC_WIPE_COLLECTIONS
         and "files" in PANIC_WIPE_COLLECTIONS
@@ -121,7 +122,7 @@ def _check_panic_wipe_scope() -> ProofCheck:
     return ProofCheck(
         name="panic_wipe_scope",
         passed=ok,
-        detail="account + contacts preserved; chats/files wiped",
+        detail="account + blind contact graph preserved; chats/files wiped",
     )
 
 
