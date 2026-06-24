@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-24 (test drift fixed · automated smoke green · all gates pass)
+**Updated:** 2026-06-24 (roadmap cleanup · invite links retired · 2FA backups confirmed)
 **Repo:** `C:\Users\smash\SSC-main`  
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -28,7 +28,6 @@
 ```
 Engines 1–5 + 8 + 9  ✅ COMPLETE (gates pass)
 Engine 6             ⬜ PLANNED (push / own-metal)
-Engine 7             — (not defined)
 ```
 
 ### Engine 1 — Retention ✅
@@ -112,7 +111,7 @@ Details: `memory/SECURITY_MODEL.md`
 | Voice/video 1:1 + group (~6 mesh) | ✅ |
 | Stories 24h | ✅ |
 | Contacts + friend requests | ✅ |
-| 2FA TOTP | ✅ |
+| 2FA TOTP + backup codes | ✅ |
 | Panic wipe (keeps account + friends) | ✅ |
 | Push FCM + Web VAPID | ✅ |
 | PWA + Capacitor Android APK | ✅ |
@@ -166,6 +165,7 @@ cd C:\Users\smash\SSC-main\backend
 - [ ] Sync PRD intro text (still says RSA-only — see `memory/PRD.md` header note)
 - [x] Automated smoke: `e2e_smoke.py` + Engine 1–5/8/9 gates + production `/api/health` (24 Jun 2026)
 - [ ] Two-phone smoke: Signal chat + call + on-device translate (founder manual — APK on device)
+- [ ] TURN verification on cellular/Wi‑Fi mix (founder manual — same session as two-phone)
 
 ### P1 — Product / security
 - [x] Engine 8.9: Signal attachments (1:1 Android)
@@ -175,7 +175,6 @@ cd C:\Users\smash\SSC-main\backend
 - [ ] Engine 8.10: Signal on Web (blocked — official lib is Node-native)
 - [x] Engine 9: on-device translation (M5)
 - [ ] Unified identity (retire dual RSA + Curve25519)
-- [ ] TURN verification on cellular/Wi‑Fi mix
 - [ ] AGPL legal review
 
 ### P2 — Scale & polish
@@ -183,8 +182,8 @@ cd C:\Users\smash\SSC-main\backend
 - [ ] WebSocket Redis pub-sub (multi-worker)
 - [ ] SFU for group calls >6
 - [ ] iOS Capacitor ($99/yr)
-- [ ] 2FA backup codes
-- [ ] Invite links with handshake
+- [x] 2FA backup codes (10 codes on setup, login fallback, regenerate in UI)
+- [x] Invite links — **retired** (username search + friend requests sufficient)
 - [ ] Frontend automated tests (0 today)
 - [x] Remove dead shadcn `components/ui` scaffold
 
@@ -223,3 +222,4 @@ cd C:\Users\smash\SSC-main\backend
 | 2026-06-24 | Test drift fixed (3 policy assertions for 8.9–8.12 + Firebase App Distribution) |
 | 2026-06-24 | `e2e_smoke.py` panic-wipe check aligned with session revocation; smoke green |
 | 2026-06-24 | All Engine 1–5/8/9 gates pass; pytest 476/476 (1 skipped) |
+| 2026-06-24 | Roadmap cleanup: Engine 7 removed, 2FA backups marked done, invite links retired |
