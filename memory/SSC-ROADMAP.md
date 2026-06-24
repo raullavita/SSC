@@ -17,7 +17,7 @@
 4. **Release gate** — TASK I (QA matrix) must be green before Firebase testers beyond founder.
 
 **Current builds:** APK v1.0.4 build 6 · Windows `SSC-Setup-1.0.4.exe` · API `ssc-api-00012-bbc`
-**Last task completed:** TASK B — Session persistence (pending commit)
+**Last task completed:** TASK B — Session persistence (`98ee3bf`)
 **Next task:** TASK C — Real-time contacts & friend requests
 
 ---
