@@ -11,10 +11,12 @@ import Turnstile from '../components/Turnstile';
 import LanguagePicker from '../components/LanguagePicker';
 import { fetchGoogleConfig, signInWithGoogle } from '../lib/google-auth';
 import { LANGS } from '../lib/i18n';
+import { bootstrapSignalIdentity } from '../lib/signalIdentityBootstrap';
+import { isInstalledClient } from '../lib/platform';
 
 export default function Register() {
   const navigate = useNavigate();
-  const { loginWithToken, persistPrivateKey } = useAuth();
+  const { loginWithToken, persistPrivateKey, refreshUser } = useAuth();
   const { t, locale, setLocale } = useLocale();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -73,6 +75,13 @@ export default function Register() {
       await loginWithToken(data.token, data.user);
       const pk = await crypto.subtle.importKey('jwk', privateKeyJwk, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt']);
       await persistPrivateKey(pk);
+      if (isInstalledClient()) {
+        const boot = await bootstrapSignalIdentity(refreshUser);
+        if (!boot.ok) {
+          toast.error(t('signalIdentityRequired'));
+          return;
+        }
+      }
       toast.success(t('accountCreated'));
       navigate('/chat');
     } catch (err) {

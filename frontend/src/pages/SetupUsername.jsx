@@ -8,6 +8,8 @@ import { useLocale } from '../context/LocaleContext';
 
 import { generateRSAKeypair, wrapPrivateKey } from '../lib/crypto';
 import { LANGS } from '../lib/i18n';
+import { bootstrapSignalIdentity } from '../lib/signalIdentityBootstrap';
+import { isInstalledClient } from '../lib/platform';
 
 export default function SetupUsername() {
   const navigate = useNavigate();
@@ -61,6 +63,13 @@ export default function SetupUsername() {
       const pk = await crypto.subtle.importKey('jwk', privateKeyJwk, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt']);
       await persistPrivateKey(pk);
       await refreshUser();
+      if (isInstalledClient()) {
+        const boot = await bootstrapSignalIdentity(refreshUser);
+        if (!boot.ok) {
+          toast.error(t('signalIdentityRequired'));
+          return;
+        }
+      }
       toast.success(t('setupComplete'));
       navigate('/chat');
     } catch (err) {

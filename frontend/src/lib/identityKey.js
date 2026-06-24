@@ -34,8 +34,13 @@ export function resolveUserIdentity(user) {
     || user.signal_prekey_bundle?.identity_key_public
     || ''
   ).trim();
+  const signalPrimary = user.identity_primary === IDENTITY_KEY_TYPES.SIGNAL_V1
+    || user.signal_prekeys_ready;
   if (signalB64) {
     return { type: IDENTITY_KEY_TYPES.SIGNAL_V1, signalPublicB64: signalB64 };
+  }
+  if (signalPrimary) {
+    return null;
   }
   const jwk = parsePublicKeyJwk(user.public_key);
   if (!jwk) return null;

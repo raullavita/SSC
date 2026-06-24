@@ -52,7 +52,14 @@ async def upload_prekey_bundle(body: PrekeyBundleIn, current=Depends(get_current
 
     await db.users.update_one(
         {"user_id": current["user_id"]},
-        {"$set": {"signal_identity_key_public": doc["identity_key_public"], "signal_prekeys_ready": True}},
+        {
+            "$set": {
+                "signal_identity_key_public": doc["identity_key_public"],
+                "signal_prekeys_ready": True,
+                "identity_primary": "signal_v1",
+                "unified_identity_at": now,
+            }
+        },
     )
 
     return {

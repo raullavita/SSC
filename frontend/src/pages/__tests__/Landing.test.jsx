@@ -13,6 +13,12 @@ jest.mock('../../components/LanguagePicker', () => function LanguagePicker() {
   return <div data-testid="language-picker" />;
 });
 
+jest.mock('../../lib/platform', () => ({
+  isInstalledClient: jest.fn(() => true),
+}));
+
+const { isInstalledClient } = require('../../lib/platform');
+
 function renderLanding() {
   return render(
     <MemoryRouter>
@@ -24,12 +30,24 @@ function renderLanding() {
 }
 
 describe('Landing', () => {
-  it('renders SSC branding and primary CTAs', () => {
+  beforeEach(() => {
+    isInstalledClient.mockReturnValue(true);
+  });
+
+  it('renders SSC branding and primary CTAs on installed clients', () => {
     renderLanding();
     expect(screen.getByTestId('ssc-logo')).toBeInTheDocument();
     expect(screen.getByText('SSC')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: translate('landingLogin', 'en') })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: translate('landingRegister', 'en') })).toBeInTheDocument();
+  });
+
+  it('shows download panel in browser (no web chat)', () => {
+    isInstalledClient.mockReturnValue(false);
+    renderLanding();
+    expect(screen.getByTestId('landing-download-panel')).toBeInTheDocument();
+    expect(screen.getByText(translate('landingGetAndroid', 'en'))).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: translate('landingLogin', 'en') })).not.toBeInTheDocument();
   });
 
   it('shows core feature highlights', () => {

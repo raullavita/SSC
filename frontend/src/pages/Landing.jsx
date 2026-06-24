@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, Clock, Translate, Lightning, LockKey, Eye } from '@phosphor-icons/react';
+import { ShieldCheck, Clock, Translate, Lightning, LockKey, Eye, DeviceMobile, Desktop } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 import LanguagePicker from '../components/LanguagePicker';
+import { isInstalledClient } from '../lib/platform';
 
 export default function Landing() {
   const { t } = useLocale();
+  const installed = isInstalledClient();
 
   const features = [
     { icon: ShieldCheck, titleKey: 'landingFeatureE2eTitle', bodyKey: 'landingFeatureE2eBody' },
@@ -38,8 +40,12 @@ export default function Landing() {
           </div>
           <nav className="flex items-center gap-3">
             <LanguagePicker className="w-32 hidden sm:flex" />
-            <Link to="/login" data-testid="landing-login-link" className="px-4 py-2 text-sm text-[#A1A1AA] hover:text-white transition">{t('landingLogin')}</Link>
-            <Link to="/register" data-testid="landing-register-link" className="px-4 py-2 text-sm bg-[#00E5FF] text-black font-medium rounded-md hover:brightness-110 transition">{t('landingRegister')}</Link>
+            {installed ? (
+              <>
+                <Link to="/login" data-testid="landing-login-link" className="px-4 py-2 text-sm text-[#A1A1AA] hover:text-white transition">{t('landingLogin')}</Link>
+                <Link to="/register" data-testid="landing-register-link" className="px-4 py-2 text-sm bg-[#00E5FF] text-black font-medium rounded-md hover:brightness-110 transition">{t('landingRegister')}</Link>
+              </>
+            ) : null}
           </nav>
         </div>
       </header>
@@ -56,21 +62,41 @@ export default function Landing() {
               <span className="text-[#00E5FF]">{t('landingTitle2')}</span>
             </h1>
             <p className="mt-6 text-[#A1A1AA] text-lg max-w-xl leading-relaxed">
-              {t('landingSubtitle')}
+              {installed ? t('landingSubtitle') : t('landingDownloadSubtitle')}
             </p>
 
-            <div className="mt-10 flex flex-wrap gap-3">
-              <Link to="/register" data-testid="cta-create-account" className="px-6 py-3 bg-[#00E5FF] text-black font-medium rounded-md hover:brightness-110 transition">
-                {t('landingCtaCreate')}
-              </Link>
-              <Link to="/login" data-testid="cta-login" className="px-6 py-3 border border-[#27272A] bg-[#121212] hover:bg-[#1A1A1A] rounded-md transition">
-                {t('landingCtaLogin')}
-              </Link>
-            </div>
+            {installed ? (
+              <div className="mt-10 flex flex-wrap gap-3">
+                <Link to="/register" data-testid="cta-create-account" className="px-6 py-3 bg-[#00E5FF] text-black font-medium rounded-md hover:brightness-110 transition">
+                  {t('landingCtaCreate')}
+                </Link>
+                <Link to="/login" data-testid="cta-login" className="px-6 py-3 border border-[#27272A] bg-[#121212] hover:bg-[#1A1A1A] rounded-md transition">
+                  {t('landingCtaLogin')}
+                </Link>
+              </div>
+            ) : (
+              <div className="mt-10 space-y-3 max-w-lg" data-testid="landing-download-panel">
+                <p className="text-sm text-[#A1A1AA]">{t('landingDownloadBody')}</p>
+                <div className="p-4 rounded-md tac-border bg-[#121212] flex items-start gap-3">
+                  <DeviceMobile size={22} className="text-[#00E5FF] shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium">{t('landingGetAndroid')}</div>
+                    <p className="text-xs text-[#A1A1AA] mt-1">{t('landingGetAndroidHint')}</p>
+                  </div>
+                </div>
+                <div className="p-4 rounded-md tac-border bg-[#121212] flex items-start gap-3">
+                  <Desktop size={22} className="text-[#00E5FF] shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-medium">{t('landingGetWindows')}</div>
+                    <p className="text-xs text-[#A1A1AA] mt-1">{t('landingGetWindowsHint')}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-            <div className="mt-8 flex items-center gap-6 text-xs font-mono text-[#A1A1AA] uppercase tracking-[0.2em]">
-              <span className="flex items-center gap-1.5"><ShieldCheck size={14} /> AES-256-GCM</span>
-              <span className="flex items-center gap-1.5"><LockKey size={14} /> RSA-OAEP 2048</span>
+            <div className="mt-8 flex items-center gap-6 text-xs font-mono text-[#A1A1AA] uppercase tracking-[0.2em] flex-wrap">
+              <span className="flex items-center gap-1.5"><ShieldCheck size={14} /> {installed ? 'libsignal' : 'Signal-grade'}</span>
+              <span className="flex items-center gap-1.5"><LockKey size={14} /> E2E</span>
               <span className="flex items-center gap-1.5"><Eye size={14} /> Zero-knowledge</span>
             </div>
           </div>

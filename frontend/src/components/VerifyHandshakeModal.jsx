@@ -91,7 +91,7 @@ export default function VerifyHandshakeModal({ open, onClose, me, peer }) {
     toast.message('Verification cleared');
   };
 
-  const keyLabel = keyType === IDENTITY_KEY_TYPES.SIGNAL_V1 ? 'SIGNAL IDENTITY' : 'RSA (legacy — upgrades in 8.3)';
+  const keyLabel = keyType === IDENTITY_KEY_TYPES.SIGNAL_V1 ? 'SIGNAL IDENTITY' : 'RSA (vault legacy)';
 
   if (!open) return null;
   return (

@@ -39,7 +39,6 @@ app.add_middleware(
 # ─── Backward-compatible re-exports (tests, scripts) ─────────────────────────
 from core.auth import decode_jwt, get_current_user, make_jwt  # noqa: E402
 from core.contact_helpers import are_contacts, get_user_public, has_shared_conv  # noqa: E402
-from core.models import CreateInviteIn  # noqa: E402
 from core.push_helpers import (  # noqa: E402
     send_push_for_call,
     send_push_for_friend_accept,
@@ -68,7 +67,6 @@ __all__ = [
     "has_shared_conv",
     "get_user_public",
     "broadcast_to_conversation",
-    "CreateInviteIn",
     "send_push_for_message",
     "send_push_for_call",
     "send_push_for_friend_request",

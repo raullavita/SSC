@@ -105,8 +105,8 @@ Engine 10            ✅ DESKTOP (Windows installer · Mac dmg config · libsign
 
 **Product surfaces:** Android APK · Windows `.exe` · Mac `.dmg` (build on Mac) · iOS deferred.
 
-**Next crypto / identity (P1):**
-1. [ ] **Unified identity** — libsignal curve primary; reset 3 tester accounts OK
+**Next (P1):**
+1. [x] **Unified identity** — libsignal curve primary (`memory/UNIFIED_IDENTITY_CHARTER.md`)
 2. [ ] **Contacts graph privacy** — server must not see who is friends with whom
 
 Details: `memory/SECURITY_MODEL.md`
@@ -128,7 +128,7 @@ Details: `memory/SECURITY_MODEL.md`
 | Capacitor Android APK | ✅ |
 | Windows desktop (Electron + libsignal) | ✅ |
 | Mac desktop (`.dmg` on macOS) | ✅ config · build on Mac |
-| Web / PWA in browser | ⬜ **Not a product** — dev/landing only (RSA) |
+| Web / PWA in browser | ✅ **Retired as product** — download landing only (`InstalledClientGate`) |
 | Google OAuth (web + native) | ✅ configured |
 | Translation | ✅ On-device (Android ML Kit); server off by default |
 | iOS app | ⬜ Deferred · scaffold exists (`frontend/ios/`) |
@@ -144,7 +144,7 @@ Details: `memory/SECURITY_MODEL.md`
 |----|------|----------|--------|
 | M4 | Contacts graph server metadata | **High — fix** (staff-blind graph) | 11+ |
 | S3 | Native session lost on force-close | Low (accepted) | 5 doc |
-| — | Unified identity (RSA + Curve25519) | **High** | P1 |
+
 | — | iOS libsignal + App Store | Deferred | — |
 
 
@@ -189,7 +189,8 @@ cd C:\Users\smash\SSC-main\backend
 - [x] Engine 8.10: Signal on Web — **retired** (Engine 10 desktop instead)
 - [x] Engine 9: on-device translation (M5)
 - [x] Engine 10: Windows + Mac desktop (`memory/DESKTOP_CLIENT_CHARTER.md`)
-- [ ] Unified identity (libsignal curve primary · 3 testers)
+- [x] Unified identity (libsignal curve primary · prekeys required · `run_unified_identity_gate.py`)
+- [x] Web/PWA product retired — browser shows download-only landing; chat/register gated
 - [ ] Contacts graph privacy (server-blind friend graph)
 - [x] AGPL legal review (`memory/AGPL_COMPLIANCE.md`, `LICENSE`, in-app source offer)
 - [x] Group video cap **8** (mesh; SFU for 9+ deferred to domain ~28 Jun)
@@ -210,17 +211,18 @@ cd C:\Users\smash\SSC-main\backend
 
 | Metric | Value |
 |--------|-------|
-| pytest collected | **477** |
-| pytest result | **476 passed**, 1 skipped, 0 failed |
+| pytest collected | **517** |
+| pytest result | **516 passed**, 1 skipped, 0 failed |
 | Engine 1–5 gates | **PASS** |
 | Engine 8 gate | **PASS** (54 unit + 10 integration + proof through 8.12) |
 | Engine 9 gate | **PASS** |
 | `e2e_smoke.py` | **PASS** (health, contacts, messages, files, statuses, panic wipe) |
 | Production `/api/health` | **PASS** (`env=production`, mongo + redis ok) |
 | WS fan-out | Redis pub-sub when `REDIS_URL` set · `ws_fanout` in `/api/health` |
-| Frontend tests | **22 passed** (`yarn test:ci` — platform + groupCalls cap 8) |
+| Frontend tests | **23 passed** (`yarn test:ci`) |
 | AGPL gate | **PASS** (`run_agpl_gate.py`) |
 | Engine 10 gate | **PASS** (`run_engine10_gate.py`) |
+| Unified identity gate | **PASS** (`run_unified_identity_gate.py`) |
 
 ---
 
@@ -254,3 +256,5 @@ cd C:\Users\smash\SSC-main\backend
 | 2026-06-24 | Installed-clients-only product strategy — Web/PWA retired as product surface |
 | 2026-06-24 | Engine 10 — Electron desktop + libsignal (Windows NSIS · Mac dmg config) |
 | 2026-06-24 | Group video mesh cap raised to **8**; contacts privacy + unified identity locked P1 |
+| 2026-06-24 | Web/PWA chat retired — download landing + `InstalledClientGate` |
+| 2026-06-24 | Unified identity — `identity_primary` signal_v1, prekeys required on installed clients |

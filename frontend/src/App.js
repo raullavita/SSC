@@ -10,7 +10,10 @@ import AuthCallback from './pages/AuthCallback';
 import GoogleAuthCallback from './pages/GoogleAuthCallback';
 import ChatHome from './pages/ChatHome';
 import Landing from './pages/Landing';
+import InstalledClientGate from './components/InstalledClientGate';
 import { hideNativeSplash } from './lib/capacitor-init';
+import { isInstalledClient } from './lib/platform';
+import { bootstrapSignalIdentity, userHasUnifiedIdentity } from './lib/signalIdentityBootstrap';
 import './App.css';
 
 /** Dismiss native splash after auth bootstrap + first paint. */
@@ -27,12 +30,33 @@ function NativeBootGate({ children }) {
 }
 
 function Protected({ children }) {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
   const { t } = useLocale();
   const location = useLocation();
-  if (loading) return <div className="mobile-shell flex items-center justify-center bg-[#0A0A0A] text-[#A1A1AA] font-mono text-xs safe-top safe-bottom">{t('initializing')}</div>;
+  const [identityBoot, setIdentityBoot] = React.useState(isInstalledClient() ? 'pending' : 'done');
+
+  React.useEffect(() => {
+    if (!user || !isInstalledClient() || identityBoot !== 'pending') return;
+    let cancelled = false;
+    bootstrapSignalIdentity(refreshUser).then((res) => {
+      if (cancelled) return;
+      setIdentityBoot(res.ok ? 'done' : 'failed');
+    });
+    return () => { cancelled = true; };
+  }, [user, refreshUser, identityBoot]);
+
+  if (loading || identityBoot === 'pending') {
+    return <div className="mobile-shell flex items-center justify-center bg-[#0A0A0A] text-[#A1A1AA] font-mono text-xs safe-top safe-bottom">{t('initializing')}</div>;
+  }
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
   if (!user.username || !user.public_key) return <Navigate to="/setup" replace />;
+  if (isInstalledClient() && !userHasUnifiedIdentity(user)) {
+    return (
+      <div className="mobile-shell flex items-center justify-center bg-[#0A0A0A] text-[#A1A1AA] font-mono text-xs p-6 text-center safe-top safe-bottom">
+        {t('signalIdentityRequired')}
+      </div>
+    );
+  }
   return children;
 }
 
@@ -45,12 +69,12 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/auth/google" element={<GoogleAuthCallback />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/setup" element={<SetupUsername />} />
-      <Route path="/chat" element={<Protected><ChatHome /></Protected>} />
-      <Route path="/chat/:conversationId" element={<Protected><ChatHome /></Protected>} />
+      <Route path="/login" element={<InstalledClientGate><Login /></InstalledClientGate>} />
+      <Route path="/auth/google" element={<InstalledClientGate><GoogleAuthCallback /></InstalledClientGate>} />
+      <Route path="/register" element={<InstalledClientGate><Register /></InstalledClientGate>} />
+      <Route path="/setup" element={<InstalledClientGate><SetupUsername /></InstalledClientGate>} />
+      <Route path="/chat" element={<InstalledClientGate><Protected><ChatHome /></Protected></InstalledClientGate>} />
+      <Route path="/chat/:conversationId" element={<InstalledClientGate><Protected><ChatHome /></Protected></InstalledClientGate>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

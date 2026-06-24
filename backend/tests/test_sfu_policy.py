@@ -7,9 +7,9 @@ from core.sfu_policy import (
 )
 
 
-def test_mesh_cap_is_six():
-    assert mesh_participant_cap() == 6
-    assert MESH_MAX_PARTICIPANTS == 6
+def test_mesh_cap_is_eight():
+    assert mesh_participant_cap() == 8
+    assert MESH_MAX_PARTICIPANTS == 8
 
 
 def test_group_calls_config_mesh_by_default(monkeypatch):
@@ -19,7 +19,7 @@ def test_group_calls_config_mesh_by_default(monkeypatch):
     assert cfg["mode"] == "mesh"
     assert cfg["sfu_enabled"] is False
     assert cfg["sfu_url"] is None
-    assert cfg["max_mesh_participants"] == 6
+    assert cfg["max_mesh_participants"] == 8
     assert cfg["selected_stack"] == SELECTED_SFU_STACK
 
 
@@ -38,4 +38,4 @@ def test_sfu_charter_exists():
         encoding="utf-8"
     )
     assert "mediasoup" in text
-    assert "6" in text
+    assert "8" in text

@@ -4,12 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@/index.css';
 import App from '@/App';
 import { initCapacitor } from '@/lib/capacitor-init';
-import { supportsWebPush } from '@/lib/platform';
+import { isBrowserDevAllowed, supportsWebPush } from '@/lib/platform';
 
 initCapacitor();
 
-// PWA only — skip service worker in Capacitor native WebView (avoids conflicts)
-if (supportsWebPush()) {
+// Web push only for founder browser-dev mode — not a public product surface
+if (isBrowserDevAllowed() && supportsWebPush()) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });

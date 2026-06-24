@@ -53,3 +53,8 @@ export function getBackendUrl() {
 export function supportsWebPush() {
   return !isNativeApp() && 'serviceWorker' in navigator && 'PushManager' in window;
 }
+
+/** Founder-only: allow browser-tab chat on localhost when REACT_APP_BROWSER_DEV=true */
+export function isBrowserDevAllowed() {
+  return process.env.REACT_APP_BROWSER_DEV === 'true';
+}
