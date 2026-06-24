@@ -122,7 +122,7 @@ Details: `memory/SECURITY_MODEL.md`
 | Translation | ✅ On-device (Android ML Kit); server off by default |
 | iOS app | ✅ Scaffolded (`frontend/ios/`) · build requires Mac + $99/yr |
 | Custom domain + Turnstile | ⬜ ~28 Jun 2026 |
-| Play Store public | ⬜ AGPL review + listing |
+| Play Store public | ⬜ Listing (AGPL review ✅) |
 | TURN self-host (off-LAN calls) | ⬜ Credentials exist; verify on phone |
 
 ---
@@ -135,7 +135,7 @@ Details: `memory/SECURITY_MODEL.md`
 | S3 | Native session lost on force-close | Medium | 5 doc |
 | — | Signal on Web | High | 8.10 (blocked — no official WASM) |
 | — | Unified identity (RSA + Curve25519) | Medium | 8+ |
-| — | AGPL compliance before public Play | High | Legal |
+
 
 **Closed:** G6, G9, C8, M5
 
@@ -178,7 +178,7 @@ cd C:\Users\smash\SSC-main\backend
 - [ ] Engine 8.10: Signal on Web (blocked — official lib is Node-native)
 - [x] Engine 9: on-device translation (M5)
 - [ ] Unified identity (retire dual RSA + Curve25519)
-- [ ] AGPL legal review
+- [x] AGPL legal review (`memory/AGPL_COMPLIANCE.md`, `LICENSE`, in-app source offer)
 
 ### P2 — Scale & polish
 - [x] Engine 6 evaluation (push + own-metal — charter + gate; migration deferred)
@@ -204,7 +204,8 @@ cd C:\Users\smash\SSC-main\backend
 | `e2e_smoke.py` | **PASS** (health, contacts, messages, files, statuses, panic wipe) |
 | Production `/api/health` | **PASS** (`env=production`, mongo + redis ok) |
 | WS fan-out | Redis pub-sub when `REDIS_URL` set · `ws_fanout` in `/api/health` |
-| Frontend tests | **17 passed** (`yarn test:ci` — includes groupCalls) |
+| Frontend tests | **20 passed** (`yarn test:ci` — includes openSourceLicenses) |
+| AGPL gate | **PASS** (`run_agpl_gate.py`) |
 
 ---
 
@@ -234,3 +235,4 @@ cd C:\Users\smash\SSC-main\backend
 | 2026-06-24 | WebSocket Redis pub-sub — multi-worker fan-out + push offline fix |
 | 2026-06-24 | SFU Phase A — mediasoup selected; config + mesh cap; deploy deferred |
 | 2026-06-24 | iOS Capacitor scaffold — `frontend/ios/` + IOS_CAPACITOR_CHARTER.md |
+| 2026-06-24 | AGPL legal review — LICENSE, THIRD_PARTY_NOTICES, compliance doc, in-app source offer, gate |

@@ -95,9 +95,9 @@ Only these sources may be used for Signal Protocol implementation.
 | **Web / PWA** | `@signalapp/libsignal-client` (evaluate WASM/bridge in step 8.3) |
 | **Backend** | **No libsignal on server** — store public prekey bundles only |
 
-### 4.4 License (AGPL-3.0) — founder must know
+### 4.4 License (AGPL-3.0)
 
-libsignal is **AGPL-3.0**. Distributing SSC linked with libsignal may require offering corresponding source to users who receive the app. Plan legal review before Play Store public launch. Does **not** block development or private beta.
+libsignal is **AGPL-3.0**. The conveyed **Android APK** (Play Store, Firebase App Distribution) is licensed under AGPL-3.0 with corresponding source at `https://github.com/raullavita/SSC`. See **`memory/AGPL_COMPLIANCE.md`**, root `LICENSE`, `THIRD_PARTY_NOTICES.md`, and in-app Settings → Open source. Does **not** block development or private beta when source offer is maintained.
 
 ---
 

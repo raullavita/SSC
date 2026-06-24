@@ -100,7 +100,7 @@ See `memory/SSC-ROADMAP.md` for gate status and remaining work.
 - **Two-phone smoke + TURN verification** (founder manual)
 - **Signal on Web** (8.10) — blocked until Signal ships browser WASM
 - **Unified identity** — retire dual RSA + Curve25519 registration
-- **AGPL legal review** before public Play Store
+- ~~**AGPL legal review**~~ ✅ (`memory/AGPL_COMPLIANCE.md`, `LICENSE`, in-app source offer)
 - **WebSocket Redis pub-sub** (multi-worker Cloud Run)
 - **SFU** for group calls >6 (mediasoup / LiveKit)
 - **iOS Capacitor** ($99/yr + Mac)

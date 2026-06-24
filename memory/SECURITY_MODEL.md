@@ -112,7 +112,7 @@ UI labels: **SIG** (green) vs **RSA** (yellow) on messages and composer hints.
 
 | Item | Status |
 |------|--------|
-| libsignal | Official `@signalapp` / `org.signal` only · **AGPL-3.0** — legal review before public Play |
+| libsignal | Official `@signalapp` / `org.signal` only · **AGPL-3.0** — compliance complete (`memory/AGPL_COMPLIANCE.md`) |
 | Google OAuth / FCM / Firebase | Configured · project `super-chat-b0992` |
 | Mongo Atlas | Production database |
 | Translation | Android: Google ML Kit on-device · Server: MyMemory (dev only, disabled in prod) |

@@ -30,7 +30,7 @@ Full-mesh means each participant opens N−1 peer connections — workable to ~6
 
 | Option | Verdict | Notes |
 |--------|---------|-------|
-| **mediasoup** (self-host) | ✅ **Selected for SSC** | AGPL-friendly stack; Node/Rust SFU; pairs with existing WebRTC client |
+| **mediasoup** (self-host) | ✅ **Selected for SSC** | AGPL-3.0 (same copyleft family as libsignal); Node/Rust SFU; pairs with existing WebRTC client |
 | **LiveKit Cloud** | ⬜ Deferred | Faster to ship but SaaS cost + egress; revisit if self-host ops too heavy |
 | **Jitsi embed** | ❌ Rejected | UX/branding mismatch; heavy iframe model |
 

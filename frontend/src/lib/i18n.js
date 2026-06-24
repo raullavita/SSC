@@ -165,6 +165,9 @@ const STRINGS = {
     settingsAccount: 'Account',
     settingsSave: 'Save language',
     settingsSaved: 'Language updated',
+    settingsOpenSource: 'Open source',
+    settingsOpenSourceHint: 'SSC is open source. Download the corresponding source for the app you use.',
+    settingsOpenSourcePlanned: 'planned',
 
     // Contacts modal
     contactsTitle: 'CONTACTS',
@@ -379,6 +382,9 @@ const STRINGS = {
     settingsAccount: 'Cuenta',
     settingsSave: 'Guardar idioma',
     settingsSaved: 'Idioma actualizado',
+    settingsOpenSource: 'Código abierto',
+    settingsOpenSourceHint: 'SSC es código abierto. Descarga el código fuente correspondiente a tu app.',
+    settingsOpenSourcePlanned: 'planificado',
 
     contactsTitle: 'CONTACTOS',
     tabAdd: 'AÑADIR',
@@ -590,6 +596,9 @@ const STRINGS = {
     settingsAccount: 'Cont',
     settingsSave: 'Salvează limba',
     settingsSaved: 'Limba a fost actualizată',
+    settingsOpenSource: 'Open source',
+    settingsOpenSourceHint: 'SSC este open source. Descarcă codul sursă corespunzător aplicației tale.',
+    settingsOpenSourcePlanned: 'planificat',
 
     contactsTitle: 'CONTACTE',
     tabAdd: 'ADAUGĂ',

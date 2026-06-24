@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { X, Gear, Translate } from '@phosphor-icons/react';
+import { X, Gear, Translate, Code } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { LANGS } from '../lib/i18n';
+import {
+  COPYLEFT_NOTICES,
+  SSC_LICENSE_LABEL,
+  SSC_SOURCE_REPO_URL,
+} from '../lib/openSourceLicenses';
 
 export default function SettingsModal({ open, onClose }) {
   const { user, refreshUser } = useAuth();
@@ -74,6 +79,42 @@ export default function SettingsModal({ open, onClose }) {
         >
           {t('settingsSave').toUpperCase()}
         </button>
+
+        <div className="mt-6 pt-4 border-t border-[#27272A]" data-testid="settings-open-source">
+          <div className="flex items-center gap-2 mb-2">
+            <Code size={14} className="text-[#00E5FF]" />
+            <span className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#A1A1AA]">
+              {t('settingsOpenSource')}
+            </span>
+          </div>
+          <p className="text-[10px] text-[#A1A1AA] normal-case tracking-normal mb-2">
+            {t('settingsOpenSourceHint')}
+          </p>
+          <p className="text-[10px] font-mono text-[#71717A] mb-2">{SSC_LICENSE_LABEL}</p>
+          <a
+            href={SSC_SOURCE_REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-[#00E5FF] hover:underline break-all"
+            data-testid="settings-source-link"
+          >
+            {SSC_SOURCE_REPO_URL}
+          </a>
+          <ul className="mt-3 space-y-2">
+            {COPYLEFT_NOTICES.map((n) => (
+              <li key={n.id} className="text-[10px] text-[#A1A1AA]">
+                <a href={n.url} target="_blank" rel="noopener noreferrer" className="text-[#F0F0F0] hover:text-[#00E5FF]">
+                  {n.name}
+                </a>
+                {' · '}
+                {n.version}
+                {' · '}
+                {n.license}
+                {!n.shippedInAndroid ? ` · ${t('settingsOpenSourcePlanned')}` : ''}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );
