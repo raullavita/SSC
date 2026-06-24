@@ -75,7 +75,7 @@
 
 | Metric | Value |
 |--------|-------|
-| pytest | **544 passed**, 1 skipped (after test fixes) |
+| pytest | **543 passed**, 1 failed (live API integration), 1 skipped |
 | Engine 1–5, 8, 9, 10 gates | **PASS** |
 | Unified identity + contacts graph gates | **PASS** |
 | Production `/api/health` | **PASS** (`mongo` ok · `redis` ok · `ws_fanout` redis) |
