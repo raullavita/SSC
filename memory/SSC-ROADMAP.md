@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-24 (TASK E complete · TASK D · G · C · B · A)
+**Updated:** 2026-06-24 (TASK F complete · TASK E · D · G · C · B · A)
 **Repo:** `C:\Users\smash\SSC-main`
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -17,8 +17,8 @@
 4. **Release gate** — TASK I (QA matrix) must be green before Firebase testers beyond founder.
 
 **Current builds:** APK v1.0.4 build 6 · Windows `SSC-Setup-1.0.4.exe` · API `ssc-api-00012-bbc`
-**Last task completed:** TASK E — Attachments & media
-**Next task:** TASK F — Chat actions & groups
+**Last task completed:** TASK F — Chat actions & groups
+**Next task:** Batch rebuild + founder QA (tasks A–F) · then TASK H / I per roadmap
 
 ---
 
@@ -79,7 +79,7 @@
 | Engine 1–5, 8, 9, 10 gates | **PASS** |
 | Unified identity + contacts graph gates | **PASS** |
 | `e2e_smoke.py` + production `/api/health` | **PASS** |
-| Frontend `yarn test:ci` | **62 passed** |
+| Frontend `yarn test:ci` | **67 passed** |
 
 ---
 
@@ -188,17 +188,19 @@
 
 ---
 
-### TASK F — Chat actions & groups · P0-7, P0-8
+### TASK F — Chat actions & groups · ✅ DONE (24 Jun 2026)
 
 **Goal:** Block, mute, group create work on all clients.
 
 | ID | Subtask | Files / notes | Status |
 |----|---------|---------------|--------|
-| F.1 | **Block** — API call + hide thread + reject inbound | `ChatHome.jsx`, backend block endpoints | [ ] |
-| F.2 | **Mute** — persist per-conversation; silence push | Settings / conversation menu | [ ] |
-| F.3 | **Create group** — fix Create button (API + navigation) | Group create modal, `conversations.py` | [ ] |
-| F.4 | **Group naming** (P1-4) — require title or auto “Alice, Bob +N” | Create flow + list display | [ ] |
-| F.5 | QA: block/mute on PC + phone; create 2-member group; send message | Two devices | [ ] |
+| F.1 | **Block** — API call + hide thread + reject inbound | `contactFilters.js`, `messages.py` block check, leave chat on block | [x] |
+| F.2 | **Mute** — persist per-conversation; silence push | `toggleMute` toasts; sidebar muted badge; backend `is_muted_pair` (existing) | [x] |
+| F.3 | **Create group** — fix Create button (API + navigation) | Contacts-only picker; min 1 member (2-person group); `conversations.py` | [x] |
+| F.4 | **Group naming** (P1-4) — require title or auto “Alice, Bob +N” | `groupDisplayLabel.js` + optional local title in `groupLabels.js` | [x] |
+| F.5 | QA: block/mute on PC + phone; create 2-member group; send message | smashmaxxx ↔ dots after rebuild | [ ] |
+
+**Root cause fixed:** Group create required 3+ members; picker searched all users not contacts only.
 
 ---
 

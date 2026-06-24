@@ -308,14 +308,18 @@ def test_group_create_unknown_user_returns_404():
     assert "unknown" in r.text.lower()
 
 
-def test_group_needs_at_least_3_total_members():
+def test_group_two_member_create_success():
     token = state["u1_token"]
     r = requests.post(
         f"{API}/conversations",
         json={"is_group": True, "peer_usernames": [USERS["u2"]["username"]], "name": "Tiny"},
         headers=auth_headers(token),
     )
-    assert r.status_code == 400, r.text
+    assert r.status_code == 200, r.text
+    conv = r.json()
+    assert conv.get("is_group") is True
+    assert len(conv.get("participants", [])) == 2
+    assert "name" not in conv
 
 
 def test_group_create_success():

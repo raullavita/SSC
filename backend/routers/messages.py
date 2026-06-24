@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import get_current_user
 from core.contact_helpers import are_contacts
+from core.contact_graph import is_blocked_pair
 from core.database import db
 from core.logging_config import logger
 from core.models import MarkReadIn, SendMessageIn
@@ -29,6 +30,8 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
 
     if not conv.get("is_group") and len(conv.get("participants", [])) == 2:
         other = [p for p in conv["participants"] if p != current["user_id"]][0]
+        if await is_blocked_pair(current["user_id"], other):
+            raise HTTPException(403, "Cannot message this user — blocked")
         if not await are_contacts(current["user_id"], other):
             raise HTTPException(403, "Contact required to message this user")
 

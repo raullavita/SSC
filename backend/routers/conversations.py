@@ -52,8 +52,8 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
         for p in peers:
             if not await are_contacts(current["user_id"], p["user_id"]):
                 raise HTTPException(403, f"Must be mutual contacts with {p['username']} to add to group")
-        if len(peers) < 2:
-            raise HTTPException(400, "Group needs at least 2 other participants")
+        if len(peers) < 1:
+            raise HTTPException(400, "Group needs at least 1 other participant")
         participants = sorted({current["user_id"], *[p["user_id"] for p in peers]})
         created = now_utc()
         conv = {

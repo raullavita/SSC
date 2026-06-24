@@ -42,6 +42,13 @@ import {
   startVoiceRecording,
   voiceFilenameForMime,
 } from '../lib/voiceRecorder';
+import {
+  isPeerBlocked,
+  isPeerMuted,
+  visibleConversations,
+} from '../lib/contactFilters';
+import { formatGroupConversationLabel } from '../lib/groupDisplayLabel';
+import { clearLocalGroupLabels } from '../lib/groupLabels';
 
 import { registerMemoryWipeHandler, registerSocketCloser } from '../lib/memoryWipe';
 import { getSessionToken } from '../lib/sessionStore';
@@ -126,6 +133,7 @@ export default function ChatHome() {
       setCallState(null);
       setGroupCallState(null);
       stopIncomingRingtone();
+      clearLocalGroupLabels();
       setActiveId(null);
     });
     return () => {
@@ -134,11 +142,22 @@ export default function ChatHome() {
     };
   }, []);
 
-  const activeConv = useMemo(() => conversations.find((c) => c.conversation_id === activeId), [conversations, activeId]);
+  const sidebarConversations = useMemo(
+    () => visibleConversations(conversations, myContacts),
+    [conversations, myContacts],
+  );
+
+  const activeConv = useMemo(
+    () => sidebarConversations.find((c) => c.conversation_id === activeId)
+      || conversations.find((c) => c.conversation_id === activeId),
+    [sidebarConversations, conversations, activeId],
+  );
   const peer = activeConv?.peer;
   const isGroup = !!activeConv?.is_group;
   const { t } = useLocale();
-  const headerTitle = isGroup ? (activeConv?.display_label || t('group')) : (peer ? `@${peer.username}` : '');
+  const headerTitle = isGroup
+    ? (formatGroupConversationLabel(activeConv) || t('group'))
+    : (peer ? `@${peer.username}` : '');
   const isMobile = useMobileLayout();
   const showList = !isMobile || !activeId;
   const showChatPanel = !isMobile || !!activeId;
@@ -443,30 +462,38 @@ export default function ChatHome() {
   };
 
   const toggleBlock = async (uid) => {
-    const c = myContacts.find(x => x.user_id === uid);
+    const c = myContacts.find((x) => x.user_id === uid);
     if (!c) return;
+    const wasBlocked = c.blocked;
     try {
-      if (c.blocked) {
+      if (wasBlocked) {
         await api.post(`/contacts/${uid}/unblock`);
       } else {
         await api.post(`/contacts/${uid}/block`);
       }
       await loadMyContacts();
+      await loadConversations();
+      toast.success(wasBlocked ? t('contactUnblocked') : t('contactBlocked'));
+      if (!wasBlocked && peer?.user_id === uid) {
+        leaveChat();
+      }
     } catch (e) {
       toast.error(e?.response?.data?.detail || t('couldNotUpdateContact'));
     }
   };
 
   const toggleMute = async (uid) => {
-    const c = myContacts.find(x => x.user_id === uid);
+    const c = myContacts.find((x) => x.user_id === uid);
     if (!c) return;
+    const wasMuted = c.muted;
     try {
-      if (c.muted) {
+      if (wasMuted) {
         await api.post(`/contacts/${uid}/unmute`);
       } else {
         await api.post(`/contacts/${uid}/mute`);
       }
       await loadMyContacts();
+      toast.success(wasMuted ? t('contactUnmuted') : t('contactMuted'));
     } catch (e) {
       toast.error(e?.response?.data?.detail || t('couldNotUpdateContact'));
     }
@@ -707,6 +734,10 @@ export default function ChatHome() {
   const sendMessage = async (text, type = 'text', attachmentId = null, attachmentEnc = null) => {
     if (!activeConv) return;
     if (!text && !attachmentId) return;
+    if (!isGroup && peer && isPeerBlocked(peer.user_id, myContacts)) {
+      toast.error(t('cannotMessageBlocked'));
+      return;
+    }
     try {
       const useSignal = await shouldSendWithSignal({
         isGroup,
@@ -907,6 +938,10 @@ export default function ChatHome() {
 
   // ─── Calls ───
   const startCall = async (mode) => {
+    if (!isGroup && peer && isPeerBlocked(peer.user_id, myContacts)) {
+      toast.error(t('cannotMessageBlocked'));
+      return;
+    }
     const ok = await ensureMediaPermissions(
       { audio: true, video: mode === 'video' },
       { t },
@@ -1073,7 +1108,9 @@ export default function ChatHome() {
               <p className="mt-2 normal-case font-sans tracking-normal">{t('noConversationsHint')}</p>
             </div>
           )}
-          {conversations.map((c) => (
+          {sidebarConversations.map((c) => {
+            const peerMuted = !c.is_group && isPeerMuted(c.peer?.user_id, myContacts);
+            return (
             <button key={c.conversation_id}
               data-testid={`conversation-${c.conversation_id}`}
               onClick={() => goToConversation(c.conversation_id)}
@@ -1087,7 +1124,8 @@ export default function ChatHome() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium truncate">
-                    {c.is_group ? (c.display_label || t('group')) : `@${c.peer?.username}`}
+                    {c.is_group ? (formatGroupConversationLabel(c) || t('group')) : `@${c.peer?.username}`}
+                    {peerMuted && <span className="text-[#A1A1AA] font-mono text-[10px] ml-1">· {t('muted')}</span>}
                   </span>
                   <span className="text-[10px] font-mono text-[#A1A1AA]">
                     {c.is_group ? `${c.participants.length}P` : c.peer?.language?.toUpperCase()}
@@ -1098,7 +1136,8 @@ export default function ChatHome() {
                 </div>
               </div>
             </button>
-          ))}
+            );
+          })}
         </div>
       </aside>
 
@@ -1446,8 +1485,13 @@ export default function ChatHome() {
         userId={user?.user_id}
         onComplete={() => setOnboardingOpen(false)}
       />
-      <CreateGroupModal open={groupOpen} onClose={() => setGroupOpen(false)} myUserId={user?.user_id}
-        onCreated={(c) => { loadConversations(); goToConversation(c.conversation_id); }} />
+      <CreateGroupModal
+        open={groupOpen}
+        onClose={() => setGroupOpen(false)}
+        myUserId={user?.user_id}
+        contacts={myContacts}
+        onCreated={(c) => { loadConversations(); goToConversation(c.conversation_id); }}
+      />
 
       {storyGroup && (
         <StoryViewer group={storyGroup} me={user} privateKey={privateKey} onClose={() => setStoryGroup(null)} />
