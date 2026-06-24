@@ -6,7 +6,6 @@ import { api, API } from '../lib/api';
 import { isNativeApp } from '../lib/platform';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
-import { getPendingInvite } from '../lib/invites';
 import Turnstile from '../components/Turnstile';
 import LanguagePicker from '../components/LanguagePicker';
 import { fetchGoogleConfig, signInWithGoogle } from '../lib/google-auth';
@@ -48,8 +47,7 @@ export default function Login() {
         toast.error(t('unlockFailed'));
       }
       toast.success(t('welcomeBack'));
-      const pendingInvite = getPendingInvite();
-      navigate(pendingInvite ? `/invite/${pendingInvite}` : '/chat');
+      navigate('/chat');
     } catch (err) {
       const detail = err?.response?.data?.detail;
       if (err?.response?.headers?.['x-requires-2fa'] === '1' || /2fa/i.test(detail || '')) {
@@ -72,7 +70,6 @@ export default function Login() {
     await signInWithGoogle({
       loginWithToken,
       navigate,
-      getPendingInvite,
       onBusy: setBusy,
       onError: (msg) => toast.error(msg || t('googleSignInFailed')),
     });

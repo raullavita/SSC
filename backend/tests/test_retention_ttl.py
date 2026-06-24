@@ -61,7 +61,7 @@ def test_friend_request_pending_longer_than_resolved():
 
 
 def test_engine13_collections_enforced_in_policy():
-    for name in ("conversations", "message_reads", "invites", "friend_requests"):
+    for name in ("conversations", "message_reads", "friend_requests"):
         policy = COLLECTIONS[name]
         assert policy.ttl_field == "expires_at", name
         assert policy.enforcement == EnforcementStatus.ENFORCED, name
@@ -72,12 +72,12 @@ def test_no_retention_gaps_after_engine_13():
 
 
 def test_ttl_index_collections_include_engine_13():
-    for name in ("conversations", "message_reads", "invites", "friend_requests"):
+    for name in ("conversations", "message_reads", "friend_requests"):
         assert name in TTL_INDEX_COLLECTIONS
 
 
 def test_lifespan_declares_ttl_indexes():
     from pathlib import Path
     text = (Path(__file__).resolve().parents[1] / "lifespan.py").read_text(encoding="utf-8")
-    for coll in ("conversations", "message_reads", "invites", "friend_requests"):
+    for coll in ("conversations", "message_reads", "friend_requests"):
         assert f"db.{coll}.create_index(\"expires_at\"" in text, f"missing TTL index for {coll}"

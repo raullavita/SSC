@@ -53,11 +53,4 @@ async def backfill_retention_ttl_fields() -> None:
     if fr_fixed:
         logger.info(f"retention backfill: friend_requests={fr_fixed}")
 
-    inv = await db.invites.update_many(
-        {"expires_at": {"$exists": False}},
-        {"$set": {"expires_at": default_exp}},
-    )
-    if inv.modified_count:
-        logger.info(f"retention backfill: invites={inv.modified_count}")
-
     logger.info(f"Retention TTL active — window={retention_hours()}h")

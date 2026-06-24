@@ -5,7 +5,7 @@ import { Check, X, LockKey } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
-import { getPendingInvite } from '../lib/invites';
+
 import { generateRSAKeypair, wrapPrivateKey } from '../lib/crypto';
 import { LANGS } from '../lib/i18n';
 
@@ -62,8 +62,7 @@ export default function SetupUsername() {
       await persistPrivateKey(pk);
       await refreshUser();
       toast.success(t('setupComplete'));
-      const pendingInvite = getPendingInvite();
-      navigate(pendingInvite ? `/invite/${pendingInvite}` : '/chat');
+      navigate('/chat');
     } catch (err) {
       toast.error(err?.response?.data?.detail || t('setupFailed'));
     } finally {

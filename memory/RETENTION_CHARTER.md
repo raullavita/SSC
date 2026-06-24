@@ -97,7 +97,6 @@ This charter defines:
 |-------|------------|-------|-------------------|
 | MongoDB | `conversations` | **Forever** — participant ids, group name, `created_at` | **24h** from last activity OR delete when last message TTL expires |
 | MongoDB | `message_reads` | **Forever** — who read what | **24h** or delete with conversation |
-| MongoDB | `invites` | Until manual cleanup; `expires_at` in doc but **no TTL index** | TTL on `expires_at` + purge `used` after 24h |
 
 **Metadata in conversations today:** `participants`, `is_group`, `name` (group title may hint topic — keep short, no message preview stored on conv row).
 
@@ -187,7 +186,6 @@ Data that **leaves your metal** when features are enabled:
 |---------|----------------|
 | `core/logging_policy.py` | JWT/query redaction filter, `token_log_ref`, `format_client_ip` |
 | `middleware.py` | Path-only logs; IP redacted when `ENV=production` |
-| `invites.py` | Opaque `tok_` hash instead of raw invite token |
 | Exception logs | Type name only — no response bodies |
 
 ---
@@ -216,7 +214,6 @@ Server retention (this charter) ends at the API boundary. Client footprint — p
 | G1 | Auto-translate default ON → plaintext to server | **Critical** | 1.2 ✅ |
 | G2 | `conversations` no TTL | **Critical** | 1.3 ✅ |
 | G3 | `message_reads` no TTL | **High** | 1.3 ✅ |
-| G4 | `invites` no TTL index | **Medium** | 1.3 ✅ |
 | G5 | `friend_requests` persist after accept/reject | **Medium** | 1.3 ✅ |
 | G6 | Translate third-party egress | **Critical** | 1.2 ✅ + 1.6 |
 | G7 | Request logs include client IP | **Medium** | 1.5 ✅ |
@@ -230,7 +227,7 @@ Server retention (this charter) ends at the API boundary. Client footprint — p
 
 - [x] **1.1** Retention Charter (this document + `backend/core/retention_policy.py`)
 - [x] **1.2** Close plaintext leaks (translate default off, prod guard)
-- [x] **1.3** TTL / purge on conversations, message_reads, invites, friend_requests
+- [x] **1.3** TTL / purge on conversations, message_reads, friend_requests
 - [x] **1.4** Conversation metadata minimization
 - [x] **1.5** Logging hygiene
 - [x] **1.6** Third-party dependency map in config

@@ -74,13 +74,6 @@ def test_middleware_source_uses_safe_helpers():
     assert 'f"client={request.client.host' not in text
 
 
-def test_invites_source_no_raw_token_log():
-    from pathlib import Path
-    text = (Path(__file__).resolve().parents[1] / "routers" / "invites.py").read_text(encoding="utf-8")
-    assert "token_log_ref" in text
-    assert "invite used: {token}" not in text
-
-
 def test_no_raw_exception_in_logger_calls():
     """Exception logs must use type name only — never {e} in logger f-strings."""
     from pathlib import Path

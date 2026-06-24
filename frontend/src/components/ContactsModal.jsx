@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { X, BellSlash, Prohibit, Trash, ChatCircle, MagnifyingGlass, CaretDown, CaretUp } from '@phosphor-icons/react';
+import { X, BellSlash, Prohibit, Trash, ChatCircle, MagnifyingGlass } from '@phosphor-icons/react';
 import { formatPeerPresence, isPeerOnline } from '../lib/presence';
 import { api } from '../lib/api';
 import { useLocale } from '../context/LocaleContext';
@@ -26,23 +26,18 @@ export default function ContactsModal({
   onToggleBlock,
   onToggleMute,
   onRemove,
-  onUseInvite,
-  inviteToken,
-  setInviteToken,
-  onGenerateInvite,
 }) {
   const { t } = useLocale();
   const [tab, setTab] = useState('add');
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [inviteOpen, setInviteOpen] = useState(false);
   const debRef = useRef(null);
 
   useEffect(() => {
     if (!open) {
       setSearchQ('');
       setSearchResults([]);
-      setInviteOpen(false);
+
       return;
     }
     setTab('add');
@@ -237,29 +232,7 @@ export default function ContactsModal({
               )}
               {searchResults.map(renderSearchResult)}
 
-              <div className="mt-4 pt-3 border-t border-[#27272A]">
-                <button
-                  type="button"
-                  onClick={() => setInviteOpen((v) => !v)}
-                  className="w-full flex items-center justify-between text-[10px] font-mono text-[#A1A1AA] hover:text-white"
-                  data-testid="contacts-invite-toggle"
-                >
-                  <span>{t('inviteOptional')}</span>
-                  {inviteOpen ? <CaretUp size={12} /> : <CaretDown size={12} />}
-                </button>
-                {inviteOpen && (
-                  <div className="mt-2 p-2 bg-[#1A1A1A] rounded-md tac-border">
-                    <p className="text-[10px] text-[#A1A1AA] mb-2 normal-case tracking-normal">
-                      {t('inviteOptionalHint')}
-                    </p>
-                    <div className="flex gap-2">
-                      <input value={inviteToken} onChange={(e) => setInviteToken(e.target.value)} placeholder={t('pasteInvite')} className="flex-1 text-xs px-2 py-1 bg-[#121212] tac-border rounded" data-testid="contacts-invite-input" />
-                      <button onClick={onUseInvite} className="text-xs px-2 py-1 tac-border rounded hover:bg-[#232323]" data-testid="contacts-use-invite">{t('useInvite')}</button>
-                    </div>
-                    <button onClick={onGenerateInvite} className="mt-2 text-[10px] font-mono text-[#00E5FF] hover:underline" data-testid="contacts-generate-invite">{t('generateInvite')}</button>
-                  </div>
-                )}
-              </div>
+
             </>
           )}
 

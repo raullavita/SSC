@@ -223,3 +223,4 @@ cd C:\Users\smash\SSC-main\backend
 | 2026-06-24 | `e2e_smoke.py` panic-wipe check aligned with session revocation; smoke green |
 | 2026-06-24 | All Engine 1–5/8/9 gates pass; pytest 476/476 (1 skipped) |
 | 2026-06-24 | Roadmap cleanup: Engine 7 removed, 2FA backups marked done, invite links retired |
+| 2026-06-24 | Invite links removed from codebase (username search + friend requests only) |

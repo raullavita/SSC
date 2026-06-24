@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
-import { getPendingInvite } from '../lib/invites';
 import { completeGoogleAuth } from '../lib/google-auth';
 import { api } from '../lib/api';
 import { isNativeApp } from '../lib/platform';
@@ -34,13 +33,13 @@ export default function GoogleAuthCallback() {
           const { data: user } = await api.get('/auth/me');
           await completeGoogleAuth(
             { token, user, needs_username: needsSetup },
-            { loginWithToken, navigate, getPendingInvite },
+            { loginWithToken, navigate },
           );
         } else {
           const { data: user } = await api.get('/auth/me');
           await completeGoogleAuth(
             { token: null, user, needs_username: needsSetup },
-            { loginWithToken, navigate, getPendingInvite },
+            { loginWithToken, navigate },
           );
         }
         toast.success('Signed in with Google');

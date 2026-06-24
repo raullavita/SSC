@@ -98,7 +98,7 @@ FOOTPRINT_LOCATIONS: Dict[str, FootprintLocation] = {
     "session_storage_ephemeral": FootprintLocation(
         location_id="session_storage_ephemeral",
         store="sessionStorage",
-        keys_or_content="ssc_pending_call, ssc_pending_invite",
+        keys_or_content="ssc_pending_call",
         tier=FootprintTier.SESSION,
         panic_action="clear_all",
         logout_action="clear_all",

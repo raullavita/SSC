@@ -9,7 +9,6 @@ import SetupUsername from './pages/SetupUsername';
 import AuthCallback from './pages/AuthCallback';
 import GoogleAuthCallback from './pages/GoogleAuthCallback';
 import ChatHome from './pages/ChatHome';
-import InvitePage from './pages/InvitePage';
 import Landing from './pages/Landing';
 import { hideNativeSplash } from './lib/capacitor-init';
 import './App.css';
@@ -50,7 +49,6 @@ function AppRouter() {
       <Route path="/auth/google" element={<GoogleAuthCallback />} />
       <Route path="/register" element={<Register />} />
       <Route path="/setup" element={<SetupUsername />} />
-      <Route path="/invite/:token" element={<InvitePage />} />
       <Route path="/chat" element={<Protected><ChatHome /></Protected>} />
       <Route path="/chat/:conversationId" element={<Protected><ChatHome /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />

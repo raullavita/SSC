@@ -7,7 +7,6 @@ from routers.contacts import router as contacts_router
 from routers.conversations import router as conversations_router
 from routers.files import router as files_router
 from routers.health import router as health_router
-from routers.invites import router as invites_router
 from routers.keys import router as keys_router
 from routers.messages import router as messages_router
 from routers.panic import router as panic_router
@@ -30,5 +29,4 @@ def include_routers(api: APIRouter):
     api.include_router(panic_router)
     api.include_router(push_router, prefix="/push")
     api.include_router(statuses_router, prefix="/statuses")
-    api.include_router(invites_router, prefix="/invites")
     api.include_router(keys_router, prefix="/keys")

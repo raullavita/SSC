@@ -41,14 +41,13 @@ export async function fetchGoogleConfig() {
 }
 
 /** Complete sign-in after backend returns token + user. */
-export async function completeGoogleAuth({ token, user, needs_username }, { loginWithToken, navigate, getPendingInvite }) {
+export async function completeGoogleAuth({ token, user, needs_username }, { loginWithToken, navigate }) {
   await loginWithToken(token, user);
-  const pendingInvite = getPendingInvite?.();
   if (needs_username || !user?.username || !user?.public_key) {
     navigate('/setup', { state: { user } });
     return;
   }
-  navigate(pendingInvite ? `/invite/${pendingInvite}` : '/chat');
+  navigate('/chat');
 }
 
 /** Native: full WebView redirect via backend OAuth (returns to http://localhost/auth/google). */
@@ -101,7 +100,7 @@ export function signInWithGoogleWeb(clientId, { onBusy, onError }) {
 }
 
 /** Unified entry — picks native vs web automatically. */
-export async function signInWithGoogle({ loginWithToken, navigate, getPendingInvite, onBusy, onError }) {
+export async function signInWithGoogle({ loginWithToken, navigate, onBusy, onError }) {
   const cfg = await fetchGoogleConfig();
   if (!cfg.enabled && !cfg.client_id) {
     onError?.('Google sign-in is not configured on the server yet.');
@@ -124,7 +123,7 @@ export async function signInWithGoogle({ loginWithToken, navigate, getPendingInv
     if (data) {
       await completeGoogleAuth(
         { token: data.token, user: data.user, needs_username: data.needs_username },
-        { loginWithToken, navigate, getPendingInvite },
+        { loginWithToken, navigate },
       );
     }
     return data;

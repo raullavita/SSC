@@ -5,7 +5,7 @@ import { LockKey, GoogleLogo, Check, X } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
-import { getPendingInvite } from '../lib/invites';
+
 import { generateRSAKeypair, wrapPrivateKey } from '../lib/crypto';
 import Turnstile from '../components/Turnstile';
 import LanguagePicker from '../components/LanguagePicker';
@@ -74,8 +74,7 @@ export default function Register() {
       const pk = await crypto.subtle.importKey('jwk', privateKeyJwk, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt']);
       await persistPrivateKey(pk);
       toast.success(t('accountCreated'));
-      const pendingInvite = getPendingInvite();
-      navigate(pendingInvite ? `/invite/${pendingInvite}` : '/chat');
+      navigate('/chat');
     } catch (err) {
       toast.error(err?.response?.data?.detail || t('registrationFailed'));
     } finally {
@@ -88,7 +87,6 @@ export default function Register() {
     await signInWithGoogle({
       loginWithToken,
       navigate,
-      getPendingInvite,
       onBusy: setBusy,
       onError: (msg) => toast.error(msg || t('googleSignInFailed')),
     });

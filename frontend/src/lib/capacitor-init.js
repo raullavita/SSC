@@ -11,16 +11,12 @@ function routeFromDeepLink(url) {
   try {
     const parsed = new URL(url);
     const path = parsed.pathname || '/';
-    if (path.startsWith('/invite/') || path.startsWith('/chat') || path.startsWith('/login') || path.startsWith('/register')) {
+    if (path.startsWith('/chat') || path.startsWith('/login') || path.startsWith('/register')) {
       window.location.assign(path + parsed.search + parsed.hash);
       return;
     }
   } catch {
-    // custom scheme e.g. ssc://invite/TOKEN
-  }
-  const invite = url.match(/invite[/:]([A-Za-z0-9_-]+)/);
-  if (invite) {
-    window.location.assign(`/invite/${invite[1]}`);
+    /* custom scheme — ignore unknown paths */
   }
 }
 

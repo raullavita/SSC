@@ -22,7 +22,7 @@ import GroupCallModal from '../components/GroupCallModal';
 import { StoriesBar, StoryViewer } from '../components/Stories';
 import ContactsModal from '../components/ContactsModal';
 import { formatPeerPresence, isPeerOnline } from '../lib/presence';
-import { consumePendingInvite } from '../lib/invites';
+
 import { registerMemoryWipeHandler, registerSocketCloser } from '../lib/memoryWipe';
 import { getSessionToken } from '../lib/sessionStore';
 import { ensureSignalSession } from '../lib/signal/x3dh';
@@ -78,7 +78,7 @@ export default function ChatHome() {
   const [myContacts, setMyContacts] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
-  const [inviteToken, setInviteToken] = useState('');
+
   const [contactsOpen, setContactsOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
@@ -232,17 +232,6 @@ export default function ChatHome() {
 
   useEffect(() => { loadConversations(); loadMyContacts(); loadPendingRequests(); }, []);
 
-  useEffect(() => {
-    consumePendingInvite().then((used) => {
-      if (used) {
-        toast.success('Invite used — check pending requests');
-        loadPendingRequests();
-        loadMyContacts();
-        setContactsOpen(true);
-      }
-    });
-  }, []);
-
   const handlePendingCall = useCallback(async (payload) => {
     const data = payload?.data || payload;
     if (!data?.from) return;
@@ -326,30 +315,6 @@ export default function ChatHome() {
       await loadPendingRequests();
     } catch (e) {
       toast.error('Failed');
-    }
-  };
-
-  const useInvite = async () => {
-    if (!inviteToken.trim()) return;
-    try {
-      await api.post(`/invites/use/${inviteToken.trim()}`);
-      toast.success('Invite used - request sent');
-      setInviteToken('');
-      await loadPendingRequests();
-      await loadMyContacts();
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || 'Invalid invite');
-    }
-  };
-
-  const generateInvite = async () => {
-    try {
-      const { data } = await api.post('/invites', { expires_hours: 24 });
-      const link = `${window.location.origin}${data.url}`;
-      await navigator.clipboard.writeText(link);
-      toast.success('Invite link copied! Expires in 24h');
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || t('couldNotGenerateInvite'));
     }
   };
 
@@ -1323,10 +1288,6 @@ export default function ChatHome() {
         onToggleBlock={toggleBlock}
         onToggleMute={toggleMute}
         onRemove={removeContact}
-        onUseInvite={useInvite}
-        inviteToken={inviteToken}
-        setInviteToken={setInviteToken}
-        onGenerateInvite={generateInvite}
       />
 
       <VerifyHandshakeModal

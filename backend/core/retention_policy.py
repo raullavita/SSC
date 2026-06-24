@@ -128,15 +128,6 @@ COLLECTIONS: Dict[str, CollectionPolicy] = {
         engine1_step=None,
         allowed_fields="conversation_id, user_id, last_read_message_id, last_read_at",
     ),
-    "invites": CollectionPolicy(
-        name="invites",
-        tier=RetentionTier.SOCIAL_GRAPH,
-        max_lifetime="expires_at_on_document",
-        ttl_field="expires_at",
-        enforcement=EnforcementStatus.ENFORCED,
-        engine1_step=None,
-        allowed_fields="token, from_user_id, from_username, used, created_at",
-    ),
     "user_sessions": CollectionPolicy(
         name="user_sessions",
         tier=RetentionTier.SESSION,
@@ -244,7 +235,7 @@ NEVER_LOG = [
 ENGINE1_STEPS = [
     ("1.1", "Retention Charter", True),
     ("1.2", "Close plaintext leaks (translate)", True),
-    ("1.3", "TTL on conversations, reads, invites, friend_requests", True),
+    ("1.3", "TTL on conversations, reads, friend_requests", True),
     ("1.4", "Conversation metadata minimization", True),
     ("1.5", "Logging hygiene", True),
     ("1.6", "Third-party dependency map in config", True),

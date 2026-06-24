@@ -96,10 +96,6 @@ class TranslateIn(BaseModel):
     source_language: Optional[str] = None
 
 
-class CreateInviteIn(BaseModel):
-    expires_hours: Optional[int] = 24
-
-
 class SendFriendRequestIn(BaseModel):
     username: str
 

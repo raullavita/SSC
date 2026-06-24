@@ -23,7 +23,7 @@ def test_has_ttl_index_rejects_missing():
 
 
 def test_charter_collections_cover_ttl_ephemeral():
-    for coll in ("conversations", "message_reads", "invites", "messages", "files", "statuses"):
+    for coll in ("conversations", "message_reads", "messages", "files", "statuses"):
         assert coll in TTL_INDEX_COLLECTIONS
         assert coll in CHARTER_EPHEMERAL_COLLECTIONS
 

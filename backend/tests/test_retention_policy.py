@@ -30,7 +30,6 @@ LIFESPAN_COLLECTIONS = {
     "statuses",
     "friend_requests",
     "contacts",
-    "invites",
 }
 
 

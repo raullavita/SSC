@@ -14,7 +14,6 @@ CHARTER_EPHEMERAL_COLLECTIONS = (
     "statuses",
     "conversations",
     "message_reads",
-    "invites",
 )
 
 # Charter §11: may persist (account + social graph + active sessions/devices).
