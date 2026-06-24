@@ -189,8 +189,8 @@ Details: `memory/SECURITY_MODEL.md`
 
 | # | Issue | Target |
 |---|--------|--------|
-| P1-1 | **Legacy / upgrade banners in chat** — “legacy encryption”, “contact has not upgraded”, “E2E channel established — say hello” | Hide from default UI; optional debug/settings only. Peers should negotiate Signal silently |
-| P1-2 | **Why “upgrade”?** — User expects whole app E2E | Copy + behavior: auto bootstrap Signal on installed clients; no yellow scolding in thread |
+| P1-1 | **Legacy / upgrade banners in chat** — “legacy encryption”, “contact has not upgraded”, “E2E channel established — say hello” | **Remove from product UI** (founder policy). Internal dual-read only; auto Signal bootstrap — same as WhatsApp/Telegram |
+| P1-2 | **VERIFY / QR in chat** — not viable US↔UK; leakage if keys passed elsewhere | Hide default VERIFY; optional Settings → advanced; Google `email_verified` = account verified badge only |
 | P1-3 | **New chat / group picker** — must type username; should list **accepted contacts** with checkboxes | WhatsApp-style: pick from contacts, optional search |
 | P1-4 | **Group naming** — multiple groups indistinguishable | Require group title (or default “Alice, Bob +2”) |
 | P1-5 | **Non-mutual contact** — search finds user but messaging/calls/files should be blocked | Friendly auto-message: “Request sent — waiting for acceptance” (no plaintext spam) |
@@ -217,6 +217,36 @@ Details: `memory/SECURITY_MODEL.md`
 | **Google vs password** | Google accounts have `auth_provider=google`, no `password_hash` — email login correctly fails; UX must say so |
 | **Real-time contacts** | Likely missing WS event handler for `friend-request` / roster refresh on phone while foreground |
 | **Back stack** | `leaveChat()` calls `navigate('/chat')` (push) after `navigate('/chat/:id')` (push) — browser history becomes `/chat` → `/chat/xyz` → `/chat`; Android system back pops into `/chat/xyz`. Fix: `replace: true` on leave + `@capacitor/app` `backButton` listener |
+
+### Founder product direction (24 Jun 2026)
+
+| Topic | Decision |
+|-------|----------|
+| **Encryption UX** | **No user-visible “upgrade” or legacy RSA banners** — libsignal is the only user-facing story; dual-read stays internal until retired (`memory/UNIFIED_IDENTITY_CHARTER.md`). Matches WhatsApp/Telegram/Signal: crypto is automatic, not a setting |
+| **Auto Signal** | On installed clients, bootstrap X3DH + ratchet **silently** on first message to a contact; never ask user to “upgrade encryption” |
+| **QR / safety numbers** | **Not required for MVP** remote users (US ↔ UK). In-person QR optional later; **do not** require passing keys via another chat/app (leakage risk). Hide VERIFY from default chat UI for v1; power users only in Settings if ever |
+| **Email confirmation** | **Google sign-in:** Google already sends `email_verified` — treat as verified; **no extra email link** unless we add a visible “verified” badge tied to that claim |
+| **Email confirmation** | **Password register (future):** send confirmation link → deep link back into app to finish setup — good for non-Google accounts |
+| **Account verified badge** | Optional v2: `email_verified` (Google) or confirmed email (password) — cosmetic trust, not E2E substitute |
+
+### QA coverage — not yet tested (founder session)
+
+| Area | Why it matters |
+|------|----------------|
+| **Accept friend request** on phone (live, without restart) | Confirms P0-1 fix |
+| **Stories / 24h statuses** | Engine 8.12 surface |
+| **Group chat** (after P0-8 create fix) | `signal_group_v1` + naming |
+| **Group voice/video** (up to 8) | Mesh + permissions |
+| **Panic wipe** (red button 1.5s) | Data gone, account remains |
+| **2FA enable + login with TOTP** | Settings path |
+| **Push notification** (app backgrounded) | New message / friend request |
+| **Read receipts + typing** | WS events |
+| **On-device translate** (Android) | Engine 9 |
+| **Plain file attach** (not screenshot) | Encrypted attachment path |
+| **Explicit logout + re-login** | Session policy |
+| **Same account phone + desktop simultaneously** | Two sessions |
+| **Offline → online** | Queue + reconnect |
+| **Retention 24h** | **In progress** on smashmaxxx ↔ dots thread |
 
 ---
 
@@ -349,3 +379,4 @@ cd C:\Users\smash\SSC-main\backend
 | 2026-06-24 | Desktop OAuth — Electron protocol + navigation intercept · `SSC-Setup-1.0.4.exe` |
 | 2026-06-24 | Founder QA — smashmaxxx ↔ dots two-device session documented (P0–P2 backlog in roadmap) |
 | 2026-06-24 | QA note — Android back stack “folder” behavior (in-app `<` vs system back) documented as P0-10 |
+| 2026-06-24 | Founder policy — auto libsignal only (no upgrade UI); QR verify optional/deferred; email confirm for password register only |
