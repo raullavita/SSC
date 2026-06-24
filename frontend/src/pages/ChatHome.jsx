@@ -716,10 +716,13 @@ export default function ChatHome() {
   };
 
   // ─── Calls ───
-  const startCall = (mode) => {
+  const startCall = async (mode) => {
     if (isGroup && activeConv) {
       const members = (activeConv.members || []).filter((m) => m.user_id !== user?.user_id);
       if (members.length === 0) { toast.error('No members in this group'); return; }
+      const { validateGroupCallSize } = await import('../lib/groupCalls');
+      const capErr = await validateGroupCallSize(members.length);
+      if (capErr) { toast.error(capErr); return; }
       setGroupCallState({ mode, direction: 'outgoing', members, signal: null });
       return;
     }

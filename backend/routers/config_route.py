@@ -6,6 +6,7 @@ from core.signal_policy import LIBSIGNAL_MAVEN_ARTIFACT_ANDROID, LIBSIGNAL_NPM_P
 from core.egress_policy import build_ice_servers, egress_feature_enabled, egress_status_map, is_air_gapped_mode
 from core.translation_access import is_translation_allowed, translation_provider
 from core.translation_policy import production_translation_mode
+from core.sfu_policy import group_calls_public_config
 from security import get_rate_limit_backend
 
 router = APIRouter()
@@ -34,4 +35,5 @@ async def public_config():
             "android_artifact": LIBSIGNAL_MAVEN_ARTIFACT_ANDROID,
             "prekey_api": True,
         },
+        "group_calls": group_calls_public_config(),
     }

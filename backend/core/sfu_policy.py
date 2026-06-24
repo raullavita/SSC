@@ -1,0 +1,31 @@
+"""
+Group call SFU policy — mesh limit + future mediasoup integration.
+
+Phase A: config contract only. mediasoup deploy is Phase B.
+See memory/SFU_CHARTER.md.
+"""
+from __future__ import annotations
+
+import os
+from typing import Any, Dict
+
+MESH_MAX_PARTICIPANTS = 6
+SELECTED_SFU_STACK = "mediasoup"
+
+
+def group_calls_public_config() -> Dict[str, Any]:
+    sfu_url = (os.environ.get("SFU_URL") or "").strip() or None
+    sfu_enabled = (os.environ.get("SFU_ENABLED") or "").strip().lower() in ("1", "true", "yes")
+    if sfu_url:
+        sfu_enabled = True
+    return {
+        "mode": "sfu" if sfu_enabled else "mesh",
+        "max_mesh_participants": MESH_MAX_PARTICIPANTS,
+        "sfu_enabled": sfu_enabled,
+        "sfu_url": sfu_url,
+        "selected_stack": SELECTED_SFU_STACK,
+    }
+
+
+def mesh_participant_cap() -> int:
+    return MESH_MAX_PARTICIPANTS
