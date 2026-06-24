@@ -14,6 +14,7 @@ from core.contact_graph import (
     get_roster_prefs,
     is_blocked_pair,
     remove_mutual_contact,
+    seal_exists,
     set_block,
     set_mute,
 )
@@ -21,6 +22,7 @@ from core.database import db
 from core.logging_config import logger
 from core.models import FriendRequestActionIn, SendFriendRequestIn
 from core.contact_realtime import (
+    notify_contacts_changed,
     notify_friend_accepted,
     notify_friend_rejected,
     notify_friend_request,
@@ -167,15 +169,20 @@ async def list_contacts(current=Depends(get_current_user)):
     user_map = {u["user_id"]: u for u in users}
     result = []
     for contact_id in contact_ids:
-        if not await are_contacts(current["user_id"], contact_id):
+        prefs = await get_roster_prefs(current["user_id"], contact_id)
+        blocked_by_me = prefs.get("blocked", False)
+        # Keep blocked contacts in roster so unblock UI works (are_contacts is false when blocked).
+        if blocked_by_me:
+            if not await seal_exists(current["user_id"], contact_id):
+                continue
+        elif not await are_contacts(current["user_id"], contact_id):
             continue
         u = project_user_for_peer(user_map.get(contact_id))
         if not u:
             continue
-        prefs = await get_roster_prefs(current["user_id"], contact_id)
         result.append({
             **u,
-            "blocked": prefs.get("blocked", False),
+            "blocked": blocked_by_me,
             "muted": prefs.get("muted", False),
         })
     return result
@@ -191,22 +198,26 @@ async def remove_contact(contact_user_id: str, current=Depends(get_current_user)
 async def block_contact(contact_user_id: str, current=Depends(get_current_user)):
     await set_block(current["user_id"], contact_user_id, blocked_flag=True)
     logger.info(f"user blocked contact: {current['user_id']} blocked {contact_user_id}")
+    asyncio.create_task(notify_contacts_changed(current["user_id"], reason="block"))
     return {"ok": True}
 
 
 @router.post("/{contact_user_id}/unblock")
 async def unblock_contact(contact_user_id: str, current=Depends(get_current_user)):
     await set_block(current["user_id"], contact_user_id, blocked_flag=False)
+    asyncio.create_task(notify_contacts_changed(current["user_id"], reason="unblock"))
     return {"ok": True}
 
 
 @router.post("/{contact_user_id}/mute")
 async def mute_contact(contact_user_id: str, current=Depends(get_current_user)):
     await set_mute(current["user_id"], contact_user_id, muted_flag=True)
+    asyncio.create_task(notify_contacts_changed(current["user_id"], reason="mute"))
     return {"ok": True}
 
 
 @router.post("/{contact_user_id}/unmute")
 async def unmute_contact(contact_user_id: str, current=Depends(get_current_user)):
     await set_mute(current["user_id"], contact_user_id, muted_flag=False)
+    asyncio.create_task(notify_contacts_changed(current["user_id"], reason="unmute"))
     return {"ok": True}

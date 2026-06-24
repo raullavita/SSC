@@ -13,5 +13,5 @@ set CSC_IDENTITY_AUTO_DISCOVERY=false
 call yarn build:win
 if errorlevel 1 exit /b 1
 echo.
-echo DONE: frontend\desktop\dist\SSC-Setup-1.0.0.exe
+echo DONE: frontend\desktop\dist\SSC-Setup-1.0.5.exe
 endlocal

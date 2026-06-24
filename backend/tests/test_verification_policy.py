@@ -56,13 +56,14 @@ def test_verify_modal_local_qr():
     assert "localStorage.setItem" not in modal
 
 
-def test_chat_home_wires_verify_flow():
+def test_chat_home_hides_default_verify_ui():
+    """TASK A.7 — VERIFY hidden from default chat; modal kept for advanced use later."""
     root = Path(__file__).resolve().parents[2]
     chat = (root / "frontend" / "src" / "pages" / "ChatHome.jsx").read_text(encoding="utf-8")
-    assert "VerifyHandshakeModal" in chat
-    assert "isPeerVerified" in chat
-    assert "verify-identity-button" in chat
-    assert "peerVerified" in chat
+    assert "VerifyHandshakeModal" not in chat
+    assert "verify-identity-button" not in chat
+    modal = root / "frontend" / "src" / "components" / "VerifyHandshakeModal.jsx"
+    assert modal.is_file()
 
 
 def test_auth_context_purges_legacy_verification():

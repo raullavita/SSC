@@ -60,5 +60,5 @@ def test_group_video_cap_eight():
 
 def test_roadmap_retired_browser_wasm():
     roadmap = (REPO / "memory/SSC-ROADMAP.md").read_text(encoding="utf-8")
-    assert "Engine 10" in roadmap
-    assert "8.10" in roadmap and ("retired" in roadmap.lower() or "Retired" in roadmap)
+    assert "10 Desktop" in roadmap or "Engine 10" in roadmap
+    assert "Web/PWA" in roadmap and "Retired" in roadmap

@@ -427,13 +427,15 @@ def _check_step_86_dual_read() -> ProofCheck:
 
 
 def _check_step_86_migration_labels() -> ProofCheck:
-    badge = (REPO_ROOT / "frontend/src/components/EncryptionModeBadge.jsx").read_text(encoding="utf-8")
+    message = (REPO_ROOT / "frontend/src/components/Message.jsx").read_text(encoding="utf-8")
     chat = (REPO_ROOT / "frontend/src/pages/ChatHome.jsx").read_text(encoding="utf-8")
-    ok = "encryptionLegacy" in badge and "encryption-hint-banner" in chat
+    # TASK A — no protocol labels in messages; no legacy/upgrade banners in chat.
+    ok = "SIG" not in message and "RSA" not in message
+    ok = ok and "encryption-hint-banner" not in chat and "vaultLocked" not in chat
     return ProofCheck(
         name="engine8_step_86_labels",
         passed=ok,
-        detail="8.6 legacy vs Signal labels in UI" if ok else "migration labels missing",
+        detail="8.6 invisible crypto UX (no protocol labels/banners)" if ok else "migration UI labels still exposed",
     )
 
 

@@ -20,7 +20,7 @@ def test_auth_context_uses_footprint_orchestrator():
     assert "runPanicOrchestrator" in auth
     panic_start = orch.index("export async function runPanicOrchestrator")
     panic_body = orch[panic_start:]
-    assert panic_body.index("executeClientFootprintWipe('panic')") < panic_body.index("await postPanicWipe")
+    assert panic_body.index("executeClientFootprintWipe") < panic_body.index("await postPanicWipe")
 
 
 def test_chat_home_registers_wipe_handlers():

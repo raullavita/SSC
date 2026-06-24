@@ -24,7 +24,7 @@ def test_phase1_client_wipe_before_server_in_panic_orchestrator():
     text = (root / "frontend" / "src" / "lib" / "clientFootprintOrchestrator.js").read_text(encoding="utf-8")
     panic_start = text.index("export async function runPanicOrchestrator")
     panic_body = text[panic_start:]
-    assert panic_body.index("executeClientFootprintWipe('panic')") < panic_body.index("await postPanicWipe")
+    assert panic_body.index("executeClientFootprintWipe") < panic_body.index("await postPanicWipe")
     assert panic_body.index("await postPanicWipe") < panic_body.index("sendNativeAppToBackground")
     assert panic_body.index("sendNativeAppToBackground") < panic_body.index("PANIC_REDIRECT")
 

@@ -11,7 +11,6 @@ export default function CreateGroupModal({ open, onClose, onCreated, myUserId, c
   const [groupName, setGroupName] = useState('');
   const [picked, setPicked] = useState([]);
   const [busy, setBusy] = useState(false);
-  const debRef = useRef(null);
 
   const eligibleContacts = useMemo(
     () => contacts.filter((c) => !c.blocked).sort((a, b) => a.username.localeCompare(b.username)),
