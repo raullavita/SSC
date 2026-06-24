@@ -29,7 +29,7 @@
     "build:mobile": "craco build",
     "build:phone": "craco build",
     "build:firebase": "craco build",
-    "build:desktop": "craco build",
+    "build:desktop": "set REACT_APP_ELECTRON=true&& craco build",
     "desktop:dev": "yarn build:desktop && cd desktop && yarn start",
     "desktop:build:win": "yarn build:desktop && cd desktop && yarn install && yarn build:win",
     "desktop:build:mac": "yarn build:desktop && cd desktop && yarn install && yarn build:mac",

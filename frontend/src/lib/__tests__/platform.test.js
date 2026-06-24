@@ -1,4 +1,4 @@
-import { isElectronApp, isInstalledClient, isNativeApp } from '../platform';
+import { isElectronApp, isInstalledClient, isNativeApp, prefersHashRouter } from '../platform';
 
 describe('platform', () => {
   const original = window.sscDesktop;
@@ -11,6 +11,7 @@ describe('platform', () => {
     window.sscDesktop = { isDesktop: true, platform: 'win32' };
     expect(isElectronApp()).toBe(true);
     expect(isInstalledClient()).toBe(true);
+    expect(prefersHashRouter()).toBe(true);
   });
 
   it('browser dev shell is not an installed client', () => {

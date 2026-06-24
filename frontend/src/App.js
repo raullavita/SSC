@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LocaleProvider, useLocale } from './context/LocaleContext';
 import { Toaster } from 'sonner';
@@ -12,7 +12,7 @@ import ChatHome from './pages/ChatHome';
 import Landing from './pages/Landing';
 import InstalledClientGate from './components/InstalledClientGate';
 import { hideNativeSplash } from './lib/capacitor-init';
-import { isInstalledClient } from './lib/platform';
+import { isInstalledClient, prefersHashRouter } from './lib/platform';
 import { bootstrapSignalIdentity, userHasUnifiedIdentity } from './lib/signalIdentityBootstrap';
 import './App.css';
 
@@ -81,9 +81,10 @@ function AppRouter() {
 }
 
 export default function App() {
+  const Router = prefersHashRouter() ? HashRouter : BrowserRouter;
   return (
     <div className="App grain">
-      <BrowserRouter>
+      <Router>
         <AuthProvider>
           <LocaleProvider>
             <NativeBootGate>
@@ -98,7 +99,7 @@ export default function App() {
             toastOptions={{ style: { background: '#1A1A1A', border: '1px solid #27272A', color: '#F0F0F0', zIndex: 99999 } }}
           />
         </AuthProvider>
-      </BrowserRouter>
+      </Router>
     </div>
   );
 }

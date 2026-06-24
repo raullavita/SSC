@@ -14,6 +14,14 @@ export function isInstalledClient() {
   return isNativeApp() || isElectronApp();
 }
 
+/** Electron loads the CRA bundle via file:// — BrowserRouter breaks; use HashRouter. */
+export function prefersHashRouter() {
+  if (typeof window === 'undefined') return false;
+  if (isElectronApp()) return true;
+  if (window.location.protocol === 'file:') return true;
+  return process.env.REACT_APP_ELECTRON === 'true';
+}
+
 function getCapacitor() {
   if (_capacitor !== null) return _capacitor;
   try {

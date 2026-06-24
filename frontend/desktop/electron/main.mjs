@@ -20,7 +20,9 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 600,
+    show: false,
     title: 'SSC — Super Secure Chat',
+    backgroundColor: '#0A0A0A',
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       contextIsolation: true,
@@ -29,6 +31,9 @@ function createWindow() {
     },
   });
 
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
   mainWindow.loadFile(rendererIndex());
   if (!app.isPackaged) {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
@@ -36,8 +41,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  initLibsignalBridge(app.getPath('userData'));
   createWindow();
+  try {
+    initLibsignalBridge(app.getPath('userData'));
+  } catch (err) {
+    console.error('libsignal init deferred:', err);
+  }
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
