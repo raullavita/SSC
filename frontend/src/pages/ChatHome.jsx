@@ -37,6 +37,11 @@ import {
 import { isNativeApp } from '../lib/platform';
 import { ensureMediaPermissions } from '../lib/mediaPermissions';
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
+import {
+  MIN_VOICE_BLOB_BYTES,
+  startVoiceRecording,
+  voiceFilenameForMime,
+} from '../lib/voiceRecorder';
 
 import { registerMemoryWipeHandler, registerSocketCloser } from '../lib/memoryWipe';
 import { getSessionToken } from '../lib/sessionStore';
@@ -82,8 +87,7 @@ export default function ChatHome() {
 
   const [contactsOpen, setContactsOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const mediaRecorderRef = useRef(null);
-  const audioChunksRef = useRef([]);
+  const voiceRecordingRef = useRef(null);
   const [typingFrom, setTypingFrom] = useState(null);
   const [callState, setCallState] = useState(null); // { mode, direction, peer, signal }
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -762,7 +766,10 @@ export default function ChatHome() {
         return;
       }
 
-      if (!privateKey) { setUnlockOpen(true); return; }
+      if (!privateKey) {
+        toast.error(t('couldNotUnlockVault'));
+        return;
+      }
       const recipients = recipientsForActive;
       if (Object.keys(recipients).length < 2) {
         toast.error('No recipients have encryption keys yet');
@@ -848,23 +855,27 @@ export default function ChatHome() {
   // ─── File upload ───
   const fileInputRef = useRef(null);
   const onPickFile = () => fileInputRef.current?.click();
-  const onFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || uploadBusy) return;
+
+  const attachFile = async (file, { fromPaste = false } = {}) => {
+    if (!file || uploadBusy || !activeConv) return;
     if (file.size > 25 * 1024 * 1024) {
       toast.error(t('fileTooLarge'));
       return;
     }
     if (!privateKey && !(await shouldSendWithSignal({ isGroup, peer, user, members: activeConv?.members || [] }))) {
-      setUnlockOpen(true);
+      toast.error(t('couldNotUnlockVault'));
       return;
     }
     setUploadBusy(true);
     try {
       const type = (file.type || '').startsWith('image/') ? 'image' : 'file';
-      const { fileId, attachmentEnc } = await uploadEncryptedAttachment(file, file.name, file.type || 'application/octet-stream');
-      await sendMessage(file.name, type, fileId, attachmentEnc);
+      const mime = file.type || (type === 'image' ? 'image/png' : 'application/octet-stream');
+      const name = file.name || (type === 'image' ? 'screenshot.png' : 'attachment');
+      const { fileId, attachmentEnc } = await uploadEncryptedAttachment(file, name, mime);
+      await sendMessage(name, type, fileId, attachmentEnc);
+      if (fromPaste && type === 'image') {
+        toast.success(t('pasteImageAttached'));
+      }
     } catch (err) {
       const status = err?.response?.status;
       if (status === 413) toast.error(t('fileTooLarge'));
@@ -872,6 +883,25 @@ export default function ChatHome() {
       else toast.error(err?.response?.data?.detail || t('uploadFailed'));
     } finally {
       setUploadBusy(false);
+    }
+  };
+
+  const onFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    await attachFile(file);
+  };
+
+  const onComposerPaste = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items?.length) return;
+    for (const item of items) {
+      if (item.kind === 'file' && item.type?.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) await attachFile(file, { fromPaste: true });
+        return;
+      }
     }
   };
 
@@ -942,37 +972,48 @@ export default function ChatHome() {
   };
 
   const startRecording = async () => {
+    if (voiceRecordingRef.current) return;
     const ok = await ensureMediaPermissions({ audio: true, video: false }, { t });
     if (!ok) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      mediaRecorderRef.current = mr;
-      audioChunksRef.current = [];
-      mr.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
-      mr.onstop = async () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        stream.getTracks().forEach(t => t.stop());
-        setIsRecording(false);
-        if (blob.size < 1000) return;
-        try {
-          const { fileId, attachmentEnc } = await uploadEncryptedAttachment(blob, 'voice.webm', 'audio/webm');
-          await sendMessage('', 'voice', fileId, attachmentEnc);
-        } catch (e) {
-          toast.error('Failed to send voice note');
-        }
-      };
-      mr.start();
+      const session = startVoiceRecording(stream);
+      voiceRecordingRef.current = session;
       setIsRecording(true);
-      setTimeout(() => { if (mr.state === 'recording') mr.stop(); }, 30000);
+      setTimeout(() => { if (voiceRecordingRef.current === session) stopRecording(); }, 30000);
     } catch (e) {
       toast.error(t('micPermissionDenied'));
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
+  const stopRecording = async () => {
+    const session = voiceRecordingRef.current;
+    if (!session) return;
+    voiceRecordingRef.current = null;
+    session.stop();
+    setIsRecording(false);
+    try {
+      const { blob, mimeType } = await session.done;
+      if (blob.size < MIN_VOICE_BLOB_BYTES) {
+        toast.error(t('voiceNoteTooShort'));
+        return;
+      }
+      if (!privateKey && !(await shouldSendWithSignal({ isGroup, peer, user, members: activeConv?.members || [] }))) {
+        toast.error(t('couldNotUnlockVault'));
+        return;
+      }
+      setUploadBusy(true);
+      try {
+        const filename = voiceFilenameForMime(mimeType);
+        const { fileId, attachmentEnc } = await uploadEncryptedAttachment(blob, filename, mimeType);
+        await sendMessage('', 'voice', fileId, attachmentEnc);
+      } catch (e) {
+        toast.error(t('voiceNoteFailed'));
+      } finally {
+        setUploadBusy(false);
+      }
+    } catch (e) {
+      toast.error(t('voiceNoteFailed'));
     }
   };
 
@@ -1265,6 +1306,7 @@ export default function ChatHome() {
               <input
                 value={draft}
                 onChange={(e) => onDraftChange(e.target.value)}
+                onPaste={onComposerPaste}
                 data-testid="message-input"
                 placeholder={t('messagePlaceholder')}
                 className="flex-1 min-w-0 h-11 px-3 text-base rounded-md"

@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-24 (TASK D complete · TASK G · C · B · A)
+**Updated:** 2026-06-24 (TASK E complete · TASK D · G · C · B · A)
 **Repo:** `C:\Users\smash\SSC-main`
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -17,8 +17,8 @@
 4. **Release gate** — TASK I (QA matrix) must be green before Firebase testers beyond founder.
 
 **Current builds:** APK v1.0.4 build 6 · Windows `SSC-Setup-1.0.4.exe` · API `ssc-api-00012-bbc`
-**Last task completed:** TASK D — Android permissions & calls
-**Next task:** TASK E — Attachments & media
+**Last task completed:** TASK E — Attachments & media
+**Next task:** TASK F — Chat actions & groups
 
 ---
 
@@ -79,7 +79,7 @@
 | Engine 1–5, 8, 9, 10 gates | **PASS** |
 | Unified identity + contacts graph gates | **PASS** |
 | `e2e_smoke.py` + production `/api/health` | **PASS** |
-| Frontend `yarn test:ci` | **55 passed** |
+| Frontend `yarn test:ci` | **62 passed** |
 
 ---
 
@@ -171,18 +171,20 @@
 
 ---
 
-### TASK E — Attachments & media · P0-5, P0-6
+### TASK E — Attachments & media · ✅ DONE (24 Jun 2026)
 
 **Goal:** Voice notes, images, files open, play, zoom, download.
 
 | ID | Subtask | Files / notes | Status |
 |----|---------|---------------|--------|
-| E.1 | **Voice note record** — fix empty upload (desktop mic red but no blob) | Recorder component, file upload pipeline | [ ] |
-| E.2 | Voice note **playback** on peer (Signal + RSA paths) | `Message.jsx`, attachment decrypt | [ ] |
-| E.3 | **Image preview** modal — tap to open, pinch/zoom, save | New or fix `ImagePreview` | [ ] |
-| E.4 | Screenshot paste vs file attach — same encrypted attachment UX | Composer | [ ] |
-| E.5 | Plain file attach (non-image) — name, size, download | File message type | [ ] |
-| E.6 | QA: PC ↔ phone image + voice note round-trip | Two devices | [ ] |
+| E.1 | **Voice note record** — fix empty upload (desktop mic red but no blob) | `voiceRecorder.js` timeslice + `requestData()` | [x] |
+| E.2 | Voice note **playback** on peer (Signal + RSA paths) | `Message.jsx` decrypt + play controls + fallback download | [x] |
+| E.3 | **Image preview** modal — tap to open, pinch/zoom, save | `ImagePreviewModal.jsx` | [x] |
+| E.4 | Screenshot paste vs file attach — same encrypted attachment UX | `ChatHome.jsx` `onComposerPaste` → `attachFile` | [x] |
+| E.5 | Plain file attach (non-image) — name, size, download | `EncryptedFileAttachment` + `formatFileSize` | [x] |
+| E.6 | QA: PC ↔ phone image + voice note round-trip | smashmaxxx ↔ dots after rebuild | [ ] |
+
+**Root cause fixed:** Desktop `MediaRecorder` without timeslice produced empty blobs; voice calls had no remote audio element (fixed in TASK D).
 
 ---
 

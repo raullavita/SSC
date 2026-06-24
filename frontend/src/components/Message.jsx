@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Translate, Image as ImageIcon, Paperclip, Check, Checks } from '@phosphor-icons/react';
+import { Translate, Paperclip, Check, Checks, Play, Pause, DownloadSimple } from '@phosphor-icons/react';
 import { decryptBytes } from '../lib/crypto';
 import {
   decryptAttachmentBytes,
@@ -14,6 +14,8 @@ import { signalRemoteUserId } from '../lib/signal/messages';
 import { translateMessageText } from '../lib/translation/translateClient';
 import { fetchFileBytes } from '../lib/files';
 import { registerBlobUrl, subscribeMemoryWipe, unregisterBlobUrl } from '../lib/memoryWipe';
+import { formatFileSize, filenameFromCaption } from '../lib/attachmentUtils';
+import ImagePreviewModal from './ImagePreviewModal';
 import CountdownBadge from './CountdownBadge';
 
 export default function Message({
@@ -185,25 +187,20 @@ export default function Message({
   );
 }
 
-async function fetchAttachmentBytes(fileId) {
-  return fetchFileBytes(fileId);
-}
-
 async function decryptAttachment(msg, fileId, privateKey, myUserId, peerUserId) {
-  const cipher = await fetchAttachmentBytes(fileId);
+  const cipher = await fetchFileBytes(fileId);
   if (isSignalV1AttachmentMessage(msg)) {
     let meta;
     if (msg.protocol === 'signal_group_v1') {
       const senderId = msg.sender_id;
       if (!senderId || !myUserId) throw new Error('NO_KEY');
-      const plaintext = await decryptGroupText(senderId, msg);
-      meta = parseSignalAttachmentEnvelope(plaintext);
+      const envelopeText = await decryptGroupText(senderId, msg);
+      meta = parseSignalAttachmentEnvelope(envelopeText);
     } else {
       const remoteId = signalRemoteUserId(msg, { myUserId, peerUserId });
       if (!remoteId || !myUserId) throw new Error('NO_KEY');
       meta = await decryptSignalAttachmentBody(remoteId, myUserId, msg);
     }
-    if (!meta) throw new Error('DECRYPT_FAIL');
     if (!meta) throw new Error('DECRYPT_FAIL');
     const plain = await decryptAttachmentBytes(cipher, meta);
     const mime = meta.content_type || msg.attachment_content_type || 'application/octet-stream';
@@ -218,6 +215,7 @@ async function decryptAttachment(msg, fileId, privateKey, myUserId, peerUserId) 
 
 function useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId) {
   const [objectUrl, setObjectUrl] = useState(null);
+  const [blob, setBlob] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const needsVault = !isSignalV1AttachmentMessage(msg);
@@ -228,11 +226,12 @@ function useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId) {
     (async () => {
       if (needsVault && !privateKey) { setLoading(false); return; }
       try {
-        const blob = await decryptAttachment(msg, fileId, privateKey, myUserId, peerUserId);
-        url = URL.createObjectURL(blob);
+        const decrypted = await decryptAttachment(msg, fileId, privateKey, myUserId, peerUserId);
+        url = URL.createObjectURL(decrypted);
         registerBlobUrl(url);
         if (mounted) {
           setObjectUrl(url);
+          setBlob(decrypted);
           setError(null);
         }
       } catch (e) {
@@ -245,6 +244,7 @@ function useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId) {
       if (url) unregisterBlobUrl(url);
       url = null;
       setObjectUrl(null);
+      setBlob(null);
       setError(null);
       setLoading(false);
     });
@@ -255,38 +255,108 @@ function useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId) {
     };
   }, [msg, fileId, privateKey, myUserId, peerUserId, needsVault]);
 
-  return { objectUrl, error, loading };
+  return { objectUrl, blob, error, loading };
 }
 
 function EncryptedImageAttachment({ msg, fileId, caption, privateKey, myUserId, peerUserId }) {
   const { objectUrl, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
   if (loading) return <span className="font-mono text-xs text-[#A1A1AA]">decrypting attachment…</span>;
   if (error) return <span className="font-mono text-xs text-[#FF3B30]">[{error === 'NO_KEY' ? 'no key for attachment' : 'unable to decrypt attachment'}]</span>;
+
+  const alt = filenameFromCaption(caption, 'image');
+
   return (
     <div>
-      <img src={objectUrl} alt={caption || 'attachment'} className="rounded-md max-w-[280px] max-h-[280px] object-cover" data-testid={`image-${fileId}`} />
+      <button
+        type="button"
+        onClick={() => setPreviewOpen(true)}
+        className="block rounded-md overflow-hidden hover:brightness-110 transition"
+        data-testid={`image-${fileId}`}
+      >
+        <img src={objectUrl} alt={alt} className="rounded-md max-w-[280px] max-h-[280px] object-cover cursor-zoom-in" />
+      </button>
       {caption && <div className="mt-1 text-sm">{caption}</div>}
+      {previewOpen && (
+        <ImagePreviewModal src={objectUrl} alt={alt} onClose={() => setPreviewOpen(false)} />
+      )}
     </div>
   );
 }
 
 function EncryptedFileAttachment({ msg, fileId, caption, privateKey, myUserId, peerUserId }) {
-  const { objectUrl, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
+  const { objectUrl, blob, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
   if (loading) return <span className="font-mono text-xs text-[#A1A1AA]">decrypting file…</span>;
   if (error) return <span className="font-mono text-xs text-[#FF3B30]">[{error === 'NO_KEY' ? 'no key for file' : 'unable to decrypt file'}]</span>;
+
+  const name = filenameFromCaption(caption);
+  const sizeLabel = blob ? formatFileSize(blob.size) : '';
+
   return (
-    <a href={objectUrl} download={caption || 'attachment'} className="flex items-center gap-2 underline hover:text-[#00E5FF]" data-testid={`file-${fileId}`}>
-      <Paperclip size={14} />
-      <span className="text-sm">{caption || 'attachment'}</span>
+    <a
+      href={objectUrl}
+      download={name}
+      className="flex items-center gap-3 p-2 rounded-md bg-[#1A1A1A] tac-border hover:bg-[#232323] transition min-w-[200px]"
+      data-testid={`file-${fileId}`}
+    >
+      <Paperclip size={18} className="text-[#00E5FF] shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="text-sm truncate">{name}</div>
+        {sizeLabel && (
+          <div className="text-[10px] font-mono text-[#A1A1AA] tracking-wider">{sizeLabel}</div>
+        )}
+      </div>
+      <DownloadSimple size={16} className="text-[#A1A1AA] shrink-0" />
     </a>
   );
 }
 
 function EncryptedVoiceAttachment({ msg, fileId, privateKey, myUserId, peerUserId }) {
-  const { objectUrl, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
+  const { objectUrl, blob, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
+  const audioRef = React.useRef(null);
+  const [playing, setPlaying] = useState(false);
+
   if (loading) return <span className="font-mono text-xs text-[#A1A1AA]">decrypting voice…</span>;
   if (error) return <span className="font-mono text-xs text-[#FF3B30]">[{error === 'NO_KEY' ? 'no key for voice' : 'unable to decrypt voice'}]</span>;
-  return <audio controls src={objectUrl} className="w-full max-w-[220px]" />;
+
+  const togglePlay = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (el.paused) {
+      el.play().catch(() => {});
+    } else {
+      el.pause();
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 min-w-[200px]" data-testid={`voice-${fileId}`}>
+      <button
+        type="button"
+        onClick={togglePlay}
+        className="w-10 h-10 rounded-full bg-[#00E5FF] text-black flex items-center justify-center shrink-0 hover:brightness-110"
+        data-testid={`voice-play-${fileId}`}
+      >
+        {playing ? <Pause size={18} weight="fill" /> : <Play size={18} weight="fill" />}
+      </button>
+      <audio
+        ref={audioRef}
+        src={objectUrl}
+        preload="metadata"
+        className="flex-1 max-w-[160px] h-8"
+        controls
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEnded={() => setPlaying(false)}
+        data-testid={`voice-audio-${fileId}`}
+      >
+        {blob && (
+          <a href={objectUrl} download={`voice-${fileId}`}>Download voice note</a>
+        )}
+      </audio>
+    </div>
+  );
 }
 
 function LegacyAttachmentPlaceholder({ kind, caption }) {
