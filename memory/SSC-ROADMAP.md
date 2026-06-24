@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-24 (TASK B complete · TASK A complete)
+**Updated:** 2026-06-24 (TASK C complete · TASK B · TASK A)
 **Repo:** `C:\Users\smash\SSC-main`
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -17,8 +17,8 @@
 4. **Release gate** — TASK I (QA matrix) must be green before Firebase testers beyond founder.
 
 **Current builds:** APK v1.0.4 build 6 · Windows `SSC-Setup-1.0.4.exe` · API `ssc-api-00012-bbc`
-**Last task completed:** TASK B — Session persistence (`98ee3bf`)
-**Next task:** TASK C — Real-time contacts & friend requests
+**Last task completed:** TASK C — Real-time contacts (`pending`)
+**Next task:** TASK G — Android back stack (or TASK D per plan)
 
 ---
 
@@ -79,7 +79,7 @@
 | Engine 1–5, 8, 9, 10 gates | **PASS** |
 | Unified identity + contacts graph gates | **PASS** |
 | `e2e_smoke.py` + production `/api/health` | **PASS** |
-| Frontend `yarn test:ci` | **36 passed** |
+| Frontend `yarn test:ci` | **38 passed** |
 
 ---
 
@@ -137,17 +137,19 @@
 
 ---
 
-### TASK C — Real-time contacts & friend requests · P0-1
+### TASK C — Real-time contacts & friend requests · ✅ DONE (24 Jun 2026)
 
 **Goal:** Pending badge and roster update live while app is open.
 
 | ID | Subtask | Files / notes | Status |
 |----|---------|---------------|--------|
-| C.1 | Audit WS events for `friend-request`, `contact-accepted`, roster refresh | `backend` WS handlers, `frontend` WS client | [ ] |
-| C.2 | On event → refresh contacts + pending count without restart | `ChatHome.jsx`, contacts context/hooks | [ ] |
-| C.3 | FCM data message → same refresh when backgrounded | Push handler | [ ] |
-| C.4 | QA: send request PC → phone shows pending **without** restart | smashmaxxx → dots | [ ] |
-| C.5 | QA: accept on phone → PC roster updates live | dots → smashmaxxx | [ ] |
+| C.1 | WS events: `friend-request`, `friend-request-sent`, `friend-accepted`, `friend-rejected`, `contacts-changed` | `contact_realtime.py`, `contacts.py` | [x] |
+| C.2 | Client refresh on WS + `ssc-contacts-refresh` event | `ChatHome.jsx`, `contactRealtime.js` | [x] |
+| C.3 | FCM foreground/background → `dispatchContactsRefresh` | `native-push.js` | [x] |
+| C.4 | Founder QA: send request PC → phone pending live | smashmaxxx → dots after rebuild | [ ] |
+| C.5 | Founder QA: accept on phone → PC roster live | dots → smashmaxxx after rebuild | [ ] |
+
+**Root cause fixed:** Push was skipped when WS connected but no WS event was sent — live app never refreshed roster.
 
 ---
 
@@ -251,7 +253,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | Auth | Google login both devices | — | [x] |
 | Auth | Stay logged in after force-close | TASK B | [x] code · [ ] founder retest |
 | Auth | Google-only email login shows friendly error | TASK H.5 | [ ] |
-| Contacts | Friend request live (send + accept) | TASK C | [ ] |
+| Contacts | Friend request live (send + accept) | TASK C | [x] code · [ ] founder retest |
 | Chat | 1:1 text real-time | — | [x] |
 | Chat | No vault / legacy / upgrade UI | TASK A | [x] code · [ ] founder retest |
 | Chat | Image + voice note + file | TASK E | [ ] |
@@ -308,7 +310,7 @@ Google OAuth · friend request (after restart) · 1:1 chat · PC→phone video (
 
 | Issue | Task |
 |-------|------|
-| P0-1 Friend request not live | C |
+| P0-1 Friend request not live | C ✅ (founder retest after rebuild) |
 | P0-2 Session lost on force-close | B ✅ (founder retest after rebuild) |
 | P0-3 Android mic/camera permissions | D |
 | P0-4 Calls one-way / no audio / no ring | D |
@@ -391,3 +393,4 @@ yarn test:ci
 | 2026-06-24 | **Roadmap restructure** — execution plan TASK A–K with subtasks |
 | 2026-06-24 | **TASK A complete** — invisible vault/crypto UX; `vaultCredentialStore.js`; frontend 32 tests pass |
 | 2026-06-24 | **TASK B complete** — encrypted session persist; S3 gap closed; frontend 36 tests pass |
+| 2026-06-24 | **TASK C complete** — friend-request WS events + live roster refresh; frontend 38 tests |

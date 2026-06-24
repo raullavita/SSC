@@ -20,6 +20,12 @@ from core.contact_graph import (
 from core.database import db
 from core.logging_config import logger
 from core.models import FriendRequestActionIn, SendFriendRequestIn
+from core.contact_realtime import (
+    notify_friend_accepted,
+    notify_friend_rejected,
+    notify_friend_request,
+    notify_friend_request_sent,
+)
 from core.push_helpers import send_push_for_friend_accept, send_push_for_friend_request
 from core.retention import friend_request_pending_expires_at, friend_request_resolved_expires_at
 from core.utils import iso, now_utc
@@ -66,6 +72,18 @@ async def send_friend_request(body: SendFriendRequestIn, current=Depends(get_cur
         "created_at": iso(now_utc()),
         "expires_at": friend_request_pending_expires_at(),
     })
+    await notify_friend_request(
+        target["user_id"],
+        request_id=req_id,
+        from_user_id=current["user_id"],
+        from_username=current["username"],
+    )
+    await notify_friend_request_sent(
+        current["user_id"],
+        request_id=req_id,
+        to_user_id=target["user_id"],
+        to_username=target["username"],
+    )
     asyncio.create_task(send_push_for_friend_request(target["user_id"], current))
     return {"ok": True, "request_id": req_id}
 
@@ -106,17 +124,32 @@ async def accept_friend_request(body: FriendRequestActionIn, current=Depends(get
 
     await establish_mutual_contact(req["from_user_id"], req["to_user_id"])
 
+    await notify_friend_accepted(
+        req["from_user_id"],
+        current["user_id"],
+        request_id=body.request_id,
+        accepter_username=current["username"],
+    )
     asyncio.create_task(send_push_for_friend_accept(req["from_user_id"], current))
     return {"ok": True}
 
 
 @router.post("/requests/reject")
 async def reject_friend_request(body: FriendRequestActionIn, current=Depends(get_current_user)):
+    req = await db.friend_requests.find_one({
+        "request_id": body.request_id,
+        "to_user_id": current["user_id"],
+        "status": "pending",
+    })
+    if not req:
+        raise HTTPException(404, "Request not found or already handled")
+
     await db.friend_requests.update_one(
-        {"request_id": body.request_id, "to_user_id": current["user_id"], "status": "pending"},
+        {"request_id": body.request_id},
         {"$set": {"status": "rejected", "expires_at": friend_request_resolved_expires_at()}},
     )
     logger.info(f"friend request rejected: {body.request_id} by {current['user_id']}")
+    await notify_friend_rejected(req["from_user_id"], current["user_id"], request_id=body.request_id)
     return {"ok": True}
 
 

@@ -2,6 +2,7 @@
  * Capacitor FCM/APNs push — native shell only. Web/PWA still uses push.js (VAPID).
  */
 import { api } from './api';
+import { dispatchContactsRefresh } from './contactRealtime';
 import { getPlatform, isNativeApp } from './platform';
 
 let listenersAttached = false;
@@ -32,10 +33,16 @@ function handleNotificationData(data, action = 'open') {
     return;
   }
 
+  if (type === 'friend_request' || type === 'friend_accept') {
+    dispatchContactsRefresh({ type, full: type === 'friend_accept' });
+    if (!window.location.pathname.startsWith('/chat')) {
+      window.location.assign('/chat');
+    }
+    return;
+  }
+
   if (data.conversation_id) {
     window.location.assign(`/chat/${data.conversation_id}`);
-  } else if (type === 'friend_request' || type === 'friend_accept') {
-    window.location.assign('/chat');
   }
 }
 
@@ -64,6 +71,11 @@ function attachListeners(PushNotifications) {
 
   PushNotifications.addListener('pushNotificationReceived', (notification) => {
     const data = notification?.data || {};
+    const type = data.type || notification?.data?.type;
+    if (type === 'friend_request' || type === 'friend_accept') {
+      dispatchContactsRefresh({ type, full: type === 'friend_accept' });
+      return;
+    }
     if (data.type === 'call' && data.silent !== '1') {
       handleNotificationData(data, 'open');
     }

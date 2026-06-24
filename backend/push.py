@@ -111,8 +111,6 @@ async def send_push_for_call(to_user: str, from_user: dict, mode: str = "audio",
 async def send_push_for_friend_request(to_user_id: str, from_user: dict):
     if db is None or manager is None:
         return
-    if to_user_id in manager.user_sockets:
-        return
     payload = build_generic_push(
         ACTIVITY_FRIEND_REQUEST,
         tag=f"friend-{to_user_id}",

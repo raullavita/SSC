@@ -24,6 +24,10 @@ import GroupCallModal from '../components/GroupCallModal';
 import { StoriesBar, StoryViewer } from '../components/Stories';
 import ContactsModal from '../components/ContactsModal';
 import { formatPeerPresence } from '../lib/presence';
+import {
+  isContactRealtimeEvent,
+  subscribeContactsRefresh,
+} from '../lib/contactRealtime';
 
 import { registerMemoryWipeHandler, registerSocketCloser } from '../lib/memoryWipe';
 import { getSessionToken } from '../lib/sessionStore';
@@ -86,6 +90,7 @@ export default function ChatHome() {
   const [reads, setReads] = useState([]); // [{user_id, last_read_message_id}]
   const socketRef = useRef(null);
   const scrollRef = useRef(null);
+  const refreshContactsRosterRef = useRef(null);
 
   useEffect(() => {
     const closeSocket = () => {
@@ -206,14 +211,14 @@ export default function ChatHome() {
   }, [activeConv, user, peer, isGroup]);
 
   // ─── Load conversations ────
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       const { data } = await api.get('/conversations');
       setConversations(data);
-    } catch (e) {
-      // ignore
+    } catch {
+      /* ignore */
     }
-  };
+  }, []);
   const goToConversation = useCallback((id) => {
     setActiveId(id);
     navigate(id ? `/chat/${id}` : '/chat');
@@ -222,8 +227,6 @@ export default function ChatHome() {
   useEffect(() => {
     if (conversationId) setActiveId(conversationId);
   }, [conversationId]);
-
-  useEffect(() => { loadConversations(); loadMyContacts(); loadPendingRequests(); }, []);
 
   const handlePendingCall = useCallback(async (payload) => {
     const data = payload?.data || payload;
@@ -267,14 +270,14 @@ export default function ChatHome() {
     return () => window.removeEventListener('ssc-call-notification', h);
   }, [handlePendingCall]);
 
-  const loadMyContacts = async () => {
+  const loadMyContacts = useCallback(async () => {
     try {
       const { data } = await api.get('/contacts');
       setMyContacts(data);
     } catch {}
-  };
+  }, []);
 
-  const loadPendingRequests = async () => {
+  const loadPendingRequests = useCallback(async () => {
     try {
       const { data } = await api.get('/contacts/requests');
       setPendingRequests(data);
@@ -283,7 +286,32 @@ export default function ChatHome() {
       const { data } = await api.get('/contacts/requests/sent');
       setOutgoingRequests(data);
     } catch {}
-  };
+  }, []);
+
+  const refreshContactsRoster = useCallback(async ({ full = false } = {}) => {
+    await loadPendingRequests();
+    if (full) {
+      await loadMyContacts();
+      await loadConversations();
+    }
+  }, [loadConversations, loadMyContacts, loadPendingRequests]);
+
+  useEffect(() => {
+    refreshContactsRosterRef.current = refreshContactsRoster;
+  }, [refreshContactsRoster]);
+
+  useEffect(() => {
+    if (!user?.user_id) return;
+    refreshContactsRoster({ full: true });
+  }, [user?.user_id, refreshContactsRoster]);
+
+  useEffect(() => {
+    if (!user?.user_id) return undefined;
+    return subscribeContactsRefresh((detail) => {
+      const full = detail?.type === 'friend_accept' || detail?.full;
+      refreshContactsRosterRef.current?.({ full });
+    });
+  }, [user?.user_id]);
 
   const sendFriendRequest = async (u) => {
     await api.post('/contacts/request', { username: u.username });
@@ -439,6 +467,14 @@ export default function ChatHome() {
           loadConversations();
         } else if (data.type === 'status-new') {
           window.dispatchEvent(new Event('ssc-status-new'));
+        } else if (isContactRealtimeEvent(data)) {
+          const full = data.type === 'friend-accepted' || data.type === 'contacts-changed';
+          refreshContactsRosterRef.current?.({ full });
+          if (data.type === 'friend-request' && data.from_username) {
+            toast.message(t('friendRequestIncoming', { user: data.from_username }));
+          } else if (data.type === 'friend-accepted' && data.contact_username) {
+            toast.success(t('friendRequestAcceptedBy', { user: data.contact_username }));
+          }
         } else if (['call-answer', 'ice-candidate', 'call-end', 'call-reject'].includes(data.type)) {
           (async () => {
             let signal = data;
