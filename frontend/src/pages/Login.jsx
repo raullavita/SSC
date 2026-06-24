@@ -44,7 +44,7 @@ export default function Login() {
       try {
         await unlockPrivateKey(password);
       } catch {
-        toast.error(t('unlockFailed'));
+        /* vault unlock is silent — Signal handles new messages */
       }
       toast.success(t('welcomeBack'));
       navigate('/chat');

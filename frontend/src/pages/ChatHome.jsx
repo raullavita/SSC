@@ -1,13 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, LockKey, UsersThree, Gear, Microphone, CaretLeft } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { ChatSocket } from '../lib/socket';
 import { decryptMessage, encryptBytesForRecipients, encryptMessageForRecipients, b64ToBytes } from '../lib/crypto';
-import { isPeerVerified } from '../lib/verification';
-import VerifyHandshakeModal from '../components/VerifyHandshakeModal';
+
 import { subscribePush } from '../lib/push';
 import { subscribeNativePush } from '../lib/native-push';
 import Message from '../components/Message';
@@ -41,17 +40,14 @@ import { encryptSignalText } from '../lib/signal/messages';
 import { ProtocolVersion } from '../lib/signal/constants';
 import {
   decryptMessageBody,
-  encryptionHintI18nKey,
-  resolveOutgoingEncryptionHint,
   shouldSendWithSignal,
 } from '../lib/signal/migration';
-import EncryptionModeBadge from '../components/EncryptionModeBadge';
 import { unpackIncomingSignaling } from '../lib/signal/webrtcSignaling';
 
 const PENDING_CALL_KEY = 'ssc_pending_call';
 
 export default function ChatHome() {
-  const { user, privateKey, unlockPrivateKey, logout, panicWipe } = useAuth();
+  const { user, privateKey, logout, panicWipe } = useAuth();
   const navigate = useNavigate();
   const { conversationId } = useParams();
   const [conversations, setConversations] = useState([]);
@@ -60,21 +56,10 @@ export default function ChatHome() {
   const [messageFilter, setMessageFilter] = useState('');
   const [decryptedBodies, setDecryptedBodies] = useState({});
   const [draft, setDraft] = useState('');
-  const [encryptionHint, setEncryptionHint] = useState(null);
   const [autoTranslate, setAutoTranslate] = useState(false);
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [translationOnDevice, setTranslationOnDevice] = useState(false);
   const [serverTranslationAllowed, setServerTranslationAllowed] = useState(false);
-  const [unlockOpen, setUnlockOpen] = useState(false);
-
-  useEffect(() => {
-    if (user?.encrypted_private_key && !privateKey) {
-      setUnlockOpen(true);
-    }
-  }, [user?.encrypted_private_key, privateKey]);
-  const [unlockPwd, setUnlockPwd] = useState('');
-  const [unlockBusy, setUnlockBusy] = useState(false);
-  const [unlockErr, setUnlockErr] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -99,8 +84,6 @@ export default function ChatHome() {
   const [storyGroup, setStoryGroup] = useState(null);
   const [groupCallState, setGroupCallState] = useState(null); // {mode, direction, members, signal}
   const [reads, setReads] = useState([]); // [{user_id, last_read_message_id}]
-  const [verifyOpen, setVerifyOpen] = useState(false);
-  const [peerVerified, setPeerVerified] = useState(false);
   const socketRef = useRef(null);
   const scrollRef = useRef(null);
 
@@ -518,22 +501,6 @@ export default function ChatHome() {
     ensureSignalSession(peer.user_id, user?.user_id).catch(() => {});
   }, [activeId, isGroup, peer?.user_id, user?.user_id]);
 
-  // Engine 8.6 — outgoing encryption mode hint (Signal vs legacy fallback)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!activeId) {
-        if (!cancelled) setEncryptionHint(null);
-        return;
-      }
-      const hint = await resolveOutgoingEncryptionHint({
-        isGroup, peer, user, members: activeConv?.members || [],
-      });
-      if (!cancelled) setEncryptionHint(hint);
-    })();
-    return () => { cancelled = true; };
-  }, [activeId, isGroup, peer, user, activeConv?.members]);
-
   // Mark new incoming messages as read when the chat is open
   useEffect(() => {
     if (!activeId || messages.length === 0) return;
@@ -803,32 +770,6 @@ export default function ChatHome() {
     setGroupCallState(null);
   };
 
-  // ─── Unlock private key prompt ───
-  const submitUnlock = async (e) => {
-    e?.preventDefault();
-    if (unlockBusy) return;
-    const pwd = unlockPwd.trim();
-    if (!pwd) {
-      setUnlockErr('Enter your account password');
-      return;
-    }
-    setUnlockBusy(true);
-    setUnlockErr('');
-    try {
-      const pk = await unlockPrivateKey(pwd);
-      if (!pk) throw new Error('Unlock failed');
-      setUnlockOpen(false);
-      setUnlockPwd('');
-      setUnlockErr('');
-      toast.success('Vault unlocked');
-    } catch {
-      setUnlockErr('Wrong password — use the same password you signed in with (123456 for test account)');
-      toast.error(t('couldNotUnlockVault'));
-    } finally {
-      setUnlockBusy(false);
-    }
-  };
-
   // ─── Typing ───
   const onDraftChange = (v) => {
     setDraft(v);
@@ -870,28 +811,6 @@ export default function ChatHome() {
     }
   };
 
-  const refreshPeerVerified = useCallback(async () => {
-    if (!peer?.public_key || !user?.public_key) {
-      setPeerVerified(false);
-      return;
-    }
-    try {
-      setPeerVerified(await isPeerVerified(peer.user_id, user, peer, user.user_id, peer));
-    } catch {
-      setPeerVerified(false);
-    }
-  }, [peer, user]);
-
-  useEffect(() => {
-    refreshPeerVerified();
-  }, [refreshPeerVerified]);
-
-  useEffect(() => {
-    const onChange = () => refreshPeerVerified();
-    window.addEventListener('ssc-verified-change', onChange);
-    return () => window.removeEventListener('ssc-verified-change', onChange);
-  }, [refreshPeerVerified]);
-
   const peerContact = peer ? myContacts.find((c) => c.user_id === peer.user_id) : null;
 
   return (
@@ -919,17 +838,6 @@ export default function ChatHome() {
         </div>
 
         <div className="p-3 border-b border-[#27272A] flex flex-col gap-2">
-          {!privateKey && (
-            <button
-              type="button"
-              onClick={() => { setUnlockErr(''); setUnlockOpen(true); }}
-              data-testid="vault-locked-banner"
-              className="w-full py-2.5 px-3 rounded-md border border-[#FF9500]/40 bg-[#FF9500]/10 text-left flex items-center gap-2 active:bg-[#FF9500]/20"
-            >
-              <LockKey size={16} className="text-[#FF9500] shrink-0" />
-              <span className="text-xs font-mono text-[#FF9500]">{t('vaultLocked')}</span>
-            </button>
-          )}
           <div className="flex gap-2">
             <button onClick={() => setSearchOpen(true)} data-testid="new-chat-button"
               className="flex-1 h-10 rounded-md tac-border bg-[#121212] hover:bg-[#1A1A1A] flex items-center gap-2 px-3 text-sm text-[#A1A1AA]">
@@ -1021,12 +929,11 @@ export default function ChatHome() {
                   <div className="text-sm font-medium truncate" data-testid="chat-peer-username">
                     {headerTitle}
                   </div>
-                  <div className={`text-[10px] font-mono tracking-wider truncate flex items-center gap-1 ${peerVerified && !isGroup ? 'text-[#34C759]' : 'text-[#A1A1AA]'}`}>
-                    <ShieldCheck size={10} weight="fill" className="shrink-0" />
+                  <div className="text-[10px] font-mono tracking-wider truncate flex items-center gap-1 text-[#A1A1AA]">
                     <span className="truncate" data-testid="chat-peer-status">
                       {isGroup
-                        ? `E2E · ${activeConv.participants.length} ${t('members')}`
-                        : `${peerVerified ? 'VERIFIED · ' : ''}${formatPeerPresence(peer)} · ${peer?.language?.toUpperCase() || '—'}`}
+                        ? `${activeConv.participants.length} ${t('members')}`
+                        : `${formatPeerPresence(peer)} · ${peer?.language?.toUpperCase() || '—'}`}
                     </span>
                   </div>
                 </div>
@@ -1066,12 +973,6 @@ export default function ChatHome() {
                           {t('searchMessages')}
                         </MenuAction>
                         <MenuAction
-                          testId="mobile-verify-identity"
-                          onClick={() => { setChatMenuOpen(false); setVerifyOpen(true); }}
-                        >
-                          {t('verifyIdentity').toUpperCase()}
-                        </MenuAction>
-                        <MenuAction
                           testId="mobile-block"
                           onClick={() => { setChatMenuOpen(false); toggleBlock(peer.user_id); }}
                         >
@@ -1103,9 +1004,6 @@ export default function ChatHome() {
                   <>
                     {!isGroup && peer && (
                       <>
-                        <button onClick={() => setVerifyOpen(true)} className="text-[10px] px-2 py-1 tac-border rounded text-[#34C759]" data-testid="verify-identity-button">
-                          {t('verifyIdentity').toUpperCase()}
-                        </button>
                         <button onClick={() => toggleBlock(peer.user_id)} className="text-[10px] px-2 py-1 tac-border rounded" data-testid="block-button">
                           {peerContact?.blocked ? t('unblock').toUpperCase() : t('block').toUpperCase()}
                         </button>
@@ -1160,7 +1058,7 @@ export default function ChatHome() {
               </div>
               {messages.length === 0 && (
                 <div className="text-center text-xs font-mono text-[#A1A1AA] tracking-wider my-8">
-                  {t('sayHello')}
+                  {t('emptyChatHint')}
                 </div>
               )}
               {filteredMessages.map((m) => (
@@ -1187,16 +1085,6 @@ export default function ChatHome() {
                 </div>
               )}
             </div>
-
-            {encryptionHint && (
-              <div
-                className="px-3 py-1.5 border-t border-[#27272A] bg-[#121212]/90 flex items-center gap-2 text-[10px] font-mono tracking-wider"
-                data-testid="encryption-hint-banner"
-              >
-                <EncryptionModeBadge protocol={encryptionHint.mode} />
-                <span className="text-[#A1A1AA]">{t(encryptionHintI18nKey(encryptionHint))}</span>
-              </div>
-            )}
 
             <form onSubmit={onSendText} className="chat-composer safe-bottom safe-x border-t border-[#27272A] px-2 md:px-3 py-2 flex items-center gap-2">
               <input ref={fileInputRef} type="file" hidden onChange={onFileChange} data-testid="file-input" />
@@ -1278,39 +1166,6 @@ export default function ChatHome() {
         </div>
       )}
 
-      {/* Unlock private key */}
-      {unlockOpen && user?.encrypted_private_key && (
-        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4">
-          <form onSubmit={submitUnlock} className="w-full max-w-sm bg-[#121212] tac-border rounded-md p-5 fade-up">
-            <h3 className="font-mono text-sm tracking-[0.25em]">{t('unlockVault')}</h3>
-            <p className="text-xs text-[#A1A1AA] mt-2">{t('unlockVaultHint')}</p>
-            <input
-              type="password"
-              value={unlockPwd}
-              onChange={(e) => { setUnlockPwd(e.target.value); setUnlockErr(''); }}
-              placeholder="••••••••"
-              className="w-full mt-4 px-3 py-2.5 text-sm"
-              autoComplete="current-password"
-              data-testid="unlock-password-input"
-            />
-            {unlockErr && (
-              <p className="mt-2 text-xs text-[#FF3B30] font-mono" data-testid="unlock-error">{unlockErr}</p>
-            )}
-            <button
-              type="button"
-              onClick={submitUnlock}
-              disabled={unlockBusy || !unlockPwd.trim()}
-              data-testid="unlock-submit-button"
-              className="w-full mt-3 py-2.5 bg-[#00E5FF] text-black font-medium text-sm rounded-md hover:brightness-110 transition disabled:opacity-40 active:brightness-90"
-            >
-              {unlockBusy ? '…' : t('unlockSubmit')}
-            </button>
-            <button type="button" onClick={() => setUnlockOpen(false)} data-testid="unlock-cancel"
-              className="w-full mt-2 py-2 text-xs font-mono text-[#A1A1AA] hover:text-white active:text-white">{t('unlockSkip')}</button>
-          </form>
-        </div>
-      )}
-
       {/* Incoming call ring */}
       {callState && callState.direction === 'incoming' && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center">
@@ -1363,16 +1218,9 @@ export default function ChatHome() {
         onRemove={removeContact}
       />
 
-      <VerifyHandshakeModal
-        open={verifyOpen && !isGroup && !!peer}
-        onClose={() => setVerifyOpen(false)}
-        me={user}
-        peer={peer}
-      />
       <SettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        onUnlockVault={() => setUnlockOpen(true)}
       />
       <ConfirmDialog
         open={!!confirmRemoveUid}

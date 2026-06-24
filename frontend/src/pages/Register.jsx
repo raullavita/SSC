@@ -13,6 +13,7 @@ import { fetchGoogleConfig, signInWithGoogle } from '../lib/google-auth';
 import { LANGS } from '../lib/i18n';
 import { bootstrapSignalIdentity } from '../lib/signalIdentityBootstrap';
 import { isInstalledClient } from '../lib/platform';
+import { saveVaultCredential } from '../lib/vaultCredentialStore';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -75,6 +76,7 @@ export default function Register() {
       await loginWithToken(data.token, data.user);
       const pk = await crypto.subtle.importKey('jwk', privateKeyJwk, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt']);
       await persistPrivateKey(pk);
+      await saveVaultCredential(data.user.user_id, password);
       if (isInstalledClient()) {
         const boot = await bootstrapSignalIdentity(refreshUser);
         if (!boot.ok) {

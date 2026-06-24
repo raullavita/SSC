@@ -10,6 +10,7 @@ import { generateRSAKeypair, wrapPrivateKey } from '../lib/crypto';
 import { LANGS } from '../lib/i18n';
 import { bootstrapSignalIdentity } from '../lib/signalIdentityBootstrap';
 import { isInstalledClient } from '../lib/platform';
+import { saveVaultCredential } from '../lib/vaultCredentialStore';
 
 export default function SetupUsername() {
   const navigate = useNavigate();
@@ -62,6 +63,7 @@ export default function SetupUsername() {
       });
       const pk = await crypto.subtle.importKey('jwk', privateKeyJwk, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt']);
       await persistPrivateKey(pk);
+      if (user?.user_id) await saveVaultCredential(user.user_id, password);
       await refreshUser();
       if (isInstalledClient()) {
         const boot = await bootstrapSignalIdentity(refreshUser);

@@ -8,6 +8,7 @@ import { clearSessionStorageFootprint } from './sessionStorageFootprint';
 import { purgeLegacyPrivateKeyFromSession } from './vault';
 import { purgeLegacyVerificationFlags } from './verification';
 import { clearSessionToken, getSessionToken, usesBearerAuth } from './sessionStore';
+import { clearVaultCredential, clearAllVaultCredentials } from './vaultCredentialStore';
 
 export const PANIC_REDIRECT = '/login?panic=1';
 export const PANIC_SERVER_PATH = '/panic-wipe';
@@ -35,12 +36,17 @@ function authHeaders(token) {
  * Safe when offline; does not await network.
  * @param {'logout'|'panic'} reason
  */
-export function executeClientFootprintWipe(reason) {
+export function executeClientFootprintWipe(reason, { userId } = {}) {
   dispatchMemoryWipe(reason);
   clearSessionToken();
   clearLocalStorageSessionSecrets();
   purgeLegacyPrivateKeyFromSession();
   clearSessionStorageFootprint(reason);
+  if (reason === 'panic') {
+    clearAllVaultCredentials();
+  } else if (userId) {
+    clearVaultCredential(userId);
+  }
   if (reason === 'logout') {
     purgeLegacyVerificationFlags();
   }
@@ -65,7 +71,7 @@ async function sendNativeAppToBackground() {
  */
 export async function runPanicOrchestrator({ postPanicWipe }) {
   const { authToken } = capturePreWipeCredentials();
-  executeClientFootprintWipe('panic');
+  executeClientFootprintWipe('panic', {});
   try {
     await postPanicWipe(authToken);
   } catch {
@@ -89,9 +95,10 @@ export async function runLogoutOrchestrator({
   postLogout,
   unsubscribePush,
   unsubscribeNativePush,
+  userId,
 }) {
   const { authToken, nativePushToken } = capturePreWipeCredentials();
-  executeClientFootprintWipe('logout');
+  executeClientFootprintWipe('logout', { userId });
   try {
     await unsubscribePush?.();
   } catch {

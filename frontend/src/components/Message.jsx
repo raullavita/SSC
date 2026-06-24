@@ -8,9 +8,9 @@ import {
   parseSignalAttachmentEnvelope,
 } from '../lib/signal/attachments';
 import { decryptGroupText } from '../lib/signal/groupMessages';
-import { decryptMessageBody, getMessageProtocol } from '../lib/signal/migration';
-import { isSignalV1Message, signalRemoteUserId } from '../lib/signal/messages';
-import EncryptionModeBadge from './EncryptionModeBadge';
+import { decryptMessageBody } from '../lib/signal/migration';
+import { signalRemoteUserId } from '../lib/signal/messages';
+
 import { translateMessageText } from '../lib/translation/translateClient';
 import { fetchFileBytes } from '../lib/files';
 import { registerBlobUrl, subscribeMemoryWipe, unregisterBlobUrl } from '../lib/memoryWipe';
@@ -111,11 +111,7 @@ export default function Message({
         {error === 'DECRYPT_FAIL' && <span className="font-mono text-xs text-[#FF3B30]">[unable to decrypt]</span>}
         {error === 'NO_KEY' && <span className="font-mono text-xs text-[#FF3B30]">[no key for this device]</span>}
         {!error && plaintext === null && (
-          <span className="font-mono text-xs text-[#A1A1AA]">
-            {isSignalV1Message(msg)
-              ? 'decrypting…'
-              : (!privateKey ? 'unlock vault to read & translate' : 'decrypting…')}
-          </span>
+          <span className="font-mono text-xs text-[#A1A1AA]">decrypting…</span>
         )}
         {!error && plaintext !== null && (
           <>
@@ -161,7 +157,6 @@ export default function Message({
         )}
       </div>
       <div className={`mt-1 flex items-center gap-2 text-[10px] font-mono text-[#A1A1AA] tracking-wider ${isMine ? 'justify-end' : 'justify-start'}`}>
-        <EncryptionModeBadge protocol={getMessageProtocol(msg)} compact />
         <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         <span className="opacity-50">·</span>
         <CountdownBadge expiresAt={msg.expires_at} />
@@ -295,10 +290,9 @@ function EncryptedVoiceAttachment({ msg, fileId, privateKey, myUserId, peerUserI
 }
 
 function LegacyAttachmentPlaceholder({ kind, caption }) {
-  const label = kind === 'voice' ? 'voice note' : kind === 'file' ? 'file' : 'image';
   return (
     <div className="font-mono text-xs text-[#A1A1AA]" data-testid={`legacy-attachment-${kind}`}>
-      [legacy {label} — E2E encryption required]
+      loading attachment…
       {caption && kind !== 'voice' && <div className="mt-1 text-sm text-[#F0F0F0]">{caption}</div>}
     </div>
   );

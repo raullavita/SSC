@@ -39,8 +39,8 @@ function Section({ icon: Icon, title, children, testId }) {
   );
 }
 
-export default function SettingsModal({ open, onClose, onUnlockVault }) {
-  const { user, refreshUser, privateKey } = useAuth();
+export default function SettingsModal({ open, onClose }) {
+  const { user, refreshUser } = useAuth();
   const { t, setLocale } = useLocale();
   const [language, setLanguage] = useState(user?.language || 'en');
   const [username, setUsername] = useState(user?.username || '');
@@ -115,8 +115,7 @@ export default function SettingsModal({ open, onClose, onUnlockVault }) {
 
   if (!open) return null;
 
-  const signalReady = userHasUnifiedIdentity(user);
-  const vaultUnlocked = !!privateKey;
+  const messagesProtected = userHasUnifiedIdentity(user);
   const profileDirty = language !== (user?.language || 'en') || username.trim() !== (user?.username || '');
 
   return (
@@ -185,15 +184,9 @@ export default function SettingsModal({ open, onClose, onUnlockVault }) {
             <Section icon={ShieldCheck} title={t('settingsSecurity')} testId="settings-security-section">
               <div className="p-3 bg-[#1A1A1A] rounded-md tac-border space-y-2 text-xs">
                 <div className="flex justify-between gap-2">
-                  <span className="text-[#A1A1AA]">{t('settingsSignalIdentity')}</span>
-                  <span className={`font-mono ${signalReady ? 'text-[#34C759]' : 'text-[#FF9500]'}`}>
-                    {signalReady ? t('settingsStatusReady') : t('settingsStatusPending')}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-[#A1A1AA]">{t('settingsVault')}</span>
-                  <span className={`font-mono ${vaultUnlocked ? 'text-[#34C759]' : 'text-[#FF9500]'}`}>
-                    {vaultUnlocked ? t('settingsStatusUnlocked') : t('settingsStatusLocked')}
+                  <span className="text-[#A1A1AA]">{t('settingsMessagesProtected')}</span>
+                  <span className={`font-mono ${messagesProtected ? 'text-[#34C759]' : 'text-[#FF9500]'}`}>
+                    {messagesProtected ? t('settingsStatusReady') : t('settingsStatusPending')}
                   </span>
                 </div>
                 <div className="flex justify-between gap-2">
@@ -205,16 +198,6 @@ export default function SettingsModal({ open, onClose, onUnlockVault }) {
               </div>
 
               <div className="flex flex-col gap-2 mt-3">
-                {!vaultUnlocked && onUnlockVault && (
-                  <button
-                    type="button"
-                    onClick={() => { onClose?.(); onUnlockVault(); }}
-                    className="w-full py-2.5 text-xs font-mono tracking-wider border border-[#FF9500]/40 text-[#FF9500] rounded-md hover:bg-[#FF9500]/10"
-                    data-testid="settings-unlock-vault"
-                  >
-                    {t('unlockVault')}
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={() => setTwoFAOpen(true)}

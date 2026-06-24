@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-24 (execution plan · vault policy · founder QA backlog)
+**Updated:** 2026-06-24 (TASK A complete · execution plan · vault policy)
 **Repo:** `C:\Users\smash\SSC-main`
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -17,6 +17,8 @@
 4. **Release gate** — TASK I (QA matrix) must be green before Firebase testers beyond founder.
 
 **Current builds:** APK v1.0.4 build 6 · Windows `SSC-Setup-1.0.4.exe` · API `ssc-api-00012-bbc`
+**Last task completed:** TASK A — Invisible security (commit pending push)
+**Next task:** TASK B — Session persistence (stay logged in)
 
 ---
 
@@ -77,7 +79,7 @@
 | Engine 1–5, 8, 9, 10 gates | **PASS** |
 | Unified identity + contacts graph gates | **PASS** |
 | `e2e_smoke.py` + production `/api/health` | **PASS** |
-| Frontend `yarn test:ci` | **29 passed** |
+| Frontend `yarn test:ci` | **32 passed** |
 
 ---
 
@@ -100,22 +102,24 @@
 
 ---
 
-### TASK A — Invisible security (vault + crypto UX) · *founder priority*
+### TASK A — Invisible security (vault + crypto UX) · ✅ DONE (24 Jun 2026)
 
 **Goal:** WhatsApp-like — crypto runs; user never manages keys or vault.
 
 | ID | Subtask | Files / notes | Status |
 |----|---------|---------------|--------|
-| A.1 | Remove **vault locked banner** from chat | `ChatHome.jsx`, `i18n.js` | [ ] |
-| A.2 | Remove **Settings vault ABIERTO/BLOQUEADO** row (or replace with neutral “Messages protected” — no key state) | `SettingsModal.jsx` | [ ] |
-| A.3 | Change login/register copy — no “vault”; use “Sign in” / “Create account” | `i18n.js`, `Login.jsx`, `Register.jsx` | [ ] |
-| A.4 | **Email/password login** — keep silent auto-unlock (already calls `unlockPrivateKey`) | `Login.jsx`, `AuthContext.jsx` | [x] |
-| A.5 | **Google login** — auto-unlock vault without user prompt | Options: (a) device secure storage for vault password set at finish-setup; (b) unlock immediately after `SetupUsername` and persist device credential; (c) derive wrap key from platform keystore. **Must not** show vault UI. | `GoogleAuthCallback.jsx`, `SetupUsername.jsx`, `sessionStore` / Capacitor Secure Storage | [ ] |
-| A.6 | Remove **legacy / upgrade / E2E established** banners from chat | `ChatHome.jsx`, related components | [ ] |
-| A.7 | Hide **VERIFY / QR** from default chat header; move to Settings → Advanced (or remove from v1) | `ChatHome.jsx`, `VerifyHandshakeModal.jsx` | [ ] |
-| A.8 | **Silent Signal bootstrap** on login for installed clients (`ensurePreKeysUploaded` + session warm-up) | `AuthContext.jsx`, `signalIdentityBootstrap.js` | [ ] |
-| A.9 | Remove **SIG/RSA protocol labels** from message bubbles (internal logs only) | `Message.jsx`, composer hints | [ ] |
-| A.10 | Gate: founder two-device chat shows **no crypto jargon**; messages send/receive encrypted | Manual QA smashmaxxx ↔ dots | [ ] |
+| A.1 | Remove **vault locked banner** from chat | `ChatHome.jsx` | [x] |
+| A.2 | Replace vault/Signal rows with **Messages protected** in Settings | `SettingsModal.jsx` | [x] |
+| A.3 | Login/register copy — “Sign in” / “Create account” (en/es/ro) | `i18n.js` | [x] |
+| A.4 | **Email/password login** — silent auto-unlock + save device credential | `Login.jsx`, `AuthContext.jsx` | [x] |
+| A.5 | **Google login** — auto-unlock via `vaultCredentialStore.js` (device AES wrap); saved at setup/register/login | `AuthContext.jsx`, `SetupUsername.jsx`, `Register.jsx` | [x] |
+| A.6 | Remove **legacy / upgrade / E2E established** banners from chat | `ChatHome.jsx` | [x] |
+| A.7 | Hide **VERIFY / QR** from chat header and mobile menu | `ChatHome.jsx` | [x] |
+| A.8 | **Silent Signal bootstrap** on login + cold start | `AuthContext.jsx` | [x] |
+| A.9 | Remove **SIG/RSA protocol labels** from messages | `Message.jsx` | [x] |
+| A.10 | Founder retest: no crypto jargon; messages still E2E | smashmaxxx ↔ dots after rebuild | [ ] |
+
+**Note:** Existing Google accounts created before this deploy have no device credential yet — one email/password login (or new setup) seeds auto-unlock on that device.
 
 ---
 
@@ -249,7 +253,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | Auth | Google-only email login shows friendly error | TASK H.5 | [ ] |
 | Contacts | Friend request live (send + accept) | TASK C | [ ] |
 | Chat | 1:1 text real-time | — | [x] |
-| Chat | No vault / legacy / upgrade UI | TASK A | [ ] |
+| Chat | No vault / legacy / upgrade UI | TASK A | [x] code · [ ] founder retest |
 | Chat | Image + voice note + file | TASK E | [ ] |
 | Chat | Block + mute | TASK F | [ ] |
 | Groups | Create + name + message | TASK F | [ ] |
@@ -385,3 +389,4 @@ yarn test:ci
 | 2026-06-24 | Founder QA smashmaxxx ↔ dots · P0–P2 backlog |
 | 2026-06-24 | Founder policy — vault in concrete; auto libsignal; hide verify |
 | 2026-06-24 | **Roadmap restructure** — execution plan TASK A–K with subtasks |
+| 2026-06-24 | **TASK A complete** — invisible vault/crypto UX; `vaultCredentialStore.js`; frontend 32 tests pass |
