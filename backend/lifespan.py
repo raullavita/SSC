@@ -63,10 +63,15 @@ async def _bootstrap_db_with_retry() -> None:
 
 @asynccontextmanager
 async def lifespan(app):
+    from core.realtime import manager
+    from core.ws_pubsub import start_ws_pubsub_listener, stop_ws_pubsub_listener
+
+    await start_ws_pubsub_listener(manager.deliver_local)
     task = asyncio.create_task(_bootstrap_db_with_retry())
     try:
         yield
     finally:
+        await stop_ws_pubsub_listener()
         task.cancel()
         try:
             await task

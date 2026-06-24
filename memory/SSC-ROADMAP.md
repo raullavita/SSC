@@ -182,7 +182,7 @@ cd C:\Users\smash\SSC-main\backend
 
 ### P2 — Scale & polish
 - [x] Engine 6 evaluation (push + own-metal — charter + gate; migration deferred)
-- [ ] WebSocket Redis pub-sub (multi-worker)
+- [x] WebSocket Redis pub-sub (multi-worker — Redis fan-out + global online set)
 - [ ] SFU for group calls >6
 - [ ] iOS Capacitor ($99/yr)
 - [x] 2FA backup codes (10 codes on setup, login fallback, regenerate in UI)
@@ -203,6 +203,7 @@ cd C:\Users\smash\SSC-main\backend
 | Engine 9 gate | **PASS** |
 | `e2e_smoke.py` | **PASS** (health, contacts, messages, files, statuses, panic wipe) |
 | Production `/api/health` | **PASS** (`env=production`, mongo + redis ok) |
+| WS fan-out | Redis pub-sub when `REDIS_URL` set · `ws_fanout` in `/api/health` |
 | Frontend tests | **13 passed** (`yarn test:ci` — i18n, presence, footprint, Landing) |
 
 ---
@@ -230,3 +231,4 @@ cd C:\Users\smash\SSC-main\backend
 | 2026-06-24 | PRD synced to current architecture (Signal Android, Engine 9, production deploy) |
 | 2026-06-24 | Frontend automated tests — 13 tests (i18n, presence, session footprint, Landing) |
 | 2026-06-24 | Engine 6 evaluation — push/own-metal charter + policy gate (6.1–6.2) |
+| 2026-06-24 | WebSocket Redis pub-sub — multi-worker fan-out + push offline fix |

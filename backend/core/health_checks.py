@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 from core.config import ENV
 from core.database import db
+from core.ws_pubsub import ws_fanout_enabled
 from security import get_rate_limit_backend, ping_redis
 
 
@@ -46,5 +47,6 @@ async def full_health() -> Dict[str, Any]:
         "mongo": mongo,
         "redis": redis,
         "rate_limit_backend": get_rate_limit_backend(),
+        "ws_fanout": "redis" if ws_fanout_enabled() else "local_only",
         "version": "0.4-standalone",
     }

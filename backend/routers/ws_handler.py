@@ -105,4 +105,5 @@ def register_websocket(app):
             logger.warning(f"ws error: {type(e).__name__}")
         finally:
             manager.disconnect(user_id, ws)
+            await manager.after_disconnect(user_id)
             logger.info(f"WS disconnected user={user_id}")

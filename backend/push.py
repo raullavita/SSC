@@ -30,8 +30,15 @@ VAPID_EMAIL = ''
 async def _offline_recipients(recipients: list) -> list:
     if db is None or manager is None:
         return []
-    online = set(manager.user_sockets.keys())
-    return [u for u in recipients if u not in online]
+    from core.ws_pubsub import is_user_online_global
+
+    offline = []
+    for uid in recipients:
+        local = manager.is_locally_connected(uid)
+        if await is_user_online_global(uid, locally_connected=local):
+            continue
+        offline.append(uid)
+    return offline
 
 
 async def send_push(recipients: list, payload: dict, sender_id: str = None):
