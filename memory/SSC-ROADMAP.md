@@ -183,7 +183,7 @@ cd C:\Users\smash\SSC-main\backend
 - [x] First-run onboarding coach (3 steps)
 - [x] In-app UI/UX pass — avatars, pro Settings, ConfirmDialog, smart scroll, file upload gates, mobile message search, i18n es/ro (24 Jun 2026)
 - [x] `reset_tester_accounts.py` — purge `e2e*`, `testfriend`, `@ssc.dev` (preserve `raul1988`)
-- [ ] Rebuild APK + Windows installer (after founder UI sign-off — **not yet**)
+- [x] Rebuild APK + Windows installer (24 Jun 2026 · revision `ssc-api-00006-qsf`)
 - [ ] Two-phone smoke: Signal chat + call + on-device translate (founder manual — APK on device)
 - [ ] TURN verification on cellular/Wi‑Fi mix (founder manual — same session as two-phone)
 
@@ -268,3 +268,4 @@ cd C:\Users\smash\SSC-main\backend
 | 2026-06-24 | Contact graph privacy — blind seals, encrypted rosters, M4 closed |
 | 2026-06-24 | UX gaps — Settings Security + 2FA, onboarding coach, PRD sync, Engine 3 proof fix |
 | 2026-06-24 | In-app UI/UX pass — Avatar, Settings profile/avatar, ConfirmDialog, scroll/upload/call wiring, es/ro i18n |
+| 2026-06-24 | Cloud Run redeploy `ssc-api-00006-qsf` + APK + Windows installer rebuilt for Firebase distribution |
