@@ -50,9 +50,15 @@ export async function completeGoogleAuth({ token, user, needs_username }, { logi
   navigate('/chat');
 }
 
-/** Native: full WebView redirect via backend OAuth (returns to http://localhost/auth/google). */
+/** Native: OAuth in system browser; Cloud Run redirects to chat.ssc.secure://app/auth/google. */
 export async function signInWithGoogleNative() {
-  window.location.href = `${API}/auth/google/start?platform=native`;
+  const url = `${API}/auth/google/start?platform=native`;
+  try {
+    const { Browser } = await import('@capacitor/browser');
+    await Browser.open({ url, presentationStyle: 'popover' });
+  } catch {
+    window.location.href = url;
+  }
   return true;
 }
 

@@ -5,6 +5,7 @@
   "homepage": ".",
   "dependencies": {
     "@capacitor/app": "^7.0.1",
+    "@capacitor/browser": "^7.0.1",
     "@capacitor/core": "^7.2.0",
     "@capacitor/push-notifications": "^7.0.1",
     "@capacitor/splash-screen": "^7.0.1",

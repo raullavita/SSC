@@ -6,17 +6,33 @@ import { initNativePush } from './native-push';
 
 let splashHidden = false;
 
+async function closeOAuthBrowser() {
+  try {
+    const { Browser } = await import('@capacitor/browser');
+    await Browser.close();
+  } catch {
+    /* optional */
+  }
+}
+
 function routeFromDeepLink(url) {
   if (!url) return;
   try {
     const parsed = new URL(url);
     const path = parsed.pathname || '/';
-    if (path.startsWith('/chat') || path.startsWith('/login') || path.startsWith('/register')) {
-      window.location.assign(path + parsed.search + parsed.hash);
-      return;
+    const target = path + parsed.search + parsed.hash;
+    if (
+      path.startsWith('/auth/google')
+      || path.startsWith('/chat')
+      || path.startsWith('/login')
+      || path.startsWith('/register')
+      || path.startsWith('/setup')
+    ) {
+      if (path.startsWith('/auth/google')) closeOAuthBrowser();
+      window.location.assign(target);
     }
   } catch {
-    /* custom scheme — ignore unknown paths */
+    /* ignore unknown deep links */
   }
 }
 
