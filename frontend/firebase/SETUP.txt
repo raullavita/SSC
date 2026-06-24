@@ -68,9 +68,10 @@ STEP C — Backend CORS (backend/.env on deployed server)
 -------------------------------------------------------
 Add your origins (comma-separated, no spaces issue):
 
-  CORS_ORIGINS=https://YOUR-API-URL,capacitor://localhost,https://super-chat-b0992.web.app
+  CORS_ORIGINS=https://YOUR-API-URL,https://localhost,capacitor://localhost,https://super-chat-b0992.web.app
 
-capacitor://localhost is required for the Android WebView shell.
+https://localhost is required for Capacitor Android (androidScheme: https).
+capacitor://localhost is kept for legacy shells.
 
 STEP D — Build APK for Firebase App Distribution
 ------------------------------------------------

@@ -45,7 +45,7 @@ def main() -> int:
 
     cors = cfg.get(
         "CORS_ORIGINS",
-        "capacitor://localhost,https://super-chat-b0992.web.app,https://super-chat-b0992.firebaseapp.com",
+        "https://localhost,capacitor://localhost,https://super-chat-b0992.web.app,https://super-chat-b0992.firebaseapp.com",
     )
     deploy_env = {
         "ENV": "production",
