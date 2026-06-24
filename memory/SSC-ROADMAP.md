@@ -183,7 +183,7 @@ Details: `memory/SECURITY_MODEL.md`
 | P0-7 | **Block + Mute** on PC — no effect | Block hides chat + rejects; mute silences notifications |
 | P0-8 | **Create group** — pick member works (1→2) but **Create** does nothing | Named group created; members synced |
 | P0-9 | **Google OAuth leftover window** (phone) — browser/WebView stays open after sign-in | Auto-close OAuth surface on return to app |
-| P0-10 | **Samsung system back** in chat — rapid back exits to login | Back stack: chat → chat list; no accidental logout |
+| P0-10 | **Android back stack “folder” bug** — in-chat **top-left `<`** → chat list ✅; on list, **Samsung system back** (gesture/nav) → **reopens same chat** ❌; repeated backs needed to fully exit; rapid back in chat can hit login | Single stack: system back on list = exit chat layer (or app minimize), never re-enter thread; use `replace` navigation + Capacitor `backButton` handler; no duplicate `/chat` ↔ `/chat/:id` history entries |
 
 ### P1 — UX / product (VIP polish)
 
@@ -205,7 +205,7 @@ Details: `memory/SECURITY_MODEL.md`
 | # | Item |
 |---|------|
 | P2-1 | Incoming call ringtone / vibration on desktop |
-| P2-2 | Chat list: exit chat via Android back without hunting top-left `<` |
+| P2-2 | Unified back: system back on chat list should minimize/exit app (WhatsApp-style), not reopen last thread — see P0-10 |
 | P2-3 | Onboarding coach copy trim — less floating instructional text in threads |
 
 ### Engineering notes (for implementers)
@@ -216,6 +216,7 @@ Details: `memory/SECURITY_MODEL.md`
 | **Session after kill** | Native clients store JWT in memory (Engine 5). Force-stop clears it — if founder wants persistence, need secure native storage (Keychain/Keystore) without weakening panic wipe |
 | **Google vs password** | Google accounts have `auth_provider=google`, no `password_hash` — email login correctly fails; UX must say so |
 | **Real-time contacts** | Likely missing WS event handler for `friend-request` / roster refresh on phone while foreground |
+| **Back stack** | `leaveChat()` calls `navigate('/chat')` (push) after `navigate('/chat/:id')` (push) — browser history becomes `/chat` → `/chat/xyz` → `/chat`; Android system back pops into `/chat/xyz`. Fix: `replace: true` on leave + `@capacitor/app` `backButton` listener |
 
 ---
 
@@ -347,3 +348,4 @@ cd C:\Users\smash\SSC-main\backend
 | 2026-06-24 | Android OAuth — `chat.ssc.secure://app` replaces broken `https://localhost` redirect · APK v1.0.4 |
 | 2026-06-24 | Desktop OAuth — Electron protocol + navigation intercept · `SSC-Setup-1.0.4.exe` |
 | 2026-06-24 | Founder QA — smashmaxxx ↔ dots two-device session documented (P0–P2 backlog in roadmap) |
+| 2026-06-24 | QA note — Android back stack “folder” behavior (in-app `<` vs system back) documented as P0-10 |
