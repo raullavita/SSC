@@ -2,6 +2,7 @@
  * Google Sign-In — installed clients only (Android APK + desktop). No browser-tab flow.
  */
 import { api, API } from './api';
+import { openOAuthUrl } from './oauthBrowser';
 import { isElectronApp, isNativeApp } from './platform';
 
 export async function fetchGoogleConfig() {
@@ -40,7 +41,7 @@ export async function signInWithGoogleInstalled() {
   if (!platform) {
     throw new Error('Google sign-in requires the installed SSC app');
   }
-  window.location.href = `${API}/auth/google/start?platform=${platform}`;
+  await openOAuthUrl(`${API}/auth/google/start?platform=${platform}`);
   return true;
 }
 

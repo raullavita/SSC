@@ -28,6 +28,13 @@ import {
   isContactRealtimeEvent,
   subscribeContactsRefresh,
 } from '../lib/contactRealtime';
+import { chatListPath, chatNavigateOptions, chatThreadPath } from '../lib/chatNavigation';
+import {
+  clearNativeBackHandler,
+  minimizeNativeApp,
+  setNativeBackHandler,
+} from '../lib/nativeBack';
+import { isNativeApp } from '../lib/platform';
 
 import { registerMemoryWipeHandler, registerSocketCloser } from '../lib/memoryWipe';
 import { getSessionToken } from '../lib/sessionStore';
@@ -152,13 +159,6 @@ export default function ChatHome() {
     if (!translationEnabled) setAutoTranslate(false);
   }, [translationEnabled]);
 
-  const leaveChat = () => {
-    setChatMenuOpen(false);
-    setMobileMsgSearchOpen(false);
-    setMessageFilter('');
-    goToConversation(null);
-  };
-
   // Decrypt message bodies client-side for in-chat search (E2E — server never sees plaintext)
   useEffect(() => {
     if (!user?.user_id || messages.length === 0) return;
@@ -221,12 +221,84 @@ export default function ChatHome() {
   }, []);
   const goToConversation = useCallback((id) => {
     setActiveId(id);
-    navigate(id ? `/chat/${id}` : '/chat');
+    if (id) {
+      navigate(chatThreadPath(id), chatNavigateOptions(id));
+    } else {
+      navigate(chatListPath(), chatNavigateOptions(null));
+    }
   }, [navigate]);
 
+  const leaveChat = useCallback(() => {
+    setChatMenuOpen(false);
+    setMobileMsgSearchOpen(false);
+    setMessageFilter('');
+    goToConversation(null);
+  }, [goToConversation]);
+
   useEffect(() => {
-    if (conversationId) setActiveId(conversationId);
+    setActiveId(conversationId || null);
   }, [conversationId]);
+
+  useEffect(() => {
+    if (!isNativeApp()) return undefined;
+    setNativeBackHandler(() => {
+      if (confirmRemoveUid) {
+        setConfirmRemoveUid(null);
+        return;
+      }
+      if (chatMenuOpen) {
+        setChatMenuOpen(false);
+        return;
+      }
+      if (mobileMsgSearchOpen) {
+        setMobileMsgSearchOpen(false);
+        return;
+      }
+      if (settingsOpen) {
+        setSettingsOpen(false);
+        return;
+      }
+      if (contactsOpen) {
+        setContactsOpen(false);
+        return;
+      }
+      if (searchOpen) {
+        setSearchOpen(false);
+        return;
+      }
+      if (groupOpen) {
+        setGroupOpen(false);
+        return;
+      }
+      if (onboardingOpen) {
+        setOnboardingOpen(false);
+        return;
+      }
+      if (storyGroup) {
+        setStoryGroup(null);
+        return;
+      }
+      if (conversationId || activeId) {
+        leaveChat();
+        return;
+      }
+      minimizeNativeApp();
+    });
+    return () => clearNativeBackHandler();
+  }, [
+    activeId,
+    chatMenuOpen,
+    confirmRemoveUid,
+    contactsOpen,
+    conversationId,
+    groupOpen,
+    leaveChat,
+    mobileMsgSearchOpen,
+    onboardingOpen,
+    searchOpen,
+    settingsOpen,
+    storyGroup,
+  ]);
 
   const handlePendingCall = useCallback(async (payload) => {
     const data = payload?.data || payload;

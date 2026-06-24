@@ -2,20 +2,13 @@
  * Native-only initialization. No-op on web/PWA — safe to call everywhere.
  */
 import { dispatchDeepLink } from './deepLink';
+import { initNativeBackButton } from './nativeBack';
+import { closeOAuthBrowser } from './oauthBrowser';
 import { isNativeApp } from './platform';
 import { initNativePush } from './native-push';
 
 let splashHidden = false;
 let lastDeepLink = '';
-
-async function closeOAuthBrowser() {
-  try {
-    const { Browser } = await import('@capacitor/browser');
-    await Browser.close();
-  } catch {
-    /* optional */
-  }
-}
 
 function parseDeepLinkPath(url) {
   if (!url) return null;
@@ -130,4 +123,7 @@ export async function initCapacitor() {
   }
 
   await initNativePush();
+  await initNativeBackButton();
 }
+
+export { closeOAuthBrowser } from './oauthBrowser';

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { completeGoogleAuth } from '../lib/google-auth';
 import { api } from '../lib/api';
 import { isInstalledClient } from '../lib/platform';
+import { closeOAuthBrowser } from '../lib/oauthBrowser';
 import { persistSessionToken } from '../lib/sessionStore';
 
 /** Handles installed-app OAuth return: /auth/google?oauth_code=…&needs_setup=0|1 */
@@ -27,6 +28,7 @@ export default function GoogleAuthCallback() {
     const needsSetup = params.get('needs_setup') === '1';
 
     (async () => {
+      await closeOAuthBrowser();
       try {
         if (!oauthCode) {
           toast.error('Google sign-in failed — missing code');

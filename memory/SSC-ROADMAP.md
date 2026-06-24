@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-24 (TASK C complete · TASK B · TASK A)
+**Updated:** 2026-06-24 (TASK G complete · TASK C · B · A)
 **Repo:** `C:\Users\smash\SSC-main`
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -17,8 +17,8 @@
 4. **Release gate** — TASK I (QA matrix) must be green before Firebase testers beyond founder.
 
 **Current builds:** APK v1.0.4 build 6 · Windows `SSC-Setup-1.0.4.exe` · API `ssc-api-00012-bbc`
-**Last task completed:** TASK C — Real-time contacts (`9210c9e`)
-**Next task:** TASK G — Android back stack (or TASK D per plan)
+**Last task completed:** TASK G — OAuth & navigation (`pending`)
+**Next task:** TASK D — Android permissions & calls
 
 ---
 
@@ -79,7 +79,7 @@
 | Engine 1–5, 8, 9, 10 gates | **PASS** |
 | Unified identity + contacts graph gates | **PASS** |
 | `e2e_smoke.py` + production `/api/health` | **PASS** |
-| Frontend `yarn test:ci` | **38 passed** |
+| Frontend `yarn test:ci` | **43 passed** |
 
 ---
 
@@ -198,18 +198,18 @@
 
 ---
 
-### TASK G — OAuth & navigation polish · P0-9, P0-10, P2-2
+### TASK G — OAuth & navigation polish · ✅ DONE (24 Jun 2026)
 
 **Goal:** Clean OAuth return; Android back behaves like WhatsApp.
 
 | ID | Subtask | Files / notes | Status |
 |----|---------|---------------|--------|
-| G.1 | **Close OAuth WebView** after deep link return (Android) | `google-auth.js`, `capacitor-init.js`, Browser plugin | [ ] |
-| G.2 | `leaveChat()` use `navigate('/chat', { replace: true })` | `ChatHome.jsx` | [ ] |
-| G.3 | Capacitor **`App.addListener('backButton')`** — list = minimize/exit, not re-enter thread | `capacitor-init.js` or `App.js` | [ ] |
-| G.4 | Prevent duplicate `/chat` ↔ `/chat/:id` history entries | React Router audit | [ ] |
-| G.5 | System back on chat list → minimize app (WhatsApp-style) | Android behavior | [ ] |
-| G.6 | QA: Samsung gesture back — never “folder” reopen loop | dots device | [ ] |
+| G.1 | OAuth in **Capacitor Browser** + close on deep link / callback | `oauthBrowser.js`, `google-auth.js`, `GoogleAuthCallback.jsx` | [x] |
+| G.2 | `leaveChat()` → `navigate('/chat', { replace: true })` | `chatNavigation.js`, `ChatHome.jsx` | [x] |
+| G.3 | **`backButton`** listener — thread → list, list → minimize | `nativeBack.js`, `capacitor-init.js` | [x] |
+| G.4 | Replace history when leaving thread; push only when entering | `chatNavigateOptions()` | [x] |
+| G.5 | System back on chat list minimizes app; modals close first | `ChatHome.jsx` back handler | [x] |
+| G.6 | Founder QA: Samsung gesture back — no reopen loop | dots device after rebuild | [ ] |
 
 ---
 
@@ -266,7 +266,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | Push | Message + friend request when backgrounded | TASK C | [ ] |
 | Translate | On-device Android (different languages) | — | [ ] |
 | Retention | Messages gone after 24h | TASK I.4 | [~] |
-| Nav | Android system back correct | TASK G | [ ] |
+| Nav | Android system back correct | TASK G | [x] code · [ ] founder retest |
 | Multi | Same account phone + desktop simultaneous | — | [ ] |
 | Offline | Queue + reconnect | — | [ ] |
 
@@ -318,8 +318,8 @@ Google OAuth · friend request (after restart) · 1:1 chat · PC→phone video (
 | P0-6 Images not previewable | E |
 | P0-7 Block + mute broken on PC | F |
 | P0-8 Create group broken | F |
-| P0-9 OAuth window stays open | G |
-| P0-10 Android back “folder” bug | G |
+| P0-9 OAuth window stays open | G ✅ (founder retest after rebuild) |
+| P0-10 Android back “folder” bug | G ✅ (founder retest after rebuild) |
 | P1-1 Legacy/upgrade banners | A |
 | P1-2 VERIFY/QR in chat | A |
 | P1-8 Vault prompt on re-login | A |
@@ -394,3 +394,4 @@ yarn test:ci
 | 2026-06-24 | **TASK A complete** — invisible vault/crypto UX; `vaultCredentialStore.js`; frontend 32 tests pass |
 | 2026-06-24 | **TASK B complete** — encrypted session persist; S3 gap closed; frontend 36 tests pass |
 | 2026-06-24 | **TASK C complete** — friend-request WS events + live roster refresh; frontend 38 tests |
+| 2026-06-24 | **TASK G complete** — OAuth Browser + Android back stack; frontend 43 tests |
