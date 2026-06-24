@@ -36,7 +36,7 @@
       {
         "from": "../build",
         "to": "renderer",
-        "filter": ["**/*"]
+        "filter": ["**/*", "!**/*.map"]
       }
     ],
     "win": {

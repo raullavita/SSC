@@ -1,15 +1,20 @@
 @echo off
 setlocal
 cd /d "%~dp0frontend"
-echo == Building React bundle for production API ==
+echo == Clean production web bundle (no source maps) ==
+set GENERATE_SOURCEMAP=false
 call yarn cap:sync
 if errorlevel 1 exit /b 1
 cd android
-echo == Building debug APK (Firebase App Distribution) ==
-call gradlew.bat assembleDebug
+echo == Clean + release build (signed, R8, phone ABIs only) ==
+call gradlew.bat clean bundleRelease assembleRelease
 if errorlevel 1 exit /b 1
-copy /Y app\build\outputs\apk\debug\app-debug.apk C:\Users\smash\Desktop\SSC\APK\SSC-app-debug.apk
+if not exist "C:\Users\smash\Desktop\SSC\APK" mkdir "C:\Users\smash\Desktop\SSC\APK"
+copy /Y app\build\outputs\apk\release\app-release.apk C:\Users\smash\Desktop\SSC\APK\SSC-app-release.apk
+copy /Y app\build\outputs\bundle\release\app-release.aab C:\Users\smash\Desktop\SSC\APK\SSC-app-release.aab
 echo.
-echo DONE: frontend\android\app\build\outputs\apk\debug\app-debug.apk
-echo Firebase upload: C:\Users\smash\Desktop\SSC\APK\SSC-app-debug.apk
+echo DONE (release — Google Play ready):
+echo   APK  C:\Users\smash\Desktop\SSC\APK\SSC-app-release.apk
+echo   AAB  C:\Users\smash\Desktop\SSC\APK\SSC-app-release.aab
+echo Firebase App Distribution: upload SSC-app-release.apk
 endlocal

@@ -61,6 +61,9 @@ frontend/android/.gradle/
 frontend/android/build/
 frontend/android/app/build/
 frontend/android/local.properties
+frontend/android/keystore.properties
+**/*.keystore
+**/*.jks
 frontend/android/capacitor-cordova-android-plugins/
 frontend/android/app/src/main/assets/public/
 frontend/android/app/src/main/assets/capacitor.config.json
