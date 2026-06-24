@@ -36,10 +36,11 @@ def test_auth_context_no_localstorage_jwt_on_web():
     assert "purgeLegacyJwtFromStorage" in text
 
 
-def test_google_callback_installed_uses_token_and_me():
+def test_google_callback_installed_exchanges_code():
     text = (FRONTEND / "pages" / "GoogleAuthCallback.jsx").read_text(encoding="utf-8")
     assert "isInstalledClient()" in text
-    assert "/auth/me" in text
+    assert "/auth/google/exchange" in text
+    assert "oauth_code" in text
     assert "persistSessionToken" in text
     assert "localStorage.setItem('ssc_token'" not in text
 
@@ -54,15 +55,56 @@ def test_google_native_redirect_uses_capacitor_origin():
     assert url.startswith("https://localhost/auth/google")
 
 
-def test_google_native_redirect_keeps_token():
+def test_google_native_redirect_uses_oauth_code_not_jwt():
     url = frontend_redirect("native", "native_tok", True)
-    assert "token=native_tok" in url
+    assert "native_tok" not in url
+    assert "oauth_code=" in url
     assert "needs_setup=1" in url
     assert "/auth/google" in url
 
 
 def test_google_desktop_redirect_uses_desktop_scheme():
     url = frontend_redirect("desktop", "desk_tok", False)
-    assert "token=desk_tok" in url
+    assert "desk_tok" not in url
+    assert "oauth_code=" in url
     assert "needs_setup=0" in url
     assert "chat.ssc.secure.desktop://" in url
+
+
+def test_oauth_completion_code_roundtrip():
+    from core.oauth_completion import exchange_oauth_completion_code, issue_oauth_completion_code
+
+    code = issue_oauth_completion_code("session_jwt_xyz")
+    assert code
+    token = exchange_oauth_completion_code(code)
+    assert token == "session_jwt_xyz"
+    assert exchange_oauth_completion_code(code) is None
+
+
+def test_capacitor_deep_link_without_full_reload():
+    cap = (FRONTEND / "lib" / "capacitor-init.js").read_text(encoding="utf-8")
+    assert "dispatchDeepLink" in cap
+    assert "window.location.assign" not in cap
+    deep = (FRONTEND / "lib" / "deepLink.js").read_text(encoding="utf-8")
+    assert "ssc-deep-link" in deep
+    app = (FRONTEND / "App.js").read_text(encoding="utf-8")
+    assert "DeepLinkListener" in app
+
+
+def test_protected_recovers_session_when_token_present():
+    text = (FRONTEND / "App.js").read_text(encoding="utf-8")
+    assert "sessionRecovery" in text
+    assert "getSessionToken()" in text
+    assert "refreshUser()" in text
+
+
+def test_google_password_account_not_auto_linked():
+    text = (REPO / "backend" / "routers" / "auth.py").read_text(encoding="utf-8")
+    assert 'auth_provider") == "password"' in text or "auth_provider'] == 'password'" in text
+    assert "password account" in text
+    assert "409" in text
+
+
+def test_complete_google_auth_awaits_refresh_user():
+    text = (FRONTEND / "lib" / "google-auth.js").read_text(encoding="utf-8")
+    assert "await refreshUser()" in text

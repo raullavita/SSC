@@ -31,6 +31,10 @@ class GoogleSessionIn(BaseModel):
     session_id: Optional[str] = None  # legacy — unused
 
 
+class GoogleOAuthExchangeIn(BaseModel):
+    code: str = Field(min_length=16, max_length=256)
+
+
 class FinishGoogleSetupIn(BaseModel):
     username: str
     public_key: str

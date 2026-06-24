@@ -7,7 +7,7 @@ import { api } from '../lib/api';
 import { isInstalledClient } from '../lib/platform';
 import { persistSessionToken } from '../lib/sessionStore';
 
-/** Handles installed-app OAuth return: /auth/google?token=…&needs_setup=0|1 */
+/** Handles installed-app OAuth return: /auth/google?oauth_code=…&needs_setup=0|1 */
 export default function GoogleAuthCallback() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -23,13 +23,20 @@ export default function GoogleAuthCallback() {
       return;
     }
 
-    const token = params.get('token');
+    const oauthCode = params.get('oauth_code');
     const needsSetup = params.get('needs_setup') === '1';
 
     (async () => {
       try {
+        if (!oauthCode) {
+          toast.error('Google sign-in failed — missing code');
+          navigate('/login', { replace: true });
+          return;
+        }
+        const { data } = await api.post('/auth/google/exchange', { code: oauthCode });
+        const token = data?.token;
         if (!token) {
-          toast.error('Google sign-in failed — no token');
+          toast.error('Google sign-in failed — invalid code');
           navigate('/login', { replace: true });
           return;
         }

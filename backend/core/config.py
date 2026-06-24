@@ -25,7 +25,7 @@ LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 ENV = os.environ.get("ENV", "development").lower()
 REDIS_URL = (os.environ.get("REDIS_URL") or "").strip()
 _cors_raw = os.environ.get(
-    "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+    "CORS_ORIGINS", "https://localhost,capacitor://localhost"
 )
 CORS_ORIGINS = [o.strip() for o in _cors_raw.split(",") if o.strip()]
 

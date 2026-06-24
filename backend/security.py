@@ -117,10 +117,37 @@ def validate_environment():
     validate_production_redis(_redis, _redis_url)
 
     env = os.environ.get("ENV", "development").lower()
+    db_name = (os.environ.get("DB_NAME") or "").strip()
+    prod_db_names = frozenset({"ssc"})
+    prod_jwt = (os.environ.get("SSC_PRODUCTION_JWT_SECRET") or "").strip()
+
+    if env == "development":
+        if db_name in prod_db_names:
+            raise RuntimeError(
+                "ENV=development must not use production DB_NAME=ssc — set DB_NAME=ssc-dev in backend/.env"
+            )
+        if prod_jwt and jwt_secret == prod_jwt:
+            raise RuntimeError(
+                "Local JWT_SECRET matches SSC_PRODUCTION_JWT_SECRET — use a distinct dev secret"
+            )
+        pepper = (os.environ.get("CONTACT_GRAPH_PEPPER") or "").strip()
+        if not pepper or pepper == "ssc-dev-contact-graph-pepper":
+            logger.warning(
+                "CONTACT_GRAPH_PEPPER unset or dev default — set a strong pepper even for ssc-dev"
+            )
+    else:
+        if not (os.environ.get("CONTACT_GRAPH_PEPPER") or "").strip():
+            raise RuntimeError("CONTACT_GRAPH_PEPPER is required when ENV=production")
+
     if env == "production":
         cors = os.environ.get("CORS_ORIGINS", "")
         if "*" in cors:
-            logger.warning("CORS_ORIGINS contains '*' in production — restrict to your frontend origin(s)")
+            logger.warning("CORS_ORIGINS contains '*' in production — restrict to installed-app origins")
+        browser_origins = [o for o in cors.split(",") if ":3000" in o or "127.0.0.1" in o]
+        if browser_origins:
+            raise RuntimeError(
+                f"CORS_ORIGINS must not include browser dev origins in production: {browser_origins}"
+            )
         if len(jwt_secret) < 48:
             logger.warning("JWT_SECRET should be 48+ random characters in production")
         if not (os.environ.get("FIREBASE_SERVICE_ACCOUNT_JSON") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")):

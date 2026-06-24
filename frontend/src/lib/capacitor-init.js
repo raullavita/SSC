@@ -1,6 +1,7 @@
 /**
  * Native-only initialization. No-op on web/PWA — safe to call everywhere.
  */
+import { dispatchDeepLink } from './deepLink';
 import { isNativeApp } from './platform';
 import { initNativePush } from './native-push';
 
@@ -57,7 +58,7 @@ function routeFromDeepLink(url) {
 
   lastDeepLink = url;
   if (path.startsWith('/auth/google')) closeOAuthBrowser();
-  window.location.assign(target);
+  dispatchDeepLink(path, search, hash);
 }
 
 async function consumeLaunchUrl(App) {

@@ -109,9 +109,12 @@ def _installed_oauth_base(platform: str) -> str:
 
 
 def frontend_redirect(platform: str, token: str, needs_setup: bool) -> str:
-    """Redirect back into the installed app shell with session token in query."""
+    """Redirect into installed app with one-time oauth_code (JWT never in URL)."""
+    from core.oauth_completion import issue_oauth_completion_code
+
     if platform not in INSTALLED_PLATFORMS:
         platform = "native"
-    q = urlencode({"token": token, "needs_setup": "1" if needs_setup else "0"})
+    oauth_code = issue_oauth_completion_code(token)
+    q = urlencode({"oauth_code": oauth_code, "needs_setup": "1" if needs_setup else "0"})
     base = _installed_oauth_base(platform)
     return f"{base}/auth/google?{q}"

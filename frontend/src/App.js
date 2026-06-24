@@ -11,6 +11,8 @@ import GoogleAuthCallback from './pages/GoogleAuthCallback';
 import ChatHome from './pages/ChatHome';
 import Landing from './pages/Landing';
 import InstalledClientGate from './components/InstalledClientGate';
+import DeepLinkListener from './components/DeepLinkListener';
+import { getSessionToken } from './lib/sessionStore';
 import { hideNativeSplash } from './lib/capacitor-init';
 import { isInstalledClient, prefersHashRouter } from './lib/platform';
 import { bootstrapSignalIdentity, userHasUnifiedIdentity } from './lib/signalIdentityBootstrap';
@@ -35,6 +37,17 @@ function Protected({ children }) {
   const location = useLocation();
   const [identityBoot, setIdentityBoot] = React.useState(isInstalledClient() ? 'pending' : 'done');
   const [identityRetry, setIdentityRetry] = React.useState(0);
+  const [sessionRecovery, setSessionRecovery] = React.useState('idle');
+
+  React.useEffect(() => {
+    if (loading || user) {
+      setSessionRecovery('idle');
+      return;
+    }
+    if (!getSessionToken()) return;
+    setSessionRecovery('pending');
+    refreshUser().finally(() => setSessionRecovery('done'));
+  }, [loading, user, refreshUser]);
 
   React.useEffect(() => {
     if (!user || !isInstalledClient() || identityBoot !== 'pending') return;
@@ -57,7 +70,7 @@ function Protected({ children }) {
     setIdentityRetry((n) => n + 1);
   };
 
-  if (loading || identityBoot === 'pending') {
+  if (loading || sessionRecovery === 'pending' || identityBoot === 'pending') {
     return <div className="mobile-shell flex items-center justify-center bg-[#0A0A0A] text-[#A1A1AA] font-mono text-xs safe-top safe-bottom">{t('initializing')}</div>;
   }
   if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
@@ -102,6 +115,7 @@ export default function App() {
         <AuthProvider>
           <LocaleProvider>
             <NativeBootGate>
+              <DeepLinkListener />
               <AppRouter />
             </NativeBootGate>
           </LocaleProvider>

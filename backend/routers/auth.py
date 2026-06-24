@@ -23,6 +23,7 @@ from core.ws_tickets import issue_ws_ticket
 from core.database import db
 from core.models import (
     FinishGoogleSetupIn,
+    GoogleOAuthExchangeIn,
     GoogleSessionIn,
     LoginIn,
     RegisterIn,
@@ -196,6 +197,17 @@ async def google_config():
     from core.google_auth import is_configured, public_client_id
     cid = public_client_id()
     return {"enabled": is_configured(), "client_id": cid, "id_token_ready": bool(cid)}
+
+
+@router.post("/google/exchange")
+async def google_oauth_exchange(body: GoogleOAuthExchangeIn):
+    """Redeem one-time OAuth code from installed-app redirect (no JWT in URL)."""
+    from core.oauth_completion import exchange_oauth_completion_code
+
+    token = exchange_oauth_completion_code(body.code.strip())
+    if not token:
+        raise HTTPException(400, "Invalid or expired OAuth code")
+    return {"token": token}
 
 
 @router.get("/google/start")
