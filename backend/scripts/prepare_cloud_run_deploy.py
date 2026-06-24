@@ -29,7 +29,7 @@ def main() -> int:
         return 1
 
     cfg = load_env(env_path)
-    required = ["MONGO_URL", "DB_NAME", "JWT_SECRET", "REDIS_URL"]
+    required = ["MONGO_URL", "DB_NAME", "JWT_SECRET", "REDIS_URL", "CONTACT_GRAPH_PEPPER"]
     missing = [k for k in required if not cfg.get(k)]
     if missing:
         print(f"cloud_run.env missing: {', '.join(missing)}", file=sys.stderr)
@@ -53,6 +53,7 @@ def main() -> int:
         "MONGO_URL": cfg["MONGO_URL"],
         "JWT_SECRET": cfg["JWT_SECRET"],
         "REDIS_URL": cfg["REDIS_URL"],
+        "CONTACT_GRAPH_PEPPER": cfg["CONTACT_GRAPH_PEPPER"],
         "FIREBASE_SERVICE_ACCOUNT_JSON": firebase_path.read_text(encoding="utf-8"),
         "TRANSLATION_ENABLED": cfg.get("TRANSLATION_ENABLED", "false"),
         "LOG_LEVEL": cfg.get("LOG_LEVEL", "INFO"),

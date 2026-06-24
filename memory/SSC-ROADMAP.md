@@ -175,7 +175,7 @@ cd C:\Users\smash\SSC-main\backend
 - [x] HTTPS production API (Cloud Run)
 - [x] Google OAuth + Cloud Run redirect URI
 - [x] APK bakes Cloud Run URL (`yarn cap:sync` / `SSC-BUILD-APK.bat`)
-- [ ] **Redeploy** latest `main` + `CONTACT_GRAPH_PEPPER` in `cloud_run.env` (see PRD deploy checklist)
+- [x] **Redeploy** latest `main` + `CONTACT_GRAPH_PEPPER` in `cloud_run.env` (revision `ssc-api-00005-x8s` · 24 Jun 2026)
 - [ ] Custom domain + Turnstile (~28 Jun)
 - [x] Sync PRD (`memory/PRD.md` — 24 Jun 2026, incl. deploy checklist)
 - [x] Automated smoke: `e2e_smoke.py` + Engine 1–5/8/9 gates + production `/api/health` (24 Jun 2026)
