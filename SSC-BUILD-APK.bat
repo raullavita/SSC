@@ -1,9 +1,25 @@
 @echo off
 setlocal
+set "YARN_CMD=yarn"
+where yarn >nul 2>&1
+if errorlevel 1 set "YARN_CMD=corepack yarn"
+
+if not defined JAVA_HOME (
+	for /d %%D in ("C:\Program Files\Microsoft\jdk-21*") do (
+		if exist "%%D\bin\java.exe" set "JAVA_HOME=%%D"
+	)
+)
+if not defined JAVA_HOME (
+	for /d %%D in ("C:\Program Files\Microsoft\jdk-17*") do (
+		if exist "%%D\bin\java.exe" set "JAVA_HOME=%%D"
+	)
+)
+if defined JAVA_HOME set "PATH=%JAVA_HOME%\bin;%PATH%"
+
 cd /d "%~dp0frontend"
 echo == Clean production web bundle (no source maps) ==
 set GENERATE_SOURCEMAP=false
-call yarn cap:sync
+call %YARN_CMD% cap:sync
 if errorlevel 1 exit /b 1
 cd android
 echo == Clean + release build (signed, R8, phone ABIs only) ==

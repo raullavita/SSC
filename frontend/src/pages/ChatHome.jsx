@@ -68,6 +68,7 @@ import { ProtocolVersion } from '../lib/signal/constants';
 import {
   decryptMessageBody,
 } from '../lib/signal/migration';
+import { fetchRetentionConfig } from '../lib/publicConfig';
 import {
   prepareInstalledMessaging,
   usesSignalOnlyMessaging,
@@ -114,6 +115,7 @@ export default function ChatHome() {
   const [groupCallState, setGroupCallState] = useState(null); // {mode, direction, members, signal}
   const [convActionsTarget, setConvActionsTarget] = useState(null);
   const [reads, setReads] = useState([]); // [{user_id, last_read_message_id}]
+  const [retentionHours, setRetentionHours] = useState(24);
   const socketRef = useRef(null);
   const scrollRef = useRef(null);
   const refreshContactsRosterRef = useRef(null);
@@ -152,6 +154,12 @@ export default function ChatHome() {
     () => visibleConversations(conversations, myContacts),
     [conversations, myContacts],
   );
+  const acceptedContacts = useMemo(
+    () => myContacts
+      .filter((c) => !c.blocked)
+      .sort((a, b) => (a.username || '').localeCompare(b.username || '')),
+    [myContacts],
+  );
 
   const activeConv = useMemo(
     () => sidebarConversations.find((c) => c.conversation_id === activeId)
@@ -170,6 +178,10 @@ export default function ChatHome() {
   const sameLangAsPeer = !isGroup && peer?.language && user?.language
     && peer.language.toLowerCase() === user.language.toLowerCase();
   const showTranslateControls = translationEnabled && !sameLangAsPeer;
+  const peerContact = peer ? myContacts.find((c) => c.user_id === peer.user_id) : null;
+  const canMessagePeer = isGroup || !peer || (!!peerContact && !peerContact.blocked);
+  const isRequestPendingPeer = !isGroup && !!peer
+    && outgoingRequests.some((r) => r.to_user_id === peer.user_id);
 
   useEffect(() => {
     (async () => {
@@ -185,6 +197,15 @@ export default function ChatHome() {
         setServerTranslationAllowed(false);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const retention = await fetchRetentionConfig();
+      if (!cancelled) setRetentionHours(retention.hours);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -556,10 +577,16 @@ export default function ChatHome() {
 
   useEffect(() => {
     if (!user?.user_id) return;
-    if (!hasCompletedOnboarding(user.user_id)) {
+    if (!hasCompletedOnboarding(user.user_id) && !conversationId) {
       setOnboardingOpen(true);
     }
-  }, [user?.user_id]);
+  }, [user?.user_id, conversationId]);
+
+  useEffect(() => {
+    if (activeId && onboardingOpen) {
+      setOnboardingOpen(false);
+    }
+  }, [activeId, onboardingOpen]);
 
   useEffect(() => {
     if (!user?.user_id || !isInstalledClient()) return;
@@ -781,6 +808,10 @@ export default function ChatHome() {
     if (!text && !attachmentId) return;
     if (!isGroup && peer && isPeerBlocked(peer.user_id, myContacts)) {
       toast.error(t('cannotMessageBlocked'));
+      return;
+    }
+    if (!canMessagePeer) {
+      toast.info(isRequestPendingPeer ? t('requestPendingChat') : t('cannotMessageNonMutual'));
       return;
     }
     try {
@@ -1129,8 +1160,6 @@ export default function ChatHome() {
     }
   };
 
-  const peerContact = peer ? myContacts.find((c) => c.user_id === peer.user_id) : null;
-
   return (
     <div className="mobile-shell flex bg-[#0A0A0A] text-[#F0F0F0] overflow-hidden">
       {/* Sidebar / chat list */}
@@ -1236,7 +1265,7 @@ export default function ChatHome() {
           </div>
         ) : (
           <>
-            <header className="glass-header safe-x px-2 md:px-4 py-2 md:py-3 flex items-center gap-2 shrink-0">
+            <header className="glass-header safe-x px-2 md:px-4 py-2 md:py-3 flex items-center gap-2 shrink-0 relative z-[70]">
               {isMobile && (
                 <button
                   type="button"
@@ -1259,6 +1288,9 @@ export default function ChatHome() {
                       {isGroup
                         ? `${activeConv.participants.length} ${t('members')}`
                         : `${formatPeerPresence(peer)} · ${peer?.language?.toUpperCase() || '—'}`}
+                    </span>
+                    <span className="text-[#34C759]" data-testid="chat-retention-badge">
+                      · {t('retentionBadge', { hours: String(retentionHours) })}
                     </span>
                   </div>
                 </div>
@@ -1411,14 +1443,19 @@ export default function ChatHome() {
               )}
             </div>
 
+            {!canMessagePeer && !isGroup && (
+              <div className="px-3 py-2 border-t border-[#27272A] text-[11px] text-[#FFD600] bg-[#FFD600]/10">
+                {isRequestPendingPeer ? t('requestPendingChat') : t('cannotMessageNonMutual')}
+              </div>
+            )}
             <form onSubmit={onSendText} className="chat-composer safe-bottom safe-x border-t border-[#27272A] px-2 md:px-3 py-2 flex items-center gap-2">
               <input ref={fileInputRef} type="file" hidden onChange={onFileChange} data-testid="file-input" />
-              <button type="button" onClick={onPickFile} disabled={uploadBusy} data-testid="attach-button"
+              <button type="button" onClick={onPickFile} disabled={uploadBusy || !canMessagePeer} data-testid="attach-button"
                 className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
                 title={uploadBusy ? t('uploadInProgress') : undefined}>
                 <Paperclip size={18} />
               </button>
-              <button type="button" onClick={isRecording ? stopRecording : startRecording} data-testid="voice-button"
+              <button type="button" onClick={isRecording ? stopRecording : startRecording} data-testid="voice-button" disabled={!canMessagePeer}
                 className={`w-11 h-11 rounded-md tac-border flex items-center justify-center shrink-0 ${isRecording ? 'bg-[#FF3B30] text-white' : 'bg-[#121212] active:bg-[#1A1A1A]'}`}>
                 <Microphone size={18} />
               </button>
@@ -1431,12 +1468,13 @@ export default function ChatHome() {
                 className="flex-1 min-w-0 h-11 px-3 text-base rounded-md"
                 enterKeyHint="send"
                 autoComplete="off"
+                disabled={!canMessagePeer}
               />
               <button
                 type="submit"
                 data-testid="send-button"
                 className="h-11 min-w-[44px] px-3 md:px-4 bg-[#00E5FF] text-black rounded-md font-medium text-sm flex items-center justify-center gap-2 active:brightness-90 transition disabled:opacity-40 shrink-0"
-                disabled={!draft.trim()}
+                disabled={!draft.trim() || !canMessagePeer}
                 aria-label={t('send')}
               >
                 <PaperPlaneTilt size={18} weight="fill" />
@@ -1465,7 +1503,30 @@ export default function ChatHome() {
             </div>
             <div className="mt-3 max-h-80 overflow-y-auto">
               {searchQ.length < 2 && (
-                <div className="px-3 py-6 text-center text-[11px] font-mono text-[#A1A1AA] tracking-wider">{t('type2chars')}</div>
+                <>
+                  {acceptedContacts.length > 0 && (
+                    <div className="mb-3">
+                      <div className="px-1 pb-2 text-[10px] font-mono tracking-wider text-[#A1A1AA] uppercase">
+                        {t('contacts')}
+                      </div>
+                      {acceptedContacts.map((c) => (
+                        <button
+                          key={c.user_id}
+                          onClick={() => startConversation(c)}
+                          data-testid={`contact-picker-${c.username}`}
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3"
+                        >
+                          <Avatar user={c} size="sm" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm truncate">@{c.username}</div>
+                            <div className="text-[10px] font-mono text-[#A1A1AA]">{t('tapToMessage')}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="px-3 py-4 text-center text-[11px] font-mono text-[#A1A1AA] tracking-wider">{t('type2chars')}</div>
+                </>
               )}
               {searchResults.map((u) => {
                 const isContact = myContacts.some(c => c.user_id === u.user_id && !c.blocked);

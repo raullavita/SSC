@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-24 (v1.0.5 deploy · audit · rebuild · TASK A–F shipped)
+**Updated:** 2026-06-26 (Cloud Run redeploy + TASK I.7 complete)
 **Repo:** `C:\Users\smash\SSC-main`
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -16,23 +16,23 @@
 3. **Then** — TASK H (UX polish) · TASK I (domain, Turnstile, TURN) when funded.
 4. **Release gate** — TASK J green before Firebase testers beyond founder.
 
-**Current builds:** APK **v1.0.5 build 7** · Windows **`SSC-Setup-1.0.5.exe`** · API **`ssc-api-00013-6dd`**
-**Last deploy:** 24 Jun 2026 — Cloud Run + APK + desktop rebuild after pre-deploy audit
+**Current builds:** APK **v1.0.7** · Windows **`SSC-Setup-1.0.7.exe`** · API **`ssc-api-00016-mgl`**
+**Last deploy:** 26 Jun 2026 — Cloud Run redeploy after TASK H backend auth updates
 **Next task:** TASK J — founder QA matrix (all A–F items on real devices)
 
 ---
 
-## Live infrastructure (verified 24 Jun 2026)
+## Live infrastructure (verified 26 Jun 2026)
 
 | Service | URL / status | Notes |
 |---------|----------------|-------|
-| **Production API** | `https://ssc-api-4jp3wuccwa-ew.a.run.app` | Cloud Run **`ssc-api-00013-6dd`** · `env=production` · mongo ✅ · redis ✅ |
+| **Production API** | `https://ssc-api-4jp3wuccwa-ew.a.run.app` | Cloud Run **`ssc-api-00016-mgl`** · `env=production` · mongo ✅ · redis ✅ |
 | **Firebase project** | `super-chat-b0992` | App Distribution, FCM push, Hosting (`super-chat-b0992.web.app`) |
 | **MongoDB** | Atlas `ssc` cluster | Network: allow Cloud Run (0.0.0.0/0) |
 | **Redis** | Upstash (production) | Required for `ENV=production` |
 | **APK API URL** | Cloud Run (baked in build) | `frontend/.env.production.local` |
 | **Google OAuth** | ✅ Wired (phone + desktop) | Android `chat.ssc.secure://app` · desktop `chat.ssc.secure.desktop://` |
-| **Release builds** | **v1.0.5 / build 7** | APK `Desktop\SSC\APK\SSC-app-release.apk` · Win `Desktop\SSC\SSC-Setup-1.0.5.exe` |
+| **Release builds** | **v1.0.7** | APK `Desktop\SSC\APK\SSC-app-release.apk` · Win `Desktop\SSC\SSC-Setup-1.0.7.exe` |
 | **LAN dev** | ✅ Docker mongo + redis + local backend | Founder laptop only — never give LAN IP to testers |
 
 ---
@@ -342,14 +342,14 @@
 
 | ID | Subtask | Ref | Status |
 |----|---------|-----|--------|
-| H.1 | **Contact picker** for new chat/group — list accepted contacts + checkboxes | P1-3 | [ ] |
-| H.2 | **Non-mutual messaging** — block send; show “request pending” | P1-5 | [ ] |
-| H.3 | **Chat header menu z-index** — menu above bubbles | P1-6 | [ ] |
-| H.4 | **Settings pro pass** — real version 1.0.4+, sections Profile/Security/Preferences/About | P1-7 | [ ] |
-| H.5 | **Google-only account** — error “Use Google sign-in” not “invalid credentials” | P1-9 | [ ] |
-| H.6 | Trim **onboarding coach** floating text in threads | P2-3 | [ ] |
+| H.1 | **Contact picker** for new chat/group — list accepted contacts + checkboxes | P1-3 | [x] |
+| H.2 | **Non-mutual messaging** — block send; show “request pending” | P1-5 | [x] |
+| H.3 | **Chat header menu z-index** — menu above bubbles | P1-6 | [x] |
+| H.4 | **Settings pro pass** — real version 1.0.4+, sections Profile/Security/Preferences/About | P1-7 | [x] |
+| H.5 | **Google-only account** — error “Use Google sign-in” not “invalid credentials” | P1-9 | [x] |
+| H.6 | Trim **onboarding coach** floating text in threads | P2-3 | [x] |
 | H.7 | **Profile tap** sheet (mute, block) — defer if not MVP | P1-10 | [ ] |
-| H.8 | Desktop **incoming call ringtone** | P2-1 | [ ] |
+| H.8 | Desktop **incoming call ringtone** | P2-1 | [x] |
 
 ---
 
@@ -361,9 +361,9 @@
 | I.2 | **Turnstile** captcha on production register/login | ~28 Jun 2026 | [ ] |
 | I.3 | **TURN** verification off-LAN (cellular ↔ Wi‑Fi calls) | Founder manual | [ ] |
 | I.4 | **Retention proof** — 24h delete on smashmaxxx ↔ dots thread | In progress | [~] |
-| I.5 | Rebuild **APK + desktop** after TASK batches; bump version | Post-fix | [ ] |
+| I.5 | Rebuild **APK + desktop** after TASK batches; bump version | Post-fix | [x] |
 | I.6 | **Play Store** listing (AGPL review ✅) | Post-P0 | [ ] |
-| I.7 | Redeploy Cloud Run when backend changes | Per deploy | [ ] |
+| I.7 | Redeploy Cloud Run when backend changes | Per deploy | [x] |
 
 ---
 
@@ -518,6 +518,16 @@ yarn test:ci
 | 2026-06-24 | **TASK B complete** — encrypted session persist; S3 gap closed; frontend 36 tests pass |
 | 2026-06-24 | **TASK C complete** — friend-request WS events + live roster refresh; frontend 38 tests |
 | 2026-06-24 | **TASK G complete** — OAuth Browser + Android back stack; frontend 43 tests |
+| 2026-06-26 | Retention policy surfaced in chat header + Settings security (`Auto-delete in {hours}h`) |
+| 2026-06-26 | **TASK H.1 complete** — new-chat modal now shows accepted contacts picker before username search |
+| 2026-06-26 | **TASK H.2 complete** — non-mutual conversations now block composer actions and show request-pending hint |
+| 2026-06-26 | **TASK H.3 complete** — chat header and mobile menu z-index raised above chat bubbles |
+| 2026-06-26 | **TASK H.4 complete** — Settings now has explicit About section with version/platform and open-source details |
+| 2026-06-26 | **TASK H.5 complete** — Google-only accounts now return/display friendly "Use Continue with Google" login guidance |
+| 2026-06-26 | **TASK H.6 complete** — onboarding coach now opens from chat-list flow and auto-closes in active threads |
+| 2026-06-26 | **TASK H.8 complete** — verified desktop incoming ringtone wiring (`callRingtone.js` + incoming-call state in chat) |
+| 2026-06-26 | **TASK I.5 complete** — Windows desktop installer + Android APK/AAB rebuilt (`SSC-Setup-1.0.7.exe`, `SSC-app-release.apk`, `SSC-app-release.aab`) |
+| 2026-06-26 | **TASK I.7 complete** — Cloud Run redeployed to revision `ssc-api-00016-mgl` (`https://ssc-api-4jp3wuccwa-ew.a.run.app`) |
 | 2026-06-24 | **TASK D complete** — permissions, duplex audio, ringtone; frontend 55 tests |
 | 2026-06-24 | **TASK E complete** — voice/images/files; frontend 62 tests |
 | 2026-06-24 | **TASK F complete** — block/mute/groups; frontend 67 tests |

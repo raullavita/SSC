@@ -15,6 +15,7 @@ import {
   SSC_LICENSE_LABEL,
   SSC_SOURCE_REPO_URL,
 } from '../lib/openSourceLicenses';
+import { fetchRetentionConfig } from '../lib/publicConfig';
 import Avatar from './Avatar';
 import TwoFAModal from './TwoFAModal';
 
@@ -46,6 +47,7 @@ export default function SettingsModal({ open, onClose }) {
   const [busy, setBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
+  const [retentionHours, setRetentionHours] = useState(24);
   const avatarInputRef = useRef(null);
 
   useEffect(() => {
@@ -53,6 +55,16 @@ export default function SettingsModal({ open, onClose }) {
       setLanguage(user.language || 'en');
     }
   }, [open, user]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const retention = await fetchRetentionConfig();
+      if (!cancelled) setRetentionHours(retention.hours);
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
 
   const saveProfile = async () => {
     setBusy(true);
@@ -150,9 +162,6 @@ export default function SettingsModal({ open, onClose }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm truncate">{user?.email}</div>
-                  <div className="text-xs font-mono text-[#71717A] mt-1" data-testid="settings-app-version">
-                    {t('settingsVersion')} {APP_VERSION} · {platformLabel(t)}
-                  </div>
                   {user?.avatar && (
                     <button
                       type="button"
@@ -185,6 +194,12 @@ export default function SettingsModal({ open, onClose }) {
                   <span className="text-[#A1A1AA]">{t('settingsMessagesProtected')}</span>
                   <span className={`font-mono ${messagesProtected ? 'text-[#34C759]' : 'text-[#FF9500]'}`}>
                     {messagesProtected ? t('settingsStatusReady') : t('settingsStatusPending')}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-[#A1A1AA]">{t('settingsAutoDelete')}</span>
+                  <span className="font-mono text-[#34C759]">
+                    {t('retentionBadge', { hours: String(retentionHours) })}
                   </span>
                 </div>
                 <div className="flex justify-between gap-2">
@@ -224,7 +239,12 @@ export default function SettingsModal({ open, onClose }) {
               <p className="mt-2 text-[10px] text-[#71717A]">{t('settingsLanguageHint')}</p>
             </Section>
 
-            <Section icon={Code} title={t('settingsOpenSource')} testId="settings-open-source">
+            <Section icon={Code} title={t('settingsAbout')} testId="settings-about">
+              <div className="p-3 bg-[#1A1A1A] rounded-md tac-border mb-3">
+                <div className="text-[10px] font-mono text-[#71717A]" data-testid="settings-app-version">
+                  {t('settingsVersion')} {APP_VERSION} · {platformLabel(t)}
+                </div>
+              </div>
               <p className="text-[10px] text-[#A1A1AA] mb-2">{t('settingsOpenSourceHint')}</p>
               <p className="text-[10px] font-mono text-[#71717A] mb-2">{SSC_LICENSE_LABEL}</p>
               <a href={SSC_SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#00E5FF] hover:underline break-all" data-testid="settings-source-link">

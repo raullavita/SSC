@@ -57,6 +57,14 @@ export default function Login() {
         toast.error(`${t('cannotReachServer')} (${API})`);
       } else if (err?.response?.status === 410) {
         toast.error(detail || t('accountDeletedPanic'));
+      } else if (
+        err?.response?.status === 401
+        && (
+          err?.response?.headers?.['x-auth-provider'] === 'google'
+          || /google sign-in/i.test(detail || '')
+        )
+      ) {
+        toast.error(t('googleOnlyLoginHint'));
       } else {
         toast.error(detail || t('loginFailed'));
       }

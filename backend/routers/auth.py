@@ -91,6 +91,12 @@ async def login(body: LoginIn, request: Request, response: Response):
             410,
             "This account was permanently deleted (panic wipe). Register again with the same email to create a new account.",
         )
+    if doc and doc.get("auth_provider") == "google" and not doc.get("password_hash"):
+        raise HTTPException(
+            401,
+            "This account uses Google sign-in. Use Continue with Google.",
+            headers={"X-Auth-Provider": "google"},
+        )
     if not doc or not doc.get("password_hash") or not verify_password(body.password, doc["password_hash"]):
         if not rate_limit_check(f"login_fail:{ident.lower()}", max_hits=5, window_sec=300):
             raise HTTPException(429, "Too many failed login attempts — try again in 5 minutes")

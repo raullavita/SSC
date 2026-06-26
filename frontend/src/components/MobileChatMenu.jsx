@@ -23,7 +23,7 @@ export default function MobileChatMenu({
   }, [open, onClose]);
 
   return (
-    <div className="relative md:hidden" ref={ref}>
+    <div className="relative md:hidden z-[80]" ref={ref}>
       <button
         type="button"
         onClick={onToggle}
@@ -34,7 +34,7 @@ export default function MobileChatMenu({
         <DotsThreeVertical size={18} weight="bold" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 min-w-[180px] bg-[#1A1A1A] tac-border rounded-md shadow-xl py-1 fade-up">
+        <div className="absolute right-0 top-full mt-1 z-[90] min-w-[180px] bg-[#1A1A1A] tac-border rounded-md shadow-xl py-1 fade-up">
           {children}
         </div>
       )}
