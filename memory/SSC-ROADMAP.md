@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-26 (post-audit phase: TASK M–P; L.7 + M in progress)
+**Updated:** 2026-06-26 (M + N code complete; J + P.6 + O next)
 **Repo:** `C:\Users\smash\SSC-main`
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -13,13 +13,13 @@
 ## How to use this doc
 
 1. **Done** — Engines 1–5, 8–10, 9 + TASK A–G code + TASK H (except H.7) + TASK L.1–L.6 + **v1.0.7** builds.
-2. **Now** — **TASK L.7** (founder infra) + **TASK M** (in-app UX polish) + **TASK N** (public surface) in parallel where possible.
-3. **Then** — **TASK O** (crypto hardening) → **TASK J** (founder QA matrix) → wider testers.
+2. **Now** — **TASK J** (founder QA matrix) + **P.6** (TURN off-LAN calls) on v1.0.8 builds.
+3. **Then** — **TASK O** (crypto hardening) → wider testers → Play Store (N.8 / I.6).
 4. **Release gate** — TASK J green + TASK N legal pages + Turnstile + API domain before public launch.
 
 **Current builds:** APK **v1.0.8** · Windows **`SSC-Setup-1.0.8.exe`** · API **`ssc-api-00019-4zf`**
 **Last deploy:** 26 Jun 2026 — OAuth on api.supersecurechat.com, delete-account, v1.0.8 clients
-**Next task:** **TASK M** (M.9–M.11) + **P.6** TURN off-LAN proof + **TASK J** founder QA
+**Next task:** **TASK J** founder QA (smashmaxxx ↔ dots) + **P.6** TURN off-LAN proof
 
 ---
 
@@ -192,7 +192,7 @@
 |------|-------|--------|
 | **L.7** | Turnstile + API domain + TURN proof | [~] Turnstile + API domain done; TURN off-LAN pending P.6 |
 | **M** | In-app UX polish (profile, Settings, feel) | [x] M.1–M.11 done (M.6 deferred v1.1) |
-| **N** | Landing, legal, downloads, trust | [~] N.4–N.5 done; N.7 beta link pending |
+| **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | smashmaxxx ↔ dots — **paused** until M/O ready | [ ] |
 | **I** Infra remainder | Play Store, email routing, code-sign | [ ] |
@@ -457,7 +457,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 
 ---
 
-### TASK N — Public surface & trust · [~] IN PROGRESS
+### TASK N — Public surface & trust · [x] DONE (N.8 deferred)
 
 **Goal:** `supersecurechat.com` ready for testers and store review.
 
@@ -468,7 +468,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | N.3 | **Landing footer** — real version, legal links, contact email | `Landing.jsx` | [x] |
 | N.4 | **Download links** on landing (`REACT_APP_DOWNLOAD_*`) | `scripts/prepare_downloads.ps1` + hosting | [x] `/downloads/` on Firebase Hosting |
 | N.5 | **Landing v2** — screenshots, copy, Super Secure Chat branding | `Landing.jsx`, `LandingScreenshots.jsx` | [x] |
-| N.6 | **`contact@supersecurechat.com`** Porkbun hosted email | Porkbun webmail + DNS fix button | [x] 26 Jun 2026 |
+| N.6 | **`contact@supersecurechat.com`** Porkbun hosted email | Porkbun hosted inbox + site mailto | [x] inbox live; inbound delivery fix deferred |
 | N.7 | **Firebase App Distribution** link on landing | `scripts/upload_app_distribution.ps1` | [x] v1.0.8 (9) uploaded; beta link on landing |
 | N.8 | **Play Store** listing assets | founder + TASK I.6 | [ ] deferred |
 
@@ -501,7 +501,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | P.4 | Update **Google OAuth** authorized domains + redirect URI | Google Cloud Console | OAuth on new API domain | [x] 26 Jun 2026 |
 | P.5 | Update **CORS_ORIGINS** + `GOOGLE_REDIRECT_URI` + `REACT_APP_BACKEND_URL` | `cloud_run.env` + frontend env | clients | [x] api.supersecurechat.com |
 | P.6 | **TURN off-LAN call test** (cellular ↔ Wi‑Fi) | smashmaxxx ↔ dots | I.3, L.7 |
-| P.7 | **Porkbun hosted email** `contact@` + DNS (SPF/DKIM) | Porkbun | [x] N.6 |
+| P.7 | **Porkbun hosted email** `contact@` + DNS (SPF/DKIM) | Porkbun | [x] N.6 — click Fix DNS when testing inbound |
 | P.8 | **Windows code signing** cert (optional) | SSL.com / DigiCert | SmartScreen |
 | P.9 | **Play Console** developer account ($25) | Google Play | I.6 |
 | P.10 | **GCP log alerts** per `SECURITY_OBSERVABILITY_RUNBOOK.md` | Cloud Logging | ops |
@@ -517,7 +517,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | Abuse resistance | **B** | rate limits ✅; Turnstile ✅ (register/login) |
 | Client secret storage | **B-** | AES device wrap in localStorage |
 | Product UX | **B-** | TASK M complete; founder QA (J) still pending |
-| Public launch readiness | **D+** → target **B-** after M+N+O+P |
+| Public launch readiness | **C+** → target **B-** after J + O + P.6 |
 
 **Marketing rule (unchanged):** Signal-grade E2E on **installed apps** — not browser tab; not “audited like Signal” until O.5.
 
@@ -673,6 +673,7 @@ yarn test:ci
 | 2026-06-26 | **TASK M.7** — `POST /auth/delete-account` + Settings delete flow |
 | 2026-06-26 | **TASK M.8–M.11** — chat skeletons; Stories i18n; call status copy; `GroupManageModal` + group member API; leave-group no longer deletes conv for all |
 | 2026-06-26 | **TASK N.4–N.5** — landing download CTAs; `/downloads/` hosting; `LandingScreenshots`; `deploy_hosting.ps1` |
+| 2026-06-26 | **TASK N.6–N.7** — `contact@` on site; Porkbun hosted inbox; App Distribution v1.0.8; TASK N closed (N.8 deferred) |
 | 2026-06-24 | **TASK D complete** — permissions, duplex audio, ringtone; frontend 55 tests |
 | 2026-06-24 | **TASK E complete** — voice/images/files; frontend 62 tests |
 | 2026-06-24 | **TASK F complete** — block/mute/groups; frontend 67 tests |
