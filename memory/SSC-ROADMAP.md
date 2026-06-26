@@ -17,7 +17,7 @@
 3. **Then** — **TASK O** (crypto hardening) → **TASK J** (founder QA matrix) → wider testers.
 4. **Release gate** — TASK J green + TASK N legal pages + Turnstile + API domain before public launch.
 
-**Current builds:** APK **v1.0.7** · Windows **`SSC-Setup-1.0.7.exe`** · API **`ssc-api-00016-mgl`**
+**Current builds:** APK **v1.0.7** · Windows **`SSC-Setup-1.0.7.exe`** · API **`ssc-api-00017-whm`**
 **Last deploy:** 26 Jun 2026 — Cloud Run redeploy after TASK H backend auth updates
 **Next task:** **TASK M.1–M.4** (profile sheet, Settings pass) + **TASK L.7** (founder: Turnstile keys, `api.supersecurechat.com`)
 
@@ -27,7 +27,7 @@
 
 | Service | URL / status | Notes |
 |---------|----------------|-------|
-| **Production API** | `https://ssc-api-4jp3wuccwa-ew.a.run.app` | Cloud Run **`ssc-api-00016-mgl`** · `env=production` · mongo ✅ · redis ✅ |
+| **Production API** | `https://ssc-api-4jp3wuccwa-ew.a.run.app` | Cloud Run **`ssc-api-00017-whm`** · `env=production` · mongo ✅ · redis ✅ |
 | **Firebase project** | `super-chat-b0992` | App Distribution, FCM push, Hosting (`super-chat-b0992.web.app`) |
 | **MongoDB** | Atlas `ssc` cluster | Network: allow Cloud Run (0.0.0.0/0) |
 | **Redis** | Upstash (production) | Required for `ENV=production` |
@@ -495,11 +495,11 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 
 | # | Action | Where | Blocks |
 |---|--------|-------|--------|
-| P.1 | Create **Cloudflare Turnstile** site + secret keys | Cloudflare dashboard | L.7, I.2, bot abuse |
-| P.2 | Add keys to `backend/cloud_run.env` + `REACT_APP_TURNSTILE_SITEKEY` | redeploy API + rebuild clients | L.7 |
-| P.3 | Map **`api.supersecurechat.com`** → Cloud Run | GCP + Cloudflare DNS | L.7, I.1 |
+| P.1 | Create **Cloudflare Turnstile** site + secret keys | Cloudflare dashboard | L.7, I.2, bot abuse | [ ] |
+| P.2 | Add keys to `backend/cloud_run.env` + `REACT_APP_TURNSTILE_SITEKEY` | redeploy API + rebuild clients | L.7 | [ ] |
+| P.3 | Map **`api.supersecurechat.com`** → Cloud Run | GCP console or `gcloud beta` + Cloudflare DNS | L.7, I.1 | [ ] |
 | P.4 | Update **Google OAuth** authorized domains + redirect URI | Google Cloud Console | OAuth on new API domain |
-| P.5 | Update **CORS_ORIGINS** + `REACT_APP_BACKEND_URL` | `cloud_run.env` + frontend env | clients |
+| P.5 | Update **CORS_ORIGINS** + `REACT_APP_BACKEND_URL` | `cloud_run.env` + frontend env | clients | [~] CORS includes supersecurechat.com |
 | P.6 | **TURN off-LAN call test** (cellular ↔ Wi‑Fi) | smashmaxxx ↔ dots | I.3, L.7 |
 | P.7 | **Cloudflare Email Routing** for `hello@` | Cloudflare | N.6 |
 | P.8 | **Windows code signing** cert (optional) | SSL.com / DigiCert | SmartScreen |
@@ -668,6 +668,7 @@ yarn test:ci
 | 2026-06-26 | **TASK M.1–M.4** — `ProfileContactSheet.jsx`; Settings blocked list, panic in Settings, push enable, help link; `/privacy` + `/terms`; landing footer + legal links |
 | 2026-06-26 | **TASK M.8** — message decrypt retry, slow-timeout hint, i18n error copy (`Message.jsx`) |
 | 2026-06-26 | **TASK M.5** — `POST /auth/change-password` + Settings form for password accounts |
+| 2026-06-26 | **TASK P deploy** — API `ssc-api-00017-whm` redeploy; Firebase Hosting (Privacy/Terms live); CORS for supersecurechat.com; `scripts/verify_task_p.ps1` + `TASK_P_FOUNDER_STEPS.txt` |
 | 2026-06-24 | **TASK D complete** — permissions, duplex audio, ringtone; frontend 55 tests |
 | 2026-06-24 | **TASK E complete** — voice/images/files; frontend 62 tests |
 | 2026-06-24 | **TASK F complete** — block/mute/groups; frontend 67 tests |

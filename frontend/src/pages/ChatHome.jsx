@@ -19,7 +19,6 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import CreateGroupModal from '../components/CreateGroupModal';
 import ConversationActionsSheet, { ConversationListRow } from '../components/ConversationActionsSheet';
 import ProfileContactSheet from '../components/ProfileContactSheet';
-import ProfileContactSheet from '../components/ProfileContactSheet';
 import { useLocale } from '../context/LocaleContext';
 import { useMobileLayout } from '../lib/use-mobile';
 import MobileChatMenu, { MenuAction } from '../components/MobileChatMenu';

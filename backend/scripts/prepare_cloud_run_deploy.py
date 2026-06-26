@@ -139,6 +139,8 @@ def main() -> int:
         "DESKTOP_OAUTH_REDIRECT",
         "TURN_USERNAME",
         "TURN_CREDENTIAL",
+        "TURNSTILE_SITEKEY",
+        "TURNSTILE_SECRET",
     ):
         if cfg.get(k):
             deploy_env[k] = cfg[k]

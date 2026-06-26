@@ -21,7 +21,6 @@ import TwoFAModal from './TwoFAModal';
 import PanicButton from './PanicButton';
 import { subscribePush } from '../lib/push';
 import { subscribeNativePush } from '../lib/native-push';
-import { isNativeApp } from '../lib/platform';
 import { unwrapPrivateKey, wrapPrivateKey } from '../lib/crypto';
 import { saveVaultCredential } from '../lib/vaultCredentialStore';
 

@@ -1,0 +1,54 @@
+TASK P — Founder infra checklist (supersecurechat.com)
+======================================================
+Run verification anytime:  .\scripts\verify_task_p.ps1
+
+P.1 — Cloudflare Turnstile (free)
+  1. https://dash.cloudflare.com → Turnstile → Add site
+  2. Hostnames: supersecurechat.com, www.supersecurechat.com, localhost
+  3. Copy Site Key + Secret Key
+
+P.2 — Paste keys (then redeploy API + rebuild clients)
+  backend/cloud_run.env:
+    TURNSTILE_SITEKEY=...
+    TURNSTILE_SECRET=...
+  frontend/.env.production.local:
+    REACT_APP_TURNSTILE_SITEKEY=...   (same site key)
+  Then:
+    .\scripts\deploy_cloud_run.ps1
+    cd frontend && yarn build && cd .. && firebase deploy --only hosting
+
+P.3 — API custom domain api.supersecurechat.com
+  Google Cloud Console → Cloud Run → ssc-api → Manage custom domains
+  OR: gcloud run domain-mappings create --service=ssc-api --domain=api.supersecurechat.com --region=europe-west1 --project=super-chat-b0992
+  Cloudflare DNS (supersecurechat.com zone):
+    Add CNAME api -> ghs.googlehosted.com (or records Google shows)
+  Wait for SSL provisioning (up to 24h, often minutes)
+
+P.4 — Google OAuth consent + credentials
+  https://console.cloud.google.com/apis/credentials (project super-chat-b0992)
+  Authorized domains: supersecurechat.com
+  OAuth client → Authorized redirect URIs (keep existing + add when API domain live):
+    https://ssc-api-4jp3wuccwa-ew.a.run.app/api/auth/google/callback
+    https://api.supersecurechat.com/api/auth/google/callback
+  Publish consent screen if still in Testing
+
+P.5 — After api.supersecurechat.com is live (optional migration)
+  backend/cloud_run.env:
+    GOOGLE_REDIRECT_URI=https://api.supersecurechat.com/api/auth/google/callback
+  Redeploy API. APK/desktop can keep Cloud Run URL until next rebuild.
+
+P.6 — TURN off-LAN proof (manual)
+  dots on cellular data, smashmaxxx on Wi-Fi (or reverse)
+  Voice + video call both directions. Log result in test_reports/turn_off_lan_YYYY-MM-DD.md
+
+P.7 — Email hello@supersecurechat.com
+  Cloudflare → Email Routing → Create address hello@ → forward to your Gmail
+
+P.8 — Windows code signing (optional, paid)
+  SmartScreen goes away after cert + signed NSIS build
+
+P.9 — Play Console ($25 one-time)
+  When ready for wider Android testers beyond Firebase App Distribution
+
+P.10 — GCP log alerts
+  See memory/SECURITY_OBSERVABILITY_RUNBOOK.md
