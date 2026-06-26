@@ -41,8 +41,10 @@ P.6 — TURN off-LAN proof (manual)
   dots on cellular data, smashmaxxx on Wi-Fi (or reverse)
   Voice + video call both directions. Log result in test_reports/turn_off_lan_YYYY-MM-DD.md
 
-P.7 — Email hello@supersecurechat.com
-  Cloudflare → Email Routing → Create address hello@ → forward to your Gmail
+P.7 — Email contact@supersecurechat.com (Porkbun hosted)
+  Porkbun → Domain → Email → contact@ inbox (paid)
+  Click "Fix Email Hosting DNS Records" for SPF/DKIM/DMARC
+  See scripts/PORKBUN_EMAIL_SETUP.txt
 
 P.8 — Windows code signing (optional, paid)
   SmartScreen goes away after cert + signed NSIS build

@@ -45,7 +45,7 @@ function Section({ icon: Icon, title, children, testId }) {
   );
 }
 
-const SUPPORT_EMAIL = 'hello@supersecurechat.com';
+const SUPPORT_EMAIL = 'contact@supersecurechat.com';
 const SITE_URL = 'https://www.supersecurechat.com';
 
 export default function SettingsModal({ open, onClose }) {

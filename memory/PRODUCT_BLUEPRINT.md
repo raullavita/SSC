@@ -50,7 +50,7 @@ This is a real consumer product in **founder + closed tester** phase, not a publ
 - Security: messages protected status, 2FA, panic wipe, auto-delete info
 - Blocked contacts list
 - Push notifications enable
-- Help: hello@supersecurechat.com
+- Help: contact@supersecurechat.com
 - About: version, open-source link
 
 ### Web (supersecurechat.com)

@@ -1,0 +1,30 @@
+Porkbun email for supersecurechat.com (TASK N.6 / P.7)
+======================================================
+
+Hosted inbox (paid): contact@supersecurechat.com
+Webmail: https://webmail.porkbun.com
+
+IMPORTANT — fix in Porkbun dashboard
+------------------------------------
+1. Click "Fix Email Hosting DNS Records" (SPF, DKIM, DMARC).
+2. DELETE the forward contact@ -> contact@ (hosted mail already receives there).
+3. Optional free forwards (up to 20):
+     hello  -> contact@supersecurechat.com   (legacy links)
+     support -> contact@supersecurechat.com   (alias, same inbox)
+
+Read mail
+---------
+- Web: webmail.porkbun.com (login: contact@supersecurechat.com + Porkbun password)
+- Phone: IMAP imap.porkbun.com port 993 SSL
+- Gmail.com web CANNOT fetch via POP3 anymore (Jan 2026). Use webmail or phone mail app.
+
+Send as contact@ from Gmail (optional)
+---------------------------------------
+Gmail -> Settings -> See all settings -> Accounts -> Send mail as -> Add:
+  Name: Super Secure Chat
+  Email: contact@supersecurechat.com
+  SMTP: smtp.porkbun.com port 587 STARTTLS (or 465 TLS)
+  Username: contact@supersecurechat.com
+  Password: your Porkbun email password
+
+SSC public contact (site + app): contact@supersecurechat.com

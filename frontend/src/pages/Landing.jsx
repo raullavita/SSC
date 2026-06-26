@@ -249,7 +249,7 @@ export default function Landing() {
         <div className="mt-3 flex flex-wrap gap-4 text-[10px] tracking-wider">
           <Link to="/privacy" className="hover:text-white transition" data-testid="landing-privacy-link">{t('landingNavPrivacy')}</Link>
           <Link to="/terms" className="hover:text-white transition" data-testid="landing-terms-link">{t('landingNavTerms')}</Link>
-          <a href="mailto:hello@supersecurechat.com" className="hover:text-white transition">hello@supersecurechat.com</a>
+          <a href="mailto:contact@supersecurechat.com" className="hover:text-white transition">contact@supersecurechat.com</a>
         </div>
       </footer>
     </div>

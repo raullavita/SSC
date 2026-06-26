@@ -468,8 +468,8 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | N.3 | **Landing footer** — real version, legal links, contact email | `Landing.jsx` | [x] |
 | N.4 | **Download links** on landing (`REACT_APP_DOWNLOAD_*`) | `scripts/prepare_downloads.ps1` + hosting | [x] `/downloads/` on Firebase Hosting |
 | N.5 | **Landing v2** — screenshots, copy, Super Secure Chat branding | `Landing.jsx`, `LandingScreenshots.jsx` | [x] |
-| N.6 | **`hello@supersecurechat.com`** email routing | founder: Cloudflare Email Routing | [ ] skipped |
-| N.7 | **Firebase App Distribution** link on landing | `scripts/upload_app_distribution.ps1` | [~] upload script; set `REACT_APP_DOWNLOAD_ANDROID_BETA_URL` |
+| N.6 | **`contact@supersecurechat.com`** Porkbun hosted email | Porkbun webmail + DNS fix button | [x] 26 Jun 2026 |
+| N.7 | **Firebase App Distribution** link on landing | `scripts/upload_app_distribution.ps1` | [x] v1.0.8 (9) uploaded; beta link on landing |
 | N.8 | **Play Store** listing assets | founder + TASK I.6 | [ ] deferred |
 
 ---
@@ -501,7 +501,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | P.4 | Update **Google OAuth** authorized domains + redirect URI | Google Cloud Console | OAuth on new API domain | [x] 26 Jun 2026 |
 | P.5 | Update **CORS_ORIGINS** + `GOOGLE_REDIRECT_URI` + `REACT_APP_BACKEND_URL` | `cloud_run.env` + frontend env | clients | [x] api.supersecurechat.com |
 | P.6 | **TURN off-LAN call test** (cellular ↔ Wi‑Fi) | smashmaxxx ↔ dots | I.3, L.7 |
-| P.7 | **Cloudflare Email Routing** for `hello@` | Cloudflare | N.6 |
+| P.7 | **Porkbun hosted email** `contact@` + DNS (SPF/DKIM) | Porkbun | [x] N.6 |
 | P.8 | **Windows code signing** cert (optional) | SSL.com / DigiCert | SmartScreen |
 | P.9 | **Play Console** developer account ($25) | Google Play | I.6 |
 | P.10 | **GCP log alerts** per `SECURITY_OBSERVABILITY_RUNBOOK.md` | Cloud Logging | ops |

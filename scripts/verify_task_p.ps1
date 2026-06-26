@@ -54,4 +54,4 @@ try {
 Write-Host ""
 Write-Host "Founder manual checks still required:" -ForegroundColor Cyan
 Write-Host "  P.6 TURN off-LAN call test (smashmaxxx and dots)"
-Write-Host "  P.7 Cloudflare Email Routing hello@supersecurechat.com"
+Write-Host "  P.7 Porkbun email: verify contact@supersecurechat.com in Porkbun + DNS fix button"

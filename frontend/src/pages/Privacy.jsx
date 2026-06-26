@@ -57,7 +57,7 @@ export default function Privacy() {
 
           <h2 className="font-mono text-xs tracking-[0.2em] uppercase text-[#00E5FF] pt-4">Contact</h2>
           <p>
-            Questions: <a href="mailto:hello@supersecurechat.com" className="text-[#00E5FF] hover:underline">hello@supersecurechat.com</a>
+            Questions: <a href="mailto:contact@supersecurechat.com" className="text-[#00E5FF] hover:underline">contact@supersecurechat.com</a>
           </p>
         </section>
       </main>
