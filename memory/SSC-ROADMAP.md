@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-26 (M + N code complete; J + P.6 + O next)
+**Updated:** 2026-06-26 (landing v3 scroll + contact; J scheduled 27 Jun; paid items deferred to next week)
 **Repo:** `C:\Users\smash\SSC-main`
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -13,13 +13,15 @@
 ## How to use this doc
 
 1. **Done** — Engines 1–5, 8–10, 9 + TASK A–G code + TASK H (except H.7) + TASK L.1–L.6 + **v1.0.7** builds.
-2. **Now** — **TASK J** (founder QA matrix) + **P.6** (TURN off-LAN calls) on v1.0.8 builds.
-3. **Then** — **TASK O** (crypto hardening) → wider testers → Play Store (N.8 / I.6).
+2. **Now** — finish remaining non-paid items (landing polish ✅, **P.6** TURN off-LAN).
+3. **Tomorrow (27 Jun)** — **TASK J** founder QA matrix (smashmaxxx ↔ dots) on v1.0.8.
+4. **Next week** — paid founder items (**P.8** code signing, **P.9** Play Console $25, **N.8** / **I.6** Play Store).
+5. **Then** — **TASK O** (crypto hardening) → wider testers → Play Store launch.
 4. **Release gate** — TASK J green + TASK N legal pages + Turnstile + API domain before public launch.
 
 **Current builds:** APK **v1.0.8** · Windows **`SSC-Setup-1.0.8.exe`** · API **`ssc-api-00019-4zf`**
 **Last deploy:** 26 Jun 2026 — OAuth on api.supersecurechat.com, delete-account, v1.0.8 clients
-**Next task:** **TASK J** founder QA (smashmaxxx ↔ dots) + **P.6** TURN off-LAN proof
+**Next task:** **P.6** TURN off-LAN proof · **TASK J** founder QA scheduled **27 Jun 2026**
 
 ---
 
@@ -467,10 +469,10 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | N.2 | **Terms of Use** page `/terms` | code | [x] |
 | N.3 | **Landing footer** — real version, legal links, contact email | `Landing.jsx` | [x] |
 | N.4 | **Download links** on landing (`REACT_APP_DOWNLOAD_*`) | `scripts/prepare_downloads.ps1` + hosting | [x] `/downloads/` on Firebase Hosting |
-| N.5 | **Landing v2** — screenshots, copy, Super Secure Chat branding | `Landing.jsx`, `LandingScreenshots.jsx` | [x] |
+| N.5 | **Landing v2/v3** — scrollable layout, downloads section, prominent contact, unified buttons | `Landing.jsx`, `MarketingPage.jsx` | [x] 26 Jun 2026 |
 | N.6 | **`contact@supersecurechat.com`** Porkbun hosted email | Porkbun hosted inbox + site mailto | [x] inbox live; inbound delivery fix deferred |
 | N.7 | **Firebase App Distribution** link on landing | `scripts/upload_app_distribution.ps1` | [x] v1.0.8 (9) uploaded; beta link on landing |
-| N.8 | **Play Store** listing assets | founder + TASK I.6 | [ ] deferred |
+| N.8 | **Play Store** listing assets | founder + TASK I.6 | [ ] deferred — **next week** (paid) |
 
 ---
 
@@ -502,8 +504,8 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | P.5 | Update **CORS_ORIGINS** + `GOOGLE_REDIRECT_URI` + `REACT_APP_BACKEND_URL` | `cloud_run.env` + frontend env | clients | [x] api.supersecurechat.com |
 | P.6 | **TURN off-LAN call test** (cellular ↔ Wi‑Fi) | smashmaxxx ↔ dots | I.3, L.7 |
 | P.7 | **Porkbun hosted email** `contact@` + DNS (SPF/DKIM) | Porkbun | [x] N.6 — click Fix DNS when testing inbound |
-| P.8 | **Windows code signing** cert (optional) | SSL.com / DigiCert | SmartScreen |
-| P.9 | **Play Console** developer account ($25) | Google Play | I.6 |
+| P.8 | **Windows code signing** cert (optional) | SSL.com / DigiCert | SmartScreen | [ ] **next week** |
+| P.9 | **Play Console** developer account ($25) | Google Play | I.6 | [ ] **next week** |
 | P.10 | **GCP log alerts** per `SECURITY_OBSERVABILITY_RUNBOOK.md` | Cloud Logging | ops |
 
 ---
@@ -674,6 +676,7 @@ yarn test:ci
 | 2026-06-26 | **TASK M.8–M.11** — chat skeletons; Stories i18n; call status copy; `GroupManageModal` + group member API; leave-group no longer deletes conv for all |
 | 2026-06-26 | **TASK N.4–N.5** — landing download CTAs; `/downloads/` hosting; `LandingScreenshots`; `deploy_hosting.ps1` |
 | 2026-06-26 | **TASK N.6–N.7** — `contact@` on site; Porkbun hosted inbox; App Distribution v1.0.8; TASK N closed (N.8 deferred) |
+| 2026-06-26 | **Landing v3** — scrollable `MarketingPage`; downloads + contact sections; unified buttons; **P.8/P.9/N.8** postponed to next week; **TASK J** scheduled 27 Jun |
 | 2026-06-24 | **TASK D complete** — permissions, duplex audio, ringtone; frontend 55 tests |
 | 2026-06-24 | **TASK E complete** — voice/images/files; frontend 62 tests |
 | 2026-06-24 | **TASK F complete** — block/mute/groups; frontend 67 tests |

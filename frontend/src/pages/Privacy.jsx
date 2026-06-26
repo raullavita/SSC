@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { LockKey, ArrowLeft } from '@phosphor-icons/react';
+import MarketingPage from '../components/MarketingPage';
 
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#F0F0F0]">
+    <MarketingPage className="bg-[#0A0A0A] text-[#F0F0F0]">
       <header className="border-b border-[#27272A] px-6 py-4 max-w-3xl mx-auto flex items-center gap-3">
         <Link to="/" className="text-[#A1A1AA] hover:text-white flex items-center gap-1 text-sm">
           <ArrowLeft size={16} />
@@ -61,6 +62,6 @@ export default function Privacy() {
           </p>
         </section>
       </main>
-    </div>
+    </MarketingPage>
   );
 }

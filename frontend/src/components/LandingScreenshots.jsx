@@ -21,12 +21,13 @@ export default function LandingScreenshots() {
   const { t } = useLocale();
 
   return (
-    <section className="mt-24" data-testid="landing-screenshots-section">
-      <p className="text-xs font-mono uppercase tracking-[0.2em] text-[#A1A1AA]">{t('landingScreenshotsLabel')}</p>
-      <h2 className="mt-3 text-2xl md:text-3xl font-mono tracking-tight">{t('landingScreenshotsTitle')}</h2>
-      <p className="mt-3 text-sm text-[#A1A1AA] max-w-2xl leading-relaxed">{t('landingScreenshotsBody')}</p>
+    <section className="border-t border-[#27272A]/80" data-testid="landing-screenshots-section">
+      <div className="max-w-6xl mx-auto px-6 py-20 md:py-24">
+      <p className="text-xs font-medium uppercase tracking-widest text-[#71717A]">{t('landingScreenshotsLabel')}</p>
+      <h2 className="mt-2 text-2xl md:text-3xl font-semibold tracking-tight">{t('landingScreenshotsTitle')}</h2>
+      <p className="mt-3 text-base text-[#A1A1AA] max-w-2xl leading-relaxed">{t('landingScreenshotsBody')}</p>
 
-      <div className="mt-8 grid md:grid-cols-3 gap-4">
+      <div className="mt-10 grid md:grid-cols-3 gap-5">
         <MockScreen
           title={t('landingShotChatTitle')}
           subtitle={t('landingShotChatSub')}
@@ -74,6 +75,7 @@ export default function LandingScreenshots() {
             </div>
           </div>
         </MockScreen>
+      </div>
       </div>
     </section>
   );

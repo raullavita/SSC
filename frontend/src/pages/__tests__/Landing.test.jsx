@@ -36,8 +36,9 @@ describe('Landing', () => {
 
   it('renders SSC branding and primary CTAs on installed clients', () => {
     renderLanding();
-    expect(screen.getByTestId('ssc-logo')).toBeInTheDocument();
-    expect(screen.getByText('SSC')).toBeInTheDocument();
+    const logo = screen.getByTestId('ssc-logo');
+    expect(logo).toBeInTheDocument();
+    expect(logo).toHaveTextContent('Super Secure Chat');
     expect(screen.getByRole('link', { name: translate('landingLogin', 'en') })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: translate('landingRegister', 'en') })).toBeInTheDocument();
   });
@@ -48,6 +49,8 @@ describe('Landing', () => {
     expect(screen.getByTestId('landing-download-panel')).toBeInTheDocument();
     expect(screen.getByText(translate('landingGetAndroid', 'en'))).toBeInTheDocument();
     expect(screen.getByTestId('landing-screenshots-section')).toBeInTheDocument();
+    expect(screen.getByTestId('landing-contact-section')).toBeInTheDocument();
+    expect(screen.getByTestId('landing-contact-email')).toHaveAttribute('href', 'mailto:contact@supersecurechat.com');
     expect(screen.queryByRole('link', { name: translate('landingLogin', 'en') })).not.toBeInTheDocument();
   });
 

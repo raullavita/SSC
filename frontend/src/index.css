@@ -41,6 +41,19 @@ body {
   overflow: hidden;
 }
 
+/* Public marketing pages — allow natural document scroll */
+html.marketing-site,
+html.marketing-site body,
+html.marketing-site #root,
+html.marketing-site .App {
+  height: auto;
+  min-height: 100%;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+}
+
 /* Safe areas applied on shell regions, not body (avoids double padding in WebView) */
 .safe-top {
   padding-top: max(env(safe-area-inset-top), 0px);
@@ -194,6 +207,17 @@ html.native-app .App {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Landing / marketing buttons */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00E5FF] text-black text-sm font-semibold hover:brightness-110 transition;
+}
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[#3F3F46] bg-[#18181B] text-[#F4F4F5] text-sm font-medium hover:bg-[#27272A] transition;
+}
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm text-[#A1A1AA] hover:text-white hover:bg-[#18181B] transition;
 }
 
 /* Cursor */
