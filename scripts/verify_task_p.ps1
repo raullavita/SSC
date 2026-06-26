@@ -53,7 +53,6 @@ try {
 
 Write-Host ""
 Write-Host "Founder manual checks still required:" -ForegroundColor Cyan
-Write-Host "  P.1-P.2 Cloudflare Turnstile keys in cloud_run.env + REACT_APP_TURNSTILE_SITEKEY"
-Write-Host "  P.4 Google OAuth authorized domains + redirect URIs"
+Write-Host "  P.4 Google OAuth authorized domains + redirect URIs (api.supersecurechat.com callback)"
 Write-Host "  P.6 TURN off-LAN call test (smashmaxxx and dots)"
 Write-Host "  P.7 Cloudflare Email Routing hello@supersecurechat.com"

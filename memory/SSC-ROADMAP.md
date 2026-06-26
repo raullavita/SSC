@@ -19,7 +19,7 @@
 
 **Current builds:** APK **v1.0.7** · Windows **`SSC-Setup-1.0.7.exe`** · API **`ssc-api-00017-whm`**
 **Last deploy:** 26 Jun 2026 — Cloud Run redeploy after TASK H backend auth updates
-**Next task:** **TASK M.1–M.4** (profile sheet, Settings pass) + **TASK L.7** (founder: Turnstile keys, `api.supersecurechat.com`)
+**Next task:** **TASK M** (remaining UX) + **TASK P.4/P.6** (OAuth redirect, TURN off-LAN proof) + rebuild APK/desktop for Turnstile
 
 ---
 
@@ -125,7 +125,7 @@
 | Issue | Impact |
 |-------|--------|
 | **Founder QA not run** on v1.0.7 | All A–F code shipped; **device matrix (TASK J) paused** per founder |
-| **Turnstile disabled** in production | Bot registration risk until L.7 / I.2 complete |
+| ~~Turnstile disabled~~ | **Resolved** — P.1–P.2 live on web + API (APK/desktop rebuild pending) |
 | **API on default Cloud Run URL** | OAuth/CORS trust gap until custom API domain (I.1) |
 | **TURN not verified** off-LAN | Video/voice may fail on cellular ↔ Wi‑Fi (TASK I.3) |
 | **Group call signaling cleartext** | Server sees SDP/ICE for group calls (TASK O.2) |
@@ -190,7 +190,7 @@
 
 | Task | Scope | Status |
 |------|-------|--------|
-| **L.7** | Turnstile + API domain + TURN proof | [~] founder inputs |
+| **L.7** | Turnstile + API domain + TURN proof | [~] Turnstile + API domain done; TURN off-LAN pending P.6 |
 | **M** | In-app UX polish (profile, Settings, feel) | [~] in progress |
 | **N** | Landing, legal, downloads, trust | [~] in progress |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
@@ -432,7 +432,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | L.4 | Abuse defenses pass: stricter rate limits for friend requests, group create, file upload bursts; add clear 429 telemetry | code diff + config notes + smoke evidence | [x] |
 | L.5 | Security observability: anomaly logging/alerts for retention failures, Redis fallback, and auth abuse spikes | structured log events + documented runbook | [x] |
 | L.6 | Deploy gate hardening: fail deploy when retention proof regresses or required security env is weak | CI/script gate proof + deploy script update | [x] |
-| L.7 | Infra hardening follow-through: Turnstile production enable + TURN off-LAN verification + custom domain rollout | deploy evidence + QA evidence + roadmap update | [~] blocked: pending Turnstile keys + domain DNS + founder device off-LAN call proof |
+| L.7 | Infra hardening follow-through: Turnstile production enable + TURN off-LAN verification + custom domain rollout | deploy evidence + QA evidence + roadmap update | [~] Turnstile + api.supersecurechat.com done; off-LAN call proof pending |
 
 ---
 
@@ -495,9 +495,9 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 
 | # | Action | Where | Blocks |
 |---|--------|-------|--------|
-| P.1 | Create **Cloudflare Turnstile** site + secret keys | Cloudflare dashboard | L.7, I.2, bot abuse | [ ] |
-| P.2 | Add keys to `backend/cloud_run.env` + `REACT_APP_TURNSTILE_SITEKEY` | redeploy API + rebuild clients | L.7 | [ ] |
-| P.3 | Map **`api.supersecurechat.com`** → Cloud Run | GCP console or `gcloud beta` + Cloudflare DNS | L.7, I.1 | [ ] |
+| P.1 | Create **Cloudflare Turnstile** site + secret keys | Cloudflare dashboard | L.7, I.2, bot abuse | [x] 26 Jun 2026 |
+| P.2 | Add keys to `backend/cloud_run.env` + `REACT_APP_TURNSTILE_SITEKEY` | redeploy API + rebuild clients | L.7 | [x] API **00018-gnx** + hosting rebuild |
+| P.3 | Map **`api.supersecurechat.com`** → Cloud Run | GCP console or `gcloud beta` + Porkbun DNS | L.7, I.1 | [x] SSL live; `/api/health` 200 |
 | P.4 | Update **Google OAuth** authorized domains + redirect URI | Google Cloud Console | OAuth on new API domain |
 | P.5 | Update **CORS_ORIGINS** + `REACT_APP_BACKEND_URL` | `cloud_run.env` + frontend env | clients | [~] CORS includes supersecurechat.com |
 | P.6 | **TURN off-LAN call test** (cellular ↔ Wi‑Fi) | smashmaxxx ↔ dots | I.3, L.7 |
@@ -514,7 +514,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 |-------|-------|-------|
 | Crypto design (installed) | **A-** | libsignal 0.96.2; contact-gated prekeys |
 | Server exposure | **B** | ciphertext messages; group call SDP gap |
-| Abuse resistance | **B-** | rate limits ✅; Turnstile ❌ |
+| Abuse resistance | **B** | rate limits ✅; Turnstile ✅ (register/login) |
 | Client secret storage | **B-** | AES device wrap in localStorage |
 | Product UX | **C+** → target **B** after TASK M |
 | Public launch readiness | **D+** → target **B-** after M+N+O+P |
