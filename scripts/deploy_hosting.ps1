@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 
 & (Join-Path $PSScriptRoot "prepare_downloads.ps1")
-if ($LASTEXITCODE -ne 0) { throw "prepare_downloads failed" }
+if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "prepare_downloads failed (exit $LASTEXITCODE)" }
 
 Push-Location (Join-Path $RepoRoot "frontend")
 try {
