@@ -17,6 +17,13 @@ jest.mock('../../lib/platform', () => ({
   isInstalledClient: jest.fn(() => true),
 }));
 
+jest.mock('../../lib/siteGate', () => ({
+  isSiteUnderConstruction: jest.fn(() => false),
+  hasSiteAccessBypass: jest.fn(() => true),
+  setSiteAccessBypass: jest.fn(),
+  tryUrlPreviewBypass: jest.fn(() => false),
+}));
+
 const { isInstalledClient } = require('../../lib/platform');
 
 function renderLanding() {

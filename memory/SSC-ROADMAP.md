@@ -677,6 +677,7 @@ yarn test:ci
 | 2026-06-26 | **TASK N.4–N.5** — landing download CTAs; `/downloads/` hosting; `LandingScreenshots`; `deploy_hosting.ps1` |
 | 2026-06-26 | **TASK N.6–N.7** — `contact@` on site; Porkbun hosted inbox; App Distribution v1.0.8; TASK N closed (N.8 deferred) |
 | 2026-06-26 | **Landing v3** — scrollable `MarketingPage`; downloads + contact sections; unified buttons; **P.8/P.9/N.8** postponed to next week; **TASK J** scheduled 27 Jun |
+| 2026-06-26 | **Construction gate** — `UnderConstructionGate` on public www; tester bypass + `?preview=` bookmark; flip `REACT_APP_SITE_UNDER_CONSTRUCTION=false` at launch |
 | 2026-06-24 | **TASK D complete** — permissions, duplex audio, ringtone; frontend 55 tests |
 | 2026-06-24 | **TASK E complete** — voice/images/files; frontend 62 tests |
 | 2026-06-24 | **TASK F complete** — block/mute/groups; frontend 67 tests |

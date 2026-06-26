@@ -209,6 +209,25 @@ html.native-app .App {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Under construction gate */
+.construction-stripes {
+  background: repeating-linear-gradient(
+    -45deg,
+    #FFD600,
+    #FFD600 12px,
+    #0A0A0A 12px,
+    #0A0A0A 24px
+  );
+  opacity: 0.35;
+}
+@keyframes construction-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.construction-bob {
+  animation: construction-bob 2.4s ease-in-out infinite;
+}
+
 /* Landing / marketing buttons */
 .btn-primary {
   @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#00E5FF] text-black text-sm font-semibold hover:brightness-110 transition;
