@@ -14,6 +14,7 @@ import androidx.core.view.WindowCompat;
 
 import com.getcapacitor.BridgeActivity;
 
+import chat.ssc.secure.plugins.SscDeviceSecretPlugin;
 import chat.ssc.secure.plugins.SscLibsignalPlugin;
 import chat.ssc.secure.plugins.SscMediaPermissionsPlugin;
 import chat.ssc.secure.plugins.SscTranslatePlugin;
@@ -22,6 +23,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SscLibsignalPlugin.class);
+        registerPlugin(SscDeviceSecretPlugin.class);
         registerPlugin(SscTranslatePlugin.class);
         registerPlugin(SscMediaPermissionsPlugin.class);
         SplashScreen.installSplashScreen(this);

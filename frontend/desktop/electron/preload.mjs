@@ -21,8 +21,16 @@ const libsignal = Object.fromEntries(
   ]),
 );
 
+const secureStorage = {
+  isAvailable: () => ipcRenderer.invoke('secure-storage-available'),
+  get: (key) => ipcRenderer.invoke('secure-storage-get', key),
+  set: (key, value) => ipcRenderer.invoke('secure-storage-set', key, value),
+  remove: (key) => ipcRenderer.invoke('secure-storage-remove', key),
+};
+
 contextBridge.exposeInMainWorld('sscDesktop', {
   isDesktop: true,
   platform: process.platform,
   libsignal,
+  secureStorage,
 });

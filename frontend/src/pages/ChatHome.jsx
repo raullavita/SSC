@@ -21,6 +21,7 @@ import GroupManageModal from '../components/GroupManageModal';
 import { ConversationListSkeleton, MessagesSkeleton } from '../components/ChatSkeleton';
 import ConversationActionsSheet, { ConversationListRow } from '../components/ConversationActionsSheet';
 import ProfileContactSheet from '../components/ProfileContactSheet';
+import VerifyHandshakeModal from '../components/VerifyHandshakeModal';
 import { useLocale } from '../context/LocaleContext';
 import { useMobileLayout } from '../lib/use-mobile';
 import MobileChatMenu, { MenuAction } from '../components/MobileChatMenu';
@@ -72,10 +73,8 @@ import {
   decryptMessageBody,
 } from '../lib/signal/migration';
 import { fetchRetentionConfig } from '../lib/publicConfig';
-import {
-  prepareInstalledMessaging,
-  usesSignalOnlyMessaging,
-} from '../lib/signal/installedMessaging';
+import { prepareInstalledMessaging, usesSignalOnlyMessaging } from '../lib/signal/installedMessaging';
+import { maySendLegacyRsa } from '../lib/signal/legacyRsaPolicy';
 import { unpackIncomingSignaling } from '../lib/signal/webrtcSignaling';
 
 const PENDING_CALL_KEY = 'ssc_pending_call';
@@ -121,6 +120,7 @@ export default function ChatHome() {
   const [groupCallState, setGroupCallState] = useState(null); // {mode, direction, members, signal}
   const [convActionsTarget, setConvActionsTarget] = useState(null);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
   const [reads, setReads] = useState([]); // [{user_id, last_read_message_id}]
   const [retentionHours, setRetentionHours] = useState(24);
   const socketRef = useRef(null);
@@ -911,6 +911,10 @@ export default function ChatHome() {
         return;
       }
 
+      if (!maySendLegacyRsa()) {
+        toast.error(t('encryptionNotReady'));
+        return;
+      }
       if (!privateKey) {
         toast.error(t('encryptionNotReady'));
         return;
@@ -1732,6 +1736,14 @@ export default function ChatHome() {
         onClose={() => setProfileSheetOpen(false)}
         onMute={toggleMute}
         onBlock={toggleBlock}
+        onVerify={!isGroup && peer ? () => setVerifyOpen(true) : undefined}
+      />
+
+      <VerifyHandshakeModal
+        open={verifyOpen}
+        onClose={() => setVerifyOpen(false)}
+        me={user}
+        peer={peer}
       />
 
       {storyGroup && (

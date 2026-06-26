@@ -1,4 +1,5 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, safeStorage } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { initLibsignalBridge, invokeLibsignal } from './libsignal/bridge.mjs';
@@ -138,4 +139,47 @@ app.on('window-all-closed', () => {
 
 ipcMain.handle('libsignal', async (_event, { method, args }) => {
   return invokeLibsignal(method, args);
+});
+
+const SECURE_STORE_FILE = () => path.join(app.getPath('userData'), 'ssc-secure-store.json');
+
+function readSecureStore() {
+  try {
+    const raw = fs.readFileSync(SECURE_STORE_FILE(), 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function writeSecureStore(data) {
+  fs.writeFileSync(SECURE_STORE_FILE(), JSON.stringify(data), 'utf8');
+}
+
+ipcMain.handle('secure-storage-available', () => safeStorage.isEncryptionAvailable());
+
+ipcMain.handle('secure-storage-get', (_event, key) => {
+  if (!safeStorage.isEncryptionAvailable() || !key) return null;
+  const store = readSecureStore();
+  const enc = store[key];
+  if (!enc) return null;
+  try {
+    return safeStorage.decryptString(Buffer.from(enc, 'base64'));
+  } catch {
+    return null;
+  }
+});
+
+ipcMain.handle('secure-storage-set', (_event, key, value) => {
+  if (!safeStorage.isEncryptionAvailable() || !key || value == null) return false;
+  const store = readSecureStore();
+  store[key] = safeStorage.encryptString(String(value)).toString('base64');
+  writeSecureStore(store);
+  return true;
+});
+
+ipcMain.handle('secure-storage-remove', (_event, key) => {
+  const store = readSecureStore();
+  delete store[key];
+  writeSecureStore(store);
 });

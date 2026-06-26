@@ -12,6 +12,7 @@ import {
   isSignalStatusV1,
 } from '../lib/signal/statuses';
 import { subscribeMemoryWipe } from '../lib/memoryWipe';
+import { usesSignalOnlyMessaging } from '../lib/signal/installedMessaging';
 import Avatar from './Avatar';
 import { useLocale } from '../context/LocaleContext';
 
@@ -139,6 +140,9 @@ function StoryCreator({ open, onClose, me, onCreated }) {
           status_type: 'text',
           background: bg,
         });
+      } else if (usesSignalOnlyMessaging()) {
+        toast.error(t('encryptionNotReady'));
+        return;
       } else {
         const myPub = me.public_key ? (typeof me.public_key === 'string' ? JSON.parse(me.public_key) : me.public_key) : null;
         const recipients = { [me.user_id]: myPub };

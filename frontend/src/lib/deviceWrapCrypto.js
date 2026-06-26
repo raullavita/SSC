@@ -1,7 +1,13 @@
 /**
  * Device-bound AES-GCM wrap — shared by vault credentials and session persistence.
- * Plaintext secrets never stored in localStorage; only ciphertext blobs.
+ * Plaintext secrets never stored in localStorage; hardware-backed when available (TASK O.3).
  */
+import {
+  getHardwareSecret,
+  isHardwareSecretStoreAvailable,
+  removeHardwareSecret,
+  setHardwareSecret,
+} from './hardwareSecretStore';
 
 export const DEVICE_WRAP_KEY = 'ssc_device_wrap_secret';
 
@@ -13,13 +19,40 @@ function fromB64(b64s) {
   return Uint8Array.from(atob(b64s), (c) => c.charCodeAt(0));
 }
 
+async function readWrapKeyMaterial() {
+  if (typeof crypto?.subtle === 'undefined') return null;
+  const hw = await isHardwareSecretStoreAvailable();
+  if (hw) {
+    const stored = await getHardwareSecret(DEVICE_WRAP_KEY);
+    if (stored) return stored;
+  }
+  if (typeof localStorage !== 'undefined') {
+    return localStorage.getItem(DEVICE_WRAP_KEY);
+  }
+  return null;
+}
+
+async function writeWrapKeyMaterial(material) {
+  const hw = await isHardwareSecretStoreAvailable();
+  if (hw) {
+    const ok = await setHardwareSecret(DEVICE_WRAP_KEY, material);
+    if (ok) {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem(DEVICE_WRAP_KEY);
+      return;
+    }
+  }
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(DEVICE_WRAP_KEY, material);
+  }
+}
+
 export async function getDeviceWrapKey() {
-  if (typeof crypto?.subtle === 'undefined' || typeof localStorage === 'undefined') return null;
-  let stored = localStorage.getItem(DEVICE_WRAP_KEY);
+  if (typeof crypto?.subtle === 'undefined') return null;
+  let stored = await readWrapKeyMaterial();
   if (!stored) {
     const raw = crypto.getRandomValues(new Uint8Array(32));
     stored = toB64(raw);
-    localStorage.setItem(DEVICE_WRAP_KEY, stored);
+    await writeWrapKeyMaterial(stored);
   }
   const bytes = fromB64(stored);
   return crypto.subtle.importKey('raw', bytes, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
@@ -57,7 +90,8 @@ export async function unwrapDeviceSecret(blob) {
   }
 }
 
-export function clearDeviceWrapSecret() {
+export async function clearDeviceWrapSecret() {
+  await removeHardwareSecret(DEVICE_WRAP_KEY);
   if (typeof localStorage === 'undefined') return;
   localStorage.removeItem(DEVICE_WRAP_KEY);
 }

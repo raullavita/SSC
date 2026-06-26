@@ -1,5 +1,19 @@
 import { webcrypto } from 'crypto';
 import { TextEncoder, TextDecoder } from 'util';
+
+jest.mock('../platform', () => ({
+  isInstalledClient: () => true,
+  isNativeApp: () => false,
+  isElectronApp: () => false,
+}));
+
+jest.mock('../hardwareSecretStore', () => ({
+  isHardwareSecretStoreAvailable: jest.fn(async () => false),
+  getHardwareSecret: jest.fn(async () => null),
+  setHardwareSecret: jest.fn(async () => false),
+  removeHardwareSecret: jest.fn(async () => {}),
+}));
+
 import { DEVICE_WRAP_KEY } from '../deviceWrapCrypto';
 import {
   saveVaultCredential,
@@ -7,10 +21,6 @@ import {
   clearVaultCredential,
   clearAllVaultCredentials,
 } from '../vaultCredentialStore';
-
-jest.mock('../platform', () => ({
-  isInstalledClient: () => true,
-}));
 
 beforeAll(() => {
   global.crypto = webcrypto;

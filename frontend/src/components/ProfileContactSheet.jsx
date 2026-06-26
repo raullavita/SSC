@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, Bell, BellSlash, Prohibit } from '@phosphor-icons/react';
+import { X, Bell, BellSlash, Prohibit, ShieldCheck } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 import Avatar from './Avatar';
 import { formatPeerPresence } from '../lib/presence';
@@ -14,6 +14,7 @@ export default function ProfileContactSheet({
   onClose,
   onMute,
   onBlock,
+  onVerify,
 }) {
   const { t } = useLocale();
 
@@ -81,6 +82,17 @@ export default function ProfileContactSheet({
               <Prohibit size={18} className={blocked ? 'text-[#34C759]' : 'text-[#FF9500]'} />
               {blocked ? t('unblock') : t('block')}
             </button>
+            {onVerify ? (
+              <button
+                type="button"
+                data-testid="profile-sheet-verify"
+                onClick={() => run(() => onVerify?.())}
+                className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
+              >
+                <ShieldCheck size={18} className="text-[#00E5FF]" />
+                {t('verifyIdentity')}
+              </button>
+            ) : null}
           </div>
         )}
       </div>

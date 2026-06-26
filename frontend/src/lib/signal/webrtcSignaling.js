@@ -1,6 +1,6 @@
 /**
- * WebRTC signaling encryption — Engine 8.7 (G6).
- * 1:1 SDP/ICE wrapped in signal_v1 ratchet ciphertext; group calls stay legacy cleartext.
+ * WebRTC signaling encryption — Engine 8.7 + TASK O.2.
+ * 1:1 and group SDP/ICE wrapped in Signal ciphertext when sessions/sender-keys are ready.
  */
 import { ProtocolVersion } from './constants';
 // SIGNAL_GROUP_V1 used for group signaling decrypt shim

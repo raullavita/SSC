@@ -19,6 +19,7 @@ import {
   signalRemoteUserId,
 } from './messages';
 import { isNativeLibsignalAvailable } from './nativeLibsignal';
+import { usesSignalOnlyMessaging } from './installedMessaging';
 
 export function getMessageProtocol(msg) {
   return msg?.protocol || ProtocolVersion.LEGACY_RSA;
@@ -60,36 +61,54 @@ export async function decryptMessageBody(msg, { myUserId, peerUserId, privateKey
 }
 
 export async function resolveOutgoingEncryptionHint({ isGroup, peer, user, members }) {
+  const signalOnly = usesSignalOnlyMessaging();
+
   if (isGroup) {
     if (!isNativeLibsignalAvailable()) {
-      return { mode: ProtocolVersion.LEGACY_RSA, reason: 'web_client' };
+      return signalOnly
+        ? { mode: ProtocolVersion.SIGNAL_GROUP_V1, reason: 'signal_not_ready' }
+        : { mode: ProtocolVersion.LEGACY_RSA, reason: 'web_client' };
     }
     if (!user?.signal_prekeys_ready) {
-      return { mode: ProtocolVersion.LEGACY_RSA, reason: 'self_no_prekeys' };
+      return signalOnly
+        ? { mode: ProtocolVersion.SIGNAL_GROUP_V1, reason: 'signal_not_ready' }
+        : { mode: ProtocolVersion.LEGACY_RSA, reason: 'self_no_prekeys' };
     }
     const ready = await canUseSignalGroupMessaging(members, user?.user_id, user);
     if (ready) {
       return { mode: ProtocolVersion.SIGNAL_GROUP_V1, reason: null };
     }
-    return { mode: ProtocolVersion.LEGACY_RSA, reason: 'group_chat' };
+    return signalOnly
+      ? { mode: ProtocolVersion.SIGNAL_GROUP_V1, reason: 'signal_not_ready' }
+      : { mode: ProtocolVersion.LEGACY_RSA, reason: 'group_chat' };
   }
   if (!peer?.user_id || !user?.user_id) {
-    return { mode: ProtocolVersion.LEGACY_RSA, reason: 'no_peer' };
+    return signalOnly
+      ? { mode: ProtocolVersion.SIGNAL_V1, reason: 'signal_not_ready' }
+      : { mode: ProtocolVersion.LEGACY_RSA, reason: 'no_peer' };
   }
   if (!isNativeLibsignalAvailable()) {
-    return { mode: ProtocolVersion.LEGACY_RSA, reason: 'web_client' };
+    return signalOnly
+      ? { mode: ProtocolVersion.SIGNAL_V1, reason: 'signal_not_ready' }
+      : { mode: ProtocolVersion.LEGACY_RSA, reason: 'web_client' };
   }
   if (!user.signal_prekeys_ready) {
-    return { mode: ProtocolVersion.LEGACY_RSA, reason: 'self_no_prekeys' };
+    return signalOnly
+      ? { mode: ProtocolVersion.SIGNAL_V1, reason: 'signal_not_ready' }
+      : { mode: ProtocolVersion.LEGACY_RSA, reason: 'self_no_prekeys' };
   }
   if (!peer.signal_prekeys_ready) {
-    return { mode: ProtocolVersion.LEGACY_RSA, reason: 'peer_no_prekeys' };
+    return signalOnly
+      ? { mode: ProtocolVersion.SIGNAL_V1, reason: 'signal_not_ready' }
+      : { mode: ProtocolVersion.LEGACY_RSA, reason: 'peer_no_prekeys' };
   }
   const ready = await canUseSignalMessaging(peer.user_id, user.user_id, true);
   if (ready) {
     return { mode: ProtocolVersion.SIGNAL_V1, reason: null };
   }
-  return { mode: ProtocolVersion.LEGACY_RSA, reason: 'no_signal_session' };
+  return signalOnly
+    ? { mode: ProtocolVersion.SIGNAL_V1, reason: 'signal_not_ready' }
+    : { mode: ProtocolVersion.LEGACY_RSA, reason: 'no_signal_session' };
 }
 
 export async function shouldSendWithSignal({ isGroup, peer, user, members }) {
@@ -115,6 +134,7 @@ export function encryptionHintI18nKey(hint) {
     case 'peer_no_prekeys': return 'encryptionHintLegacyPeer';
     case 'no_signal_session': return 'encryptionHintLegacySession';
     case 'group_chat': return 'encryptionHintLegacyGroup';
+    case 'signal_not_ready': return 'encryptionNotReady';
     default: return 'encryptionHintLegacyFallback';
   }
 }

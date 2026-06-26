@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-26 (landing v3 scroll + contact; J scheduled 27 Jun; paid items deferred to next week)
+**Updated:** 2026-06-26 (email inbound ✅; J tomorrow all-day; O.1–O.6 confirmed; site gate until app flow ≥90%)
 **Repo:** `C:\Users\smash\SSC-main`
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -14,9 +14,10 @@
 
 1. **Done** — Engines 1–5, 8–10, 9 + TASK A–G code + TASK H (except H.7) + TASK L.1–L.6 + **v1.0.7** builds.
 2. **Now** — finish remaining non-paid items (landing polish ✅, **P.6** TURN off-LAN).
-3. **Tomorrow (27 Jun)** — **TASK J** founder QA matrix (smashmaxxx ↔ dots) on v1.0.8.
-4. **Next week** — paid founder items (**P.8** code signing, **P.9** Play Console $25, **N.8** / **I.6** Play Store).
-5. **Then** — **TASK O** (crypto hardening) → wider testers → Play Store launch.
+3. **Tomorrow (27 Jun)** — **TASK J** all-day founder QA (smashmaxxx ↔ dots) on v1.0.8 until green.
+4. **After J** — **TASK O** O.1–O.6 (code; O.5 = structured self-audit unless paid pen test).
+5. **Next week** — paid founder items (**P.8** code signing, **P.9** Play Console $25, **N.8** / **I.6** Play Store).
+6. **Website** — construction gate stays on until founder + agent agree app flow **≥90%**; then `REACT_APP_SITE_UNDER_CONSTRUCTION=false`.
 4. **Release gate** — TASK J green + TASK N legal pages + Turnstile + API domain before public launch.
 
 **Current builds:** APK **v1.0.8** · Windows **`SSC-Setup-1.0.8.exe`** · API **`ssc-api-00019-4zf`**
@@ -470,24 +471,24 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | N.3 | **Landing footer** — real version, legal links, contact email | `Landing.jsx` | [x] |
 | N.4 | **Download links** on landing (`REACT_APP_DOWNLOAD_*`) | `scripts/prepare_downloads.ps1` + hosting | [x] `/downloads/` on Firebase Hosting |
 | N.5 | **Landing v2/v3** — scrollable layout, downloads section, prominent contact, unified buttons | `Landing.jsx`, `MarketingPage.jsx` | [x] 26 Jun 2026 |
-| N.6 | **`contact@supersecurechat.com`** Porkbun hosted email | Porkbun hosted inbox + site mailto | [x] inbox live; inbound delivery fix deferred |
+| N.6 | **`contact@supersecurechat.com`** Porkbun hosted email | Porkbun hosted inbox + site mailto | [x] inbound from Gmail confirmed 26 Jun 2026 |
 | N.7 | **Firebase App Distribution** link on landing | `scripts/upload_app_distribution.ps1` | [x] v1.0.8 (9) uploaded; beta link on landing |
 | N.8 | **Play Store** listing assets | founder + TASK I.6 | [ ] deferred — **next week** (paid) |
 
 ---
 
-### TASK O — Crypto & security hardening (code) · NOT STARTED
+### TASK O — Crypto & security hardening (code) · [~] IN PROGRESS (26 Jun 2026)
 
 **Goal:** Close gaps from 26 Jun security audit before public launch. See §Security audit grades.
 
 | ID | Subtask | Risk addressed | Status |
 |----|---------|----------------|--------|
-| O.1 | **Retire RSA send path** on installed clients (read-only legacy decrypt) | dual-crypto surface | [ ] |
-| O.2 | **Encrypt group call signaling** (Sender Keys wrap) | cleartext SDP on server | [ ] |
-| O.3 | **Hardware-backed device wrap** — Android Keystore + Electron safeStorage | localStorage theft | [ ] |
-| O.4 | **Remove dead VERIFY/badge components** or wire to advanced Settings | dev confusion | [ ] |
-| O.5 | **Third-party pen test** or structured self-audit checklist | marketing trust | [ ] founder budget |
-| O.6 | **Mongo network tighten** (private endpoint or IP allowlist) | credential leak blast radius | [ ] post-scale |
+| O.1 | **Retire RSA send path** on installed clients (read-only legacy decrypt) | dual-crypto surface | [x] `maySendLegacyRsa()` |
+| O.2 | **Encrypt group call signaling** (Sender Keys wrap) | cleartext SDP on server | [x] `webrtcSignaling.js` group path |
+| O.3 | **Hardware-backed device wrap** — Android EncryptedSharedPreferences + Electron safeStorage | localStorage theft | [x] |
+| O.4 | **Verify UI** — profile sheet only; badge not in default chat | dev confusion | [x] |
+| O.5 | **Structured self-audit checklist** | marketing trust | [x] `test_reports/TASK_O_SELF_AUDIT_CHECKLIST.md` |
+| O.6 | **Mongo network tighten** (private endpoint or IP allowlist) | credential leak blast radius | [~] `scripts/ATLAS_NETWORK_HARDENING.md` — apply at scale |
 
 ---
 
@@ -506,7 +507,7 @@ Run on **smashmaxxx (Win)** + **dots (Android)** against production API.
 | P.7 | **Porkbun hosted email** `contact@` + DNS (SPF/DKIM) | Porkbun | [x] N.6 — click Fix DNS when testing inbound |
 | P.8 | **Windows code signing** cert (optional) | SSL.com / DigiCert | SmartScreen | [ ] **next week** |
 | P.9 | **Play Console** developer account ($25) | Google Play | I.6 | [ ] **next week** |
-| P.10 | **GCP log alerts** per `SECURITY_OBSERVABILITY_RUNBOOK.md` | Cloud Logging | ops |
+| P.10 | **GCP log alerts** per `SECURITY_OBSERVABILITY_RUNBOOK.md` | Cloud Logging (free tier) | [ ] optional ops — not paid setup |
 
 ---
 
@@ -678,6 +679,8 @@ yarn test:ci
 | 2026-06-26 | **TASK N.6–N.7** — `contact@` on site; Porkbun hosted inbox; App Distribution v1.0.8; TASK N closed (N.8 deferred) |
 | 2026-06-26 | **Landing v3** — scrollable `MarketingPage`; downloads + contact sections; unified buttons; **P.8/P.9/N.8** postponed to next week; **TASK J** scheduled 27 Jun |
 | 2026-06-26 | **Construction gate** — invite-only password (`REACT_APP_SITE_PREVIEW_PASSWORD`); 5-try lockout; `?access=` bookmark; flip `REACT_APP_SITE_UNDER_CONSTRUCTION=false` at launch |
+| 2026-06-26 | **Founder plan** — J all-day 27 Jun; O.1–O.6 after J; paid store items next week; site gate until app flow ≥90%; N.6 Gmail→contact@ inbound OK |
+| 2026-06-26 | **TASK O code** — RSA send blocked installed; group signaling encrypt; hardware device wrap; verify via profile sheet; self-audit checklist; Atlas hardening doc; Mongo MCP installed |
 | 2026-06-24 | **TASK D complete** — permissions, duplex audio, ringtone; frontend 55 tests |
 | 2026-06-24 | **TASK E complete** — voice/images/files; frontend 62 tests |
 | 2026-06-24 | **TASK F complete** — block/mute/groups; frontend 67 tests |

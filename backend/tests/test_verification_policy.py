@@ -57,11 +57,11 @@ def test_verify_modal_local_qr():
 
 
 def test_chat_home_hides_default_verify_ui():
-    """TASK A.7 — VERIFY hidden from default chat; modal kept for advanced use later."""
+    """TASK A.7 / O.4 — no default VERIFY button; modal via profile sheet only."""
     root = Path(__file__).resolve().parents[2]
     chat = (root / "frontend" / "src" / "pages" / "ChatHome.jsx").read_text(encoding="utf-8")
-    assert "VerifyHandshakeModal" not in chat
     assert "verify-identity-button" not in chat
+    assert "profile-sheet-verify" in (root / "frontend" / "src" / "components" / "ProfileContactSheet.jsx").read_text(encoding="utf-8")
     modal = root / "frontend" / "src" / "components" / "VerifyHandshakeModal.jsx"
     assert modal.is_file()
 
