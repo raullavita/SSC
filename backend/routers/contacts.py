@@ -162,9 +162,11 @@ async def list_contacts(current=Depends(get_current_user)):
         return []
     from core.last_seen import project_user_for_peer
 
+    from core.contact_helpers import PEER_ROSTER_FIELDS
+
     users = await db.users.find(
         {"user_id": {"$in": contact_ids}},
-        {"_id": 0, "user_id": 1, "username": 1, "avatar": 1, "public_key": 1, "last_seen": 1},
+        PEER_ROSTER_FIELDS,
     ).to_list(500)
     user_map = {u["user_id"]: u for u in users}
     result = []

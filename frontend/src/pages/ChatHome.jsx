@@ -35,7 +35,8 @@ import {
   minimizeNativeApp,
   setNativeBackHandler,
 } from '../lib/nativeBack';
-import { isNativeApp } from '../lib/platform';
+import { isInstalledClient, isNativeApp } from '../lib/platform';
+import { bootstrapSignalIdentity } from '../lib/signalIdentityBootstrap';
 import { ensureMediaPermissions } from '../lib/mediaPermissions';
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
@@ -66,14 +67,17 @@ import { encryptSignalText } from '../lib/signal/messages';
 import { ProtocolVersion } from '../lib/signal/constants';
 import {
   decryptMessageBody,
-  shouldSendWithSignal,
 } from '../lib/signal/migration';
+import {
+  prepareInstalledMessaging,
+  usesSignalOnlyMessaging,
+} from '../lib/signal/installedMessaging';
 import { unpackIncomingSignaling } from '../lib/signal/webrtcSignaling';
 
 const PENDING_CALL_KEY = 'ssc_pending_call';
 
 export default function ChatHome() {
-  const { user, privateKey, logout, panicWipe } = useAuth();
+  const { user, privateKey, logout, panicWipe, refreshUser } = useAuth();
   const navigate = useNavigate();
   const { conversationId } = useParams();
   const [conversations, setConversations] = useState([]);
@@ -557,6 +561,14 @@ export default function ChatHome() {
     }
   }, [user?.user_id]);
 
+  useEffect(() => {
+    if (!user?.user_id || !isInstalledClient()) return;
+    (async () => {
+      await bootstrapSignalIdentity(refreshUser).catch(() => {});
+      await refreshUser();
+    })();
+  }, [user?.user_id, refreshUser]);
+
   // Register push as soon as user is logged in (does not require vault unlock)
   useEffect(() => {
     if (!user) return;
@@ -772,15 +784,18 @@ export default function ChatHome() {
       return;
     }
     try {
-      if (!isGroup && peer?.user_id && user?.user_id) {
-        await ensureSignalSession(peer.user_id, user.user_id).catch(() => {});
-      }
-      const useSignal = await shouldSendWithSignal({
+      const useSignal = await prepareInstalledMessaging({
         isGroup,
         peer,
         user,
         members: activeConv?.members || [],
+        refreshUser,
       });
+
+      if (usesSignalOnlyMessaging() && !useSignal) {
+        toast.error(t('encryptionNotReady'));
+        return;
+      }
 
       if (useSignal && isGroup) {
         await ensureGroupSenderKeysDistributed({
@@ -834,7 +849,7 @@ export default function ChatHome() {
       }
 
       if (!privateKey) {
-        toast.error(t('couldNotUnlockVault'));
+        toast.error(t('encryptionNotReady'));
         return;
       }
       const recipients = recipientsForActive;
@@ -861,12 +876,16 @@ export default function ChatHome() {
 
   const uploadEncryptedAttachment = async (blob, filename, mimeType) => {
     const raw = await blob.arrayBuffer();
-    const useSignal = await shouldSendWithSignal({
+    const useSignal = await prepareInstalledMessaging({
       isGroup,
       peer,
       user,
       members: activeConv?.members || [],
+      refreshUser,
     });
+    if (usesSignalOnlyMessaging() && !useSignal) {
+      throw new Error('encryption_not_ready');
+    }
 
     let enc;
     if (useSignal) {
@@ -929,8 +948,19 @@ export default function ChatHome() {
       toast.error(t('fileTooLarge'));
       return;
     }
-    if (!privateKey && !(await shouldSendWithSignal({ isGroup, peer, user, members: activeConv?.members || [] }))) {
-      toast.error(t('couldNotUnlockVault'));
+    const canSend = await prepareInstalledMessaging({
+      isGroup,
+      peer,
+      user,
+      members: activeConv?.members || [],
+      refreshUser,
+    });
+    if (usesSignalOnlyMessaging() && !canSend) {
+      toast.error(t('encryptionNotReady'));
+      return;
+    }
+    if (!usesSignalOnlyMessaging() && !privateKey && !canSend) {
+      toast.error(t('encryptionNotReady'));
       return;
     }
     setUploadBusy(true);
@@ -1069,8 +1099,19 @@ export default function ChatHome() {
         toast.error(t('voiceNoteTooShort'));
         return;
       }
-      if (!privateKey && !(await shouldSendWithSignal({ isGroup, peer, user, members: activeConv?.members || [] }))) {
-        toast.error(t('couldNotUnlockVault'));
+      const canSend = await prepareInstalledMessaging({
+        isGroup,
+        peer,
+        user,
+        members: activeConv?.members || [],
+        refreshUser,
+      });
+      if (usesSignalOnlyMessaging() && !canSend) {
+        toast.error(t('encryptionNotReady'));
+        return;
+      }
+      if (!usesSignalOnlyMessaging() && !privateKey && !canSend) {
+        toast.error(t('encryptionNotReady'));
         return;
       }
       setUploadBusy(true);

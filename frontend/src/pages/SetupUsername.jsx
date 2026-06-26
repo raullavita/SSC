@@ -47,14 +47,20 @@ export default function SetupUsername() {
     setLocale(code);
   };
 
+  const installed = isInstalledClient();
+  const passwordReady = installed || password.length >= 8;
+
   const submit = async (e) => {
     e.preventDefault();
-    if (status.available !== true || password.length < 8) return;
+    if (status.available !== true || !passwordReady) return;
     setBusy(true);
     try {
       toast.message(t('setupGenerating'));
+      const vaultPassword = installed
+        ? `${crypto.randomUUID()}${crypto.randomUUID()}`
+        : password;
       const { publicKeyJwk, privateKeyJwk } = await generateRSAKeypair();
-      const wrapped = await wrapPrivateKey(privateKeyJwk, password);
+      const wrapped = await wrapPrivateKey(privateKeyJwk, vaultPassword);
       await api.post('/auth/google/finish-setup', {
         username, language,
         public_key: JSON.stringify(publicKeyJwk),
@@ -63,7 +69,7 @@ export default function SetupUsername() {
       });
       const pk = await crypto.subtle.importKey('jwk', privateKeyJwk, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt']);
       await persistPrivateKey(pk);
-      if (user?.user_id) await saveVaultCredential(user.user_id, password);
+      if (user?.user_id) await saveVaultCredential(user.user_id, vaultPassword);
       await refreshUser();
       if (isInstalledClient()) {
         const boot = await bootstrapSignalIdentity(refreshUser);
@@ -108,12 +114,17 @@ export default function SetupUsername() {
             </div>
             {status.reason && <p className="mt-1 text-[11px] text-[#FF3B30]" data-testid="setup-username-error">{status.reason}</p>}
           </div>
-          <div>
-            <label className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#A1A1AA]">{t('setupPassword')}</label>
-            <input data-testid="setup-password-input" type="password" required minLength={8} value={password}
-              onChange={(e) => setPassword(e.target.value)} className="w-full mt-1.5 px-3 py-2.5 text-sm" placeholder="••••••••" />
-            <p className="mt-1 text-[10px] text-[#A1A1AA] font-mono">{t('setupPasswordHint')}</p>
-          </div>
+          {!installed && (
+            <div>
+              <label className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#A1A1AA]">{t('setupPassword')}</label>
+              <input data-testid="setup-password-input" type="password" required minLength={8} value={password}
+                onChange={(e) => setPassword(e.target.value)} className="w-full mt-1.5 px-3 py-2.5 text-sm" placeholder="••••••••" />
+              <p className="mt-1 text-[10px] text-[#A1A1AA] font-mono">{t('setupPasswordHint')}</p>
+            </div>
+          )}
+          {installed && (
+            <p className="text-[10px] text-[#A1A1AA] font-mono leading-relaxed">{t('setupInstalledEncryptionHint')}</p>
+          )}
           <div>
             <label className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#A1A1AA]">{t('preferredLanguage')}</label>
             <select data-testid="setup-language-select" value={language} onChange={(e) => onLanguageChange(e.target.value)}
@@ -121,7 +132,7 @@ export default function SetupUsername() {
               {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>
           </div>
-          <button type="submit" disabled={status.available !== true || password.length < 8 || busy} data-testid="setup-submit-button"
+          <button type="submit" disabled={status.available !== true || !passwordReady || busy} data-testid="setup-submit-button"
             className="w-full py-2.5 bg-[#00E5FF] text-black font-medium text-sm rounded-md hover:brightness-110 transition disabled:opacity-40">
             {busy ? t('setupGenerating').toUpperCase() : t('setupFinish').toUpperCase()}
           </button>

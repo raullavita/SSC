@@ -98,7 +98,8 @@ export async function shouldSendWithSignal({ isGroup, peer, user, members }) {
     return canUseSignalGroupMessaging(members, user.user_id, user);
   }
   if (!peer?.user_id || !user?.user_id) return false;
-  if (!user.signal_prekeys_ready || !peer.signal_prekeys_ready) return false;
+  if (!user.signal_prekeys_ready) return false;
+  // Peer flag may be absent on stale API responses — session establishment is authoritative.
   return canUseSignalMessaging(peer.user_id, user.user_id, true);
 }
 

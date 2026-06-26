@@ -75,7 +75,7 @@ async def search_users(q: str, current=Depends(get_current_user)):
         return []
     cur = db.users.find(
         {"username": {"$regex": f"^{re.escape(q)}", "$options": "i"}, "user_id": {"$ne": current["user_id"]}},
-        {"_id": 0, "user_id": 1, "username": 1, "language": 1, "avatar": 1, "public_key": 1},
+        {"_id": 0, "user_id": 1, "username": 1, "language": 1, "avatar": 1, "public_key": 1, "signal_prekeys_ready": 1},
     ).limit(20)
     return await cur.to_list(20)
 

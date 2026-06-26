@@ -350,6 +350,8 @@ const STRINGS = {
     couldNotGenerateInvite: 'Could not generate invite',
     couldNotStartChat: 'Could not start chat',
     couldNotUnlockVault: 'Could not unlock vault',
+    encryptionNotReady: 'Encryption is still setting up — wait a few seconds and try again',
+    setupInstalledEncryptionHint: 'Messages are protected automatically on this device. No password needed.',
     groupCallIncoming: 'INCOMING_{mode}_CALL · {count} PARTICIPANTS',
   },
   es: {
@@ -670,6 +672,8 @@ const STRINGS = {
     couldNotGenerateInvite: 'No se pudo generar la invitación',
     couldNotStartChat: 'No se pudo iniciar el chat',
     couldNotUnlockVault: 'No se pudo abrir el cofre',
+    encryptionNotReady: 'El cifrado aún se está configurando — espera unos segundos',
+    setupInstalledEncryptionHint: 'Los mensajes se protegen solos en este dispositivo. Sin contraseña.',
     groupCallIncoming: 'LLAMADA_{mode}_ENTRANTE · {count} PARTICIPANTES',
   },
   ro: {
@@ -990,6 +994,8 @@ const STRINGS = {
     couldNotGenerateInvite: 'Nu s-a putut genera invitația',
     couldNotStartChat: 'Nu s-a putut începe chat-ul',
     couldNotUnlockVault: 'Nu s-a putut debloca seiful',
+    encryptionNotReady: 'Criptarea se configurează — așteaptă câteva secunde',
+    setupInstalledEncryptionHint: 'Mesajele sunt protejate automat pe acest dispozitiv. Fără parolă.',
     groupCallIncoming: 'APEL_{mode}_INTRARE · {count} PARTICIPANȚI',
   },
 };

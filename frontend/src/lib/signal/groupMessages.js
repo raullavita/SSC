@@ -77,7 +77,7 @@ export async function canUseSignalGroupMessaging(members, ourUserId, user) {
   if (!members || members.length < 2) return false;
   for (const m of members) {
     if (m.user_id === ourUserId) continue;
-    if (!m.signal_prekeys_ready) return false;
+    if (m.signal_prekeys_ready === false) return false;
     const ready = await canUseSignalMessaging(m.user_id, ourUserId, true);
     if (!ready) return false;
   }

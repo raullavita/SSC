@@ -4,7 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import get_current_user
-from core.contact_helpers import are_contacts
+from core.contact_helpers import PEER_ROSTER_FIELDS, are_contacts
 from core.database import db
 from core.logging_config import logger
 from core.models import CreateConversationIn
@@ -128,7 +128,7 @@ async def list_conversations(current=Depends(get_current_user)):
                 peer_ids.add(p)
     peers_list = await db.users.find(
         {"user_id": {"$in": list(peer_ids)}},
-        {"_id": 0, "user_id": 1, "username": 1, "language": 1, "public_key": 1, "avatar": 1, "last_seen": 1},
+        PEER_ROSTER_FIELDS,
     ).to_list(500)
     peers_by_id = {p["user_id"]: p for p in peers_list}
     result = []
