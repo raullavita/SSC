@@ -17,8 +17,8 @@ call %YARN_CMD% build:win
 if errorlevel 1 exit /b 1
 echo.
 if not exist "C:\Users\smash\Desktop\SSC" mkdir "C:\Users\smash\Desktop\SSC"
-copy /Y dist\SSC-Setup-1.0.7.exe C:\Users\smash\Desktop\SSC\SSC-Setup-1.0.7.exe
+copy /Y dist\SSC-Setup-1.0.8.exe C:\Users\smash\Desktop\SSC\SSC-Setup-1.0.8.exe
 echo.
-echo DONE: frontend\desktop\dist\SSC-Setup-1.0.7.exe
-echo       C:\Users\smash\Desktop\SSC\SSC-Setup-1.0.7.exe
+echo DONE: frontend\desktop\dist\SSC-Setup-1.0.8.exe
+echo       C:\Users\smash\Desktop\SSC\SSC-Setup-1.0.8.exe
 endlocal
