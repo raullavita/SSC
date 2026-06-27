@@ -4,6 +4,7 @@
 .idea/
 .vscode/
 .gitconfig
+.emergent/
 
 # Dependencies
 node_modules/
