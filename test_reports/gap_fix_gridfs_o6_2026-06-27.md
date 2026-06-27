@@ -36,12 +36,11 @@ Scripts:
 - `scripts/apply_atlas_ip_allowlist.py` — Atlas allowlist (needs `backend/atlas-api.env`)
 - `scripts/deploy_cloud_run.ps1` — now pins VPC connector on deploy
 
-## O.6 Atlas allowlist — final step
+## O.6 Atlas allowlist — CLOSED (founder, 27 Jun 2026)
 
-Atlas still allows `0.0.0.0/0` until API keys are in `backend/atlas-api.env` and:
+| IP | Comment |
+|----|---------|
+| `34.140.240.41/32` | SSC Cloud Run NAT |
+| `86.166.40.195/32` | Founder laptop (Auto Setup) |
 
-```powershell
-backend\venv\Scripts\python.exe scripts\apply_atlas_ip_allowlist.py
-```
-
-Or manually add `34.140.240.41/32` (+ founder dev IP) and delete `0.0.0.0/0` in Atlas UI.
+`0.0.0.0/0` removed. Health: `https://api.supersecurechat.com/api/health` → mongo ok, redis ok.

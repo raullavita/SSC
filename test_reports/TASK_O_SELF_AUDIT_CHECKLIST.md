@@ -40,7 +40,7 @@ Mark each item PASS / FAIL / N/A with evidence (screenshot, log, or test name).
 
 - [x] GCP static egress **34.140.240.41** + VPC connector + Cloud Run `all-traffic` egress
 - [x] Runbook + automation (`scripts/ATLAS_NETWORK_HARDENING.md`, `apply_atlas_ip_allowlist.py`)
-- [ ] Atlas: remove `0.0.0.0/0` after `backend/atlas-api.env` keys → run allowlist script
+- [x] Atlas: `34.140.240.41/32` + `86.166.40.195/32` only — `0.0.0.0/0` removed (27 Jun 2026)
 
 ## Sign-off
 

@@ -682,6 +682,7 @@ yarn test:ci
 | 2026-06-26 | **Founder plan** — J all-day 27 Jun; O.1–O.6 after J; paid store items next week; site gate until app flow ≥90%; N.6 Gmail→contact@ inbound OK |
 | 2026-06-26 | **TASK O code** — RSA send blocked installed; group signaling encrypt; hardware device wrap; verify via profile sheet; self-audit checklist; Atlas hardening doc; Mongo MCP installed |
 | 2026-06-27 | **Gap fix** — GridFS orphans 0 (prod+dev); O.6 GCP NAT **34.140.240.41** + `ssc-vpc-connector` + Cloud Run `ssc-api-00021-6k6`; evidence `test_reports/gap_fix_gridfs_o6_2026-06-27.md` |
+| 2026-06-27 | **O.6 closed** — Atlas allowlist: `34.140.240.41/32` + `86.166.40.195/32` only; `0.0.0.0/0` removed; `/api/health` mongo+redis ok |
 | 2026-06-27 | **v1.0.9** — TASK O client rebuild (APK build 10 + Windows); PRODUCT_BLUEPRINT v2.2; housekeeping notes; full founder audit |
 | 2026-06-24 | **TASK D complete** — permissions, duplex audio, ringtone; frontend 55 tests |
 | 2026-06-24 | **TASK E complete** — voice/images/files; frontend 62 tests |

@@ -71,7 +71,7 @@ This is a real consumer product in **founder + closed tester** phase, not a publ
 | Session | Stays logged in | JWT in memory + AES device wrap + hardware store | O.3 ✅ |
 | Retention | 24h shown | Global TTL; not per-user yet | M.6 v1.1 |
 | Translation | On-device Android | Server translation off in prod | ✅ |
-| Mongo network | Cloud Run NAT IP | Atlas `0.0.0.0/0` → tighten via script | O.6 GCP ✅ |
+| Mongo network | Cloud Run NAT **34.140.240.41** | Atlas locked (2 IPs only) | O.6 ✅ |
 
 ---
 
