@@ -1,5 +1,5 @@
 {
-  "summary": "Full SSC backend e2e tested (35 pytests). All endpoints working: health, username validation (banned-term/length/regex), register/login/me, user search, conversation CRUD, encrypted message send/list, Gemini-3-Flash translate (ro→en returned English), file upload/download via Emergent Object Storage, panic-wipe, Google OAuth shape, WebSocket (ping/pong + typing broadcast + WebRTC call-offer forwarding), MongoDB TTL index on messages.expires_at. One backend bug was found and fixed: /api/auth/register returned 500 because the inserted Mongo doc retained an ObjectId _id and FastAPI's jsonable_encoder could not serialize it.",
+  "summary": "Full SSC backend e2e tested (35 pytests). All endpoints working: health, username validation (banned-term/length/regex), register/login/me, user search, conversation CRUD, encrypted message send/list, Gemini-3-Flash translate (ro→en returned English), file upload/download via object storage, panic-wipe, Google OAuth shape, WebSocket (ping/pong + typing broadcast + WebRTC call-offer forwarding), MongoDB TTL index on messages.expires_at. One backend bug was found and fixed: /api/auth/register returned 500 because the inserted Mongo doc retained an ObjectId _id and FastAPI's jsonable_encoder could not serialize it.",
   "backend_issues": {
     "critical": [],
     "minor": []
@@ -20,7 +20,7 @@
     "list_conversations enriches each conversation with peer info + last_message via N+1 queries (one per conv). Fine for small N but could batch with $lookup at scale.",
     "/api/files/{file_id} accepts ?auth=<JWT> in querystring — JWT will leak into server access logs and proxy logs. Consider short-lived signed download URLs.",
     "ConnectionManager.user_sockets is process-local; multi-worker deployments will break WebSocket fanout. Acceptable for MVP single-worker; document this.",
-    "panic_wipe sets files.is_deleted=true but never removes the underlying object from Emergent Object Storage — the storage 24h TTL is the only thing that erases user data. Should call a storage DELETE for true 'panic'.",
+    "panic_wipe sets files.is_deleted=true but never removes the underlying object from object storage — the storage 24h TTL is the only thing that erases user data. Should call a storage DELETE for true 'panic'.",
     "register endpoint mutates the doc dict after insert_one (Motor adds _id in-place). Fixed by excluding _id in response; better pattern: build response dict separately from the insert doc."
   ],
   "updated_files": [

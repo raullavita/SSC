@@ -2,5 +2,5 @@
 // in ./auth.js (keys camelCase, values kebab-case `<feature>-<element>`).
 
 export const HOME = {
-	// emergentLink removed (standalone build)
+	// legacy vendor link removed (standalone build)
 };

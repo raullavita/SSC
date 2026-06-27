@@ -4,6 +4,7 @@
 .idea/
 .vscode/
 .gitconfig
+# Cloud IDE export folder (legacy scaffold — never commit)
 .emergent/
 
 # Dependencies
