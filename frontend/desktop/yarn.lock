@@ -148,10 +148,10 @@
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
 
-"@signalapp/libsignal-client@0.96.2":
-  version "0.96.2"
-  resolved "https://registry.yarnpkg.com/@signalapp/libsignal-client/-/libsignal-client-0.96.2.tgz#b59d1d58e540ba35e11657985944d5186040090e"
-  integrity sha512-dBZ8RcfhWX0PD06b/+Yv+8qdPXWxJlL1KJV7HRotNWe3F1oKfE5eiI+uZafNJWtPXr3exWpiF8tPQJ28lQ3/ew==
+"@signalapp/libsignal-client@0.96.4":
+  version "0.96.4"
+  resolved "https://registry.yarnpkg.com/@signalapp/libsignal-client/-/libsignal-client-0.96.4.tgz#928d67597d2c5ad2f38509721ebbfa2e71f610e3"
+  integrity sha512-alldCRkl1uTt1RW1Aszrg0Dj4eWMCQvcAf6H7nIx5TFkM10m+pskQM+CgLa6ZbdHifIKEV9e/vAFFif8XxSWWA==
   dependencies:
     node-gyp-build "^4.8.0"
     type-fest "^4.26.0"
