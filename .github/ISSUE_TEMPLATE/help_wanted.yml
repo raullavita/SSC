@@ -1,0 +1,39 @@
+name: Help wanted / good first task
+description: Propose a small task for yourself or ask what to work on
+title: "[Help]: "
+labels: ["help wanted", "good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Small, focused tasks are easiest to review. Read [CONTRIBUTING.md](https://github.com/raullavita/SSC/blob/main/CONTRIBUTING.md) first.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Tests (frontend Jest)
+        - Tests (backend pytest)
+        - Documentation
+        - Android / libsignal
+        - Electron desktop
+        - WebRTC / calls
+        - i18n (en/es/ro)
+        - UI / UX
+        - Security review
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: What would you like to do?
+      description: e.g. "Add test for X" or "I'm new — suggest a first PR"
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Skills / time you can offer
+      placeholder: e.g. React, 2h/week, familiar with Signal protocol

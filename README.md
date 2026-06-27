@@ -1,207 +1,120 @@
 # SSC — Super Secure Chat
 
-Hybrid full-stack E2E-encrypted ephemeral messaging (WhatsApp/Telegram-style, self-hosted).
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+[![Install only](https://img.shields.io/badge/chat-install--only%20(Android%20%2B%20Desktop)-0A0A0A)](CONTRIBUTING.md)
 
-**Core features:** 24h auto-delete · client-side E2E (RSA-OAEP + AES-256-GCM) · auto-translation · voice/video calls · stories · panic wipe · groups · read receipts · typing · PWA + native push (FCM)
+**E2E-encrypted ephemeral messaging** — 24h auto-delete, Signal/libsignal on installed clients, WebRTC calls, groups, stories, panic wipe.
 
-**Current focus:** solo LAN testing (PC backend + phone APK). Production HTTPS deploy deferred until budget allows.
+| | |
+|---|---|
+| **Product** | Install-only — **Android APK** + **Windows/Mac desktop**. Browser-tab chat is **not** supported (`InstalledClientGate`). |
+| **License** | [AGPL-3.0](LICENSE) — libsignal in the APK requires source availability when you distribute builds. |
+| **Status** | Active development · solo maintainer · **help welcome** |
+| **Latest desktop** | v1.0.12 (see [Releases](https://github.com/raullavita/SSC/releases)) |
 
-## Quick start (Windows, LAN dev)
+---
 
-### 1. Data layer
+## Help wanted
+
+Looking for contributors — no payment expected, credit in commit history under AGPL.
+
+**Good places to start:**
+
+- Tests (`frontend` Jest, `backend` pytest)
+- Docs (setup from a clean clone, architecture diagrams)
+- Android / Electron **libsignal** integration
+- WebRTC signaling and call reliability
+- i18n (EN / ES / RO)
+- Security review — see [SECURITY.md](SECURITY.md)
+
+**How to contribute:** [CONTRIBUTING.md](CONTRIBUTING.md) · open an [Issue](https://github.com/raullavita/SSC/issues/new/choose) · [Discussions](https://github.com/raullavita/SSC/discussions) for questions
+
+**Do not** post production secrets, API keys, or personal emails in issues or PRs.
+
+---
+
+## Stack
+
+| Layer | Tech |
+|-------|------|
+| Backend | FastAPI, MongoDB, Redis, WebSockets |
+| Frontend | React 19, Capacitor (Android), Electron (desktop) |
+| E2E | Signal `signal_v1` + legacy RSA migration; libsignal **0.96.2** on installed clients |
+| Calls | WebRTC + encrypted signaling |
+
+Deep dives: [SECURITY_MODEL.md](memory/SECURITY_MODEL.md) · [SSC-ROADMAP.md](memory/SSC-ROADMAP.md) · [PRD.md](memory/PRD.md)
+
+---
+
+## Contributor quick start (local)
+
+Requires: **Docker**, **Node 18+**, **Python 3.11+**, **Yarn**.
 
 ```powershell
-cd SSC-main
-docker compose up -d          # Mongo + Redis
-```
+git clone https://github.com/raullavita/SSC.git
+cd SSC
+docker compose up -d
 
-### 2. Backend
-
-```powershell
 cd backend
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env        # set MONGO_URL, JWT_SECRET
-.\venv\Scripts\python.exe -m uvicorn server:app --host 0.0.0.0 --port 8000
-```
+copy .env.example .env    # set MONGO_URL, JWT_SECRET (dev values only)
+.\venv\Scripts\python.exe -m uvicorn server:app --reload --port 8000
 
-API: `http://<your-pc-lan-ip>:8000`
-
-### 3. Frontend (PC browser)
-
-```powershell
-cd frontend
+cd ..\frontend
 yarn install
-copy .env.example .env        # REACT_APP_BACKEND_URL=http://localhost:8000
-yarn start
+copy .env.example .env    # REACT_APP_BACKEND_URL=http://localhost:8000
+yarn test:ci
 ```
 
-### 4. Phone APK (same Wi‑Fi as PC)
+Backend tests: `cd backend && .\venv\Scripts\python.exe -m pytest tests/ -q`
 
-Edit `frontend/package.json` `build:phone` script with your PC LAN IP, or set env before build:
+---
 
-```powershell
-cd frontend
-$env:REACT_APP_BACKEND_URL="http://<your-pc-lan-ip>:8000"
-yarn build:phone
-npx cap sync android
-cd android; .\gradlew assembleDebug
-```
+## Build installed clients
 
-APK: `frontend/android/app/build/outputs/apk/debug/app-debug.apk`
+| Platform | Command | Output |
+|----------|---------|--------|
+| Windows desktop | `.\SSC-BUILD-DESKTOP-WIN.bat` | `frontend/desktop/dist/SSC-Setup-*.exe` |
+| Android release | `.\SSC-BUILD-APK.bat` | signed APK (needs local keystore + `google-services.json`) |
+| macOS desktop | `./SSC-BUILD-DESKTOP-MAC.sh` | `.dmg` (on macOS) |
 
-Phones must reach the backend on port **8000** (firewall: allow inbound on private network).
+Production builds need gitignored secrets — copy from `*.example` files. See [SECURITY.md](SECURITY.md).
 
-### 5. Windows desktop (production API + libsignal)
+---
 
-```powershell
-.\SSC-BUILD-DESKTOP-WIN.bat
-```
-
-Installer: `frontend/desktop/dist/SSC-Setup-1.0.0.exe`
-
-Mac `.dmg`: run `SSC-BUILD-DESKTOP-MAC.sh` on macOS (see `memory/DESKTOP_CLIENT_CHARTER.md`).
-
-## Project location (fixed — do not move)
-
-| Role | Path |
-|------|------|
-| **Code repo** | `C:\Users\smash\SSC-main` |
-| **Desktop shortcuts + Firebase APK folder** | `C:\Users\smash\Desktop\SSC` |
-
-See `memory/PROJECT_LOCATION.md` for the full policy. The repo is not duplicated on the Desktop — only launchers and upload copies live there.
-
-## Project structure
+## Project layout
 
 ```
-SSC-main/
-├── backend/           # FastAPI + Motor (MongoDB) + WebSockets
-│   ├── server.py
-│   ├── core/          # config, auth, db, models, translation, push
-│   ├── routers/       # auth, messages, contacts, invites, panic, …
-│   └── tests/
-├── frontend/          # React 19 + CRA/craco + Tailwind + Capacitor
-│   ├── src/
-│   │   ├── lib/i18n.js          # EN / ES / RO UI strings
-│   │   ├── context/LocaleContext.jsx
-│   │   └── pages/ChatHome.jsx   # main chat UI
-│   └── android/                 # Capacitor Android project
-├── docker-compose.yml
-└── memory/PRD.md
+SSC/
+├── backend/          # API, WebSocket, Signal prekey relay
+├── frontend/         # React UI, Capacitor Android, Electron desktop
+├── memory/           # Architecture charters & roadmap
+├── scripts/          # Deploy helpers (secrets stay local)
+├── CONTRIBUTING.md
+└── SECURITY.md
 ```
 
-## What's implemented (recent)
+---
 
-| Area | Status |
-|------|--------|
-| Search-first add contacts (ADD tab, username search) | Done |
-| Auto-translation (MyMemory, same-lang skip, vault unlock required) | Done |
-| Panic wipe (erases chats/files, keeps account, logs out) | Done |
-| Full app UI language (EN / ES / RO) | Done |
-| Mobile UI polish (single-pane, safe areas, composer) | Done |
-| Native splash + dark status bar (Capacitor) | Done |
-| Google OAuth (PC web; phone needs HTTPS) | Partial |
-| Turnstile captcha | Optional / deferred on LAN |
-| HTTPS production deploy | Deferred |
-
-## Roadmap
-
-| Done | Next |
-|------|------|
-| i18n, native splash/status bar, git + docs | **Translation quality** (long messages) |
-| | HTTPS deploy (when budget allows) |
-| | Play Store / domain |
-| | Turnstile in production |
-
-## Environment files
+## Environment files (never commit real values)
 
 | File | Purpose |
 |------|---------|
-| `backend/.env.example` | Mongo, JWT, CORS, translation, TURN, VAPID, Google OAuth, FCM |
-| `frontend/.env.example` | `REACT_APP_BACKEND_URL`, Turnstile, VAPID |
-| `frontend/.env.mobile.example` | Template for HTTPS production mobile builds |
+| `backend/.env.example` | Mongo, JWT, OAuth, TURN, VAPID, FCM |
+| `backend/cloud_run.env.example` | Production deploy template |
+| `frontend/.env.example` | API URL, Turnstile site key |
+| `scripts/firebase_testers.txt.example` | App Distribution emails (copy to gitignored `firebase_testers.txt`) |
 
-Copy examples to `.env` — **never commit** `.env`, `cloud_run.env`, `google-services.json`, Firebase service account JSON, or `scripts/firebase_testers.txt`. See `SECURITY.md`.
+---
 
-## Open source & help
+## Security
 
-SSC is AGPL-3.0 (libsignal in the APK requires source availability when you distribute builds). The repo is intended to be **public**; production secrets stay in gitignored env files and cloud consoles. See `CONTRIBUTING.md` if you want to help.
+Report vulnerabilities privately: [SECURITY.md](SECURITY.md) — do not open public issues with exploit details.
 
-### LAN CORS tip
+---
 
-Add your dev origins to `backend/.env`:
+## License
 
-```
-CORS_ORIGINS=http://localhost:3000,http://<your-pc-lan-ip>:3000,http://<your-pc-lan-ip>:8000
-```
-
-## Roadmap & security
-
-- **Single roadmap:** `memory/SSC-ROADMAP.md` (update after every step)
-- **Security model:** `memory/SECURITY_MODEL.md`
-
-## Testing
-
-```powershell
-cd backend
-.\venv\Scripts\python.exe -m pytest tests/ -v
-```
-
-~81 tests pass (1 Google OAuth test may fail if OAuth credentials are not configured).
-
-## Mobile (Capacitor)
-
-- **Web/PWA** unchanged — `yarn start`, service worker push on HTTPS
-- **Native push** — FCM via `@capacitor/push-notifications` + Firebase Admin on backend
-- Place `google-services.json` in `frontend/android/app/` locally (gitignored)
-- Place Firebase service account in `backend/firebase/` locally (gitignored)
-- Splash: branded dark screen, fades out after app bootstrap
-- Status bar: dark `#0A0A0A`, does not overlay content on Android
-
-```powershell
-yarn cap:sync      # build:phone + copy to android/
-yarn cap:android     # open Android Studio
-```
-
-## Production checklist (when ready)
-
-1. `ENV=production`, strong `JWT_SECRET`
-2. `CORS_ORIGINS` = real frontend URL(s) only
-3. **HTTPS** everywhere (required for Web Crypto on mobile, Google login on phone, PWA push)
-4. Redis for shared rate limits: `docker compose up -d redis`
-5. Turnstile + VAPID keys
-6. TURN server for cross-network WebRTC
-7. Monitor `GET /api/health`
-
-## Git
-
-```powershell
-cd SSC-main
-git init
-git add .
-git commit -m "Initial commit: SSC chat app"
-```
-
-Remote (when you have a repo):
-
-```powershell
-git remote add origin https://github.com/raullavita/SSC.git
-git push -u origin main
-```
-
-## Common issues
-
-| Problem | Fix |
-|---------|-----|
-| Phone can't reach API | Same Wi‑Fi, correct LAN IP in `build:phone`, Windows firewall port 8000 |
-| `python` opens Store | Install Python from python.org; disable App Installer alias |
-| Mongo errors | `docker compose up -d` or check `MONGO_URL` |
-| Translation unchanged | Both users same language → UI hides auto-translate; unlock vault first |
-| Google login on phone | Needs HTTPS deploy (deferred) |
-| Calls fail off-LAN | Add TURN credentials in `backend/.env` |
-
-## Design & spec
-
-- `design_guidelines.json` — dark tactical theme
-- `memory/PRD.md` — full product requirements
+Copyright (C) 2026 SSC contributors. Licensed under [GNU AGPL v3](LICENSE). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for libsignal and other dependencies.

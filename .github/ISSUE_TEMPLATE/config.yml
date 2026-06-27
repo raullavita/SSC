@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question (Discussions)
+    url: https://github.com/raullavita/SSC/discussions/new?category=q-a
+  - name: Security vulnerability (private)
+    url: https://github.com/raullavita/SSC/security/advisories/new
+  - name: Contributing guide
+    url: https://github.com/raullavita/SSC/blob/main/CONTRIBUTING.md

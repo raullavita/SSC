@@ -4,9 +4,15 @@ SSC is **install-only** (Android APK + Windows/Mac desktop). Browser-tab chat is
 
 ## How to help (no payment expected — thank you)
 
-1. **Fork** the repo and open a **Pull Request** with a focused change.
-2. Or open an **Issue** describing a bug with steps to reproduce (no production secrets in issues).
-3. Read `memory/SECURITY_MODEL.md` and `memory/SSC-ROADMAP.md` for architecture context.
+1. Read this file and [SECURITY.md](SECURITY.md).
+2. Pick a task or open **[Help wanted](https://github.com/raullavita/SSC/issues/new?template=help_wanted.yml)** if you are unsure where to start.
+3. **Fork** → branch → **Pull Request** (use the PR template).
+4. For bugs use the [bug report template](https://github.com/raullavita/SSC/issues/new?template=bug_report.yml).
+5. Questions → [Discussions](https://github.com/raullavita/SSC/discussions) (not Issues).
+
+Architecture: `memory/SECURITY_MODEL.md` · `memory/SSC-ROADMAP.md`
+
+**License:** By contributing, you agree your work is licensed under [AGPL-3.0](LICENSE) (same as the project). You are not entitled to payment unless we sign a separate written agreement.
 
 ## Local setup (summary)
 
