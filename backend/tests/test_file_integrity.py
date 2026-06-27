@@ -61,7 +61,7 @@ def test_frontend_no_legacy_attachment_fetch():
     assert "fetchFileBlob" not in text
 
 
-def test_chat_home_uploads_encrypted_only():
-    text = (Path(__file__).resolve().parents[2] / "frontend" / "src" / "pages" / "ChatHome.jsx").read_text(encoding="utf-8")
+def test_messaging_send_uploads_encrypted_only():
+    text = (Path(__file__).resolve().parents[2] / "frontend" / "src" / "chat" / "useMessagingSend.js").read_text(encoding="utf-8")
     assert "uploadEncryptedAttachment" in text
-    assert "encrypted', 'true'" in text or 'encrypted", "true"' in text or "encrypted', 'true'" in text
+    assert "form.append('encrypted', 'true')" in text

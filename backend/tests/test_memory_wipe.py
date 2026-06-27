@@ -28,8 +28,8 @@ def test_chat_home_registers_wipe_handlers():
     chat = (root / "frontend" / "src" / "pages" / "ChatHome.jsx").read_text(encoding="utf-8")
     assert "registerMemoryWipeHandler" in chat
     assert "registerSocketCloser" in chat
-    assert "setDecryptedBodies({})" in chat
     assert "setMessages([])" in chat
+    assert "setConversations([])" in chat
 
 
 def test_message_tracks_blob_urls_and_wipe_listener():
