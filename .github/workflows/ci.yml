@@ -86,18 +86,18 @@ jobs:
           LOG_LEVEL=WARNING
           EOF
 
-      - name: Start API server
+      - name: Run pytest with live API
         run: |
           uvicorn server:app --host 127.0.0.1 --port 8000 &
           for i in $(seq 1 30); do
             if curl -sf http://127.0.0.1:8000/api/health >/dev/null; then
               echo "API ready"
-              exit 0
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "API failed to start"
+              exit 1
             fi
             sleep 2
           done
-          echo "API failed to start"
-          exit 1
-
-      - name: Run pytest
-        run: pytest tests/ -q --timeout=120
+          python -m pytest tests/ -q --timeout=120
