@@ -134,6 +134,7 @@ const STRINGS = {
     cannotReachServer: 'Cannot reach server — check internet or update the app',
     panicNoticeTitle: 'Emergency wipe complete',
     panicNoticeBody: 'Your chats and files were cleared. Your account is unchanged, so sign in again with the same email and password.',
+    panicSelfAck: 'You signed out. Sign in again to continue.',
     wipedNoticeTitle: 'This account was deleted',
     wipedNoticeBody: 'A previous emergency wipe removed this account.',
     registerAgain: 'Register again',
@@ -490,6 +491,7 @@ const STRINGS = {
     couldNotStartChat: 'Could not start chat',
     couldNotUnlockVault: 'Could not unlock messages',
     encryptionNotReady: 'Encryption is still setting up — wait a few seconds and try again',
+    sendFailed: 'Could not send message — try again',
     setupInstalledEncryptionHint: 'Messages are protected automatically on this device.',
     groupCallIncoming: 'Incoming {mode} call · {count} participants',
   },
@@ -603,6 +605,7 @@ const STRINGS = {
     cannotReachServer: 'No se alcanza el servidor — comprueba internet o actualiza la app',
     panicNoticeTitle: 'Borrado de pánico completado',
     panicNoticeBody: 'Se borraron chats y archivos. Tu acceso no cambió — entra con el mismo email y contraseña.',
+    panicSelfAck: 'Sesión cerrada. Vuelve a entrar para continuar.',
     wipedNoticeTitle: 'La cuenta antigua fue eliminada',
     wipedNoticeBody: 'Un borrado de pánico anterior eliminó la cuenta por completo.',
     registerAgain: 'Registrarse de nuevo',
@@ -945,6 +948,7 @@ const STRINGS = {
     couldNotStartChat: 'No se pudo iniciar el chat',
     couldNotUnlockVault: 'No se pudo abrir el cofre',
     encryptionNotReady: 'El cifrado aún se está configurando — espera unos segundos',
+    sendFailed: 'No se pudo enviar — inténtalo de nuevo',
     setupInstalledEncryptionHint: 'Los mensajes se protegen solos en este dispositivo. Sin contraseña.',
     groupCallIncoming: 'LLAMADA_{mode}_ENTRANTE · {count} PARTICIPANTES',
   },
@@ -1058,6 +1062,7 @@ const STRINGS = {
     cannotReachServer: 'Nu se ajunge la server — verifică internetul sau actualizează aplicația',
     panicNoticeTitle: 'Ștergere panică finalizată',
     panicNoticeBody: 'Chat-urile și fișierele au fost șterse. Autentificarea e neschimbată — intră cu același email și parolă.',
+    panicSelfAck: 'Te-ai delogat. Intră din nou pentru a continua.',
     wipedNoticeTitle: 'Contul vechi a fost șters definitiv',
     wipedNoticeBody: 'O ștergere panică anterioară a eliminat contul complet.',
     registerAgain: 'Înregistrează-te din nou',
@@ -1400,6 +1405,7 @@ const STRINGS = {
     couldNotStartChat: 'Nu s-a putut începe chat-ul',
     couldNotUnlockVault: 'Nu s-a putut debloca seiful',
     encryptionNotReady: 'Criptarea se configurează — așteaptă câteva secunde',
+    sendFailed: 'Mesajul nu s-a putut trimite — încearcă din nou',
     setupInstalledEncryptionHint: 'Mesajele sunt protejate automat pe acest dispozitiv. Fără parolă.',
     groupCallIncoming: 'APEL_{mode}_INTRARE · {count} PARTICIPANȚI',
   },
@@ -1410,11 +1416,24 @@ export function normalizeLang(code) {
   return STRINGS[c] ? c : 'en';
 }
 
+function isInstalledUiClient() {
+  if (typeof window === 'undefined') return false;
+  if (window.sscDesktop?.isDesktop) return true;
+  try {
+    // eslint-disable-next-line global-require
+    const { Capacitor } = require('@capacitor/core');
+    return !!(Capacitor?.isNativePlatform && Capacitor.isNativePlatform());
+  } catch {
+    return false;
+  }
+}
+
 export function getStoredUiLang() {
   try {
     const stored = localStorage.getItem(UI_LANG_KEY);
     if (stored) return normalizeLang(stored);
   } catch { /* ignore */ }
+  if (isInstalledUiClient()) return 'en';
   const nav = navigator.language?.slice(0, 2) || 'en';
   return normalizeLang(nav);
 }

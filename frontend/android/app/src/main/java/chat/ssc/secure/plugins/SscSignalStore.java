@@ -250,4 +250,14 @@ public class SscSignalStore implements SenderKeyStore {
     private static byte[] decode(String data) {
         return Base64.decode(data, Base64.NO_WRAP);
     }
+
+    /** Panic wipe — clear local Signal material so X3DH can rebuild cleanly. */
+    public static synchronized void wipeAll(Context context) {
+        context.getApplicationContext()
+                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .clear()
+                .apply();
+        instance = null;
+    }
 }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getBackendUrl, isNativeApp } from './platform';
+import { getBackendUrl, isInstalledClient, isNativeApp } from './platform';
 import { getSessionToken, usesCookieAuth } from './sessionStore';
 
 const BACKEND_URL = getBackendUrl();
@@ -12,6 +12,9 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  if (isInstalledClient()) {
+    config.headers['X-SSC-Client'] = 'installed';
+  }
   if (usesCookieAuth()) {
     return config;
   }

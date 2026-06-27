@@ -136,3 +136,10 @@ export async function decryptGroupMessage(senderUserId, ciphertext) {
     ciphertext,
   });
 }
+
+/** Panic wipe / reinstall — drop local Signal state so sessions can be rebuilt. */
+export async function wipeLocalSignalStore() {
+  const client = getLibsignalClient();
+  if (!client?.resetLocalStore) return { wiped: false, reason: 'unavailable' };
+  return client.resetLocalStore();
+}

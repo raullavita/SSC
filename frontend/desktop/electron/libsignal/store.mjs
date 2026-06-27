@@ -261,6 +261,29 @@ export class SscDesktopSignalStore extends SessionStore {
     return [...(this.#data.prekey_ids || [])];
   }
 
+  wipeAll() {
+    try {
+      const fp = this.#filePath();
+      if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    } catch {
+      /* ignore */
+    }
+    this.#data = {
+      identity_key_pair: null,
+      registration_id: generateRegistrationId(),
+      signed_prekey_id: 1,
+      kyber_prekey_id: 1,
+      signed_prekey: null,
+      kyber_prekey: null,
+      prekeys: {},
+      sessions: {},
+      identities: {},
+      sender_keys: {},
+      prekey_ids: [],
+    };
+    this.#dirty = false;
+  }
+
   async buildPreKeyBundleJson() {
     await this.ensureLocalKeys();
     const identity = await this.getIdentityKeyPair();

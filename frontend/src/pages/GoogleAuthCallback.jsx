@@ -48,7 +48,6 @@ export default function GoogleAuthCallback() {
           { token, user, needs_username: needsSetup },
           { loginWithToken, navigate, refreshUser },
         );
-        toast.success('Signed in with Google');
       } catch {
         toast.error('Google sign-in failed');
         navigate('/login', { replace: true });

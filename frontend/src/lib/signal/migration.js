@@ -118,8 +118,8 @@ export async function shouldSendWithSignal({ isGroup, peer, user, members }) {
   }
   if (!peer?.user_id || !user?.user_id) return false;
   if (!user.signal_prekeys_ready) return false;
-  // Peer flag may be absent on stale API responses — session establishment is authoritative.
-  return canUseSignalMessaging(peer.user_id, user.user_id, true);
+  const peerReady = peer.signal_prekeys_ready !== false;
+  return canUseSignalMessaging(peer.user_id, user.user_id, peerReady);
 }
 
 /** Map outgoing hint reason → i18n key for composer banner. */

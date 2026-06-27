@@ -194,6 +194,12 @@ export const libsignalHandlers = {
     const plain = await groupDecrypt(sender, s, dec(ciphertext));
     return { plaintext: new TextDecoder().decode(plain) };
   },
+
+  async resetLocalStore() {
+    const s = requireStore();
+    s.wipeAll();
+    return { wiped: true };
+  },
 };
 
 export async function invokeLibsignal(method, args = {}) {

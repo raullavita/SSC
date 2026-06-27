@@ -1,6 +1,13 @@
 import React, { useState } from 'react';
 import { DeviceMobile, ShieldCheck, Warning } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
+import { getPlatform, isElectronApp, isNativeApp } from '../lib/platform';
+
+function onboardingPlatformSuffix() {
+  if (isElectronApp()) return 'desktop';
+  if (isNativeApp()) return getPlatform() || 'native';
+  return 'web';
+}
 
 const STEPS = [
   { icon: DeviceMobile, titleKey: 'onboardingStep1Title', bodyKey: 'onboardingStep1Body' },
@@ -9,7 +16,7 @@ const STEPS = [
 ];
 
 export function onboardingStorageKey(userId) {
-  return `ssc_onboarding_v1_${userId || 'anon'}`;
+  return `ssc_onboarding_v1_${onboardingPlatformSuffix()}_${userId || 'anon'}`;
 }
 
 export function hasCompletedOnboarding(userId) {

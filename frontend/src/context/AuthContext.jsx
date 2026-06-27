@@ -113,6 +113,7 @@ export function AuthProvider({ children }) {
     await tryAutoUnlockVault(userObj);
     if (isInstalledClient()) {
       await bootstrapSignalIdentity(refreshUser).catch(() => {});
+      await refreshUser();
     }
   };
 

@@ -10,7 +10,9 @@ import { purgeLegacyVerificationFlags } from './verification';
 import { clearSessionToken, getSessionToken, usesBearerAuth } from './sessionStore';
 import { clearVaultCredential, clearAllVaultCredentials } from './vaultCredentialStore';
 
-export const PANIC_REDIRECT = '/login?panic=1';
+/** Plain login — no scary banner for the next person who opens the app. */
+export const PANIC_REDIRECT = '/login';
+export const PANIC_SELF_ACK_KEY = 'ssc_panic_self_ack';
 export const PANIC_SERVER_PATH = '/panic-wipe';
 export const LOGOUT_SERVER_PATH = '/auth/logout';
 
@@ -71,6 +73,12 @@ async function sendNativeAppToBackground() {
  */
 export async function runPanicOrchestrator({ postPanicWipe }) {
   const { authToken } = capturePreWipeCredentials();
+  try {
+    const { wipeLocalSignalStore } = await import('./signal/nativeLibsignal');
+    await wipeLocalSignalStore();
+  } catch {
+    /* best-effort — continue panic wipe */
+  }
   executeClientFootprintWipe('panic', {});
   try {
     await postPanicWipe(authToken);
@@ -79,6 +87,11 @@ export async function runPanicOrchestrator({ postPanicWipe }) {
   }
   await sendNativeAppToBackground();
   if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(PANIC_SELF_ACK_KEY, '1');
+    } catch {
+      /* ignore */
+    }
     window.location.href = PANIC_REDIRECT;
   }
 }

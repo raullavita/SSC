@@ -76,9 +76,16 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def verify_turnstile(token: str, remote_ip: str) -> bool:
+def is_installed_client_request(request) -> bool:
+    """Installed APK/desktop — no Turnstile widget; captcha skipped."""
+    return (request.headers.get("x-ssc-client") or "").strip().lower() == "installed"
+
+
+def verify_turnstile(token: str, remote_ip: str, *, skip: bool = False) -> bool:
     from core.egress_policy import egress_feature_enabled
 
+    if skip:
+        return True
     if not egress_feature_enabled("turnstile"):
         return True
     if not TURNSTILE_SECRET:

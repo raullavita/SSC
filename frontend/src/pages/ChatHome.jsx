@@ -623,13 +623,14 @@ export default function ChatHome() {
     })();
   }, [user?.user_id, refreshUser]);
 
-  // Register push as soon as user is logged in (does not require vault unlock)
+  const pushRegisteredRef = useRef(false);
+
+  // Register push silently once per session (no in-app spam toasts)
   useEffect(() => {
-    if (!user) return;
+    if (!user || pushRegisteredRef.current) return;
+    pushRegisteredRef.current = true;
     subscribePush().catch(() => {});
-    subscribeNativePush()
-      .then((ok) => { if (ok) toast.success('Push notifications enabled'); })
-      .catch(() => {});
+    subscribeNativePush().catch(() => {});
   }, [user]);
 
   // ─── Socket ───
@@ -664,12 +665,19 @@ export default function ChatHome() {
             let offer = data;
             if (user?.user_id) {
               try {
+                if (data.from) {
+                  await ensureSignalSession(data.from, user.user_id).catch(() => {});
+                }
                 offer = await unpackIncomingSignaling(data, {
                   myUserId: user.user_id,
                   peerUserId: data.from,
                 });
               } catch {
-                return;
+                if (data.sdp != null || data.candidate != null) {
+                  offer = data;
+                } else {
+                  return;
+                }
               }
             }
             const { data: peerData } = await api.get(`/users/${offer.from}/public`);
@@ -937,7 +945,14 @@ export default function ChatHome() {
       setDraft('');
     } catch (e) {
       console.error(e);
-      toast.error('Failed to send (encryption error)');
+      const detail = e?.response?.data?.detail;
+      if (detail) {
+        toast.error(detail);
+      } else if (usesSignalOnlyMessaging()) {
+        toast.error(t('encryptionNotReady'));
+      } else {
+        toast.error(t('sendFailed'));
+      }
     }
   };
 

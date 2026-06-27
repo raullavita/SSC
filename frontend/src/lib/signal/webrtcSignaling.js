@@ -11,6 +11,7 @@ import {
   decryptGroupText,
 } from './groupMessages';
 import { encryptSignalText, decryptSignalText, canUseSignalMessaging } from './messages';
+import { ensureSignalSession } from './x3dh';
 import { isNativeLibsignalAvailable } from './nativeLibsignal';
 
 export const SignalingProtocol = {
@@ -42,7 +43,12 @@ export async function shouldEncryptSignaling({ isGroup, peer, user, members, con
     if (!conversationId || !members?.length) return false;
     return canUseSignalGroupMessaging(members, user.user_id, user);
   }
-  if (!peer?.user_id || !peer.signal_prekeys_ready) return false;
+  if (!peer?.user_id || peer.signal_prekeys_ready === false) return false;
+  try {
+    await ensureSignalSession(peer.user_id, user.user_id);
+  } catch {
+    return false;
+  }
   return canUseSignalMessaging(peer.user_id, user.user_id, true);
 }
 

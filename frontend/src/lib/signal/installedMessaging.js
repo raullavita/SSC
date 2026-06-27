@@ -3,6 +3,7 @@
  */
 import { isInstalledClient } from '../platform';
 import { bootstrapSignalIdentity } from '../signalIdentityBootstrap';
+import { hasSignalSession } from './nativeLibsignal';
 import { ensureSignalSession } from './x3dh';
 import { shouldSendWithSignal } from './migration';
 
@@ -27,15 +28,24 @@ export async function prepareInstalledMessaging({
     return shouldSendWithSignal({ isGroup, peer, user, members });
   }
 
-  await bootstrapSignalIdentity(refreshUser).catch(() => {});
+  const boot = await bootstrapSignalIdentity(refreshUser);
+  if (!boot?.ok) return false;
+
+  let freshUser = user;
   if (refreshUser) {
-    const fresh = await refreshUser();
-    if (fresh) user = fresh;
+    freshUser = await refreshUser() || user;
   }
+  if (!freshUser?.signal_prekeys_ready) return false;
 
   if (!isGroup && peer?.user_id) {
-    await ensureSignalSession(peer.user_id, user.user_id).catch(() => {});
+    try {
+      await ensureSignalSession(peer.user_id, freshUser.user_id);
+      const status = await hasSignalSession(peer.user_id);
+      if (!status?.has_session) return false;
+    } catch {
+      return false;
+    }
   }
 
-  return shouldSendWithSignal({ isGroup, peer, user, members });
+  return shouldSendWithSignal({ isGroup, peer, user: freshUser, members });
 }

@@ -24,6 +24,12 @@ export function clearLocalStorageSessionSecrets() {
  * @param {'logout'|'panic'} reason
  */
 export function applyLocalStoragePanicPolicy(reason) {
-  if (reason !== 'panic') return;
+  if (reason !== 'panic' || typeof localStorage === 'undefined') return;
   purgeVerificationStorageOnPanic();
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('ssc_onboarding_v1_')) keysToRemove.push(key);
+  }
+  keysToRemove.forEach((key) => localStorage.removeItem(key));
 }

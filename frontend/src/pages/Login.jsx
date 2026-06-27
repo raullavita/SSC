@@ -13,8 +13,19 @@ import { fetchGoogleConfig, signInWithGoogle } from '../lib/google-auth';
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const panic = searchParams.get('panic') === '1';
   const wiped = searchParams.get('wiped') === '1';
+  const [selfPanicAck, setSelfPanicAck] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem('ssc_panic_self_ack') === '1') {
+        sessionStorage.removeItem('ssc_panic_self_ack');
+        setSelfPanicAck(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
   const { loginWithToken, unlockPrivateKey, refreshUser } = useAuth();
   const { t } = useLocale();
   const [email, setEmail] = useState('');
@@ -102,10 +113,9 @@ export default function Login() {
 
           <h1 className="font-mono text-3xl font-bold tracking-tighter">{t('loginTitle')}</h1>
           <p className="text-[#A1A1AA] text-sm mt-2">{t('loginSubtitle')}</p>
-          {panic && (
-            <div className="mt-4 p-3 rounded-md border border-[#FF9500]/40 bg-[#FF9500]/10 text-sm" data-testid="panic-notice">
-              <p className="text-[#FF9500] font-medium">{t('panicNoticeTitle')}</p>
-              <p className="text-[#A1A1AA] mt-1 text-xs">{t('panicNoticeBody')}</p>
+          {selfPanicAck && (
+            <div className="mt-4 p-3 rounded-md border border-[#27272A] bg-[#121212] text-sm" data-testid="panic-self-ack">
+              <p className="text-[#A1A1AA] text-xs">{t('panicSelfAck')}</p>
             </div>
           )}
           {wiped && (

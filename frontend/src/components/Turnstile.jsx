@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { isInstalledClient } from '../lib/platform';
 
 /**
  * Cloudflare Turnstile widget. Reads sitekey from REACT_APP_TURNSTILE_SITEKEY.
@@ -43,6 +44,6 @@ export default function Turnstile({ onToken }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sitekey]);
 
-  if (!sitekey) return null;
+  if (!sitekey || isInstalledClient()) return null;
   return <div ref={ref} data-testid="turnstile-widget" className="mt-2" />;
 }

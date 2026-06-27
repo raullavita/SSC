@@ -12,6 +12,7 @@ from core.auth import (
     client_ip,
     get_current_user,
     hash_password,
+    is_installed_client_request,
     jwt_ttl_seconds,
     verify_password,
     verify_turnstile,
@@ -46,7 +47,9 @@ async def register(body: RegisterIn, request: Request, response: Response):
     if not rate_limit_check(f"register:{ip}", max_hits=5, window_sec=3600):
         raise HTTPException(429, "Too many registrations from this IP — try again later")
     from core.config import TURNSTILE_SECRET
-    if TURNSTILE_SECRET and not verify_turnstile(body.captcha_token or "", ip):
+    if TURNSTILE_SECRET and not verify_turnstile(
+        body.captcha_token or "", ip, skip=is_installed_client_request(request),
+    ):
         raise HTTPException(400, "Captcha verification failed")
     err = validate_username(body.username)
     if err:
@@ -82,7 +85,9 @@ async def login(body: LoginIn, request: Request, response: Response):
     if not rate_limit_check(f"login:{ip}", max_hits=10, window_sec=300):
         raise HTTPException(429, "Too many login attempts — try again in 5 minutes")
     from core.config import TURNSTILE_SECRET
-    if TURNSTILE_SECRET and not verify_turnstile(body.captcha_token or "", ip):
+    if TURNSTILE_SECRET and not verify_turnstile(
+        body.captcha_token or "", ip, skip=is_installed_client_request(request),
+    ):
         raise HTTPException(400, "Captcha verification failed")
     ident = body.email.strip()
     if "@" in ident:

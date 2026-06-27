@@ -425,6 +425,18 @@ public class SscLibsignalPlugin extends Plugin {
         );
     }
 
+    @PluginMethod
+    public void resetLocalStore(PluginCall call) {
+        try {
+            SscSignalStore.wipeAll(getContext());
+            JSObject ret = new JSObject();
+            ret.put("wiped", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("resetLocalStore failed: " + e.getMessage(), e);
+        }
+    }
+
     private static String b64(byte[] data) {
         return Base64.encodeToString(data, Base64.NO_WRAP);
     }

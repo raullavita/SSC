@@ -12,6 +12,7 @@ const libsignalMethods = [
   'hasGroupSenderKey',
   'encryptGroupMessage',
   'decryptGroupMessage',
+  'resetLocalStore',
 ];
 
 const libsignal = Object.fromEntries(

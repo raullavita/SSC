@@ -12,6 +12,12 @@ jest.mock('../../context/LocaleContext', () => ({
   }),
 }));
 
+jest.mock('../../lib/platform', () => ({
+  isElectronApp: () => false,
+  isNativeApp: () => false,
+  getPlatform: () => 'web',
+}));
+
 describe('OnboardingCoach', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -37,6 +43,6 @@ describe('OnboardingCoach', () => {
     markOnboardingComplete('u_a');
     expect(hasCompletedOnboarding('u_a')).toBe(true);
     expect(hasCompletedOnboarding('u_b')).toBe(false);
-    expect(onboardingStorageKey('u_a')).toBe('ssc_onboarding_v1_u_a');
+    expect(onboardingStorageKey('u_a')).toBe('ssc_onboarding_v1_web_u_a');
   });
 });
