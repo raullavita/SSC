@@ -33,3 +33,43 @@ Copy from `*.example` files only. If a secret was ever committed, **rotate it** 
 ## Safe contribution areas
 
 Help is welcome on: encryption flows, WebRTC signaling, Android/Electron libsignal, tests, i18n, accessibility, and documentation. Do not paste production URLs with tokens or personal emails in PRs.
+
+## GitHub Security tab (Dependabot + CodeQL)
+
+A high alert count on a public repo is **normal** after enabling Dependabot and CodeQL — especially with Create React App (`react-scripts`), which pulls in many transitive dev dependencies.
+
+### What the numbers mean
+
+| Source | What it scans | Typical noise |
+|--------|----------------|---------------|
+| **Dependabot alerts** | CVEs in `yarn.lock` / `requirements.txt` | `nth-check`, `underscore`, `serialize-javascript` via webpack — **build-time only** |
+| **Code scanning (CodeQL)** | Patterns in our Python/JS source | Intentional `localStorage` in vault/session stores; OAuth redirects; test fixtures |
+
+SSC is **install-only** (APK + desktop). Browser-tab chat is blocked. Many react-router CVEs target **SSR / framework mode**, which we do not use.
+
+### Priority for contributors
+
+1. **Direct runtime deps** in `frontend/package.json` — e.g. `axios`, `react-router-dom` — patch/minor bumps + `yarn test:ci`
+2. **Backend** `pip` direct deps — small grouped Dependabot PRs after CI passes
+3. **Desktop** `electron` — upgrade deliberately (rebuild desktop), not blind major jumps
+4. **Transitive CRA/webpack alerts** — often cannot fix without migrating off `react-scripts`; document and defer
+5. **CodeQL** — triage: dismiss false positives (tests, encrypted vault storage) with a one-line reason; fix real issues in focused PRs
+
+### What not to do
+
+- Do not merge every Dependabot PR at once (especially **major** bumps: Tailwind 4, Capacitor 8, Electron 33→42).
+- Do not treat alert count as “the app is hacked.”
+- Do not open public issues with exploit write-ups — use [Security Advisories](https://github.com/raullavita/SSC/security/advisories/new) instead.
+
+### Maintainer workflow (monthly is fine)
+
+1. Review [Dependabot alerts](https://github.com/raullavita/SSC/security/dependabot) — filter **Direct**, sort by severity.
+2. Merge small patch PRs when **CI** and **CodeQL** are green.
+3. Dismiss CodeQL false positives on the [Code scanning](https://github.com/raullavita/SSC/security/code-scanning) tab with a short note.
+4. Rebuild APK/desktop after client dependency changes that ship to users.
+
+### Next upgrades (when someone has time)
+
+- Remaining transitive alerts under `react-scripts` (long-term: CRA migration or eject)
+- Controlled Electron bump in `frontend/desktop` (test `SSC-BUILD-DESKTOP-WIN.bat`)
+- Backend grouped minor/patch Dependabot PRs (`/backend`)
