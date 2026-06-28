@@ -22,7 +22,7 @@ import ConversationActionsSheet, { ConversationListRow } from '../components/Con
 import ProfileContactSheet from '../components/ProfileContactSheet';
 import VerifyHandshakeModal from '../components/VerifyHandshakeModal';
 import { useLocale } from '../context/LocaleContext';
-import { useMobileLayout } from '../lib/use-mobile';
+import { useMobileLayout, useSplitChatLayout } from '../lib/use-mobile';
 import MobileChatMenu, { MenuAction } from '../components/MobileChatMenu';
 import GroupCallModal from '../components/GroupCallModal';
 import { StoriesBar, StoryViewer } from '../components/Stories';
@@ -197,9 +197,10 @@ export default function ChatHome() {
   const headerTitle = isGroup
     ? (formatGroupConversationLabel(activeConv) || t('group'))
     : (peer ? `@${peer.username}` : '');
-  const isMobile = useMobileLayout();
-  const showList = !isMobile || !activeId;
-  const showChatPanel = !isMobile || !!activeId;
+  const splitLayout = useSplitChatLayout();
+  const isSinglePane = useMobileLayout();
+  const showList = splitLayout || !activeId;
+  const showChatPanel = splitLayout || !!activeId;
   const sameLangAsPeer = !isGroup && peer?.language && user?.language
     && peer.language.toLowerCase() === user.language.toLowerCase();
   const showTranslateControls = translationEnabled && !sameLangAsPeer;
@@ -620,9 +621,14 @@ export default function ChatHome() {
   };
 
   return (
-    <div className="mobile-shell flex bg-[#0A0A0A] text-[#F0F0F0] overflow-hidden">
+    <div
+      className="mobile-shell chat-shell flex bg-[#0A0A0A] text-[#F0F0F0] overflow-hidden"
+      data-split={splitLayout ? 'true' : 'false'}
+    >
       {/* Sidebar / chat list */}
-      <aside className={`${showList ? 'flex' : 'hidden'} md:flex flex-col w-full md:w-80 lg:w-96 md:border-r border-[#27272A] shrink-0 min-h-0`}>
+      <aside
+        className={`chat-sidebar ${showList ? 'flex' : 'hidden'} ${splitLayout ? 'chat-sidebar-split' : 'w-full'} flex-col shrink-0 min-h-0 border-[#27272A]`}
+      >
         <div className="glass-header safe-top safe-x px-4 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2" data-testid="sidebar-logo">
             <Avatar user={user} size="xs" />
@@ -711,9 +717,9 @@ export default function ChatHome() {
       </aside>
 
       {/* Chat panel */}
-      <main className={`${showChatPanel ? 'flex' : 'hidden'} md:flex flex-1 flex-col min-h-0 min-w-0 w-full`}>
+      <main className={`chat-main ${showChatPanel ? 'flex' : 'hidden'} flex-1 flex-col min-h-0 min-w-0 w-full`}>
         {!activeConv ? (
-          <div className="flex-1 hidden md:flex flex-col items-center justify-center text-center px-6 relative">
+          <div className={`flex-1 ${splitLayout ? 'flex' : 'hidden'} flex-col items-center justify-center text-center px-6 relative`}>
             <div
               aria-hidden
               className="absolute inset-0 opacity-[0.05] pointer-events-none"
@@ -726,7 +732,7 @@ export default function ChatHome() {
         ) : (
           <>
             <header className="glass-header safe-x px-2 md:px-4 py-2 md:py-3 flex items-center gap-2 shrink-0 relative z-[70]">
-              {isMobile && (
+              {isSinglePane && (
                 <button
                   type="button"
                   onClick={leaveChat}
@@ -787,7 +793,7 @@ export default function ChatHome() {
                 )}
               </div>
               <div className="flex items-center gap-1 md:gap-2 shrink-0">
-                {isMobile ? (
+                {isSinglePane ? (
                   <>
                     {!isGroup && peer && (
                       <MobileChatMenu
@@ -887,7 +893,7 @@ export default function ChatHome() {
               </div>
             </header>
 
-            {(isMobile && mobileMsgSearchOpen) && (
+            {(isSinglePane && mobileMsgSearchOpen) && (
               <div className="md:hidden px-3 py-2 border-b border-[#27272A] shrink-0">
                 <input
                   value={messageFilter}
@@ -900,8 +906,8 @@ export default function ChatHome() {
               </div>
             )}
 
-            <div ref={scrollRef} onScroll={() => onMessagesScroll(scrollRef)} className="chat-scroll px-3 md:px-6 py-3 flex flex-col gap-3">
-              <div className="hidden md:block px-3 py-1">
+            <div ref={scrollRef} onScroll={() => onMessagesScroll(scrollRef)} className={`chat-scroll px-3 ${splitLayout ? 'md:px-6' : ''} py-3 flex flex-col gap-3`}>
+              <div className={`${splitLayout ? 'block' : 'hidden'} px-3 py-1`}>
                 <input value={messageFilter} onChange={(e) => setMessageFilter(e.target.value)} placeholder={t('searchMessages')} className="w-full text-xs bg-transparent border-0 border-b border-[#27272A] pb-1" data-testid="message-filter" />
               </div>
               {messagesLoading && <MessagesSkeleton />}

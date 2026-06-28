@@ -73,6 +73,48 @@ html.marketing-site .App {
   overflow: hidden;
 }
 
+/* Q.3 — split-pane chat on tablet landscape + desktop (not forced single-pane on native) */
+.chat-shell[data-split="true"] {
+  flex-direction: row;
+}
+
+.chat-sidebar-split {
+  display: flex;
+  width: 20rem;
+  max-width: 42vw;
+  border-right-width: 1px;
+}
+
+.chat-shell[data-split="true"] .chat-main {
+  display: flex;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .chat-sidebar-split {
+    width: 24rem;
+    max-width: none;
+  }
+}
+
+@media (orientation: landscape) and (max-width: 767px) {
+  .chat-sidebar-split {
+    width: min(17.5rem, 36vw);
+  }
+
+  .chat-shell[data-split="true"] .glass-header {
+    padding-top: max(0.35rem, env(safe-area-inset-top));
+    padding-bottom: 0.35rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .chat-shell[data-split="true"] .chat-composer {
+    padding-top: 0.35rem;
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+  }
+}
+
 /* Capacitor native shell — status bar handled by plugin; reinforce safe areas */
 html.native-app {
   background: var(--bg-primary);
