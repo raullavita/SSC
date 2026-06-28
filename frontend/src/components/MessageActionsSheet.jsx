@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { ArrowBendUpLeft, PencilSimple, Trash, X } from '@phosphor-icons/react';
+import { ArrowBendUpLeft, ArrowBendUpRight, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 
 export default function MessageActionsSheet({
-  open, message, onClose, onReply, onEdit, onDelete, showEdit = false, showDelete = false,
+  open, message, onClose, onReply, onForward, onEdit, onDelete,
+  showForward = false, showEdit = false, showDelete = false,
 }) {
   const { t } = useLocale();
 
@@ -41,6 +42,17 @@ export default function MessageActionsSheet({
           <ArrowBendUpLeft size={18} className="text-[#00E5FF]" />
           {t('messageActionReply')}
         </button>
+        {showForward && (
+          <button
+            type="button"
+            data-testid="message-action-forward"
+            onClick={() => { onClose?.(); onForward?.(message); }}
+            className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
+          >
+            <ArrowBendUpRight size={18} className="text-[#00E5FF]" />
+            {t('messageActionForward')}
+          </button>
+        )}
         {showEdit && (
           <button
             type="button"

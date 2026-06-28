@@ -12,6 +12,7 @@ import Message from '../components/Message';
 import MessageActionsSheet from '../components/MessageActionsSheet';
 import ReplyComposerBar from '../components/ReplyComposerBar';
 import EditMessageModal from '../components/EditMessageModal';
+import ForwardMessageModal from '../components/ForwardMessageModal';
 import PanicButton from '../components/PanicButton';
 import CallModal from '../components/CallModal';
 import SettingsModal from '../components/SettingsModal';
@@ -59,6 +60,13 @@ import { useHoldToRecord } from '../chat/useHoldToRecord';
 import { buildQuotePreview, findMessageById } from '../lib/messageReply';
 import { applyMessageDeleted, canUnsendMessage } from '../lib/messageDelete';
 import { applyMessageEdited, canEditMessage } from '../lib/messageEdit';
+import {
+  buildForwardPreview,
+  canForwardMessage,
+  eligibleForwardTargets,
+} from '../lib/messageForward';
+import { sendForwardToConversation } from '../chat/forwardMessageSend';
+import { toastMessagingGateFailure } from '../chat/messagingErrors';
 
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
@@ -109,6 +117,8 @@ export default function ChatHome() {
   const [editTarget, setEditTarget] = useState(null);
   const [editDraft, setEditDraft] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+  const [forwardTarget, setForwardTarget] = useState(null);
+  const [forwardBusy, setForwardBusy] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [retentionHours, setRetentionHours] = useState(24);
@@ -317,6 +327,74 @@ export default function ChatHome() {
     setEditDraft(decryptedBodies[msg.message_id] || '');
   }, [decryptedBodies]);
 
+  const forwardDestinations = useMemo(
+    () => eligibleForwardTargets(conversations, myContacts, { excludeConversationId: activeId }),
+    [conversations, myContacts, activeId],
+  );
+
+  const forwardPreview = useMemo(() => {
+    if (!forwardTarget) return null;
+    return buildForwardPreview(
+      forwardTarget,
+      decryptedBodies[forwardTarget.message_id],
+      quoteContext,
+      t,
+    );
+  }, [forwardTarget, decryptedBodies, quoteContext, t]);
+
+  const onForwardMessageRequest = useCallback((msg) => {
+    setForwardTarget(msg);
+  }, []);
+
+  const confirmForward = useCallback(async (selectedIds) => {
+    if (!forwardTarget || !selectedIds?.length) return;
+    const text = (decryptedBodies[forwardTarget.message_id] || '').trim();
+    if (!text) {
+      toast.error(t('messageForwardEmpty'));
+      return;
+    }
+    setForwardBusy(true);
+    let sent = 0;
+    try {
+      for (const convId of selectedIds) {
+        const conv = forwardDestinations.find((c) => c.conversation_id === convId)
+          || conversations.find((c) => c.conversation_id === convId);
+        if (!conv) continue;
+        try {
+          await sendForwardToConversation({
+            text,
+            forwardedFromMessageId: forwardTarget.message_id,
+            targetConv: conv,
+            user,
+            privateKey,
+            refreshUser,
+          });
+          sent += 1;
+        } catch (e) {
+          if (e?.gate) toastMessagingGateFailure(e.gate, t);
+          else toast.error(e?.response?.data?.detail || e?.message || t('messageForwardFailed'));
+        }
+      }
+      if (sent > 0) {
+        toast.success(t('messageForwardSuccess', { count: sent }));
+        loadConversations();
+      }
+    } finally {
+      setForwardBusy(false);
+      setForwardTarget(null);
+    }
+  }, [
+    forwardTarget,
+    decryptedBodies,
+    forwardDestinations,
+    conversations,
+    user,
+    privateKey,
+    refreshUser,
+    loadConversations,
+    t,
+  ]);
+
   const confirmUnsendMessage = useCallback(async () => {
     if (!unsendTarget || !activeId) return;
     try {
@@ -343,6 +421,7 @@ export default function ChatHome() {
     setUnsendTarget(null);
     setEditTarget(null);
     setEditDraft('');
+    setForwardTarget(null);
   }, [activeId]);
 
   const {
@@ -461,6 +540,10 @@ export default function ChatHome() {
         setProfileSheetOpen(false);
         return;
       }
+      if (forwardTarget) {
+        setForwardTarget(null);
+        return;
+      }
       if (editTarget) {
         setEditTarget(null);
         setEditDraft('');
@@ -532,6 +615,7 @@ export default function ChatHome() {
     messageActionTarget,
     unsendTarget,
     editTarget,
+    forwardTarget,
     confirmRemoveUid,
     contactsOpen,
     profileSheetOpen,
@@ -1313,10 +1397,22 @@ export default function ChatHome() {
         message={messageActionTarget}
         onClose={() => setMessageActionTarget(null)}
         onReply={onReplyToMessage}
+        onForward={onForwardMessageRequest}
         onEdit={onEditMessageRequest}
         onDelete={onDeleteMessageRequest}
+        showForward={canForwardMessage(messageActionTarget)}
         showEdit={canEditMessage(messageActionTarget, user?.user_id)}
         showDelete={canUnsendMessage(messageActionTarget, user?.user_id)}
+      />
+
+      <ForwardMessageModal
+        open={!!forwardTarget}
+        preview={forwardPreview}
+        targets={forwardDestinations}
+        formatGroupLabel={formatGroupConversationLabel}
+        onClose={() => setForwardTarget(null)}
+        onConfirm={confirmForward}
+        busy={forwardBusy}
       />
 
       <EditMessageModal

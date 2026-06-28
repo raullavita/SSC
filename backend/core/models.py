@@ -78,6 +78,7 @@ class SendMessageIn(BaseModel):
     attachment_encrypted_keys: Optional[Dict[str, str]] = None
     attachment_content_type: Optional[str] = None
     reply_to_message_id: Optional[str] = None
+    forwarded_from_message_id: Optional[str] = None
 
 
 class UnsendMessageIn(BaseModel):

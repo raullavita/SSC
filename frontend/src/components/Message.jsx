@@ -161,6 +161,14 @@ export default function Message({
             {t('messageDeleted')}
           </span>
         )}
+        {!deleted && msg.forwarded_from_message_id && (
+          <div
+            className="text-[10px] font-mono text-[#A1A1AA] tracking-wider mb-1"
+            data-testid={`forwarded-${msg.message_id}`}
+          >
+            {t('messageForwarded')}
+          </div>
+        )}
         {!deleted && quotedPreview && (
           <div
             className="mb-2 pl-2 border-l-2 border-[#00E5FF]/70 text-xs"

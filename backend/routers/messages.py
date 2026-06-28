@@ -22,6 +22,7 @@ from core.realtime import (
 )
 from core.retention import expires_at_from_now, message_read_expiry_fields
 from core.message_replies import validate_reply_target
+from core.message_forwards import validate_forward_source
 from core.retention_db import bump_conversation_activity, get_effective_retention_for_conversation
 from core.privacy_settings import read_receipts_enabled
 from core.utils import iso, now_utc
@@ -73,6 +74,11 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
             raise HTTPException(413, "Encrypted keys too large or too many")
 
     reply_to = await validate_reply_target(body.conversation_id, body.reply_to_message_id)
+    forwarded_from = await validate_forward_source(
+        user_id=current["user_id"],
+        forwarded_from_message_id=body.forwarded_from_message_id,
+        target_conversation_id=body.conversation_id,
+    )
 
     created = now_utc()
     retention_window = await get_effective_retention_for_conversation(body.conversation_id)
@@ -93,6 +99,7 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
         "attachment_encrypted_keys": body.attachment_encrypted_keys,
         "attachment_content_type": body.attachment_content_type,
         "reply_to_message_id": reply_to,
+        "forwarded_from_message_id": forwarded_from,
         "created_at": iso(created),
         "expires_at": expires,
     })
