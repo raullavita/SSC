@@ -5,12 +5,30 @@ const LOCK_KEY = 'ssc_site_preview_locked_until';
 const MAX_ATTEMPTS = 5;
 const LOCK_MS = 15 * 60 * 1000;
 
-/** Public marketing site shows the construction gate when true (build-time env). */
+/**
+ * Public marketing site shows under-construction copy (no downloads / no beta) when true.
+ * Does NOT imply a password wall — see isSitePreviewGateEnabled().
+ */
 export function isSiteUnderConstruction() {
   const raw = process.env.REACT_APP_SITE_UNDER_CONSTRUCTION;
   if (raw === 'false' || raw === '0') return false;
   if (raw === 'true' || raw === '1') return true;
   return process.env.NODE_ENV === 'production';
+}
+
+/** Alias for landing — public visitors see the site, but in construction mode. */
+export function isSitePublicConstructionMode() {
+  return isSiteUnderConstruction();
+}
+
+/**
+ * Optional founder preview password wall (full marketing page behind a code).
+ * Off by default after Q.1 — set REACT_APP_SITE_PREVIEW_GATE=true to re-enable.
+ */
+export function isSitePreviewGateEnabled() {
+  const raw = process.env.REACT_APP_SITE_PREVIEW_GATE;
+  if (raw !== 'true' && raw !== '1') return false;
+  return isSitePreviewAccessConfigured();
 }
 
 function getSitePreviewPassword() {

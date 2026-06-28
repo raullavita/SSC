@@ -1,5 +1,7 @@
 import {
   isSiteUnderConstruction,
+  isSitePublicConstructionMode,
+  isSitePreviewGateEnabled,
   hasSiteAccessBypass,
   setSiteAccessBypass,
   verifySitePreviewPassword,
@@ -22,7 +24,16 @@ describe('siteGate', () => {
     delete process.env.REACT_APP_SITE_UNDER_CONSTRUCTION;
     process.env.NODE_ENV = 'production';
     expect(isSiteUnderConstruction()).toBe(true);
+    expect(isSitePublicConstructionMode()).toBe(true);
     process.env.REACT_APP_SITE_UNDER_CONSTRUCTION = prev;
+  });
+
+  it('disables preview password gate unless explicitly enabled', () => {
+    process.env.REACT_APP_SITE_PREVIEW_PASSWORD = 'invite-only-code';
+    delete process.env.REACT_APP_SITE_PREVIEW_GATE;
+    expect(isSitePreviewGateEnabled()).toBe(false);
+    process.env.REACT_APP_SITE_PREVIEW_GATE = 'true';
+    expect(isSitePreviewGateEnabled()).toBe(true);
   });
 
   it('stores and reads bypass in session storage', () => {

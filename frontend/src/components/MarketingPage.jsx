@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { isInstalledClient } from '../lib/platform';
 import {
   hasSiteAccessBypass,
-  isSiteUnderConstruction,
+  isSitePreviewGateEnabled,
   setSiteAccessBypass,
   tryUrlPreviewBypass,
 } from '../lib/siteGate';
@@ -20,7 +20,7 @@ export default function MarketingPage({ children, className = '', gate = true })
 
   const showGate = gate
     && !isInstalledClient()
-    && isSiteUnderConstruction()
+    && isSitePreviewGateEnabled()
     && !bypass;
 
   if (showGate) {
