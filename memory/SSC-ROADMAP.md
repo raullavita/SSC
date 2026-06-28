@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-27 (public GitHub · v1.0.12 · CI · first contributor PR)
+**Updated:** 2026-06-28 (TASK Q expansion wave · v1.0.12 · desktop translation)
 **Repo:** `C:\Users\smash\SSC-main` · **GitHub:** https://github.com/raullavita/SSC (public, AGPL-3.0)
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -12,12 +12,12 @@
 
 ## How to use this doc
 
-1. **Done** — Engines 1–5, 8–10, 9 + TASK A–G + TASK L + crypto hardening + **public repo** (CONTRIBUTING, SECURITY, CI, CodeQL, Dependabot, `main` protected).
-2. **Now (maintainer mode)** — wait on contributors; merge safe Dependabot patches; optional founder QA on local **v1.0.12** builds.
-3. **Open help issues** — **#2** desktop build docs · **#4** WebRTC signaling review (assigned **shwetaj2820**, no PR yet — normal).
-4. **Merged contributor work** — **#3** InstalledClientGate tests (**spxmiguel**, merged 27 Jun).
-5. **Before public user launch** — TASK J green (founder + tester devices) · **P.6** TURN off-LAN · **P.8** code signing · construction gate off · optional Play Store (**P.9**).
-6. **Not doing yet** — public installer hosting on GitHub Releases · mass marketing · paid pen test (unless budget).
+1. **Done** — Engines 1–5, 8–10, 9 + TASK A–G + TASK L + TASK M/N + desktop translation (`4a949af`) + **public repo**.
+2. **Now** — **TASK Q expansion wave** (strict serial order below). **One subtask at a time** — next starts only when previous is `[x]`, CI green, and nothing regressed.
+3. **Open help issues** — **#2** desktop build docs · **#4** WebRTC signaling review (**shwetaj2820**).
+4. **Before closed-beta testers** — finish **Q.1–Q.4** (web + language + layout + auto-update) then resume **TASK J** device matrix on each milestone build.
+5. **Not doing** — QR add-friend · QR safety verify · phone contact-card share · group invite links · call screen-share (v1) · server plaintext translation · public GitHub Release binaries (unless policy changes).
+6. **Pen test** — free/low-cost path in **Q.55** (CodeQL + OWASP ZAP CI first; MOSS / university / disclose.io later).
 
 **Current local builds:** Windows **`SSC-Setup-1.0.12.exe`** · APK rebuild when founder cuts next tag
 **GitHub release:** **v1.0.12** pre-release (source only — no `.exe` attached by design)
@@ -198,9 +198,188 @@
 | **M** | In-app UX polish (profile, Settings, feel) | [x] M.1–M.11 done (M.6 deferred v1.1) |
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
-| **J** QA matrix | tester-win ↔ tester-android — **paused** until M/O ready | [ ] |
-| **I** Infra remainder | Play Store, email routing, code-sign | [ ] |
-| **K** Deferred | iOS, SFU, own-metal, email confirm | — |
+| **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
+| **Q** Expansion wave | **63 subtasks** — serial order; start **Q.1** | [ ] Q.1 open |
+| **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
+| **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
+
+---
+
+## TASK Q — Expansion wave (founder directive · 28 Jun 2026)
+
+**Goal:** Close competitive UX gaps without breaking shipped crypto, retention, or install-only policy.
+
+### Execution law (non-negotiable)
+
+1. Run **one Q subtask at a time** (Q.1 → Q.2 → …). No parallel feature branches unless hotfix.
+2. Mark `[x]` only when: code merged · `yarn test:ci` + backend pytest green · founder smoke on Win + Android (or documented N/A) · roadmap line updated.
+3. **Do not start Q.N+1** until Q.N is `[x]`.
+4. If a subtask grows >3 days, split into Q.N.a / Q.N.b in this file — still serial.
+
+### Founder decisions locked (28 Jun 2026)
+
+| Topic | Decision |
+|-------|----------|
+| Public website | Open to everyone — **Under construction** copy; **no download buttons**; **no beta/tester signup** on site |
+| Updates / stage | Public **Updates** section on first view (version, stage, changelog bullets) |
+| QR | **No** add-friend QR · **No** safety-number QR verify — **email verification** for password accounts instead |
+| Contact card | **No** phone vCard — optional later: “share my @username” in-chat only |
+| Invite links | Stay **retired** (mutual contacts only) |
+| Screen share | **No** in calls for v1 |
+| Retention picker | User-selectable: **1h · 2h · 4h · 8h · 24h · 7d · 30d** (server-enforced TTL) |
+| UI i18n | Keep **bundled locale packs** (text is tiny); **do not** pipe UI strings through cloud auto-translate (privacy + offline) |
+| Message translate | Expand **on-device** pairs incrementally; Android ML Kit + desktop Transformers.js |
+| Post-quantum | Upgrade when **libsignal** release train ships PQXDH on our pinned version — track upstream, no custom crypto |
+| Desktop notifications | **Yes** — ship with Q.39–Q.41 after core chat UX |
+
+### i18n note (answers “GTA 6 size” fear)
+
+- UI strings ≈ **kilobytes per language**, not gigabytes. Safe to add es/ro/en first, then lazy-load extra JSON packs (`fr`, `de`, …) on demand.
+- **Never** auto-translate the UI via Google/cloud for production — leaks product copy and breaks offline.
+- Message translation stays **on-device**; adding UI languages ≠ adding ML models.
+
+### Free / low-cost security audit path (Q.55)
+
+| Step | Cost | Action |
+|------|------|--------|
+| 1 | $0 | Keep **CodeQL** + Dependabot + CI (done) |
+| 2 | $0 | Add **OWASP ZAP** baseline scan in GitHub Actions on staging API |
+| 3 | $0 | Publish **`SECURITY.md`** + `memory/SECURITY_MODEL.md` user summary |
+| 4 | $0 | **`disclose.io`** responsible-disclosure policy |
+| 5 | $0 | **OWASP ASVS** self-checklist (founder + contributor) |
+| 6 | Grant | **Mozilla MOSS** / NLnet — apply when OSS traction visible |
+| 7 | $0 | **University capstone** pen-test project (contact CS departments) |
+| Paid | $$$ | NCC / Cure53 / Trail of Bits — post-revenue |
+
+---
+
+### Q serial backlog (do in this exact order)
+
+#### Wave 1 — Public face & device basics (low risk)
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 1 | **Q.1** | **Public website reopen** — remove password gate for visitors; hero = Under construction; hide APK/EXE/download CTAs; add **Updates / Stage** block (version, “private development”, no beta); keep Privacy/Terms; `REACT_APP_SITE_UNDER_CONSTRUCTION` semantics updated | Founder+git | [ ] |
+| 2 | **Q.2** | **OS language on first launch** — installed clients use `navigator.language` until user picks in Settings; persist choice | git | [ ] |
+| 3 | **Q.3** | **Tablet & large-screen layouts** — responsive chat split-pane (list + thread), safe areas; test landscape; allow auto-rotate on mobile (portrait default, landscape chat OK) | git | [ ] |
+| 4 | **Q.4** | **Auto-update** — Electron `electron-updater` + release feed; Android in-app update check (Firebase App Distribution / future Play Core) | Founder+git | [ ] |
+
+#### Wave 2 — Policy & privacy controls (backend + settings)
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 5 | **Q.5** | **Per-user retention timer** — 1h/2h/4h/8h/24h/7d/30d; Mongo TTL + UI in Settings; default 24h | git | [ ] |
+| 6 | **Q.6** | **Privacy toggles** — read receipts on/off · typing on/off · last seen granularity · profile photo visibility | git | [ ] |
+
+#### Wave 3 — Chat table stakes (highest daily-use ROI)
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 7 | **Q.7** | **Reply / quote message** | git | [ ] |
+| 8 | **Q.8** | **Delete for everyone / unsend** (within retention window) | git | [ ] |
+| 9 | **Q.9** | **Edit sent message** (time-limited, e.g. 15 min) | git | [ ] |
+| 10 | **Q.10** | **Forward message** (to mutual contacts / groups only) | git | [ ] |
+| 11 | **Q.11** | **Message reactions** | git | [ ] |
+| 12 | **Q.12** | **Pin chats** | git | [ ] |
+| 13 | **Q.13** | **Archive chats** | git | [ ] |
+| 14 | **Q.14** | **Search inside a chat** | git | [ ] |
+| 15 | **Q.15** | **Global message search** (respect retention; indexed ciphertext or client cache policy TBD) | git | [ ] |
+
+#### Wave 4 — Rich chat media & composer
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 16 | **Q.16** | **Link previews** (privacy-safe: client fetch or opt-in; no server plaintext) | git | [ ] |
+| 17 | **Q.17** | **@mentions in groups** | git | [ ] |
+| 18 | **Q.18** | **Rich text** (bold, italic, lists — lightweight markdown) | git | [ ] |
+| 19 | **Q.19** | **In-chat media gallery** | git | [ ] |
+| 20 | **Q.20** | **Voice note scrubber + playback speed** | git | [ ] |
+| 21 | **Q.21** | **Video messages** (short clip attach, not live call) | git | [ ] |
+| 22 | **Q.22** | **GIF / stickers** — start with bundled sticker pack + Tenor/Giphy opt-in (network toggle) | git | [ ] |
+| 23 | **Q.23** | **Polls** (group-only) | git | [ ] |
+| 24 | **Q.24** | **Location sharing** (one-shot map pin, E2E) — **no** contact-card share | git | [ ] |
+
+#### Wave 5 — Groups
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 25 | **Q.25** | **Admin roles & permissions** (owner/admin/member; who can post/add) | git | [ ] |
+| 26 | **Q.26** | **Group photo + description** | git | [ ] |
+| 27 | **Q.27** | **Member list polish** (admin badges, joined date) | git | [ ] |
+| 28 | **Q.28** | **Group topics / threads** (Telegram-style topics) | git | [ ] |
+| 29 | **Q.29** | **Large groups** (raise cap toward 50; perf test) | git | [ ] |
+| 30 | **Q.30** | **Broadcast lists** (one-to-many to contact subsets) | git | [ ] |
+
+#### Wave 6 — Calls & realtime (no screen share)
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 31 | **Q.31** | **TURN off-LAN proof** — cellular ↔ Wi‑Fi matrix (TASK P.6 / J) | Founder | [ ] |
+| 32 | **Q.32** | **Call quality indicator + reconnect UX** | git | [ ] |
+| 33 | **Q.33** | **Raise hand + mute all** (group calls) | git | [ ] |
+| 34 | **Q.34** | **Group call signaling E2E** — close cleartext SDP fallback (TASK O.2 finish) | git | [ ] |
+| 35 | **Q.35** | **SFU Phase B** — group calls 9+ (mediasoup; mesh cap 8 today) | git | [ ] |
+
+#### Wave 7 — Account, profile, onboarding
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 36 | **Q.36** | **Email verification** for password register (activation link) | git | [ ] |
+| 37 | **Q.37** | **Display name** (separate from locked username) | git | [ ] |
+| 38 | **Q.38** | **Profile bio / about** | git | [ ] |
+| 39 | **Q.39** | **In-app FAQ / help center** (offline markdown) | git | [ ] |
+| 40 | **Q.40** | **Passkeys / WebAuthn** (optional login) | git | [ ] |
+| 41 | **Q.41** | **Account recovery key** (show-once backup codes for vault path) | git | [ ] |
+
+#### Wave 8 — Notifications (incl. desktop)
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 42 | **Q.42** | **Desktop notifications polish** — tray badge, focus on click | git | [ ] |
+| 43 | **Q.43** | **Reply from notification** (Android first) | git | [ ] |
+| 44 | **Q.44** | **Per-chat mute durations** + Android notification channels | git | [ ] |
+| 45 | **Q.45** | **Custom notification sounds** (optional) | git | [ ] |
+
+#### Wave 9 — Translation & languages
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 46 | **Q.46** | **Desktop translation QA** + model-download progress UI | Founder+git | [ ] |
+| 47 | **Q.47** | **UI language pack #2** — add `fr` + `de` as lazy-loaded JSON (pattern for more) | git | [ ] |
+| 48 | **Q.48** | **On-device message translate** — expand pairs (e.g. `pt`, `it`, `fr`, `de`) per platform capability | git | [ ] |
+
+#### Wave 10 — Security & crypto hardening
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 49 | **Q.49** | **App lock** — PIN / biometric on cold start | git | [ ] |
+| 50 | **Q.50** | **Hardware-backed device wrap** finish (TASK O.3) | git | [ ] |
+| 51 | **Q.51** | **Multi-device / linked devices** (Signal-style) | git | [ ] |
+| 52 | **Q.52** | **Sealed sender** | git | [ ] |
+| 53 | **Q.53** | **Key-change warnings** (prominent, no QR) | git | [ ] |
+| 54 | **Q.54** | **Retire legacy RSA send path** (decrypt-only until migration complete) | git | [ ] |
+| 55 | **Q.55** | **Post-quantum hybrid** — bump libsignal when upstream PQXDH available | git | [ ] |
+
+#### Wave 11 — Trust, ops, distribution
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 56 | **Q.56** | **OWASP ZAP CI** + security smoke | git | [ ] |
+| 57 | **Q.57** | **Public threat-model page** (user-readable) | git | [ ] |
+| 58 | **Q.58** | **disclose.io** + security.txt | Founder | [ ] |
+| 59 | **Q.59** | **Crash reporting opt-in** (Firebase Crashlytics or Sentry) | git | [ ] |
+| 60 | **Q.60** | **Status page** (health + incident notes) | Founder | [ ] |
+| 61 | **Q.61** | **Code signing** — Windows Authenticode + Mac notarize (TASK P.8) | Founder | [ ] |
+| 62 | **Q.62** | **Google Play public listing** (TASK N.8 / P.9) | Founder | [ ] |
+| 63 | **Q.63** | **iOS App Store** (TASK K) | Founder | [ ] |
+
+#### Wave 12 — Resume full QA
+
+| # | ID | Subtask | Owner | Status |
+|---|-----|---------|-------|--------|
+| 64 | **Q.64** | **TASK J full device matrix** on release candidate after Q.1–Q.15 minimum | Founder | [ ] |
+
+**Estimated calendar:** Waves 1–3 ≈ 8–12 weeks solo; full Q.1–Q.63 ≈ 6–12 months at one-task-at-a-time pace with contributors on isolated subtasks.
 
 ---
 
@@ -686,6 +865,8 @@ yarn test:ci
 | 2026-06-27 | **O.6 closed** — Atlas allowlist: `34.140.240.41/32` + `86.166.40.195/32` only; `0.0.0.0/0` removed; `/api/health` mongo+redis ok |
 | 2026-06-27 | **API redeploy** — `ssc-api-00022-jzs` (janitor loop fix + latest `main`); health ok post Atlas lockdown |
 | 2026-06-27 | **v1.0.9** — TASK O client rebuild (APK build 10 + Windows); PRODUCT_BLUEPRINT v2.2; housekeeping notes; full founder audit |
+| 2026-06-28 | **TASK Q added** — 63-step serial expansion wave (founder directive): web reopen, UX parity, groups, calls, privacy, crypto, trust; locked: no QR, no downloads on site, retention picker 1h–30d |
+| 2026-06-28 | **Desktop translation** shipped (`4a949af`); **protobufjs** pinned 7.6.1 (`7361c24`) |
 | 2026-06-24 | **TASK D complete** — permissions, duplex audio, ringtone; frontend 55 tests |
 | 2026-06-24 | **TASK E complete** — voice/images/files; frontend 62 tests |
 | 2026-06-24 | **TASK F complete** — block/mute/groups; frontend 67 tests |
