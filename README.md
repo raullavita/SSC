@@ -1,5 +1,6 @@
 # SSC — Super Secure Chat
 
+[![CI](https://github.com/raullavita/SSC/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/raullavita/SSC/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![Install only](https://img.shields.io/badge/chat-install--only%20(Android%20%2B%20Desktop)-0A0A0A)](CONTRIBUTING.md)
 
