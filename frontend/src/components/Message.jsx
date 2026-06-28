@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale } from '../context/LocaleContext';
 import { Translate, Paperclip, Check, Checks, Play, Pause, DownloadSimple } from '@phosphor-icons/react';
 import { decryptBytes } from '../lib/crypto';
@@ -20,6 +20,7 @@ import ImagePreviewModal from './ImagePreviewModal';
 import CountdownBadge from './CountdownBadge';
 import { useConversationLongPress } from './ConversationActionsSheet';
 import { isMessageDeleted } from '../lib/messageDelete';
+import { groupReactionsForDisplay } from '../lib/messageReactions';
 
 export default function Message({
   msg, isMine, myUserId, privateKey, peerUserId = null, autoTranslate, translationEnabled = false,
@@ -28,6 +29,7 @@ export default function Message({
   readReceiptsEnabled = true,
   quotedPreview = null,
   onLongPress,
+  onReactionToggle,
 }) {
   const [plaintext, setPlaintext] = useState(null);
   const [translated, setTranslated] = useState(null);
@@ -39,6 +41,10 @@ export default function Message({
   const [decryptAttempt, setDecryptAttempt] = useState(0);
   const { t } = useLocale();
   const deleted = isMessageDeleted(msg);
+  const reactionGroups = useMemo(
+    () => groupReactionsForDisplay(msg.reactions || [], myUserId),
+    [msg.reactions, myUserId],
+  );
 
   const retryDecrypt = useCallback(() => {
     setError(null);
@@ -247,6 +253,29 @@ export default function Message({
           </>
         )}
       </div>
+      {!deleted && reactionGroups.length > 0 && (
+        <div
+          className={`flex flex-wrap gap-1 mt-1 max-w-[78%] ${isMine ? 'self-end justify-end' : 'self-start justify-start'}`}
+          data-testid={`reactions-${msg.message_id}`}
+        >
+          {reactionGroups.map((g) => (
+            <button
+              key={g.emoji}
+              type="button"
+              onClick={() => onReactionToggle?.(msg, g.emoji)}
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${
+                g.mine
+                  ? 'border-[#00E5FF]/60 bg-[#00E5FF]/10'
+                  : 'border-[#27272A] bg-[#1A1A1A]'
+              }`}
+              data-testid={`reaction-pill-${msg.message_id}-${g.emoji}`}
+            >
+              <span>{g.emoji}</span>
+              {g.count > 1 && <span className="font-mono text-[10px] text-[#A1A1AA]">{g.count}</span>}
+            </button>
+          ))}
+        </div>
+      )}
       <div className={`mt-1 flex items-center gap-2 text-[10px] font-mono text-[#A1A1AA] tracking-wider ${isMine ? 'justify-end' : 'justify-start'}`}>
         <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         {msg.edited_at && (

@@ -8,7 +8,8 @@ from core.contact_helpers import are_contacts
 from core.contact_graph import is_blocked_pair
 from core.database import db
 from core.logging_config import logger
-from core.models import EditMessageIn, MarkReadIn, SendMessageIn, UnsendMessageIn
+from core.models import EditMessageIn, MarkReadIn, MessageReactionIn, SendMessageIn, UnsendMessageIn
+from core.message_reactions import set_message_reaction
 from core.message_delete import unsend_message_for_everyone
 from core.message_edit import edit_message_text
 from core.push_helpers import send_push_for_message
@@ -162,6 +163,27 @@ async def edit_message(body: EditMessageIn, current=Depends(get_current_user)):
     await bump_conversation_activity(body.conversation_id)
     await broadcast_message_edited_to_conversation(body.conversation_id, msg)
     return project_message_for_viewer(msg, current["user_id"])
+
+
+@router.post("/reactions")
+async def react_to_message(body: MessageReactionIn, current=Depends(get_current_user)):
+    if not rate_limit_check(f"msg-react:{current['user_id']}", max_hits=60, window_sec=60):
+        logger.warning(f"rate-limit message-reaction user={current['user_id']}")
+        raise HTTPException(429, "Too many reactions, please slow down")
+
+    result = await set_message_reaction(
+        user_id=current["user_id"],
+        conversation_id=body.conversation_id,
+        message_id=body.message_id,
+        emoji=body.emoji,
+    )
+    await broadcast_to_conversation(body.conversation_id, {
+        "type": "message-reaction",
+        "conversation_id": body.conversation_id,
+        "message_id": result["message_id"],
+        "reactions": result["reactions"],
+    })
+    return result
 
 
 @router.post("/read")

@@ -175,7 +175,10 @@ async def list_messages(conversation_id: str, current=Depends(get_current_user))
     msgs = await db.messages.find(
         {"conversation_id": conversation_id}, {"_id": 0}
     ).sort("created_at", 1).to_list(500)
-    return [project_message_for_viewer(m, current["user_id"]) for m in msgs]
+    projected = [project_message_for_viewer(m, current["user_id"]) for m in msgs]
+    from core.message_reactions import attach_reactions_to_messages
+
+    return await attach_reactions_to_messages(conversation_id, projected)
 
 
 @router.get("/{conversation_id}/reads")

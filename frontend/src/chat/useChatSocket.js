@@ -20,6 +20,7 @@ import { handleIncomingCallOffer, reportIncomingCallOfferError } from './incomin
 import { readReceiptsEnabled, typingIndicatorsEnabled } from '../lib/privacySettings';
 import { applyMessageDeleted } from '../lib/messageDelete';
 import { applyMessageEdited } from '../lib/messageEdit';
+import { applyMessageReactionUpdate } from '../lib/messageReactions';
 
 export function useChatSocket({
   user,
@@ -100,6 +101,10 @@ export function useChatSocket({
             setMessages((cur) => applyMessageEdited(cur, edited));
           }
           loadConversations();
+        } else if (data.type === 'message-reaction') {
+          if (data.conversation_id === activeId) {
+            setMessages((cur) => applyMessageReactionUpdate(cur, data));
+          }
         } else if (data.type === 'read') {
           if (readReceiptsEnabled(user) && data.conversation_id === activeId) {
             setReads((cur) => {

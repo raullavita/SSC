@@ -97,6 +97,12 @@ class EditMessageIn(BaseModel):
     distribution_id: Optional[str] = None
 
 
+class MessageReactionIn(BaseModel):
+    conversation_id: str
+    message_id: str
+    emoji: Optional[str] = None
+
+
 class TwoFASetupVerifyIn(BaseModel):
     code: str
 

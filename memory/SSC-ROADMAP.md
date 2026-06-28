@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-29 (TASK Q expansion wave · v1.0.12 · Q.10 forward message)
+**Updated:** 2026-06-29 (TASK Q expansion wave · v1.0.12 · Q.11 message reactions)
 **Repo:** `C:\Users\smash\SSC-main` · **GitHub:** https://github.com/raullavita/SSC (public, AGPL-3.0)
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.10 done** → next **Q.11** | [~] Q.11 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.11 done** → next **Q.12** | [~] Q.12 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -279,7 +279,7 @@
 | 8 | **Q.8** | **Delete for everyone / unsend** (within retention window) | git | [x] |
 | 9 | **Q.9** | **Edit sent message** (time-limited, e.g. 15 min) | git | [x] |
 | 10 | **Q.10** | **Forward message** (to mutual contacts / groups only) | git | [x] |
-| 11 | **Q.11** | **Message reactions** | git | [ ] |
+| 11 | **Q.11** | **Message reactions** | git | [x] |
 | 12 | **Q.12** | **Pin chats** | git | [ ] |
 | 13 | **Q.13** | **Archive chats** | git | [ ] |
 | 14 | **Q.14** | **Search inside a chat** | git | [ ] |

@@ -67,6 +67,7 @@ import {
 } from '../lib/messageForward';
 import { sendForwardToConversation } from '../chat/forwardMessageSend';
 import { toastMessagingGateFailure } from '../chat/messagingErrors';
+import { applyMessageReactionUpdate, canReactToMessage } from '../lib/messageReactions';
 
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
@@ -313,6 +314,20 @@ export default function ChatHome() {
   const onMessageLongPress = useCallback((msg) => {
     setMessageActionTarget(msg);
   }, []);
+
+  const onMessageReaction = useCallback(async (msg, emoji) => {
+    if (!activeId || !msg) return;
+    try {
+      const { data } = await api.post('/messages/reactions', {
+        conversation_id: activeId,
+        message_id: msg.message_id,
+        emoji,
+      });
+      setMessages((cur) => applyMessageReactionUpdate(cur, data));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('messageReactionFailed'));
+    }
+  }, [activeId, setMessages, t]);
 
   const onReplyToMessage = useCallback((msg) => {
     setReplyTo(msg);
@@ -1155,6 +1170,7 @@ export default function ChatHome() {
                   readReceiptsEnabled={readReceiptsEnabled(user)}
                   quotedPreview={quoteByMessageId[m.message_id] || null}
                   onLongPress={onMessageLongPress}
+                  onReactionToggle={onMessageReaction}
                 />
               ))}
               {typingFrom && (
@@ -1400,9 +1416,11 @@ export default function ChatHome() {
         onForward={onForwardMessageRequest}
         onEdit={onEditMessageRequest}
         onDelete={onDeleteMessageRequest}
+        onReact={onMessageReaction}
         showForward={canForwardMessage(messageActionTarget)}
         showEdit={canEditMessage(messageActionTarget, user?.user_id)}
         showDelete={canUnsendMessage(messageActionTarget, user?.user_id)}
+        showReact={canReactToMessage(messageActionTarget)}
       />
 
       <ForwardMessageModal

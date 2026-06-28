@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
 import { ArrowBendUpLeft, ArrowBendUpRight, PencilSimple, Trash, X } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
+import { ALLOWED_REACTIONS } from '../lib/messageReactions';
 
 export default function MessageActionsSheet({
-  open, message, onClose, onReply, onForward, onEdit, onDelete,
-  showForward = false, showEdit = false, showDelete = false,
+  open, message, onClose, onReply, onForward, onEdit, onDelete, onReact,
+  showForward = false, showEdit = false, showDelete = false, showReact = false,
 }) {
   const { t } = useLocale();
 
@@ -74,6 +75,25 @@ export default function MessageActionsSheet({
             <Trash size={18} />
             {t('messageActionDelete')}
           </button>
+        )}
+        {showReact && (
+          <div
+            className="mt-3 pt-3 border-t border-[#27272A] flex justify-between gap-1"
+            data-testid="message-reaction-picker"
+          >
+            {ALLOWED_REACTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                data-testid={`message-reaction-${emoji}`}
+                onClick={() => { onClose?.(); onReact?.(message, emoji); }}
+                className="flex-1 py-2 text-lg rounded-md hover:bg-[#1A1A1A] active:scale-95 transition"
+                aria-label={t('messageReactionAdd', { emoji })}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>

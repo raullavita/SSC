@@ -121,4 +121,21 @@ describe('useChatSocket - signaling-error handling', () => {
     expect(next[0].ciphertext).toBe('new');
     expect(next[0].edited_at).toBeTruthy();
   });
+
+  it('applies message-reaction update in active conversation', () => {
+    const setMessages = jest.fn();
+    render(<TestComponent hookArgs={{ ...mockArgs, setMessages }} />);
+
+    global.mockSocketOptions.onMessage({
+      type: 'message-reaction',
+      conversation_id: 'conv_456',
+      message_id: 'm_1',
+      reactions: [{ user_id: 'peer_789', emoji: '👍' }],
+    });
+
+    expect(setMessages).toHaveBeenCalled();
+    const updater = setMessages.mock.calls[0][0];
+    const next = updater([{ message_id: 'm_1', reactions: [] }]);
+    expect(next[0].reactions).toHaveLength(1);
+  });
 });
