@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images, FilmStrip } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -28,6 +28,7 @@ import ConversationActionsSheet, { ConversationListRow } from '../components/Con
 import ChatMessageSearchBar from '../components/ChatMessageSearchBar';
 import GlobalMessageSearchModal from '../components/GlobalMessageSearchModal';
 import ChatMediaGalleryModal from '../components/ChatMediaGalleryModal';
+import VideoRecordPreview from '../components/VideoRecordPreview';
 import { useGlobalMessageSearch } from '../chat/useGlobalMessageSearch';
 import { linkPreviewsEnabled, subscribeLinkPreviewPrefs } from '../lib/linkPreviewPrefs';
 import { clearLinkPreviewCache } from '../lib/linkPreviewFetch';
@@ -128,6 +129,7 @@ export default function ChatHome() {
   const [confirmRemoveUid, setConfirmRemoveUid] = useState(null);
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
   const [mediaGalleryOpen, setMediaGalleryOpen] = useState(false);
+  const [videoPreviewStream, setVideoPreviewStream] = useState(null);
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -495,6 +497,10 @@ export default function ChatHome() {
     startRecording,
     cancelRecording,
     stopRecordingAndSend,
+    startVideoRecordingSession,
+    cancelVideoRecording,
+    stopVideoRecordingAndSend,
+    setVideoRecordingEndHandler,
   } = useMessagingSend({
     activeConv,
     activeId,
@@ -563,6 +569,45 @@ export default function ChatHome() {
     startRecording,
     stopRecordingAndSend,
     cancelRecording,
+  });
+
+  const clearVideoPreview = useCallback(() => {
+    setVideoPreviewStream(null);
+  }, []);
+
+  useEffect(() => {
+    setVideoRecordingEndHandler(() => {
+      clearVideoPreview();
+    });
+    return () => setVideoRecordingEndHandler(null);
+  }, [setVideoRecordingEndHandler, clearVideoPreview]);
+
+  const startVideoWithPreview = useCallback(async () => {
+    const session = await startVideoRecordingSession();
+    if (session?.stream) setVideoPreviewStream(session.stream);
+    return session;
+  }, [startVideoRecordingSession]);
+
+  const stopVideoWithPreview = useCallback(async (session) => {
+    clearVideoPreview();
+    await stopVideoRecordingAndSend(session);
+  }, [clearVideoPreview, stopVideoRecordingAndSend]);
+
+  const cancelVideoWithPreview = useCallback(() => {
+    clearVideoPreview();
+    cancelVideoRecording();
+  }, [clearVideoPreview, cancelVideoRecording]);
+
+  const {
+    isRecording: isVideoRecording,
+    onVoicePointerDown: onVideoPointerDown,
+    onVoicePointerUp: onVideoPointerUp,
+    onVoicePointerCancel: onVideoPointerCancel,
+    onVoiceClick: onVideoClick,
+  } = useHoldToRecord({
+    startRecording: startVideoWithPreview,
+    stopRecordingAndSend: stopVideoWithPreview,
+    cancelRecording: cancelVideoWithPreview,
   });
 
   const onSendText = (e) => {
@@ -1454,12 +1499,27 @@ export default function ChatHome() {
               onBulletList={() => applyComposerFormat('bullet')}
               onNumberedList={() => applyComposerFormat('numbered')}
             />
+            <VideoRecordPreview stream={videoPreviewStream} />
             <form onSubmit={onSendText} className="chat-composer safe-bottom safe-x border-t border-[#27272A] px-2 md:px-3 py-2 flex items-end gap-2">
-              <input ref={fileInputRef} type="file" hidden onChange={onFileChange} data-testid="file-input" />
+              <input ref={fileInputRef} type="file" accept="image/*,video/*" hidden onChange={onFileChange} data-testid="file-input" />
               <button type="button" onClick={onPickFile} disabled={uploadBusy || !canMessagePeer} data-testid="attach-button"
                 className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
                 title={uploadBusy ? t('uploadInProgress') : undefined}>
                 <Paperclip size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={onVideoClick}
+                onPointerDown={onVideoPointerDown}
+                onPointerUp={onVideoPointerUp}
+                onPointerCancel={onVideoPointerCancel}
+                onContextMenu={(e) => e.preventDefault()}
+                data-testid="video-note-button"
+                disabled={!canMessagePeer || uploadBusy}
+                title={t('videoHoldToRecord')}
+                className={`w-11 h-11 rounded-md tac-border flex items-center justify-center shrink-0 select-none touch-none ${isVideoRecording ? 'bg-[#FF3B30] text-white' : 'bg-[#121212] active:bg-[#1A1A1A]'}`}
+              >
+                <FilmStrip size={18} />
               </button>
               <button
                 type="button"

@@ -16,6 +16,7 @@ import RichTextContent from './RichTextContent';
 import { extractFirstPreviewUrl } from '../lib/linkPreview';
 import LinkPreviewCard from './LinkPreviewCard';
 import VoiceNotePlayer from './VoiceNotePlayer';
+import VideoNotePlayer from './VideoNotePlayer';
 
 function HighlightedText({ text, query }) {
   const parts = splitTextForHighlight(text, query);
@@ -264,6 +265,15 @@ export default function Message({
               ) : (
                 <LegacyAttachmentPlaceholder kind="voice" />
               )
+            ) : msg.message_type === 'video' && msg.attachment_id ? (
+              attachmentEncrypted ? (
+                <EncryptedVideoAttachment
+                  msg={msg} fileId={msg.attachment_id}
+                  privateKey={privateKey} myUserId={myUserId} peerUserId={peerUserId}
+                />
+              ) : (
+                <LegacyAttachmentPlaceholder kind="video" />
+              )
             ) : (
               <div>
                 <RichTextContent
@@ -408,6 +418,15 @@ function EncryptedFileAttachment({ msg, fileId, caption, privateKey, myUserId, p
   );
 }
 
+function EncryptedVideoAttachment({ msg, fileId, privateKey, myUserId, peerUserId }) {
+  const { objectUrl, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
+
+  if (loading) return <span className="font-mono text-xs text-[#A1A1AA]">decrypting video…</span>;
+  if (error) return <span className="font-mono text-xs text-[#FF3B30]">[{error === 'NO_KEY' ? 'no key for video' : 'unable to decrypt video'}]</span>;
+
+  return <VideoNotePlayer objectUrl={objectUrl} fileId={fileId} />;
+}
+
 function EncryptedVoiceAttachment({ msg, fileId, privateKey, myUserId, peerUserId }) {
   const { objectUrl, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
 
@@ -421,7 +440,7 @@ function LegacyAttachmentPlaceholder({ kind, caption, searchQuery = '' }) {
   return (
     <div className="font-mono text-xs text-[#A1A1AA]" data-testid={`legacy-attachment-${kind}`}>
       loading attachment…
-      {caption && kind !== 'voice' && (
+      {caption && kind !== 'voice' && kind !== 'video' && (
         <div className="mt-1 text-sm text-[#F0F0F0]">
           {searchQuery.trim() ? <HighlightedText text={caption} query={searchQuery} /> : caption}
         </div>

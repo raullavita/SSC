@@ -15,6 +15,13 @@ import {
   startVoiceRecording,
   voiceFilenameForMime,
 } from '../lib/voiceRecorder';
+import {
+  MAX_VIDEO_ATTACH_BYTES,
+  MIN_VIDEO_BLOB_BYTES,
+  resolveAttachmentMessageType,
+  startVideoRecording,
+  videoFilenameForMime,
+} from '../lib/videoRecorder';
 import { ensureMediaPermissions } from '../lib/mediaPermissions';
 import { isPeerBlocked } from '../lib/contactFilters';
 import { resolveMentionedUserIds } from '../lib/groupMentions';
@@ -39,6 +46,8 @@ export function useMessagingSend({
   t,
 }) {
   const voiceRecordingRef = useRef(null);
+  const videoRecordingRef = useRef(null);
+  const onVideoRecordingEndRef = useRef(null);
 
   const runMessagingGate = useCallback(async () => {
     const gate = await evaluateMessagingGate({
@@ -303,7 +312,7 @@ export function useMessagingSend({
 
   const attachFile = useCallback(async (file, { fromPaste = false } = {}) => {
     if (!file || !activeConv || uploadBusy) return;
-    if (file.size > 25 * 1024 * 1024) {
+    if (file.size > MAX_VIDEO_ATTACH_BYTES) {
       toast.error(t('fileTooLarge'));
       return;
     }
@@ -311,9 +320,9 @@ export function useMessagingSend({
     if (!gate) return;
     setUploadBusy(true);
     try {
-      const type = (file.type || '').startsWith('image/') ? 'image' : 'file';
-      const mime = file.type || (type === 'image' ? 'image/png' : 'application/octet-stream');
-      const name = file.name || (type === 'image' ? 'screenshot.png' : 'attachment');
+      const type = resolveAttachmentMessageType(file.type);
+      const mime = file.type || (type === 'image' ? 'image/png' : type === 'video' ? 'video/webm' : 'application/octet-stream');
+      const name = file.name || (type === 'image' ? 'screenshot.png' : type === 'video' ? 'video.webm' : 'attachment');
       const { fileId, attachmentEnc } = await uploadEncryptedAttachment(file, name, mime);
       await sendMessage(name, type, fileId, attachmentEnc);
       if (fromPaste && type === 'image') {
@@ -388,6 +397,83 @@ export function useMessagingSend({
     await finishVoiceRecording(session);
   }, [finishVoiceRecording]);
 
+  const finishVideoRecording = useCallback(async (session) => {
+    if (!session) return;
+    session.stop();
+    try {
+      const { blob, mimeType } = await session.done;
+      onVideoRecordingEndRef.current?.();
+      if (blob.size < MIN_VIDEO_BLOB_BYTES) {
+        toast.error(t('videoNoteTooShort'));
+        return;
+      }
+      const gate = await runMessagingGate();
+      if (!gate) return;
+      setUploadBusy(true);
+      try {
+        const filename = videoFilenameForMime(mimeType);
+        const { fileId, attachmentEnc } = await uploadEncryptedAttachment(blob, filename, mimeType);
+        await sendMessage('', 'video', fileId, attachmentEnc);
+      } catch {
+        toast.error(t('videoNoteFailed'));
+      } finally {
+        setUploadBusy(false);
+      }
+    } catch {
+      onVideoRecordingEndRef.current?.();
+      toast.error(t('videoNoteFailed'));
+    }
+  }, [runMessagingGate, sendMessage, setUploadBusy, t, uploadEncryptedAttachment]);
+
+  const startVideoRecordingSession = useCallback(async () => {
+    if (videoRecordingRef.current) return null;
+    const gate = await runMessagingGate();
+    if (!gate) return null;
+    const ok = await ensureMediaPermissions({ audio: true, video: true }, { t });
+    if (!ok) return null;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+      });
+      const session = startVideoRecording(stream, {
+        onMaxDuration: () => {
+          const active = videoRecordingRef.current;
+          if (!active) return;
+          videoRecordingRef.current = null;
+          onVideoRecordingEndRef.current?.();
+          toast.info(t('videoNoteMaxDuration'));
+          finishVideoRecording(active);
+        },
+      });
+      videoRecordingRef.current = session;
+      return session;
+    } catch {
+      toast.error(t('cameraPermissionDenied'));
+      return null;
+    }
+  }, [finishVideoRecording, runMessagingGate, t]);
+
+  const cancelVideoRecording = useCallback(() => {
+    const session = videoRecordingRef.current;
+    if (!session) return;
+    videoRecordingRef.current = null;
+    onVideoRecordingEndRef.current?.();
+    session.stop();
+    session.done.catch(() => {});
+  }, []);
+
+  const stopVideoRecordingAndSend = useCallback(async (existingSession) => {
+    const session = existingSession || videoRecordingRef.current;
+    if (!session) return;
+    videoRecordingRef.current = null;
+    await finishVideoRecording(session);
+  }, [finishVideoRecording]);
+
+  const setVideoRecordingEndHandler = useCallback((fn) => {
+    onVideoRecordingEndRef.current = fn;
+  }, []);
+
   return {
     voiceRecordingRef,
     sendMessage,
@@ -396,5 +482,9 @@ export function useMessagingSend({
     startRecording,
     cancelRecording,
     stopRecordingAndSend,
+    startVideoRecordingSession,
+    cancelVideoRecording,
+    stopVideoRecordingAndSend,
+    setVideoRecordingEndHandler,
   };
 }
