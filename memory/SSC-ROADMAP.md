@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-29 (TASK Q expansion wave · v1.0.12 · Q.16 link previews)
+**Updated:** 2026-06-29 (TASK Q expansion wave · v1.0.12 · Q.17 @mentions in groups)
 **Repo:** `C:\Users\smash\SSC-main` · **GitHub:** https://github.com/raullavita/SSC (public, AGPL-3.0)
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.15 done** → next **Q.16** | [~] Q.16 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.17 done** → next **Q.18** | [~] Q.18 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -289,8 +289,8 @@
 
 | # | ID | Subtask | Owner | Status |
 |---|-----|---------|-------|--------|
-| 16 | **Q.16** | **Link previews** (privacy-safe: client fetch or opt-in; no server plaintext) | git | [ ] |
-| 17 | **Q.17** | **@mentions in groups** | git | [ ] |
+| 16 | **Q.16** | **Link previews** (privacy-safe: client fetch or opt-in; no server plaintext) | git | [x] |
+| 17 | **Q.17** | **@mentions in groups** | git | [x] |
 | 18 | **Q.18** | **Rich text** (bold, italic, lists — lightweight markdown) | git | [ ] |
 | 19 | **Q.19** | **In-chat media gallery** | git | [ ] |
 | 20 | **Q.20** | **Voice note scrubber + playback speed** | git | [ ] |

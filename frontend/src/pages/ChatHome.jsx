@@ -11,6 +11,7 @@ import { subscribeNativePush } from '../lib/native-push';
 import Message from '../components/Message';
 import MessageActionsSheet from '../components/MessageActionsSheet';
 import ReplyComposerBar from '../components/ReplyComposerBar';
+import GroupMentionPicker from '../components/GroupMentionPicker';
 import EditMessageModal from '../components/EditMessageModal';
 import ForwardMessageModal from '../components/ForwardMessageModal';
 import PanicButton from '../components/PanicButton';
@@ -74,6 +75,11 @@ import {
 import { sendForwardToConversation } from '../chat/forwardMessageSend';
 import { toastMessagingGateFailure } from '../chat/messagingErrors';
 import { applyMessageReactionUpdate, canReactToMessage } from '../lib/messageReactions';
+import {
+  filterMentionCandidates,
+  getActiveMentionAtCursor,
+  insertMentionAt,
+} from '../lib/groupMentions';
 
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
@@ -95,6 +101,8 @@ export default function ChatHome() {
   const { conversationId } = useParams();
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
+  const [composerCursor, setComposerCursor] = useState(0);
+  const messageInputRef = useRef(null);
   const [autoTranslate, setAutoTranslate] = useState(false);
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [translationOnDevice, setTranslationOnDevice] = useState(false);
@@ -939,11 +947,46 @@ export default function ChatHome() {
     goToConversation(hit.conversation_id);
   }, [globalSearchQ, goToConversation, setMessageFilter]);
 
+  const syncComposerCursor = useCallback(() => {
+    const el = messageInputRef.current;
+    if (el) setComposerCursor(el.selectionStart ?? draft.length);
+  }, [draft.length]);
+
+  const mentionActive = useMemo(() => {
+    if (!isGroup || !draft) return null;
+    return getActiveMentionAtCursor(draft, composerCursor, activeConv?.members || []);
+  }, [isGroup, draft, composerCursor, activeConv]);
+
+  const mentionCandidates = useMemo(() => {
+    if (!mentionActive) return [];
+    return filterMentionCandidates(
+      mentionActive.query,
+      activeConv?.members || [],
+      user?.user_id,
+    );
+  }, [mentionActive, activeConv, user]);
+
+  const onPickMention = useCallback((member) => {
+    if (mentionActive?.startIndex == null || !member?.username) return;
+    const next = insertMentionAt(draft, mentionActive.startIndex, member.username);
+    setDraft(next);
+    const cursor = mentionActive.startIndex + member.username.length + 2;
+    setComposerCursor(cursor);
+    requestAnimationFrame(() => {
+      const el = messageInputRef.current;
+      if (el) {
+        el.focus();
+        el.setSelectionRange(cursor, cursor);
+      }
+    });
+  }, [draft, mentionActive]);
+
   const onDraftChange = (v) => {
     setDraft(v);
     if (activeId && socketRef.current && typingIndicatorsEnabled(user)) {
       socketRef.current.send({ type: 'typing', conversation_id: activeId });
     }
+    requestAnimationFrame(syncComposerCursor);
   };
 
   const renderSidebarConversationRow = useCallback((c) => {
@@ -1313,6 +1356,8 @@ export default function ChatHome() {
                   isSearchMatch={!!messageFilter.trim() && searchMatchIds.includes(m.message_id)}
                   isActiveSearchMatch={m.message_id === activeSearchMatchId}
                   linkPreviewsEnabled={linkPreviewOn}
+                  isGroup={isGroup}
+                  groupMembers={activeConv?.members || []}
                 />
               ))}
               {typingFrom && (
@@ -1328,6 +1373,9 @@ export default function ChatHome() {
               </div>
             )}
             <ReplyComposerBar quote={replyComposerQuote} onCancel={() => setReplyTo(null)} />
+            {isGroup && mentionCandidates.length > 0 && (
+              <GroupMentionPicker candidates={mentionCandidates} onPick={onPickMention} />
+            )}
             <form onSubmit={onSendText} className="chat-composer safe-bottom safe-x border-t border-[#27272A] px-2 md:px-3 py-2 flex items-center gap-2">
               <input ref={fileInputRef} type="file" hidden onChange={onFileChange} data-testid="file-input" />
               <button type="button" onClick={onPickFile} disabled={uploadBusy || !canMessagePeer} data-testid="attach-button"
@@ -1350,8 +1398,12 @@ export default function ChatHome() {
                 <Microphone size={18} />
               </button>
               <input
+                ref={messageInputRef}
                 value={draft}
                 onChange={(e) => onDraftChange(e.target.value)}
+                onSelect={syncComposerCursor}
+                onClick={syncComposerCursor}
+                onKeyUp={syncComposerCursor}
                 onPaste={onComposerPaste}
                 data-testid="message-input"
                 placeholder={t('messagePlaceholder')}

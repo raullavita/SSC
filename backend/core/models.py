@@ -79,6 +79,7 @@ class SendMessageIn(BaseModel):
     attachment_content_type: Optional[str] = None
     reply_to_message_id: Optional[str] = None
     forwarded_from_message_id: Optional[str] = None
+    mentioned_user_ids: Optional[List[str]] = None
 
 
 class UnsendMessageIn(BaseModel):

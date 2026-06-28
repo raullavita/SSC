@@ -17,6 +17,7 @@ import {
 } from '../lib/voiceRecorder';
 import { ensureMediaPermissions } from '../lib/mediaPermissions';
 import { isPeerBlocked } from '../lib/contactFilters';
+import { resolveMentionedUserIds } from '../lib/groupMentions';
 
 export function useMessagingSend({
   activeConv,
@@ -111,6 +112,10 @@ export function useMessagingSend({
 
   const sendMessage = useCallback(async (text, type = 'text', attachmentId = null, attachmentEnc = null) => {
     const replyToMessageId = replyTo?.message_id || null;
+    const mentionedUserIds = isGroup && text
+      ? resolveMentionedUserIds(text, activeConv?.members || [])
+      : [];
+    const mentionPayload = mentionedUserIds.length ? { mentioned_user_ids: mentionedUserIds } : {};
     if (!activeConv) return;
     if (!text && !attachmentId) return;
     if (!isGroup && peer && isPeerBlocked(peer.user_id, myContacts)) {
@@ -153,6 +158,7 @@ export function useMessagingSend({
           attachment_id: attachmentId || undefined,
           attachment_content_type: attachmentEnc?.content_type,
           reply_to_message_id: replyToMessageId || undefined,
+          ...mentionPayload,
         });
         setDraft('');
         setReplyTo?.(null);
@@ -204,6 +210,7 @@ export function useMessagingSend({
         attachment_encrypted_keys: attachmentEnc?.encrypted_keys,
         attachment_content_type: attachmentEnc?.content_type,
         reply_to_message_id: replyToMessageId || undefined,
+        ...mentionPayload,
       });
       setDraft('');
       setReplyTo?.(null);

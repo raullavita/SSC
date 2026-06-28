@@ -24,6 +24,7 @@ from core.realtime import (
 from core.retention import expires_at_from_now, message_read_expiry_fields
 from core.message_replies import validate_reply_target
 from core.message_forwards import validate_forward_source
+from core.message_mentions import validate_mentioned_users_for_group
 from core.retention_db import bump_conversation_activity, get_effective_retention_for_conversation
 from core.privacy_settings import read_receipts_enabled
 from core.utils import iso, now_utc
@@ -80,6 +81,12 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
         forwarded_from_message_id=body.forwarded_from_message_id,
         target_conversation_id=body.conversation_id,
     )
+    mentioned_user_ids = validate_mentioned_users_for_group(
+        is_group=bool(conv.get("is_group")),
+        participant_ids=list(conv.get("participants") or []),
+        mentioned_user_ids=body.mentioned_user_ids,
+        sender_id=current["user_id"],
+    )
 
     created = now_utc()
     retention_window = await get_effective_retention_for_conversation(body.conversation_id)
@@ -101,6 +108,7 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
         "attachment_content_type": body.attachment_content_type,
         "reply_to_message_id": reply_to,
         "forwarded_from_message_id": forwarded_from,
+        "mentioned_user_ids": mentioned_user_ids or None,
         "created_at": iso(created),
         "expires_at": expires,
     })
