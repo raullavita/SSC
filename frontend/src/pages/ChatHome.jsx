@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { subscribePush } from '../lib/push';
 import { subscribeNativePush } from '../lib/native-push';
 import Message from '../components/Message';
+import MessageActionsSheet from '../components/MessageActionsSheet';
+import ReplyComposerBar from '../components/ReplyComposerBar';
 import PanicButton from '../components/PanicButton';
 import CallModal from '../components/CallModal';
 import SettingsModal from '../components/SettingsModal';
@@ -53,6 +55,7 @@ import { useChatMessages } from '../chat/useChatMessages';
 import { useMessagingSend } from '../chat/useMessagingSend';
 import { useChatCalls } from '../chat/useChatCalls';
 import { useHoldToRecord } from '../chat/useHoldToRecord';
+import { buildQuotePreview, findMessageById } from '../lib/messageReply';
 
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
@@ -97,6 +100,8 @@ export default function ChatHome() {
   const [storyGroup, setStoryGroup] = useState(null);
   const [groupCallState, setGroupCallState] = useState(null); // {mode, direction, members, signal}
   const [convActionsTarget, setConvActionsTarget] = useState(null);
+  const [replyTo, setReplyTo] = useState(null);
+  const [messageActionTarget, setMessageActionTarget] = useState(null);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [retentionHours, setRetentionHours] = useState(24);
@@ -163,6 +168,7 @@ export default function ChatHome() {
     messageFilter,
     setMessageFilter,
     filteredMessages,
+    decryptedBodies,
     userNearBottomRef,
     onMessagesScroll,
   } = useChatMessages({
@@ -260,6 +266,46 @@ export default function ChatHome() {
     return map;
   }, [activeConv, user, peer, isGroup]);
 
+  const quoteContext = useMemo(() => ({
+    user,
+    peer,
+    members: activeConv?.members || [],
+    isGroup,
+  }), [user, peer, activeConv, isGroup]);
+
+  const quoteByMessageId = useMemo(() => {
+    const map = {};
+    for (const m of messages) {
+      if (!m.reply_to_message_id) continue;
+      const target = findMessageById(messages, m.reply_to_message_id);
+      map[m.message_id] = buildQuotePreview(
+        target,
+        target ? decryptedBodies[target.message_id] : null,
+        quoteContext,
+        t,
+      );
+    }
+    return map;
+  }, [messages, decryptedBodies, quoteContext, t]);
+
+  const replyComposerQuote = useMemo(() => {
+    if (!replyTo) return null;
+    return buildQuotePreview(replyTo, decryptedBodies[replyTo.message_id], quoteContext, t);
+  }, [replyTo, decryptedBodies, quoteContext, t]);
+
+  const onMessageLongPress = useCallback((msg) => {
+    setMessageActionTarget(msg);
+  }, []);
+
+  const onReplyToMessage = useCallback((msg) => {
+    setReplyTo(msg);
+  }, []);
+
+  useEffect(() => {
+    setReplyTo(null);
+    setMessageActionTarget(null);
+  }, [activeId]);
+
   const {
     sendMessage,
     attachFile,
@@ -281,6 +327,8 @@ export default function ChatHome() {
     setDraft,
     setUploadBusy,
     uploadBusy,
+    replyTo,
+    setReplyTo,
     t,
   });
 
@@ -357,6 +405,10 @@ export default function ChatHome() {
         setProfileSheetOpen(false);
         return;
       }
+      if (messageActionTarget) {
+        setMessageActionTarget(null);
+        return;
+      }
       if (convActionsTarget) {
         setConvActionsTarget(null);
         return;
@@ -412,6 +464,7 @@ export default function ChatHome() {
     activeId,
     chatMenuOpen,
     convActionsTarget,
+    messageActionTarget,
     confirmRemoveUid,
     contactsOpen,
     profileSheetOpen,
@@ -949,6 +1002,8 @@ export default function ChatHome() {
                   reads={reads}
                   participantsCount={activeConv?.participants?.length || 2}
                   readReceiptsEnabled={readReceiptsEnabled(user)}
+                  quotedPreview={quoteByMessageId[m.message_id] || null}
+                  onLongPress={onMessageLongPress}
                 />
               ))}
               {typingFrom && (
@@ -963,6 +1018,7 @@ export default function ChatHome() {
                 {isRequestPendingPeer ? t('requestPendingChat') : t('cannotMessageNonMutual')}
               </div>
             )}
+            <ReplyComposerBar quote={replyComposerQuote} onCancel={() => setReplyTo(null)} />
             <form onSubmit={onSendText} className="chat-composer safe-bottom safe-x border-t border-[#27272A] px-2 md:px-3 py-2 flex items-center gap-2">
               <input ref={fileInputRef} type="file" hidden onChange={onFileChange} data-testid="file-input" />
               <button type="button" onClick={onPickFile} disabled={uploadBusy || !canMessagePeer} data-testid="attach-button"
@@ -1183,6 +1239,13 @@ export default function ChatHome() {
           goToConversation(conv.conversation_id);
           setGroupManageOpen(true);
         }}
+      />
+
+      <MessageActionsSheet
+        open={!!messageActionTarget}
+        message={messageActionTarget}
+        onClose={() => setMessageActionTarget(null)}
+        onReply={onReplyToMessage}
       />
 
       <ProfileContactSheet

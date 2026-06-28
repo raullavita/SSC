@@ -77,6 +77,7 @@ class SendMessageIn(BaseModel):
     attachment_iv: Optional[str] = None
     attachment_encrypted_keys: Optional[Dict[str, str]] = None
     attachment_content_type: Optional[str] = None
+    reply_to_message_id: Optional[str] = None
 
 
 class TwoFASetupVerifyIn(BaseModel):

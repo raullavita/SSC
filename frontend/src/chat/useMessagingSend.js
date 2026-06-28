@@ -33,6 +33,8 @@ export function useMessagingSend({
   setDraft,
   setUploadBusy,
   uploadBusy,
+  replyTo,
+  setReplyTo,
   t,
 }) {
   const voiceRecordingRef = useRef(null);
@@ -108,6 +110,7 @@ export function useMessagingSend({
   }, [recipientsForActive, runMessagingGate]);
 
   const sendMessage = useCallback(async (text, type = 'text', attachmentId = null, attachmentEnc = null) => {
+    const replyToMessageId = replyTo?.message_id || null;
     if (!activeConv) return;
     if (!text && !attachmentId) return;
     if (!isGroup && peer && isPeerBlocked(peer.user_id, myContacts)) {
@@ -149,8 +152,10 @@ export function useMessagingSend({
           message_type: type,
           attachment_id: attachmentId || undefined,
           attachment_content_type: attachmentEnc?.content_type,
+          reply_to_message_id: replyToMessageId || undefined,
         });
         setDraft('');
+        setReplyTo?.(null);
         return;
       }
 
@@ -169,8 +174,10 @@ export function useMessagingSend({
           message_type: type,
           attachment_id: attachmentId || undefined,
           attachment_content_type: attachmentEnc?.content_type,
+          reply_to_message_id: replyToMessageId || undefined,
         });
         setDraft('');
+        setReplyTo?.(null);
         return;
       }
 
@@ -196,8 +203,10 @@ export function useMessagingSend({
         attachment_iv: attachmentEnc?.iv,
         attachment_encrypted_keys: attachmentEnc?.encrypted_keys,
         attachment_content_type: attachmentEnc?.content_type,
+        reply_to_message_id: replyToMessageId || undefined,
       });
       setDraft('');
+      setReplyTo?.(null);
     } catch (e) {
       if (usesSignalOnlyMessaging()) {
         toastEncryptFailure(e, t);
@@ -208,7 +217,7 @@ export function useMessagingSend({
     }
   }, [
     activeConv, activeId, isGroup, peer, user, privateKey, myContacts,
-    canMessagePeer, isRequestPendingPeer, recipientsForActive, runMessagingGate, setDraft, t,
+    canMessagePeer, isRequestPendingPeer, recipientsForActive, runMessagingGate, setDraft, replyTo, setReplyTo, t,
   ]);
 
   const attachFile = useCallback(async (file, { fromPaste = false } = {}) => {

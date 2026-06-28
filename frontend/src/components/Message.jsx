@@ -18,12 +18,15 @@ import { registerBlobUrl, subscribeMemoryWipe, unregisterBlobUrl } from '../lib/
 import { formatFileSize, filenameFromCaption } from '../lib/attachmentUtils';
 import ImagePreviewModal from './ImagePreviewModal';
 import CountdownBadge from './CountdownBadge';
+import { useConversationLongPress } from './ConversationActionsSheet';
 
 export default function Message({
   msg, isMine, myUserId, privateKey, peerUserId = null, autoTranslate, translationEnabled = false,
   translationOnDevice = false, serverTranslationAllowed = false,
   targetLang, sourceLang, reads = [], participantsCount = 2,
   readReceiptsEnabled = true,
+  quotedPreview = null,
+  onLongPress,
 }) {
   const [plaintext, setPlaintext] = useState(null);
   const [translated, setTranslated] = useState(null);
@@ -134,9 +137,27 @@ export default function Message({
   const attachmentEncrypted = isSignalV1AttachmentMessage(msg)
     || Boolean(msg.attachment_iv && msg.attachment_encrypted_keys);
 
+  const longPressHandlers = useConversationLongPress(
+    onLongPress ? () => onLongPress(msg) : null,
+  );
+
   return (
-    <div className={`flex flex-col max-w-[78%] ${isMine ? 'self-end items-end' : 'self-start items-start'} fade-up`}>
+    <div
+      className={`flex flex-col max-w-[78%] ${isMine ? 'self-end items-end' : 'self-start items-start'} fade-up`}
+      {...(onLongPress ? longPressHandlers : {})}
+    >
       <div className={`px-3 py-2 ${bubbleClass} text-sm leading-relaxed break-words shadow`} data-testid={`message-${msg.message_id}`}>
+        {quotedPreview && (
+          <div
+            className="mb-2 pl-2 border-l-2 border-[#00E5FF]/70 text-xs"
+            data-testid={`quote-${msg.message_id}`}
+          >
+            <div className="font-mono text-[10px] text-[#00E5FF] tracking-wider truncate">
+              {quotedPreview.author ? `@${quotedPreview.author}` : '…'}
+            </div>
+            <div className="text-[#A1A1AA] truncate mt-0.5">{quotedPreview.preview}</div>
+          </div>
+        )}
         {error === 'DECRYPT_FAIL' && (
           <span className="text-xs text-[#FF3B30]">
             {t('messageDecryptFail')}
