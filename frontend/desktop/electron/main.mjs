@@ -13,6 +13,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { initLibsignalBridge, invokeLibsignal } from './libsignal/bridge.mjs';
+import {
+  getTranslateCapabilities,
+  initTranslateBridge,
+  invokeTranslate,
+} from './translate/bridge.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DESKTOP_AUTH_SCHEME = 'chat.ssc.secure.desktop';
@@ -23,6 +28,7 @@ let tray = null;
 let isQuitting = false;
 let notificationsAllowed = true;
 let libsignalInitError = null;
+let translateInitError = null;
 
 function rendererIndex() {
   if (!app.isPackaged) {
@@ -194,6 +200,12 @@ app.whenReady().then(() => {
       `The encryption engine could not start. Restart SSC. If this continues, reinstall the app.\n\n${libsignalInitError}`,
     );
   }
+  try {
+    initTranslateBridge(app.getPath('userData'));
+  } catch (err) {
+    translateInitError = err?.message || String(err);
+    console.error('translate bridge init failed:', err);
+  }
   createWindow();
   createTray();
   app.on('activate', () => {
@@ -226,6 +238,18 @@ ipcMain.handle('desktop-libsignal-status', () => ({
   ok: libsignalInitError == null,
   error: libsignalInitError,
 }));
+
+ipcMain.handle('desktop-translate-capabilities', async () => {
+  if (translateInitError) {
+    return { on_device: false, provider: 'error', error: translateInitError };
+  }
+  return getTranslateCapabilities();
+});
+
+ipcMain.handle('desktop-translate', async (_event, args) => {
+  if (translateInitError) throw new Error(translateInitError);
+  return invokeTranslate(args || {});
+});
 
 const SECURE_STORE_FILE = () => path.join(app.getPath('userData'), 'ssc-secure-store.json');
 

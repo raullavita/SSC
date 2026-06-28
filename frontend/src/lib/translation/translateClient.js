@@ -56,7 +56,7 @@ export async function translateMessageText({
     if (result?.note === 'same language' || !out || out.toLowerCase() === text.toLowerCase()) {
       return { translated: null, note: 'same language', provider: result?.provider };
     }
-    return { translated: out, provider: result?.provider || 'mlkit_on_device' };
+    return { translated: out, provider: result?.provider || 'on_device' };
   }
 
   if (!serverAllowed) {

@@ -45,11 +45,17 @@ const windowApi = {
   focus: () => ipcRenderer.invoke('desktop-focus-window'),
 };
 
+const translate = {
+  getCapabilities: () => ipcRenderer.invoke('desktop-translate-capabilities'),
+  translate: (args) => ipcRenderer.invoke('desktop-translate', args || {}),
+};
+
 contextBridge.exposeInMainWorld('sscDesktop', {
   isDesktop: true,
   platform: process.platform,
   libsignal,
   libsignalInitStatus: () => ipcRenderer.invoke('desktop-libsignal-status'),
+  translate,
   secureStorage,
   notifications,
   window: windowApi,
