@@ -1576,16 +1576,16 @@ export function normalizeLang(code) {
   return STRINGS[c] ? c : 'en';
 }
 
-function isInstalledUiClient() {
-  if (typeof window === 'undefined') return false;
-  if (window.sscDesktop?.isDesktop) return true;
-  try {
-    // eslint-disable-next-line global-require
-    const { Capacitor } = require('@capacitor/core');
-    return !!(Capacitor?.isNativePlatform && Capacitor.isNativePlatform());
-  } catch {
-    return false;
+function readDeviceUiLang() {
+  if (typeof navigator === 'undefined') return 'en';
+  const candidates = navigator.languages?.length
+    ? navigator.languages
+    : [navigator.language || 'en'];
+  for (const tag of candidates) {
+    const code = String(tag).toLowerCase().slice(0, 2);
+    if (STRINGS[code]) return code;
   }
+  return 'en';
 }
 
 export function getStoredUiLang() {
@@ -1593,9 +1593,19 @@ export function getStoredUiLang() {
     const stored = localStorage.getItem(UI_LANG_KEY);
     if (stored) return normalizeLang(stored);
   } catch { /* ignore */ }
-  if (isInstalledUiClient()) return 'en';
-  const nav = navigator.language?.slice(0, 2) || 'en';
-  return normalizeLang(nav);
+  return readDeviceUiLang();
+}
+
+/** Persist device locale on first installed launch (Q.2) until user picks in Settings. */
+export function seedUiLangFromDeviceIfNeeded() {
+  try {
+    if (localStorage.getItem(UI_LANG_KEY)) return getStoredUiLang();
+    const detected = readDeviceUiLang();
+    setStoredUiLang(detected);
+    return detected;
+  } catch {
+    return 'en';
+  }
 }
 
 export function setStoredUiLang(code) {

@@ -1,5 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getStoredUiLang, normalizeLang, setStoredUiLang, t as translate } from '../lib/i18n';
+import {
+  getStoredUiLang,
+  normalizeLang,
+  seedUiLangFromDeviceIfNeeded,
+  setStoredUiLang,
+  t as translate,
+} from '../lib/i18n';
 import { isInstalledClient } from '../lib/platform';
 import { useAuth } from './AuthContext';
 
@@ -7,7 +13,9 @@ const LocaleCtx = createContext(null);
 
 export function LocaleProvider({ children }) {
   const { user } = useAuth();
-  const [locale, setLocaleState] = useState(getStoredUiLang);
+  const [locale, setLocaleState] = useState(() => (
+    isInstalledClient() ? seedUiLangFromDeviceIfNeeded() : getStoredUiLang()
+  ));
 
   useEffect(() => {
     if (!user?.language || isInstalledClient()) return;

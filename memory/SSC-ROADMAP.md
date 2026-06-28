@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.1 done** → next **Q.2** | [~] Q.2 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.2 done** → next **Q.3** | [~] Q.3 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -260,7 +260,7 @@
 | # | ID | Subtask | Owner | Status |
 |---|-----|---------|-------|--------|
 | 1 | **Q.1** | **Public website reopen** — remove password gate for visitors; hero = Under construction; hide APK/EXE/download CTAs; add **Updates / Stage** block (version, “private development”, no beta); keep Privacy/Terms; `REACT_APP_SITE_UNDER_CONSTRUCTION` semantics updated | Founder+git | [x] |
-| 2 | **Q.2** | **OS language on first launch** — installed clients use `navigator.language` until user picks in Settings; persist choice | git | [ ] |
+| 2 | **Q.2** | **OS language on first launch** — installed clients use `navigator.language` until user picks in Settings; persist choice | git | [x] |
 | 3 | **Q.3** | **Tablet & large-screen layouts** — responsive chat split-pane (list + thread), safe areas; test landscape; allow auto-rotate on mobile (portrait default, landscape chat OK) | git | [ ] |
 | 4 | **Q.4** | **Auto-update** — Electron `electron-updater` + release feed; Android in-app update check (Firebase App Distribution / future Play Core) | Founder+git | [ ] |
 
@@ -867,6 +867,7 @@ yarn test:ci
 | 2026-06-27 | **v1.0.9** — TASK O client rebuild (APK build 10 + Windows); PRODUCT_BLUEPRINT v2.2; housekeeping notes; full founder audit |
 | 2026-06-28 | **TASK Q added** — 63-step serial expansion wave (founder directive): web reopen, UX parity, groups, calls, privacy, crypto, trust; locked: no QR, no downloads on site, retention picker 1h–30d |
 | 2026-06-28 | **Q.1 done** — public under-construction landing (no password wall, no downloads/beta, Updates/Stage section); preview gate opt-in via `REACT_APP_SITE_PREVIEW_GATE` |
+| 2026-06-28 | **Q.2 done** — installed clients seed UI language from `navigator.languages` on first launch; Settings override still wins |
 | 2026-06-28 | **Desktop translation** shipped (`4a949af`); **protobufjs** pinned 7.6.1 (`7361c24`) |
 | 2026-06-24 | **TASK D complete** — permissions, duplex audio, ringtone; frontend 55 tests |
 | 2026-06-24 | **TASK E complete** — voice/images/files; frontend 62 tests |
