@@ -35,7 +35,8 @@ import {
   minimizeNativeApp,
   setNativeBackHandler,
 } from '../lib/nativeBack';
-import { isElectronApp, isNativeApp } from '../lib/platform';
+import { isElectronApp, isInstalledClient, isNativeApp } from '../lib/platform';
+import { scheduleBackgroundUpdateCheck } from '../lib/clientUpdates';
 import {
   areDesktopNotificationsEnabled,
   subscribeDesktopNavigation,
@@ -547,6 +548,15 @@ export default function ChatHome() {
       }
     });
   }, [user?.user_id, goToConversation, navigate]);
+
+  useEffect(() => {
+    if (!user?.user_id || !isInstalledClient()) return undefined;
+    return scheduleBackgroundUpdateCheck((result) => {
+      const version = result.version || result.latestVersion;
+      if (!version) return;
+      toast.info(t('settingsUpdateBackgroundToast', { version }), { duration: 8000 });
+    });
+  }, [user?.user_id, t]);
 
   useEffect(() => {
     const el = scrollRef.current;

@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-28 (TASK Q expansion wave · v1.0.12 · desktop translation)
+**Updated:** 2026-06-28 (TASK Q expansion wave · v1.0.12 · Q.4 auto-update)
 **Repo:** `C:\Users\smash\SSC-main` · **GitHub:** https://github.com/raullavita/SSC (public, AGPL-3.0)
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.3 done** → next **Q.4** | [~] Q.4 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.4 done** → next **Q.5** | [~] Q.5 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -262,7 +262,7 @@
 | 1 | **Q.1** | **Public website reopen** — remove password gate for visitors; hero = Under construction; hide APK/EXE/download CTAs; add **Updates / Stage** block (version, “private development”, no beta); keep Privacy/Terms; `REACT_APP_SITE_UNDER_CONSTRUCTION` semantics updated | Founder+git | [x] |
 | 2 | **Q.2** | **OS language on first launch** — installed clients use `navigator.language` until user picks in Settings; persist choice | git | [x] |
 | 3 | **Q.3** | **Tablet & large-screen layouts** — responsive chat split-pane (list + thread), safe areas; test landscape; allow auto-rotate on mobile (portrait default, landscape chat OK) | git | [x] |
-| 4 | **Q.4** | **Auto-update** — Electron `electron-updater` + release feed; Android in-app update check (Firebase App Distribution / future Play Core) | Founder+git | [ ] |
+| 4 | **Q.4** | **Auto-update** — Electron `electron-updater` + release feed; Android in-app update check (Firebase App Distribution / future Play Core) | Founder+git | [x] |
 
 #### Wave 2 — Policy & privacy controls (backend + settings)
 

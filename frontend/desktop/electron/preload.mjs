@@ -50,6 +50,18 @@ const translate = {
   translate: (args) => ipcRenderer.invoke('desktop-translate', args || {}),
 };
 
+const updates = {
+  check: (opts) => ipcRenderer.invoke('desktop-update-check', opts || {}),
+  download: () => ipcRenderer.invoke('desktop-update-download'),
+  install: () => ipcRenderer.invoke('desktop-update-install'),
+  getStatus: () => ipcRenderer.invoke('desktop-update-status'),
+  onStatus: (callback) => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on('desktop-update-status', handler);
+    return () => ipcRenderer.removeListener('desktop-update-status', handler);
+  },
+};
+
 contextBridge.exposeInMainWorld('sscDesktop', {
   isDesktop: true,
   platform: process.platform,
@@ -59,4 +71,5 @@ contextBridge.exposeInMainWorld('sscDesktop', {
   secureStorage,
   notifications,
   window: windowApi,
+  updates,
 });

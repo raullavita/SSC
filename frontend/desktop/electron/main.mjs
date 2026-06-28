@@ -18,6 +18,13 @@ import {
   initTranslateBridge,
   invokeTranslate,
 } from './translate/bridge.mjs';
+import {
+  checkForUpdates,
+  downloadUpdate,
+  getUpdateStatus,
+  initAutoUpdater,
+  installUpdate,
+} from './update/bridge.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DESKTOP_AUTH_SCHEME = 'chat.ssc.secure.desktop';
@@ -207,6 +214,9 @@ app.whenReady().then(() => {
     console.error('translate bridge init failed:', err);
   }
   createWindow();
+  if (mainWindow && app.isPackaged) {
+    initAutoUpdater(mainWindow);
+  }
   createTray();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -300,6 +310,11 @@ ipcMain.handle('desktop-set-notifications-enabled', (_event, enabled) => {
 });
 
 ipcMain.handle('desktop-focus-window', () => focusMainWindow());
+
+ipcMain.handle('desktop-update-check', async (_event, opts = {}) => checkForUpdates(opts));
+ipcMain.handle('desktop-update-download', async () => downloadUpdate());
+ipcMain.handle('desktop-update-install', () => installUpdate());
+ipcMain.handle('desktop-update-status', () => getUpdateStatus());
 
 ipcMain.handle('desktop-show-notification', (_event, opts = {}) => {
   if (!notificationsAllowed) return false;

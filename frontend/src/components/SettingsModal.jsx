@@ -28,8 +28,19 @@ import {
 import { collectEncryptionDiagnostics } from '../chat/encryptionDiagnostics';
 import { unwrapPrivateKey, wrapPrivateKey } from '../lib/crypto';
 import { saveVaultCredential } from '../lib/vaultCredentialStore';
+import { getAppVersion } from '../lib/appVersion';
+import {
+  checkForClientUpdate,
+  downloadDesktopUpdate,
+  installDesktopUpdate,
+  openAndroidUpdateUrl,
+} from '../lib/clientUpdates';
+import {
+  getDesktopUpdateStatus,
+  subscribeDesktopUpdateStatus,
+} from '../lib/desktopUpdates';
 
-const APP_VERSION = process.env.REACT_APP_SSC_VERSION || '1.0.12';
+const APP_VERSION = getAppVersion();
 
 function platformLabel(t) {
   if (isNativeApp()) return t('settingsPlatformAndroid');
@@ -75,6 +86,9 @@ export default function SettingsModal({ open, onClose }) {
   const [deletePassword, setDeletePassword] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [encryptionDiag, setEncryptionDiag] = useState(null);
+  const [updateBusy, setUpdateBusy] = useState(false);
+  const [updateState, setUpdateState] = useState('idle');
+  const [updateInfo, setUpdateInfo] = useState(null);
   const avatarInputRef = useRef(null);
 
   const canChangePassword = user?.auth_provider === 'password';
@@ -123,6 +137,109 @@ export default function SettingsModal({ open, onClose }) {
     })();
     return () => { cancelled = true; };
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !isElectronApp()) return undefined;
+    let cancelled = false;
+    getDesktopUpdateStatus().then((status) => {
+      if (!cancelled && status?.state) {
+        setUpdateState(status.state);
+        setUpdateInfo(status);
+      }
+    }).catch(() => {});
+    return subscribeDesktopUpdateStatus((status) => {
+      if (status?.state) {
+        setUpdateState(status.state);
+        setUpdateInfo(status);
+      }
+    });
+  }, [open]);
+
+  const updateStatusLabel = () => {
+    const version = updateInfo?.version || updateInfo?.latestVersion;
+    switch (updateState) {
+      case 'checking':
+        return t('settingsUpdateChecking');
+      case 'current':
+        return t('settingsUpdateCurrent');
+      case 'available':
+        return t('settingsUpdateAvailable', { version: version || '?' });
+      case 'downloading':
+        return t('settingsUpdateDownloading', {
+          percent: Math.round(updateInfo?.percent ?? 0),
+        });
+      case 'ready':
+        return t('settingsUpdateReady', { version: version || '?' });
+      case 'installing':
+        return t('settingsUpdateInstalling');
+      case 'error':
+        return t('settingsUpdateError');
+      case 'unsupported':
+        return t('settingsUpdateUnsupported');
+      default:
+        return t('settingsUpdateIdle');
+    }
+  };
+
+  const runUpdateCheck = async () => {
+    setUpdateBusy(true);
+    try {
+      const result = await checkForClientUpdate({ manual: true });
+      setUpdateState(result.state);
+      setUpdateInfo(result);
+      if (result.state === 'current') toast.success(t('settingsUpdateCurrent'));
+      else if (result.state === 'available') {
+        toast.info(t('settingsUpdateAvailable', {
+          version: result.version || result.latestVersion || '?',
+        }));
+      } else if (result.state === 'error') {
+        toast.error(t('settingsUpdateError'));
+      }
+    } catch {
+      setUpdateState('error');
+      toast.error(t('settingsUpdateError'));
+    } finally {
+      setUpdateBusy(false);
+    }
+  };
+
+  const runDesktopDownload = async () => {
+    setUpdateBusy(true);
+    try {
+      const result = await downloadDesktopUpdate();
+      if (result?.state === 'error') toast.error(t('settingsUpdateError'));
+    } catch {
+      toast.error(t('settingsUpdateError'));
+    } finally {
+      setUpdateBusy(false);
+    }
+  };
+
+  const runDesktopInstall = async () => {
+    setUpdateBusy(true);
+    try {
+      await installDesktopUpdate();
+    } catch {
+      toast.error(t('settingsUpdateError'));
+      setUpdateBusy(false);
+    }
+  };
+
+  const runAndroidUpdate = async () => {
+    const url = updateInfo?.downloadUrl;
+    if (!url) {
+      toast.error(t('settingsUpdateError'));
+      return;
+    }
+    setUpdateBusy(true);
+    try {
+      await openAndroidUpdateUrl(url);
+    } catch {
+      toast.error(t('settingsUpdateError'));
+    } finally {
+      setUpdateBusy(false);
+    }
+  };
 
   const enablePush = async () => {
     setPushBusy(true);
@@ -567,6 +684,57 @@ export default function SettingsModal({ open, onClose }) {
                   {t('settingsVersion')} {APP_VERSION} · {platformLabel(t)}
                 </div>
               </div>
+              {isInstalledClient() && (
+                <div className="mb-3" data-testid="settings-updates">
+                  <p className="text-[10px] text-[#A1A1AA] mb-2" data-testid="settings-update-status">
+                    {updateStatusLabel()}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={runUpdateCheck}
+                      disabled={updateBusy || updateState === 'checking' || updateState === 'downloading'}
+                      data-testid="settings-check-updates"
+                      className="px-3 py-2 text-xs rounded-md border border-[#27272A] text-[#F0F0F0] hover:bg-[#1A1A1A] transition disabled:opacity-40"
+                    >
+                      {updateBusy && updateState === 'checking' ? t('settingsUpdateChecking') : t('settingsCheckForUpdates')}
+                    </button>
+                    {isElectronApp() && updateState === 'available' && (
+                      <button
+                        type="button"
+                        onClick={runDesktopDownload}
+                        disabled={updateBusy}
+                        data-testid="settings-download-update"
+                        className="px-3 py-2 text-xs rounded-md bg-[#00E5FF] text-black font-medium hover:brightness-110 transition disabled:opacity-40"
+                      >
+                        {t('settingsUpdateDownload')}
+                      </button>
+                    )}
+                    {isElectronApp() && updateState === 'ready' && (
+                      <button
+                        type="button"
+                        onClick={runDesktopInstall}
+                        disabled={updateBusy}
+                        data-testid="settings-install-update"
+                        className="px-3 py-2 text-xs rounded-md bg-[#00E5FF] text-black font-medium hover:brightness-110 transition disabled:opacity-40"
+                      >
+                        {t('settingsUpdateInstall')}
+                      </button>
+                    )}
+                    {isNativeApp() && updateState === 'available' && (
+                      <button
+                        type="button"
+                        onClick={runAndroidUpdate}
+                        disabled={updateBusy}
+                        data-testid="settings-open-update"
+                        className="px-3 py-2 text-xs rounded-md bg-[#00E5FF] text-black font-medium hover:brightness-110 transition disabled:opacity-40"
+                      >
+                        {t('settingsUpdateOpen')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
               <p className="text-[10px] text-[#A1A1AA] mb-2">{t('settingsOpenSourceHint')}</p>
               <p className="text-[10px] font-mono text-[#71717A] mb-2">{SSC_LICENSE_LABEL}</p>
               <a href={SSC_SOURCE_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-xs text-[#00E5FF] hover:underline break-all" data-testid="settings-source-link">

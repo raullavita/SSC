@@ -2,14 +2,22 @@
 
 export const SITE_STAGE_ID = 'private_development';
 
+import { getAppVersion } from './appVersion';
+
 export function getPublicAppVersion() {
-  return process.env.REACT_APP_SSC_VERSION || '1.0.12';
+  return getAppVersion();
 }
 
 /** @typedef {{ id: string, date: string, titleKey: string, bodyKey: string }} SiteUpdateEntry */
 
 /** @type {SiteUpdateEntry[]} */
 export const PUBLIC_SITE_UPDATES = [
+  {
+    id: '2026-06-28-auto-update',
+    date: '2026-06-28',
+    titleKey: 'siteUpdateAutoUpdateTitle',
+    bodyKey: 'siteUpdateAutoUpdateBody',
+  },
   {
     id: '2026-06-28-desktop-translate',
     date: '2026-06-28',
