@@ -80,6 +80,7 @@ class SendMessageIn(BaseModel):
     reply_to_message_id: Optional[str] = None
     forwarded_from_message_id: Optional[str] = None
     mentioned_user_ids: Optional[List[str]] = None
+    poll_option_count: Optional[int] = None
 
 
 class UnsendMessageIn(BaseModel):
@@ -102,6 +103,12 @@ class MessageReactionIn(BaseModel):
     conversation_id: str
     message_id: str
     emoji: Optional[str] = None
+
+
+class PollVoteIn(BaseModel):
+    conversation_id: str
+    message_id: str
+    option_index: int
 
 
 class TwoFASetupVerifyIn(BaseModel):

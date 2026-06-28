@@ -192,9 +192,11 @@ async def list_messages(conversation_id: str, current=Depends(get_current_user))
         {"conversation_id": conversation_id}, {"_id": 0}
     ).sort("created_at", 1).to_list(500)
     projected = [project_message_for_viewer(m, current["user_id"]) for m in msgs]
+    from core.message_polls import attach_poll_votes_to_messages
     from core.message_reactions import attach_reactions_to_messages
 
-    return await attach_reactions_to_messages(conversation_id, projected)
+    with_reactions = await attach_reactions_to_messages(conversation_id, projected)
+    return await attach_poll_votes_to_messages(conversation_id, with_reactions)
 
 
 @router.get("/{conversation_id}/reads")

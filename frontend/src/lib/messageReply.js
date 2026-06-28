@@ -35,6 +35,8 @@ export function messagePreviewText(msg, plaintext, t) {
       return t('replyPreviewFile');
     case 'video':
       return t('replyPreviewVideo');
+    case 'poll':
+      return t('replyPreviewPoll');
     default: {
       const text = (plaintext || '').trim();
       if (!text) return t('replyPreviewEmpty');

@@ -21,6 +21,7 @@ import { readReceiptsEnabled, typingIndicatorsEnabled } from '../lib/privacySett
 import { applyMessageDeleted } from '../lib/messageDelete';
 import { applyMessageEdited } from '../lib/messageEdit';
 import { applyMessageReactionUpdate } from '../lib/messageReactions';
+import { applyPollVoteUpdate } from '../lib/pollMessage';
 
 export function useChatSocket({
   user,
@@ -104,6 +105,10 @@ export function useChatSocket({
         } else if (data.type === 'message-reaction') {
           if (data.conversation_id === activeId) {
             setMessages((cur) => applyMessageReactionUpdate(cur, data));
+          }
+        } else if (data.type === 'poll-vote') {
+          if (data.conversation_id === activeId) {
+            setMessages((cur) => applyPollVoteUpdate(cur, data));
           }
         } else if (data.type === 'read') {
           if (readReceiptsEnabled(user) && data.conversation_id === activeId) {

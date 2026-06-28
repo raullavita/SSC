@@ -124,6 +124,7 @@ function messagePreview(messageType) {
     case 'image': return 'Photo';
     case 'file': return 'File';
     case 'video': return 'Video';
+    case 'poll': return 'Poll';
     default: return 'New message';
   }
 }

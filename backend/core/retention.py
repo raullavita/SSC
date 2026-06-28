@@ -65,5 +65,6 @@ TTL_INDEX_COLLECTIONS = (
     "conversations",
     "message_reads",
     "message_reactions",
+    "message_poll_votes",
     "friend_requests",
 )

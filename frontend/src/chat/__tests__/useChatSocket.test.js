@@ -138,4 +138,21 @@ describe('useChatSocket - signaling-error handling', () => {
     const next = updater([{ message_id: 'm_1', reactions: [] }]);
     expect(next[0].reactions).toHaveLength(1);
   });
+
+  it('applies poll-vote update in active conversation', () => {
+    const setMessages = jest.fn();
+    render(<TestComponent hookArgs={{ ...mockArgs, setMessages }} />);
+
+    global.mockSocketOptions.onMessage({
+      type: 'poll-vote',
+      conversation_id: 'conv_456',
+      message_id: 'm_1',
+      poll_votes: [{ user_id: 'peer_789', option_index: 0 }],
+    });
+
+    expect(setMessages).toHaveBeenCalled();
+    const updater = setMessages.mock.calls[0][0];
+    const next = updater([{ message_id: 'm_1', message_type: 'poll', poll_votes: [] }]);
+    expect(next[0].poll_votes).toHaveLength(1);
+  });
 });

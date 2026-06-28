@@ -17,6 +17,7 @@ import { extractFirstPreviewUrl } from '../lib/linkPreview';
 import LinkPreviewCard from './LinkPreviewCard';
 import VoiceNotePlayer from './VoiceNotePlayer';
 import VideoNotePlayer from './VideoNotePlayer';
+import PollMessage from './PollMessage';
 
 function HighlightedText({ text, query }) {
   const parts = splitTextForHighlight(text, query);
@@ -39,6 +40,8 @@ export default function Message({
   quotedPreview = null,
   onLongPress,
   onReactionToggle,
+  onPollVote,
+  pollVoting = false,
   searchQuery = '',
   isSearchMatch = false,
   isActiveSearchMatch = false,
@@ -292,6 +295,14 @@ export default function Message({
               ) : (
                 <LegacyAttachmentPlaceholder kind="video" />
               )
+            ) : msg.message_type === 'poll' ? (
+              <PollMessage
+                msg={msg}
+                plaintext={plaintext}
+                myUserId={myUserId}
+                onPollVote={onPollVote}
+                voting={pollVoting}
+              />
             ) : (
               <div>
                 <RichTextContent

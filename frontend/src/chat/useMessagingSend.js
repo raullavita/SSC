@@ -27,6 +27,10 @@ import { fetchGifBlob } from '../lib/gifSearch';
 import { ensureMediaPermissions } from '../lib/mediaPermissions';
 import { isPeerBlocked } from '../lib/contactFilters';
 import { resolveMentionedUserIds } from '../lib/groupMentions';
+import {
+  buildPollPayload,
+  serializePollPayload,
+} from '../lib/pollMessage';
 
 export function useMessagingSend({
   activeConv,
@@ -121,9 +125,11 @@ export function useMessagingSend({
     };
   }, [recipientsForActive, runMessagingGate]);
 
-  const sendMessage = useCallback(async (text, type = 'text', attachmentId = null, attachmentEnc = null) => {
+  const sendMessage = useCallback(async (text, type = 'text', attachmentId = null, attachmentEnc = null, opts = {}) => {
+    const { pollOptionCount } = opts;
+    const pollPayload = pollOptionCount ? { poll_option_count: pollOptionCount } : {};
     const replyToMessageId = replyTo?.message_id || null;
-    const mentionedUserIds = isGroup && text
+    const mentionedUserIds = isGroup && text && type === 'text'
       ? resolveMentionedUserIds(text, activeConv?.members || [])
       : [];
     const mentionPayload = mentionedUserIds.length ? { mentioned_user_ids: mentionedUserIds } : {};
@@ -170,6 +176,7 @@ export function useMessagingSend({
           attachment_content_type: attachmentEnc?.content_type,
           reply_to_message_id: replyToMessageId || undefined,
           ...mentionPayload,
+          ...pollPayload,
         });
         setDraft('');
         setReplyTo?.(null);
@@ -222,6 +229,7 @@ export function useMessagingSend({
         attachment_content_type: attachmentEnc?.content_type,
         reply_to_message_id: replyToMessageId || undefined,
         ...mentionPayload,
+        ...pollPayload,
       });
       setDraft('');
       setReplyTo?.(null);
@@ -237,6 +245,22 @@ export function useMessagingSend({
     activeConv, activeId, isGroup, peer, user, privateKey, myContacts,
     canMessagePeer, isRequestPendingPeer, recipientsForActive, runMessagingGate, setDraft, replyTo, setReplyTo, t,
   ]);
+
+  const sendPoll = useCallback(async ({ question, options }) => {
+    if (!isGroup) {
+      toast.error(t('pollGroupsOnly'));
+      return;
+    }
+    const built = buildPollPayload({ question, options });
+    if (!built.ok) {
+      toast.error(t(built.errorKey));
+      return;
+    }
+    const text = serializePollPayload(built.payload);
+    await sendMessage(text, 'poll', null, null, {
+      pollOptionCount: built.payload.options.length,
+    });
+  }, [isGroup, sendMessage, t]);
 
   const editMessage = useCallback(async (originalMsg, newText) => {
     if (!activeConv || !originalMsg?.message_id || !newText?.trim()) return null;
@@ -521,6 +545,7 @@ export function useMessagingSend({
     attachFile,
     sendBundledSticker,
     sendRemoteGif,
+    sendPoll,
     startRecording,
     cancelRecording,
     stopRecordingAndSend,

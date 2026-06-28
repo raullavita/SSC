@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images, FilmStrip, Smiley } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images, FilmStrip, Smiley, ChartBar } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -30,6 +30,8 @@ import GlobalMessageSearchModal from '../components/GlobalMessageSearchModal';
 import ChatMediaGalleryModal from '../components/ChatMediaGalleryModal';
 import VideoRecordPreview from '../components/VideoRecordPreview';
 import StickerGifPickerModal from '../components/StickerGifPickerModal';
+import CreatePollModal from '../components/CreatePollModal';
+import { applyPollVoteUpdate } from '../lib/pollMessage';
 import { gifSearchEnabled, subscribeGifSearchPrefs } from '../lib/gifSearchPrefs';
 import { useGlobalMessageSearch } from '../chat/useGlobalMessageSearch';
 import { linkPreviewsEnabled, subscribeLinkPreviewPrefs } from '../lib/linkPreviewPrefs';
@@ -133,6 +135,9 @@ export default function ChatHome() {
   const [mediaGalleryOpen, setMediaGalleryOpen] = useState(false);
   const [videoPreviewStream, setVideoPreviewStream] = useState(null);
   const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
+  const [pollModalOpen, setPollModalOpen] = useState(false);
+  const [pollSending, setPollSending] = useState(false);
+  const [pollVotingId, setPollVotingId] = useState(null);
   const [gifSearchOn, setGifSearchOn] = useState(() => gifSearchEnabled());
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
@@ -385,6 +390,33 @@ export default function ChatHome() {
     }
   }, [activeId, setMessages, t]);
 
+  const onPollVote = useCallback(async (msg, optionIndex) => {
+    if (!activeId || !msg || pollVotingId) return;
+    setPollVotingId(msg.message_id);
+    try {
+      const { data } = await api.post('/messages/poll-vote', {
+        conversation_id: activeId,
+        message_id: msg.message_id,
+        option_index: optionIndex,
+      });
+      setMessages((cur) => applyPollVoteUpdate(cur, data));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('pollVoteFailed'));
+    } finally {
+      setPollVotingId(null);
+    }
+  }, [activeId, pollVotingId, setMessages, t]);
+
+  const onCreatePoll = useCallback(async (draft) => {
+    setPollSending(true);
+    try {
+      await sendPoll(draft);
+      setPollModalOpen(false);
+    } finally {
+      setPollSending(false);
+    }
+  }, [sendPoll]);
+
   const onReplyToMessage = useCallback((msg) => {
     setReplyTo(msg);
   }, []);
@@ -501,6 +533,7 @@ export default function ChatHome() {
     attachFile,
     sendBundledSticker,
     sendRemoteGif,
+    sendPoll,
     startRecording,
     cancelRecording,
     stopRecordingAndSend,
@@ -708,6 +741,10 @@ export default function ChatHome() {
         setStickerPickerOpen(false);
         return;
       }
+      if (pollModalOpen) {
+        setPollModalOpen(false);
+        return;
+      }
       if (searchOpen) {
         setSearchOpen(false);
         return;
@@ -758,6 +795,7 @@ export default function ChatHome() {
     globalSearchOpen,
     mediaGalleryOpen,
     stickerPickerOpen,
+    pollModalOpen,
     searchOpen,
     settingsOpen,
     storyGroup,
@@ -1480,6 +1518,8 @@ export default function ChatHome() {
                   quotedPreview={quoteByMessageId[m.message_id] || null}
                   onLongPress={onMessageLongPress}
                   onReactionToggle={onMessageReaction}
+                  onPollVote={isGroup ? onPollVote : undefined}
+                  pollVoting={pollVotingId === m.message_id}
                   searchQuery={chatSearchOpen ? messageFilter : ''}
                   isSearchMatch={!!messageFilter.trim() && searchMatchIds.includes(m.message_id)}
                   isActiveSearchMatch={m.message_id === activeSearchMatchId}
@@ -1529,6 +1569,18 @@ export default function ChatHome() {
               >
                 <Smiley size={18} />
               </button>
+              {isGroup && (
+                <button
+                  type="button"
+                  onClick={() => setPollModalOpen(true)}
+                  disabled={uploadBusy || !canMessagePeer}
+                  data-testid="poll-button"
+                  className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
+                  title={t('createPollTitle')}
+                >
+                  <ChartBar size={18} />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onVideoClick}
@@ -1611,6 +1663,13 @@ export default function ChatHome() {
         onPickSticker={sendBundledSticker}
         onPickGif={sendRemoteGif}
         gifSearchOn={gifSearchOn}
+      />
+
+      <CreatePollModal
+        open={pollModalOpen}
+        onClose={() => setPollModalOpen(false)}
+        onCreate={onCreatePoll}
+        busy={pollSending}
       />
 
       <GlobalMessageSearchModal

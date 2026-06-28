@@ -8,7 +8,8 @@ from core.contact_helpers import are_contacts
 from core.contact_graph import is_blocked_pair
 from core.database import db
 from core.logging_config import logger
-from core.models import EditMessageIn, MarkReadIn, MessageReactionIn, SendMessageIn, UnsendMessageIn
+from core.models import EditMessageIn, MarkReadIn, MessageReactionIn, PollVoteIn, SendMessageIn, UnsendMessageIn
+from core.message_polls import normalize_poll_option_count, set_poll_vote
 from core.message_reactions import set_message_reaction
 from core.message_delete import unsend_message_for_everyone
 from core.message_edit import edit_message_text
@@ -88,6 +89,12 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
         sender_id=current["user_id"],
     )
 
+    poll_option_count = None
+    if body.message_type == "poll":
+        if not conv.get("is_group"):
+            raise HTTPException(403, "Polls are only allowed in group chats")
+        poll_option_count = normalize_poll_option_count(body.poll_option_count)
+
     created = now_utc()
     retention_window = await get_effective_retention_for_conversation(body.conversation_id)
     expires = expires_at_from_now(retention_window)
@@ -109,6 +116,7 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
         "reply_to_message_id": reply_to,
         "forwarded_from_message_id": forwarded_from,
         "mentioned_user_ids": mentioned_user_ids or None,
+        "poll_option_count": poll_option_count,
         "created_at": iso(created),
         "expires_at": expires,
     })
@@ -190,6 +198,27 @@ async def react_to_message(body: MessageReactionIn, current=Depends(get_current_
         "conversation_id": body.conversation_id,
         "message_id": result["message_id"],
         "reactions": result["reactions"],
+    })
+    return result
+
+
+@router.post("/poll-vote")
+async def vote_on_poll(body: PollVoteIn, current=Depends(get_current_user)):
+    if not rate_limit_check(f"msg-poll:{current['user_id']}", max_hits=60, window_sec=60):
+        logger.warning(f"rate-limit poll-vote user={current['user_id']}")
+        raise HTTPException(429, "Too many poll votes, please slow down")
+
+    result = await set_poll_vote(
+        user_id=current["user_id"],
+        conversation_id=body.conversation_id,
+        message_id=body.message_id,
+        option_index=body.option_index,
+    )
+    await broadcast_to_conversation(body.conversation_id, {
+        "type": "poll-vote",
+        "conversation_id": body.conversation_id,
+        "message_id": result["message_id"],
+        "poll_votes": result["poll_votes"],
     })
     return result
 
