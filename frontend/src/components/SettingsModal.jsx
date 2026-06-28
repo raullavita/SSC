@@ -53,6 +53,10 @@ import {
   privacyFromUser,
   PROFILE_PHOTO_OPTIONS,
 } from '../lib/privacySettings';
+import {
+  linkPreviewsEnabled,
+  setLinkPreviewsEnabled,
+} from '../lib/linkPreviewPrefs';
 
 const APP_VERSION = getAppVersion();
 
@@ -94,6 +98,7 @@ export default function SettingsModal({ open, onClose }) {
   const [desktopNotifEnabled, setDesktopNotifEnabled] = useState(
     () => areDesktopNotificationsEnabled(),
   );
+  const [linkPreviewOn, setLinkPreviewOn] = useState(() => linkPreviewsEnabled());
   const [pwCurrent, setPwCurrent] = useState('');
   const [pwNew, setPwNew] = useState('');
   const [pwConfirm, setPwConfirm] = useState('');
@@ -679,6 +684,21 @@ export default function SettingsModal({ open, onClose }) {
                 </select>
               </div>
               <p className="mt-2 text-[10px] text-[#71717A]">{t('settingsPrivacyHint')}</p>
+              <label className="flex items-center justify-between gap-3 py-2 mt-2 cursor-pointer border-t border-[#27272A]">
+                <span className="text-xs text-[#A1A1AA]">{t('settingsLinkPreviews')}</span>
+                <input
+                  type="checkbox"
+                  checked={linkPreviewOn}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    setLinkPreviewOn(next);
+                    setLinkPreviewsEnabled(next);
+                  }}
+                  className="accent-[#00E5FF]"
+                  data-testid="settings-link-previews"
+                />
+              </label>
+              <p className="text-[10px] text-[#71717A]">{t('settingsLinkPreviewsHint')}</p>
             </Section>
 
             <Section icon={UserCircle} title={t('settingsBlockedContacts')} testId="settings-blocked-section">

@@ -26,6 +26,8 @@ import ConversationActionsSheet, { ConversationListRow } from '../components/Con
 import ChatMessageSearchBar from '../components/ChatMessageSearchBar';
 import GlobalMessageSearchModal from '../components/GlobalMessageSearchModal';
 import { useGlobalMessageSearch } from '../chat/useGlobalMessageSearch';
+import { linkPreviewsEnabled, subscribeLinkPreviewPrefs } from '../lib/linkPreviewPrefs';
+import { clearLinkPreviewCache } from '../lib/linkPreviewFetch';
 import { clampSearchMatchIndex } from '../lib/chatSearch';
 import ProfileContactSheet from '../components/ProfileContactSheet';
 import VerifyHandshakeModal from '../components/VerifyHandshakeModal';
@@ -103,6 +105,7 @@ export default function ChatHome() {
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [globalSearchQ, setGlobalSearchQ] = useState('');
   const [pendingScrollMessageId, setPendingScrollMessageId] = useState(null);
+  const [linkPreviewOn, setLinkPreviewOn] = useState(() => linkPreviewsEnabled());
   const [contactsOpen, setContactsOpen] = useState(false);
 
   const [typingFrom, setTypingFrom] = useState(null);
@@ -212,6 +215,8 @@ export default function ChatHome() {
     activeConv,
   });
 
+  useEffect(() => subscribeLinkPreviewPrefs(setLinkPreviewOn), []);
+
   const {
     results: globalSearchResults,
     loading: globalSearchLoading,
@@ -244,6 +249,7 @@ export default function ChatHome() {
       setCallState(null);
       setGroupCallState(null);
       clearGlobalSearchCache();
+      clearLinkPreviewCache();
       stopIncomingRingtone();
       clearLocalGroupLabels();
       setActiveId(null);
@@ -1306,6 +1312,7 @@ export default function ChatHome() {
                   searchQuery={chatSearchOpen ? messageFilter : ''}
                   isSearchMatch={!!messageFilter.trim() && searchMatchIds.includes(m.message_id)}
                   isActiveSearchMatch={m.message_id === activeSearchMatchId}
+                  linkPreviewsEnabled={linkPreviewOn}
                 />
               ))}
               {typingFrom && (

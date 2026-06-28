@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-29 (TASK Q expansion wave · v1.0.12 · Q.15 global message search)
+**Updated:** 2026-06-29 (TASK Q expansion wave · v1.0.12 · Q.16 link previews)
 **Repo:** `C:\Users\smash\SSC-main` · **GitHub:** https://github.com/raullavita/SSC (public, AGPL-3.0)
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 

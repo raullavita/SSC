@@ -22,6 +22,8 @@ import { useConversationLongPress } from './ConversationActionsSheet';
 import { isMessageDeleted } from '../lib/messageDelete';
 import { groupReactionsForDisplay } from '../lib/messageReactions';
 import { splitTextForHighlight } from '../lib/chatSearch';
+import { extractFirstPreviewUrl } from '../lib/linkPreview';
+import LinkPreviewCard from './LinkPreviewCard';
 
 function HighlightedText({ text, query }) {
   const parts = splitTextForHighlight(text, query);
@@ -47,6 +49,7 @@ export default function Message({
   searchQuery = '',
   isSearchMatch = false,
   isActiveSearchMatch = false,
+  linkPreviewsEnabled = false,
 }) {
   const [plaintext, setPlaintext] = useState(null);
   const [translated, setTranslated] = useState(null);
@@ -62,6 +65,10 @@ export default function Message({
     () => groupReactionsForDisplay(msg.reactions || [], myUserId),
     [msg.reactions, myUserId],
   );
+  const previewUrl = useMemo(() => {
+    if (deleted || msg.message_type !== 'text' || !plaintext) return null;
+    return extractFirstPreviewUrl(plaintext);
+  }, [deleted, msg.message_type, plaintext]);
 
   const retryDecrypt = useCallback(() => {
     setError(null);
@@ -269,6 +276,9 @@ export default function Message({
                   <HighlightedText text={showTranslated && translated ? translated : plaintext} query={searchQuery} />
                 ) : (
                   showTranslated && translated ? translated : plaintext
+                )}
+                {linkPreviewsEnabled && previewUrl && (
+                  <LinkPreviewCard url={previewUrl} />
                 )}
               </div>
             )}
