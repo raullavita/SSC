@@ -12,6 +12,7 @@ import Message from '../components/Message';
 import MessageActionsSheet from '../components/MessageActionsSheet';
 import ReplyComposerBar from '../components/ReplyComposerBar';
 import GroupMentionPicker from '../components/GroupMentionPicker';
+import ComposerFormatBar from '../components/ComposerFormatBar';
 import EditMessageModal from '../components/EditMessageModal';
 import ForwardMessageModal from '../components/ForwardMessageModal';
 import PanicButton from '../components/PanicButton';
@@ -80,6 +81,7 @@ import {
   getActiveMentionAtCursor,
   insertMentionAt,
 } from '../lib/groupMentions';
+import { prefixSelectionAsList, wrapSelectionWithMarkers } from '../lib/composerFormatting';
 
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
@@ -966,6 +968,32 @@ export default function ChatHome() {
     );
   }, [mentionActive, activeConv, user]);
 
+  const applyComposerFormat = useCallback((action) => {
+    const el = messageInputRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? draft.length;
+    const end = el.selectionEnd ?? start;
+    let result;
+    if (action === 'bold') result = wrapSelectionWithMarkers(draft, start, end, '**');
+    else if (action === 'italic') result = wrapSelectionWithMarkers(draft, start, end, '*');
+    else if (action === 'bullet') result = prefixSelectionAsList(draft, start, end, false);
+    else if (action === 'numbered') result = prefixSelectionAsList(draft, start, end, true);
+    else return;
+    setDraft(result.value);
+    setComposerCursor(result.selectionStart);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(result.selectionStart, result.selectionEnd);
+    });
+  }, [draft]);
+
+  useEffect(() => {
+    const el = messageInputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+  }, [draft]);
+
   const onPickMention = useCallback((member) => {
     if (mentionActive?.startIndex == null || !member?.username) return;
     const next = insertMentionAt(draft, mentionActive.startIndex, member.username);
@@ -1376,7 +1404,14 @@ export default function ChatHome() {
             {isGroup && mentionCandidates.length > 0 && (
               <GroupMentionPicker candidates={mentionCandidates} onPick={onPickMention} />
             )}
-            <form onSubmit={onSendText} className="chat-composer safe-bottom safe-x border-t border-[#27272A] px-2 md:px-3 py-2 flex items-center gap-2">
+            <ComposerFormatBar
+              disabled={!canMessagePeer}
+              onBold={() => applyComposerFormat('bold')}
+              onItalic={() => applyComposerFormat('italic')}
+              onBulletList={() => applyComposerFormat('bullet')}
+              onNumberedList={() => applyComposerFormat('numbered')}
+            />
+            <form onSubmit={onSendText} className="chat-composer safe-bottom safe-x border-t border-[#27272A] px-2 md:px-3 py-2 flex items-end gap-2">
               <input ref={fileInputRef} type="file" hidden onChange={onFileChange} data-testid="file-input" />
               <button type="button" onClick={onPickFile} disabled={uploadBusy || !canMessagePeer} data-testid="attach-button"
                 className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
@@ -1397,17 +1432,24 @@ export default function ChatHome() {
               >
                 <Microphone size={18} />
               </button>
-              <input
+              <textarea
                 ref={messageInputRef}
                 value={draft}
+                rows={1}
                 onChange={(e) => onDraftChange(e.target.value)}
                 onSelect={syncComposerCursor}
                 onClick={syncComposerCursor}
                 onKeyUp={syncComposerCursor}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    onSendText(e);
+                  }
+                }}
                 onPaste={onComposerPaste}
                 data-testid="message-input"
                 placeholder={t('messagePlaceholder')}
-                className="flex-1 min-w-0 h-11 px-3 text-base rounded-md"
+                className="flex-1 min-w-0 min-h-11 max-h-32 px-3 py-2.5 text-base rounded-md resize-none overflow-y-auto"
                 enterKeyHint="send"
                 autoComplete="off"
                 disabled={!canMessagePeer}

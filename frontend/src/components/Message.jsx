@@ -22,7 +22,7 @@ import { useConversationLongPress } from './ConversationActionsSheet';
 import { isMessageDeleted } from '../lib/messageDelete';
 import { groupReactionsForDisplay } from '../lib/messageReactions';
 import { splitTextForHighlight } from '../lib/chatSearch';
-import { splitTextForMentions } from '../lib/groupMentions';
+import RichTextContent from './RichTextContent';
 import { extractFirstPreviewUrl } from '../lib/linkPreview';
 import LinkPreviewCard from './LinkPreviewCard';
 
@@ -35,30 +35,6 @@ function HighlightedText({ text, query }) {
           ? <mark key={i} className="bg-[#FFD600]/35 text-inherit rounded-sm px-0.5">{part.text}</mark>
           : <span key={i}>{part.text}</span>
       ))}
-    </>
-  );
-}
-
-function MentionText({ text, members, myUserId, mentionedUserIds = [] }) {
-  const parts = splitTextForMentions(text, members);
-  const mentionedSet = new Set(mentionedUserIds || []);
-  return (
-    <>
-      {parts.map((part, i) => {
-        if (!part.isMention) return <span key={i}>{part.text}</span>;
-        const forMe = part.userId === myUserId || mentionedSet.has(part.userId);
-        return (
-          <span
-            key={i}
-            className={forMe
-              ? 'text-[#00E5FF] font-medium bg-[#00E5FF]/20 rounded-sm px-0.5'
-              : 'text-[#00E5FF] font-medium'}
-            data-testid={forMe ? 'mention-for-me' : 'mention'}
-          >
-            {part.text}
-          </span>
-        );
-      })}
     </>
   );
 }
@@ -299,18 +275,14 @@ export default function Message({
               )
             ) : (
               <div>
-                {searchQuery.trim() ? (
-                  <HighlightedText text={showTranslated && translated ? translated : plaintext} query={searchQuery} />
-                ) : isGroup ? (
-                  <MentionText
-                    text={showTranslated && translated ? translated : plaintext}
-                    members={groupMembers}
-                    myUserId={myUserId}
-                    mentionedUserIds={msg.mentioned_user_ids}
-                  />
-                ) : (
-                  showTranslated && translated ? translated : plaintext
-                )}
+                <RichTextContent
+                  text={showTranslated && translated ? translated : plaintext}
+                  searchQuery={searchQuery}
+                  isGroup={isGroup}
+                  groupMembers={groupMembers}
+                  myUserId={myUserId}
+                  mentionedUserIds={msg.mentioned_user_ids}
+                />
                 {linkPreviewsEnabled && previewUrl && (
                   <LinkPreviewCard url={previewUrl} />
                 )}
