@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, DownloadSimple } from '@phosphor-icons/react';
+import { X, DownloadSimple, CaretLeft, CaretRight } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 
 /**
  * Full-screen image preview with pinch/wheel zoom and save.
  */
-export default function ImagePreviewModal({ src, alt, onClose }) {
+export default function ImagePreviewModal({
+  src, alt, onClose, onPrev, onNext, positionLabel,
+}) {
   const { t } = useLocale();
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -13,10 +15,14 @@ export default function ImagePreviewModal({ src, alt, onClose }) {
   const pinchRef = useRef(null);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose?.();
+      if (e.key === 'ArrowLeft') onPrev?.();
+      if (e.key === 'ArrowRight') onNext?.();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, onPrev, onNext]);
 
   const clampScale = (s) => Math.min(5, Math.max(1, s));
 
@@ -70,7 +76,7 @@ export default function ImagePreviewModal({ src, alt, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] bg-black/95 flex flex-col safe-top safe-bottom"
+      className="fixed inset-0 z-[9999] bg-black/95 flex flex-col safe-top safe-bottom relative"
       onClick={onBackdropClick}
       data-testid="image-preview-modal"
     >
@@ -84,6 +90,11 @@ export default function ImagePreviewModal({ src, alt, onClose }) {
           <DownloadSimple size={18} />
           {t('saveImage')}
         </button>
+        {positionLabel && (
+          <span className="text-[11px] font-mono text-[#A1A1AA] tracking-wider" data-testid="image-preview-position">
+            {positionLabel}
+          </span>
+        )}
         <button
           type="button"
           onClick={onClose}
@@ -93,8 +104,28 @@ export default function ImagePreviewModal({ src, alt, onClose }) {
           <X size={18} />
         </button>
       </div>
+      {onPrev && (
+        <button
+          type="button"
+          onClick={onPrev}
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-md tac-border bg-[#121212]/90 flex items-center justify-center hover:bg-[#1A1A1A]"
+          data-testid="image-preview-prev"
+        >
+          <CaretLeft size={20} />
+        </button>
+      )}
+      {onNext && (
+        <button
+          type="button"
+          onClick={onNext}
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-md tac-border bg-[#121212]/90 flex items-center justify-center hover:bg-[#1A1A1A]"
+          data-testid="image-preview-next"
+        >
+          <CaretRight size={20} />
+        </button>
+      )}
       <div
-        className="flex-1 overflow-hidden flex items-center justify-center touch-none"
+        className="flex-1 overflow-hidden flex items-center justify-center touch-none relative"
         onWheel={onWheel}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

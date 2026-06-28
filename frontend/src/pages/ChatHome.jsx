@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,6 +27,7 @@ import { ConversationListSkeleton, MessagesSkeleton } from '../components/ChatSk
 import ConversationActionsSheet, { ConversationListRow } from '../components/ConversationActionsSheet';
 import ChatMessageSearchBar from '../components/ChatMessageSearchBar';
 import GlobalMessageSearchModal from '../components/GlobalMessageSearchModal';
+import ChatMediaGalleryModal from '../components/ChatMediaGalleryModal';
 import { useGlobalMessageSearch } from '../chat/useGlobalMessageSearch';
 import { linkPreviewsEnabled, subscribeLinkPreviewPrefs } from '../lib/linkPreviewPrefs';
 import { clearLinkPreviewCache } from '../lib/linkPreviewFetch';
@@ -82,6 +83,7 @@ import {
   insertMentionAt,
 } from '../lib/groupMentions';
 import { prefixSelectionAsList, wrapSelectionWithMarkers } from '../lib/composerFormatting';
+import { listChatImageMedia } from '../lib/chatMediaGallery';
 
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
@@ -125,6 +127,7 @@ export default function ChatHome() {
   const [uploadBusy, setUploadBusy] = useState(false);
   const [confirmRemoveUid, setConfirmRemoveUid] = useState(null);
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
+  const [mediaGalleryOpen, setMediaGalleryOpen] = useState(false);
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -224,6 +227,8 @@ export default function ChatHome() {
     isGroup,
     activeConv,
   });
+
+  const imageMediaItems = useMemo(() => listChatImageMedia(messages), [messages]);
 
   useEffect(() => subscribeLinkPreviewPrefs(setLinkPreviewOn), []);
 
@@ -643,6 +648,10 @@ export default function ChatHome() {
         setGlobalSearchQ('');
         return;
       }
+      if (mediaGalleryOpen) {
+        setMediaGalleryOpen(false);
+        return;
+      }
       if (searchOpen) {
         setSearchOpen(false);
         return;
@@ -691,6 +700,7 @@ export default function ChatHome() {
     chatSearchOpen,
     onboardingOpen,
     globalSearchOpen,
+    mediaGalleryOpen,
     searchOpen,
     settingsOpen,
     storyGroup,
@@ -1252,6 +1262,17 @@ export default function ChatHome() {
                         >
                           {t('searchMessages')}
                         </MenuAction>
+                        {imageMediaItems.length > 0 && (
+                          <MenuAction
+                            testId="mobile-media-gallery"
+                            onClick={() => {
+                              setChatMenuOpen(false);
+                              setMediaGalleryOpen(true);
+                            }}
+                          >
+                            {t('openMediaGallery')}
+                          </MenuAction>
+                        )}
                         <MenuAction
                           testId="mobile-block"
                           onClick={() => { setChatMenuOpen(false); toggleBlock(peer.user_id); }}
@@ -1282,6 +1303,17 @@ export default function ChatHome() {
                     >
                       <MagnifyingGlass size={18} />
                     </button>
+                    {imageMediaItems.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setMediaGalleryOpen(true)}
+                        data-testid="open-media-gallery"
+                        className="w-10 h-10 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center"
+                        title={t('openMediaGallery')}
+                      >
+                        <Images size={18} />
+                      </button>
+                    )}
                     <button onClick={() => startCall('audio')} data-testid="start-voice-call" className="w-10 h-10 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center" title={t('voiceCall')}>
                       <Phone size={18} />
                     </button>
@@ -1326,6 +1358,17 @@ export default function ChatHome() {
                     >
                       <MagnifyingGlass size={16} />
                     </button>
+                    {imageMediaItems.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setMediaGalleryOpen(true)}
+                        data-testid="open-media-gallery"
+                        className="w-9 h-9 rounded-md tac-border bg-[#121212] hover:bg-[#1A1A1A] flex items-center justify-center"
+                        title={t('openMediaGallery')}
+                      >
+                        <Images size={16} />
+                      </button>
+                    )}
                     <button onClick={() => startCall('audio')} data-testid="start-voice-call" className="w-9 h-9 rounded-md tac-border bg-[#121212] hover:bg-[#1A1A1A] flex items-center justify-center" title={t('voiceCall')}>
                       <Phone size={16} />
                     </button>
@@ -1468,6 +1511,17 @@ export default function ChatHome() {
           </>
         )}
       </main>
+
+      <ChatMediaGalleryModal
+        open={mediaGalleryOpen}
+        onClose={() => setMediaGalleryOpen(false)}
+        items={imageMediaItems}
+        captions={decryptedBodies}
+        privateKey={privateKey}
+        myUserId={user?.user_id}
+        peerUserId={peer?.user_id}
+        onJumpToMessage={(messageId) => setPendingScrollMessageId(messageId)}
+      />
 
       <GlobalMessageSearchModal
         open={globalSearchOpen}
