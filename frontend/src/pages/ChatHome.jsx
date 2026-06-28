@@ -24,6 +24,8 @@ import GroupManageModal from '../components/GroupManageModal';
 import { ConversationListSkeleton, MessagesSkeleton } from '../components/ChatSkeleton';
 import ConversationActionsSheet, { ConversationListRow } from '../components/ConversationActionsSheet';
 import ChatMessageSearchBar from '../components/ChatMessageSearchBar';
+import GlobalMessageSearchModal from '../components/GlobalMessageSearchModal';
+import { useGlobalMessageSearch } from '../chat/useGlobalMessageSearch';
 import { clampSearchMatchIndex } from '../lib/chatSearch';
 import ProfileContactSheet from '../components/ProfileContactSheet';
 import VerifyHandshakeModal from '../components/VerifyHandshakeModal';
@@ -98,6 +100,9 @@ export default function ChatHome() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [globalSearchQ, setGlobalSearchQ] = useState('');
+  const [pendingScrollMessageId, setPendingScrollMessageId] = useState(null);
   const [contactsOpen, setContactsOpen] = useState(false);
 
   const [typingFrom, setTypingFrom] = useState(null);
@@ -207,6 +212,19 @@ export default function ChatHome() {
     activeConv,
   });
 
+  const {
+    results: globalSearchResults,
+    loading: globalSearchLoading,
+    clearCache: clearGlobalSearchCache,
+  } = useGlobalMessageSearch({
+    open: globalSearchOpen,
+    query: globalSearchQ,
+    conversations,
+    myContacts,
+    user,
+    privateKey,
+  });
+
   useEffect(() => {
     const closeSocket = () => {
       if (socketRef.current) {
@@ -225,6 +243,7 @@ export default function ChatHome() {
       setStoryGroup(null);
       setCallState(null);
       setGroupCallState(null);
+      clearGlobalSearchCache();
       stopIncomingRingtone();
       clearLocalGroupLabels();
       setActiveId(null);
@@ -603,6 +622,11 @@ export default function ChatHome() {
         setContactsOpen(false);
         return;
       }
+      if (globalSearchOpen) {
+        setGlobalSearchOpen(false);
+        setGlobalSearchQ('');
+        return;
+      }
       if (searchOpen) {
         setSearchOpen(false);
         return;
@@ -650,6 +674,7 @@ export default function ChatHome() {
     leaveChat,
     chatSearchOpen,
     onboardingOpen,
+    globalSearchOpen,
     searchOpen,
     settingsOpen,
     storyGroup,
@@ -870,6 +895,15 @@ export default function ChatHome() {
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [searchMatchIndex, searchMatchIds, chatSearchOpen, messageFilter]);
 
+  useEffect(() => {
+    if (!pendingScrollMessageId || messagesLoading) return;
+    const el = document.querySelector(`[data-testid="message-${pendingScrollMessageId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setPendingScrollMessageId(null);
+    }
+  }, [pendingScrollMessageId, messagesLoading, messages]);
+
   const closeChatSearch = useCallback(() => {
     setChatSearchOpen(false);
     setMessageFilter('');
@@ -887,6 +921,17 @@ export default function ChatHome() {
   const activeSearchMatchId = messageFilter.trim() && searchMatchIds.length
     ? searchMatchIds[searchMatchIndex]
     : null;
+
+  const handleGlobalSearchPick = useCallback((hit) => {
+    const q = globalSearchQ.trim();
+    setGlobalSearchOpen(false);
+    setGlobalSearchQ('');
+    setPendingScrollMessageId(hit.message_id);
+    setChatSearchOpen(true);
+    setMessageFilter(q);
+    setSearchMatchIndex(0);
+    goToConversation(hit.conversation_id);
+  }, [globalSearchQ, goToConversation, setMessageFilter]);
 
   const onDraftChange = (v) => {
     setDraft(v);
@@ -978,6 +1023,14 @@ export default function ChatHome() {
             {pendingRequests.length > 0 && (
               <span className="bg-[#FFD600] text-black px-1.5 rounded text-[9px]">{pendingRequests.length}</span>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={() => setGlobalSearchOpen(true)}
+            data-testid="open-global-search"
+            className="h-9 rounded-md tac-border bg-[#121212] hover:bg-[#1A1A1A] flex items-center justify-center gap-2 text-[10px] font-mono tracking-widest text-[#A1A1AA]"
+          >
+            <MagnifyingGlass size={14} /> {t('globalSearchTitle')}
           </button>
         </div>
 
@@ -1314,6 +1367,17 @@ export default function ChatHome() {
           </>
         )}
       </main>
+
+      <GlobalMessageSearchModal
+        open={globalSearchOpen}
+        query={globalSearchQ}
+        onQueryChange={setGlobalSearchQ}
+        onClose={() => { setGlobalSearchOpen(false); setGlobalSearchQ(''); }}
+        results={globalSearchResults}
+        loading={globalSearchLoading}
+        onSelect={handleGlobalSearchPick}
+        formatGroupLabel={formatGroupConversationLabel}
+      />
 
       {/* Search modal */}
       {searchOpen && (

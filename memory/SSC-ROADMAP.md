@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-29 (TASK Q expansion wave · v1.0.12 · Q.14 search inside chat)
+**Updated:** 2026-06-29 (TASK Q expansion wave · v1.0.12 · Q.15 global message search)
 **Repo:** `C:\Users\smash\SSC-main` · **GitHub:** https://github.com/raullavita/SSC (public, AGPL-3.0)
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.14 done** → next **Q.15** | [~] Q.15 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.15 done** → next **Q.16** | [~] Q.16 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -283,7 +283,7 @@
 | 12 | **Q.12** | **Pin chats** | git | [x] |
 | 13 | **Q.13** | **Archive chats** | git | [x] |
 | 14 | **Q.14** | **Search inside a chat** | git | [x] |
-| 15 | **Q.15** | **Global message search** (respect retention; indexed ciphertext or client cache policy TBD) | git | [ ] |
+| 15 | **Q.15** | **Global message search** (respect retention; indexed ciphertext or client cache policy TBD) | git | [x] |
 
 #### Wave 4 — Rich chat media & composer
 
