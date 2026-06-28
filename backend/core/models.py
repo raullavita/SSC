@@ -43,10 +43,18 @@ class FinishGoogleSetupIn(BaseModel):
     language: Optional[str] = "en"
 
 
+class PrivacySettingsIn(BaseModel):
+    read_receipts: Optional[bool] = None
+    typing_indicators: Optional[bool] = None
+    last_seen: Optional[Literal["hidden", "online_only", "contacts"]] = None
+    profile_photo: Optional[Literal["hidden", "contacts"]] = None
+
+
 class UpdateProfileIn(BaseModel):
     username: Optional[str] = None
     language: Optional[str] = None
     retention_hours: Optional[int] = None
+    privacy: Optional[PrivacySettingsIn] = None
 
 
 class CreateConversationIn(BaseModel):

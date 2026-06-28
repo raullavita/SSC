@@ -72,10 +72,17 @@ def coarsen_last_seen(raw: Optional[str], *, now: Optional[datetime] = None) -> 
     return iso(coarsened)
 
 
-def project_peer_presence(raw: Optional[str], *, now: Optional[datetime] = None) -> Dict[str, Any]:
+def project_peer_presence(
+    raw: Optional[str],
+    *,
+    now: Optional[datetime] = None,
+    visibility: str = "contacts",
+) -> Dict[str, Any]:
     """
-    Peer-visible presence — online flag without exact timestamp; coarsened last_seen otherwise.
+    Peer-visible presence — respects last_seen privacy (hidden / online_only / contacts).
     """
+    if visibility == "hidden":
+        return {"online": False, "last_seen": None}
     if last_seen_expired(raw, now=now):
         return {"online": False, "last_seen": None}
     age = last_seen_age_seconds(raw, now=now)
@@ -83,24 +90,38 @@ def project_peer_presence(raw: Optional[str], *, now: Optional[datetime] = None)
         return {"online": False, "last_seen": None}
     if age < LAST_SEEN_ONLINE_WINDOW_SEC:
         return {"online": True, "last_seen": None}
+    if visibility == "online_only":
+        return {"online": False, "last_seen": None}
     return {"online": False, "last_seen": coarsen_last_seen(raw, now=now)}
 
 
 async def touch_last_seen(db, user_id: str) -> None:
-    """Update last_seen if write interval elapsed."""
-    doc = await db.users.find_one({"user_id": user_id}, {"_id": 0, "last_seen": 1})
+    """Update last_seen if write interval elapsed and user shares presence."""
+    from core.privacy_settings import should_store_last_seen
+
+    doc = await db.users.find_one({"user_id": user_id}, {"_id": 0, "last_seen": 1, "privacy": 1})
+    if not should_store_last_seen(doc):
+        return
     raw = doc.get("last_seen") if doc else None
     if not should_write_last_seen(raw):
         return
     await db.users.update_one({"user_id": user_id}, {"$set": {"last_seen": iso(now_utc())}})
 
 
-def project_user_for_peer(user: Optional[dict], *, now: Optional[datetime] = None) -> Optional[dict]:
-    """Apply presence minimization to a user document returned to another user."""
+def project_user_for_peer(
+    user: Optional[dict],
+    *,
+    now: Optional[datetime] = None,
+    viewer_is_contact: bool = True,
+) -> Optional[dict]:
+    """Apply presence + profile-photo privacy to a user document returned to another user."""
     if not user:
         return None
-    presence = project_peer_presence(user.get("last_seen"), now=now)
-    out = {k: v for k, v in user.items() if k != "last_seen"}
+    from core.privacy_settings import apply_profile_photo_for_viewer, last_seen_visibility
+
+    visibility = last_seen_visibility(user)
+    presence = project_peer_presence(user.get("last_seen"), now=now, visibility=visibility)
+    out = {k: v for k, v in user.items() if k not in ("last_seen", "privacy")}
     out["online"] = presence["online"]
     out["last_seen"] = presence["last_seen"]
-    return out
+    return apply_profile_photo_for_viewer(out, user, viewer_is_contact=viewer_is_contact)

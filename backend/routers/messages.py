@@ -16,6 +16,7 @@ from core.signal_policy import ProtocolVersion
 from core.realtime import broadcast_message_to_conversation, broadcast_to_conversation
 from core.retention import expires_at_from_now, message_read_expiry_fields
 from core.retention_db import bump_conversation_activity, get_effective_retention_for_conversation
+from core.privacy_settings import read_receipts_enabled
 from core.utils import iso, now_utc
 from security import rate_limit_check
 
@@ -123,10 +124,11 @@ async def mark_read(body: MarkReadIn, current=Depends(get_current_user)):
         upsert=True,
     )
     await bump_conversation_activity(body.conversation_id)
-    await broadcast_to_conversation(body.conversation_id, {
-        "type": "read",
-        "conversation_id": body.conversation_id,
-        "user_id": current["user_id"],
-        "last_read_message_id": up_to,
-    })
+    if read_receipts_enabled(current):
+        await broadcast_to_conversation(body.conversation_id, {
+            "type": "read",
+            "conversation_id": body.conversation_id,
+            "user_id": current["user_id"],
+            "last_read_message_id": up_to,
+        })
     return {"ok": True}

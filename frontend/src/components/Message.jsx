@@ -23,6 +23,7 @@ export default function Message({
   msg, isMine, myUserId, privateKey, peerUserId = null, autoTranslate, translationEnabled = false,
   translationOnDevice = false, serverTranslationAllowed = false,
   targetLang, sourceLang, reads = [], participantsCount = 2,
+  readReceiptsEnabled = true,
 }) {
   const [plaintext, setPlaintext] = useState(null);
   const [translated, setTranslated] = useState(null);
@@ -207,7 +208,7 @@ export default function Message({
         <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         <span className="opacity-50">·</span>
         <CountdownBadge expiresAt={msg.expires_at} />
-        {isMine && (() => {
+        {isMine && readReceiptsEnabled && (() => {
           const otherReaders = reads.filter((r) => r.user_id !== myUserId && r.last_read_message_id);
           const readByCount = otherReaders.filter((r) => {
             return r.last_read_message_id === msg.message_id || (r.last_read_at && new Date(r.last_read_at) >= new Date(msg.created_at));

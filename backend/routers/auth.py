@@ -36,6 +36,7 @@ from core.models import (
     UsernameCheckIn,
 )
 from core.retention import DEFAULT_RETENTION_HOURS
+from core.privacy_settings import DEFAULT_PRIVACY
 from core.utils import iso, now_utc, validate_username
 from security import rate_limit_check
 
@@ -67,6 +68,7 @@ async def register(body: RegisterIn, request: Request, response: Response):
         "password_hash": hash_password(body.password),
         "language": body.language or "en",
         "retention_hours": DEFAULT_RETENTION_HOURS,
+        "privacy": dict(DEFAULT_PRIVACY),
         "public_key": body.public_key,
         "encrypted_private_key": body.encrypted_private_key,
         "pk_salt": body.pk_salt,
@@ -193,6 +195,7 @@ async def _google_find_or_create(claims: dict) -> tuple[dict, bool]:
             "password_hash": None,
             "language": "en",
             "retention_hours": DEFAULT_RETENTION_HOURS,
+            "privacy": dict(DEFAULT_PRIVACY),
             "public_key": None,
             "encrypted_private_key": None,
             "pk_salt": None,

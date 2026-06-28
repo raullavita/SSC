@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-28 (TASK Q expansion wave · v1.0.12 · Q.5 per-user retention)
+**Updated:** 2026-06-28 (TASK Q expansion wave · v1.0.12 · Q.6 privacy toggles)
 **Repo:** `C:\Users\smash\SSC-main` · **GitHub:** https://github.com/raullavita/SSC (public, AGPL-3.0)
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.5 done** → next **Q.6** | [~] Q.6 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.6 done** → next **Q.7** | [~] Q.7 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -269,7 +269,7 @@
 | # | ID | Subtask | Owner | Status |
 |---|-----|---------|-------|--------|
 | 5 | **Q.5** | **Per-user retention timer** — 1h/2h/4h/8h/24h/7d/30d; Mongo TTL + UI in Settings; default 24h | git | [x] |
-| 6 | **Q.6** | **Privacy toggles** — read receipts on/off · typing on/off · last seen granularity · profile photo visibility | git | [ ] |
+| 6 | **Q.6** | **Privacy toggles** — read receipts on/off · typing on/off · last seen granularity · profile photo visibility | git | [x] |
 
 #### Wave 3 — Chat table stakes (highest daily-use ROI)
 
@@ -636,7 +636,7 @@ Run on **tester-win (Win)** + **tester-android (Android)** against production AP
 | M.9 | **Stories UX pass** — views, delete, navigation | `Stories.jsx` | [x] i18n + Escape + viewer polish |
 | M.10 | **Calls visual polish** — failed/reconnect copy | `CallModal.jsx` | [x] status labels + end reasons |
 | M.11 | **Group admin** — rename, add/remove members | `GroupManageModal.jsx`, API | [x] local rename + member API |
-| M.12 | **Last-seen privacy toggle** | Settings + API | [ ] v2 |
+| M.12 | **Last-seen privacy toggle** | Settings + API | [x] shipped as **Q.6** |
 
 ---
 

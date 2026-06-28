@@ -133,13 +133,18 @@ async def list_statuses(current=Depends(get_current_user)):
     author_ids = list({it.get("author_id") for it in visible if it.get("author_id")})
     avatar_by_id = {}
     if author_ids:
+        from core.contact_helpers import are_contacts
+        from core.last_seen import project_user_for_peer
+
         cur_users = db.users.find(
             {"user_id": {"$in": author_ids}},
-            {"_id": 0, "user_id": 1, "avatar": 1},
+            {"_id": 0, "user_id": 1, "avatar": 1, "privacy": 1},
         )
         async for u in cur_users:
-            if u.get("avatar"):
-                avatar_by_id[u["user_id"]] = u["avatar"]
+            is_contact = await are_contacts(me_id, u["user_id"])
+            projected = project_user_for_peer(u, viewer_is_contact=is_contact)
+            if projected and projected.get("avatar"):
+                avatar_by_id[u["user_id"]] = projected["avatar"]
     out = []
     for it in visible:
         row = project_status_for_viewer(it, me_id)

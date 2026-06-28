@@ -17,6 +17,7 @@ import { STATUS_SKDM_MESSAGE_TYPE, processIncomingStatusSkdmMessage } from '../l
 import { deleteSignalSession } from '../lib/signal/nativeLibsignal';
 import { resolveIncomingSignaling, SignalingInboundError } from './signalingInbound';
 import { handleIncomingCallOffer, reportIncomingCallOfferError } from './incomingCallHandler';
+import { readReceiptsEnabled, typingIndicatorsEnabled } from '../lib/privacySettings';
 
 export function useChatSocket({
   user,
@@ -68,7 +69,11 @@ export function useChatSocket({
             isPeerMutedFn: isPeerMuted,
           }).catch(() => {});
         } else if (data.type === 'typing') {
-          if (data.conversation_id === activeId && data.user_id !== user?.user_id) {
+          if (
+            typingIndicatorsEnabled(user)
+            && data.conversation_id === activeId
+            && data.user_id !== user?.user_id
+          ) {
             setTypingFrom(data.username);
             setTimeout(() => setTypingFrom(null), 2500);
           }
@@ -83,7 +88,7 @@ export function useChatSocket({
             reportIncomingCallOfferError(err, { t, toast });
           });
         } else if (data.type === 'read') {
-          if (data.conversation_id === activeId) {
+          if (readReceiptsEnabled(user) && data.conversation_id === activeId) {
             setReads((cur) => {
               const others = cur.filter((r) => r.user_id !== data.user_id);
               return [...others, { user_id: data.user_id, last_read_message_id: data.last_read_message_id }];

@@ -183,8 +183,10 @@ async def get_reads(conversation_id: str, current=Depends(get_current_user)):
     conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
     if not conv or current["user_id"] not in conv["participants"]:
         raise HTTPException(404, "Conversation not found")
+    from core.privacy_settings import filter_reads_for_viewer
+
     reads = await db.message_reads.find({"conversation_id": conversation_id}, {"_id": 0}).to_list(50)
-    return reads
+    return await filter_reads_for_viewer(reads, current["user_id"], conv.get("participants") or [])
 
 
 @router.post("/{conversation_id}/members")

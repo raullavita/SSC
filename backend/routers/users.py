@@ -11,6 +11,7 @@ from core.models import UpdateProfileIn
 from core.retention_db import refresh_retention_after_user_change
 from core.retention import DEFAULT_RETENTION_HOURS
 from core.user_retention import normalize_user_retention_hours, user_retention_hours_from_doc
+from core.privacy_settings import merge_privacy, normalize_privacy_patch, privacy_from_user
 from core.utils import validate_username
 from security import rate_limit_check
 
@@ -49,6 +50,15 @@ async def update_me(body: UpdateProfileIn, current=Depends(get_current_user)):
         current_hours = user_retention_hours_from_doc(current)
         if new_hours != current_hours:
             update["retention_hours"] = new_hours
+    if body.privacy is not None:
+        try:
+            patch = normalize_privacy_patch(body.privacy.model_dump(exclude_unset=True))
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        if patch:
+            merged = merge_privacy(current.get("privacy"), patch)
+            if merged != privacy_from_user(current):
+                update["privacy"] = merged
     if update:
         await db.users.update_one({"user_id": current["user_id"]}, {"$set": update})
         if "retention_hours" in update:
@@ -86,11 +96,28 @@ async def search_users(q: str, current=Depends(get_current_user)):
         raise HTTPException(429, "Too many searches")
     if not q or len(q) < 2:
         return []
+    from core.contact_helpers import are_contacts
+    from core.last_seen import project_user_for_peer
+
     cur = db.users.find(
         {"username": {"$regex": f"^{re.escape(q)}", "$options": "i"}, "user_id": {"$ne": current["user_id"]}},
-        {"_id": 0, "user_id": 1, "username": 1, "language": 1, "avatar": 1, "public_key": 1, "signal_prekeys_ready": 1},
+        {"_id": 0, "password_hash": 0, "totp_secret": 0, "totp_pending_secret": 0},
     ).limit(20)
-    return await cur.to_list(20)
+    rows = await cur.to_list(20)
+    out = []
+    for row in rows:
+        is_contact = await are_contacts(current["user_id"], row["user_id"])
+        projected = project_user_for_peer(row, viewer_is_contact=is_contact)
+        if projected:
+            out.append({
+                "user_id": projected.get("user_id"),
+                "username": projected.get("username"),
+                "language": projected.get("language"),
+                "avatar": projected.get("avatar"),
+                "public_key": projected.get("public_key"),
+                "signal_prekeys_ready": projected.get("signal_prekeys_ready"),
+            })
+    return out
 
 
 @router.get("/{user_id}/public")

@@ -12,6 +12,7 @@ from core.push_helpers import send_push_for_call, send_push_for_call_end
 from core.realtime import broadcast_to_conversation, manager
 from core.utils import iso, now_utc
 from core.webrtc_signaling_policy import SignalingValidationError, validate_signaling_relay
+from core.privacy_settings import privacy_map_for_users, typing_indicators_enabled
 
 
 def register_websocket(app):
@@ -45,13 +46,24 @@ def register_websocket(app):
                     await ws.send_text(json.dumps({"type": "pong"}))
                 elif t == "typing":
                     conv_id = data.get("conversation_id")
-                    if conv_id:
-                        await broadcast_to_conversation(conv_id, {
-                            "type": "typing",
-                            "conversation_id": conv_id,
-                            "user_id": user_id,
-                            "username": user.get("username"),
-                        })
+                    if conv_id and typing_indicators_enabled(user):
+                        conv = await db.conversations.find_one(
+                            {"conversation_id": conv_id},
+                            {"participants": 1, "_id": 0},
+                        )
+                        if conv:
+                            payload = {
+                                "type": "typing",
+                                "conversation_id": conv_id,
+                                "user_id": user_id,
+                                "username": user.get("username"),
+                            }
+                            pmap = await privacy_map_for_users(conv.get("participants") or [])
+                            for uid in conv.get("participants") or []:
+                                if uid == user_id:
+                                    continue
+                                if pmap.get(uid, {}).get("typing_indicators", True):
+                                    await manager.send_to_user(uid, payload)
                 elif t in ("call-offer", "call-answer", "ice-candidate", "call-end", "call-reject"):
                     to_user = data.get("to")
                     if to_user:
@@ -100,8 +112,10 @@ def register_websocket(app):
                             if not await has_shared_conv(user_id, mid):
                                 logger.warning(f"WS group call member validation failed for {user_id} and {m}")
                 elif t == "read":
+                    from core.privacy_settings import read_receipts_enabled
+
                     conv_id = data.get("conversation_id")
-                    if conv_id:
+                    if conv_id and read_receipts_enabled(user):
                         await broadcast_to_conversation(conv_id, {
                             "type": "read",
                             "conversation_id": conv_id,

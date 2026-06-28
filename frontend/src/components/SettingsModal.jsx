@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
-  X, Gear, Translate, Code, ShieldCheck, LockKey, UserCircle, Camera, Bell, Lifebuoy,
+  X, Gear, Translate, Code, ShieldCheck, LockKey, UserCircle, Camera, Bell, Lifebuoy, Eye,
 } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -46,6 +46,13 @@ import {
   getDesktopUpdateStatus,
   subscribeDesktopUpdateStatus,
 } from '../lib/desktopUpdates';
+import {
+  buildPrivacyPayload,
+  DEFAULT_PRIVACY,
+  LAST_SEEN_OPTIONS,
+  privacyFromUser,
+  PROFILE_PHOTO_OPTIONS,
+} from '../lib/privacySettings';
 
 const APP_VERSION = getAppVersion();
 
@@ -80,6 +87,7 @@ export default function SettingsModal({ open, onClose }) {
   const [twoFAOpen, setTwoFAOpen] = useState(false);
   const [retentionHours, setRetentionHours] = useState(DEFAULT_RETENTION_HOURS);
   const [retentionOptions, setRetentionOptions] = useState(RETENTION_HOUR_OPTIONS);
+  const [privacy, setPrivacy] = useState(() => ({ ...DEFAULT_PRIVACY }));
   const [blockedContacts, setBlockedContacts] = useState([]);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushOk, setPushOk] = useState(false);
@@ -105,6 +113,7 @@ export default function SettingsModal({ open, onClose }) {
     if (open && user) {
       setLanguage(user.language || 'en');
       setRetentionHours(normalizeRetentionHours(user.retention_hours));
+      setPrivacy(privacyFromUser(user));
     }
     if (open && isElectronApp()) {
       setDesktopNotifEnabled(areDesktopNotificationsEnabled());
@@ -364,6 +373,8 @@ export default function SettingsModal({ open, onClose }) {
       if (language !== (user?.language || 'en')) payload.language = language;
       const savedRetention = normalizeRetentionHours(user?.retention_hours);
       if (retentionHours !== savedRetention) payload.retention_hours = retentionHours;
+      const privacyPatch = buildPrivacyPayload(user, privacy);
+      if (privacyPatch) payload.privacy = privacyPatch;
       if (Object.keys(payload).length === 0) {
         onClose?.();
         return;
@@ -419,7 +430,8 @@ export default function SettingsModal({ open, onClose }) {
 
   const messagesProtected = userHasUnifiedIdentity(user);
   const profileDirty = language !== (user?.language || 'en')
-    || retentionHours !== normalizeRetentionHours(user?.retention_hours);
+    || retentionHours !== normalizeRetentionHours(user?.retention_hours)
+    || buildPrivacyPayload(user, privacy) != null;
 
   return (
     <>
@@ -613,6 +625,60 @@ export default function SettingsModal({ open, onClose }) {
                   {deleteBusy ? t('processing') : t('settingsDeleteAccountSubmit')}
                 </button>
               </form>
+            </Section>
+
+            <Section icon={Eye} title={t('settingsPrivacy')} testId="settings-privacy-section">
+              <label className="flex items-center justify-between gap-3 py-2 cursor-pointer">
+                <span className="text-xs text-[#A1A1AA]">{t('settingsPrivacyReadReceipts')}</span>
+                <input
+                  type="checkbox"
+                  checked={privacy.read_receipts}
+                  onChange={(e) => setPrivacy((p) => ({ ...p, read_receipts: e.target.checked }))}
+                  className="accent-[#00E5FF]"
+                  data-testid="settings-privacy-read-receipts"
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 py-2 cursor-pointer">
+                <span className="text-xs text-[#A1A1AA]">{t('settingsPrivacyTyping')}</span>
+                <input
+                  type="checkbox"
+                  checked={privacy.typing_indicators}
+                  onChange={(e) => setPrivacy((p) => ({ ...p, typing_indicators: e.target.checked }))}
+                  className="accent-[#00E5FF]"
+                  data-testid="settings-privacy-typing"
+                />
+              </label>
+              <div className="mt-2">
+                <label className="block text-[10px] font-mono text-[#A1A1AA] uppercase tracking-wider mb-1">
+                  {t('settingsPrivacyLastSeen')}
+                </label>
+                <select
+                  value={privacy.last_seen}
+                  onChange={(e) => setPrivacy((p) => ({ ...p, last_seen: e.target.value }))}
+                  className="w-full px-3 py-2.5 text-sm bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]"
+                  data-testid="settings-privacy-last-seen"
+                >
+                  {LAST_SEEN_OPTIONS.map((mode) => (
+                    <option key={mode} value={mode}>{t(`settingsPrivacyLastSeen_${mode}`)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-3">
+                <label className="block text-[10px] font-mono text-[#A1A1AA] uppercase tracking-wider mb-1">
+                  {t('settingsPrivacyProfilePhoto')}
+                </label>
+                <select
+                  value={privacy.profile_photo}
+                  onChange={(e) => setPrivacy((p) => ({ ...p, profile_photo: e.target.value }))}
+                  className="w-full px-3 py-2.5 text-sm bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]"
+                  data-testid="settings-privacy-profile-photo"
+                >
+                  {PROFILE_PHOTO_OPTIONS.map((mode) => (
+                    <option key={mode} value={mode}>{t(`settingsPrivacyProfilePhoto_${mode}`)}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="mt-2 text-[10px] text-[#71717A]">{t('settingsPrivacyHint')}</p>
             </Section>
 
             <Section icon={UserCircle} title={t('settingsBlockedContacts')} testId="settings-blocked-section">

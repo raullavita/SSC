@@ -4,6 +4,7 @@ import { SKDM_MESSAGE_TYPE } from '../lib/signal/constants';
 import { STATUS_SKDM_MESSAGE_TYPE, processIncomingStatusSkdmMessage } from '../lib/signal/statuses';
 import { decryptMessageBody } from '../lib/signal/migration';
 import { processIncomingSkdmMessage } from '../lib/signal/groupMessages';
+import { readReceiptsEnabled } from '../lib/privacySettings';
 
 export function useChatMessages({
   activeId,
@@ -86,7 +87,9 @@ export function useChatMessages({
         setMessages(visible);
         const { data: rs } = await api.get(`/conversations/${activeId}/reads`);
         setReads(rs);
-        try { await api.post('/messages/read', { conversation_id: activeId }); } catch {}
+        if (readReceiptsEnabled(user)) {
+          try { await api.post('/messages/read', { conversation_id: activeId }); } catch {}
+        }
       } catch {}
       finally { setMessagesLoading(false); }
     })();
@@ -95,7 +98,7 @@ export function useChatMessages({
   useEffect(() => {
     if (!activeId || messages.length === 0) return;
     const last = messages[messages.length - 1];
-    if (last.sender_id !== user?.user_id) {
+    if (last.sender_id !== user?.user_id && readReceiptsEnabled(user)) {
       api.post('/messages/read', { conversation_id: activeId, up_to_message_id: last.message_id }).catch(() => {});
     }
   }, [messages, activeId, user]);

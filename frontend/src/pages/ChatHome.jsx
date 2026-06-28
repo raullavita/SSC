@@ -41,6 +41,7 @@ import {
   formatRetentionDuration,
   normalizeRetentionHours,
 } from '../lib/retentionDisplay';
+import { readReceiptsEnabled, typingIndicatorsEnabled } from '../lib/privacySettings';
 import {
   areDesktopNotificationsEnabled,
   subscribeDesktopNavigation,
@@ -630,7 +631,7 @@ export default function ChatHome() {
 
   const onDraftChange = (v) => {
     setDraft(v);
-    if (activeId && socketRef.current) {
+    if (activeId && socketRef.current && typingIndicatorsEnabled(user)) {
       socketRef.current.send({ type: 'typing', conversation_id: activeId });
     }
   };
@@ -947,6 +948,7 @@ export default function ChatHome() {
                   sourceLang={peer?.language}
                   reads={reads}
                   participantsCount={activeConv?.participants?.length || 2}
+                  readReceiptsEnabled={readReceiptsEnabled(user)}
                 />
               ))}
               {typingFrom && (
