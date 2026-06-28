@@ -1,5 +1,7 @@
 /** Reply / quote helpers — Q.7 (metadata id + client-side preview). */
 
+import { isMessageDeleted } from './messageDelete';
+
 const PREVIEW_MAX = 140;
 
 export function findMessageById(messages, messageId) {
@@ -19,6 +21,7 @@ export function senderLabelForMessage(msg, { user, peer, members = [], isGroup =
 
 export function messagePreviewText(msg, plaintext, t) {
   if (!msg) return t('replyUnavailable');
+  if (isMessageDeleted(msg)) return t('messageDeleted');
   switch (msg.message_type) {
     case 'voice':
       return t('replyPreviewVoice');

@@ -80,6 +80,11 @@ class SendMessageIn(BaseModel):
     reply_to_message_id: Optional[str] = None
 
 
+class UnsendMessageIn(BaseModel):
+    conversation_id: str
+    message_id: str
+
+
 class TwoFASetupVerifyIn(BaseModel):
     code: str
 

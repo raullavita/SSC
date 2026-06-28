@@ -77,4 +77,27 @@ describe('useChatSocket - signaling-error handling', () => {
     expect(mockT).toHaveBeenCalledWith('callSignalingRejected');
     expect(toast.error).toHaveBeenCalledWith('callSignalingRejected');
   });
+
+  it('applies message-deleted tombstone in active conversation', () => {
+    const setMessages = jest.fn((fn) => {
+      if (typeof fn === 'function') {
+        return fn([{ message_id: 'm_1', message_type: 'text', ciphertext: 'hi' }]);
+      }
+      return fn;
+    });
+    render(<TestComponent hookArgs={{ ...mockArgs, setMessages }} />);
+
+    global.mockSocketOptions.onMessage({
+      type: 'message-deleted',
+      conversation_id: 'conv_456',
+      message_id: 'm_1',
+      deleted_at: '2026-06-29T12:00:00+00:00',
+    });
+
+    expect(setMessages).toHaveBeenCalled();
+    const updater = setMessages.mock.calls[0][0];
+    const next = updater([{ message_id: 'm_1', message_type: 'text', ciphertext: 'hi' }]);
+    expect(next[0].message_type).toBe('deleted');
+    expect(next[0].ciphertext).toBe('');
+  });
 });

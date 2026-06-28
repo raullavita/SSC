@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
-import { ArrowBendUpLeft, X } from '@phosphor-icons/react';
+import { ArrowBendUpLeft, Trash, X } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 
-export default function MessageActionsSheet({ open, message, onClose, onReply }) {
+export default function MessageActionsSheet({
+  open, message, onClose, onReply, onDelete, showDelete = false,
+}) {
   const { t } = useLocale();
 
   useEffect(() => {
@@ -39,6 +41,17 @@ export default function MessageActionsSheet({ open, message, onClose, onReply })
           <ArrowBendUpLeft size={18} className="text-[#00E5FF]" />
           {t('messageActionReply')}
         </button>
+        {showDelete && (
+          <button
+            type="button"
+            data-testid="message-action-delete"
+            onClick={() => { onClose?.(); onDelete?.(message); }}
+            className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm text-[#FF3B30]"
+          >
+            <Trash size={18} />
+            {t('messageActionDelete')}
+          </button>
+        )}
       </div>
     </div>
   );

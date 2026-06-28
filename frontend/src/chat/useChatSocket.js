@@ -18,6 +18,7 @@ import { deleteSignalSession } from '../lib/signal/nativeLibsignal';
 import { resolveIncomingSignaling, SignalingInboundError } from './signalingInbound';
 import { handleIncomingCallOffer, reportIncomingCallOfferError } from './incomingCallHandler';
 import { readReceiptsEnabled, typingIndicatorsEnabled } from '../lib/privacySettings';
+import { applyMessageDeleted } from '../lib/messageDelete';
 
 export function useChatSocket({
   user,
@@ -87,6 +88,11 @@ export function useChatSocket({
           }).catch((err) => {
             reportIncomingCallOfferError(err, { t, toast });
           });
+        } else if (data.type === 'message-deleted') {
+          if (data.conversation_id === activeId) {
+            setMessages((cur) => applyMessageDeleted(cur, data));
+          }
+          loadConversations();
         } else if (data.type === 'read') {
           if (readReceiptsEnabled(user) && data.conversation_id === activeId) {
             setReads((cur) => {

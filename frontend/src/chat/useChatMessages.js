@@ -5,6 +5,7 @@ import { STATUS_SKDM_MESSAGE_TYPE, processIncomingStatusSkdmMessage } from '../l
 import { decryptMessageBody } from '../lib/signal/migration';
 import { processIncomingSkdmMessage } from '../lib/signal/groupMessages';
 import { readReceiptsEnabled } from '../lib/privacySettings';
+import { isMessageDeleted } from '../lib/messageDelete';
 
 export function useChatMessages({
   activeId,
@@ -27,6 +28,7 @@ export function useChatMessages({
     (async () => {
       const next = {};
       for (const m of messages) {
+        if (isMessageDeleted(m)) continue;
         try {
           next[m.message_id] = await decryptMessageBody(m, {
             myUserId: user.user_id,

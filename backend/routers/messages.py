@@ -8,7 +8,8 @@ from core.contact_helpers import are_contacts
 from core.contact_graph import is_blocked_pair
 from core.database import db
 from core.logging_config import logger
-from core.models import MarkReadIn, SendMessageIn
+from core.models import MarkReadIn, SendMessageIn, UnsendMessageIn
+from core.message_delete import unsend_message_for_everyone
 from core.push_helpers import send_push_for_message
 from core.api_integrity import project_message_for_viewer, sanitize_message_for_storage
 from core.signal_message_policy import SignalMessageValidationError, validate_send_payload
@@ -98,6 +99,27 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
     await touch_last_seen(db, current["user_id"])
     await broadcast_message_to_conversation(body.conversation_id, msg)
     asyncio.create_task(send_push_for_message(conv, current, msg))
+    return project_message_for_viewer(msg, current["user_id"])
+
+
+@router.post("/unsend")
+async def unsend_message(body: UnsendMessageIn, current=Depends(get_current_user)):
+    conv = await db.conversations.find_one({"conversation_id": body.conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv["participants"]:
+        raise HTTPException(404, "Conversation not found")
+
+    msg = await unsend_message_for_everyone(
+        message_id=body.message_id,
+        conversation_id=body.conversation_id,
+        user_id=current["user_id"],
+    )
+    deleted_at = msg.get("deleted_for_everyone_at")
+    await broadcast_to_conversation(body.conversation_id, {
+        "type": "message-deleted",
+        "conversation_id": body.conversation_id,
+        "message_id": body.message_id,
+        "deleted_at": deleted_at,
+    })
     return project_message_for_viewer(msg, current["user_id"])
 
 

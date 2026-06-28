@@ -19,6 +19,7 @@ import { formatFileSize, filenameFromCaption } from '../lib/attachmentUtils';
 import ImagePreviewModal from './ImagePreviewModal';
 import CountdownBadge from './CountdownBadge';
 import { useConversationLongPress } from './ConversationActionsSheet';
+import { isMessageDeleted } from '../lib/messageDelete';
 
 export default function Message({
   msg, isMine, myUserId, privateKey, peerUserId = null, autoTranslate, translationEnabled = false,
@@ -37,6 +38,7 @@ export default function Message({
   const [decrypting, setDecrypting] = useState(true);
   const [decryptAttempt, setDecryptAttempt] = useState(0);
   const { t } = useLocale();
+  const deleted = isMessageDeleted(msg);
 
   const retryDecrypt = useCallback(() => {
     setError(null);
@@ -56,6 +58,13 @@ export default function Message({
   }), []);
 
   useEffect(() => {
+    if (deleted) {
+      setPlaintext(null);
+      setError(null);
+      setVaultLocked(false);
+      setDecrypting(false);
+      return undefined;
+    }
     let mounted = true;
     setDecrypting(true);
     const slowTimer = setTimeout(() => {
@@ -89,7 +98,7 @@ export default function Message({
       mounted = false;
       clearTimeout(slowTimer);
     };
-  }, [msg, myUserId, privateKey, peerUserId, decryptAttempt]);
+  }, [msg, myUserId, privateKey, peerUserId, decryptAttempt, deleted]);
 
   const sameLanguage = Boolean(
     sourceLang && targetLang && sourceLang.toLowerCase() === targetLang.toLowerCase(),
@@ -138,16 +147,21 @@ export default function Message({
     || Boolean(msg.attachment_iv && msg.attachment_encrypted_keys);
 
   const longPressHandlers = useConversationLongPress(
-    onLongPress ? () => onLongPress(msg) : null,
+    onLongPress && !deleted ? () => onLongPress(msg) : null,
   );
 
   return (
     <div
       className={`flex flex-col max-w-[78%] ${isMine ? 'self-end items-end' : 'self-start items-start'} fade-up`}
-      {...(onLongPress ? longPressHandlers : {})}
+      {...(onLongPress && !deleted ? longPressHandlers : {})}
     >
       <div className={`px-3 py-2 ${bubbleClass} text-sm leading-relaxed break-words shadow`} data-testid={`message-${msg.message_id}`}>
-        {quotedPreview && (
+        {deleted && (
+          <span className="text-xs italic text-[#A1A1AA]" data-testid={`message-deleted-${msg.message_id}`}>
+            {t('messageDeleted')}
+          </span>
+        )}
+        {!deleted && quotedPreview && (
           <div
             className="mb-2 pl-2 border-l-2 border-[#00E5FF]/70 text-xs"
             data-testid={`quote-${msg.message_id}`}
@@ -158,31 +172,31 @@ export default function Message({
             <div className="text-[#A1A1AA] truncate mt-0.5">{quotedPreview.preview}</div>
           </div>
         )}
-        {error === 'DECRYPT_FAIL' && (
+        {!deleted && error === 'DECRYPT_FAIL' && (
           <span className="text-xs text-[#FF3B30]">
             {t('messageDecryptFail')}
             <button type="button" onClick={retryDecrypt} className="ml-2 underline hover:text-white">{t('messageDecryptRetry')}</button>
           </span>
         )}
-        {error === 'NO_KEY' && (
+        {!deleted && error === 'NO_KEY' && (
           <span className="text-xs text-[#FF3B30]">
             {t('messageDecryptNoKey')}
             <button type="button" onClick={retryDecrypt} className="ml-2 underline hover:text-white">{t('messageDecryptRetry')}</button>
           </span>
         )}
-        {error === 'DECRYPT_SLOW' && plaintext === null && !vaultLocked && (
+        {!deleted && error === 'DECRYPT_SLOW' && plaintext === null && !vaultLocked && (
           <span className="text-xs text-[#FF9500]">
             {t('messageDecryptSlow')}
             <button type="button" onClick={retryDecrypt} className="ml-2 underline hover:text-white">{t('messageDecryptRetry')}</button>
           </span>
         )}
-        {vaultLocked && (
+        {!deleted && vaultLocked && (
           <span className="text-xs text-[#FF9500]">{t('messageVaultLocked')}</span>
         )}
-        {!error && !vaultLocked && decrypting && plaintext === null && (
+        {!deleted && !error && !vaultLocked && decrypting && plaintext === null && (
           <span className="text-xs text-[#A1A1AA]">{t('messageDecrypting')}</span>
         )}
-        {!error && plaintext !== null && (
+        {!deleted && !error && plaintext !== null && (
           <>
             {msg.message_type === 'image' && msg.attachment_id ? (
               attachmentEncrypted ? (

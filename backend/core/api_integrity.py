@@ -23,6 +23,22 @@ def project_message_for_viewer(msg: dict, viewer_id: str) -> dict:
     """One message with only the viewer's wrapped keys; strip metadata leaks."""
     if not msg:
         return msg
+    if msg.get("message_type") == "deleted" or msg.get("deleted_for_everyone_at"):
+        return {
+            k: msg[k]
+            for k in (
+                "message_id",
+                "conversation_id",
+                "sender_id",
+                "message_type",
+                "created_at",
+                "expires_at",
+                "deleted_for_everyone_at",
+                "deleted_by",
+                "reply_to_message_id",
+            )
+            if k in msg
+        }
     out = dict(msg)
     protocol = normalize_message_protocol(out.get("protocol"))
     out["protocol"] = protocol

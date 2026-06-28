@@ -56,6 +56,7 @@ import { useMessagingSend } from '../chat/useMessagingSend';
 import { useChatCalls } from '../chat/useChatCalls';
 import { useHoldToRecord } from '../chat/useHoldToRecord';
 import { buildQuotePreview, findMessageById } from '../lib/messageReply';
+import { applyMessageDeleted, canUnsendMessage } from '../lib/messageDelete';
 
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
@@ -102,6 +103,7 @@ export default function ChatHome() {
   const [convActionsTarget, setConvActionsTarget] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const [messageActionTarget, setMessageActionTarget] = useState(null);
+  const [unsendTarget, setUnsendTarget] = useState(null);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [retentionHours, setRetentionHours] = useState(24);
@@ -301,9 +303,34 @@ export default function ChatHome() {
     setReplyTo(msg);
   }, []);
 
+  const onDeleteMessageRequest = useCallback((msg) => {
+    setUnsendTarget(msg);
+  }, []);
+
+  const confirmUnsendMessage = useCallback(async () => {
+    if (!unsendTarget || !activeId) return;
+    try {
+      const { data } = await api.post('/messages/unsend', {
+        conversation_id: activeId,
+        message_id: unsendTarget.message_id,
+      });
+      setMessages((cur) => applyMessageDeleted(cur, {
+        message_id: unsendTarget.message_id,
+        deleted_at: data?.deleted_for_everyone_at,
+      }));
+      if (replyTo?.message_id === unsendTarget.message_id) setReplyTo(null);
+      toast.success(t('messageUnsendSuccess'));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('messageUnsendFailed'));
+    } finally {
+      setUnsendTarget(null);
+    }
+  }, [unsendTarget, activeId, setMessages, replyTo, t]);
+
   useEffect(() => {
     setReplyTo(null);
     setMessageActionTarget(null);
+    setUnsendTarget(null);
   }, [activeId]);
 
   const {
@@ -405,6 +432,10 @@ export default function ChatHome() {
         setProfileSheetOpen(false);
         return;
       }
+      if (unsendTarget) {
+        setUnsendTarget(null);
+        return;
+      }
       if (messageActionTarget) {
         setMessageActionTarget(null);
         return;
@@ -465,6 +496,7 @@ export default function ChatHome() {
     chatMenuOpen,
     convActionsTarget,
     messageActionTarget,
+    unsendTarget,
     confirmRemoveUid,
     contactsOpen,
     profileSheetOpen,
@@ -1246,6 +1278,19 @@ export default function ChatHome() {
         message={messageActionTarget}
         onClose={() => setMessageActionTarget(null)}
         onReply={onReplyToMessage}
+        onDelete={onDeleteMessageRequest}
+        showDelete={canUnsendMessage(messageActionTarget, user?.user_id)}
+      />
+
+      <ConfirmDialog
+        open={!!unsendTarget}
+        title={t('messageUnsendTitle')}
+        message={t('messageUnsendConfirm')}
+        confirmLabel={t('messageActionDelete')}
+        danger
+        onConfirm={confirmUnsendMessage}
+        onCancel={() => setUnsendTarget(null)}
+        testId="unsend-message-dialog"
       />
 
       <ProfileContactSheet
