@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { subscribeContactsRefresh } from '../lib/contactRealtime';
 import { visibleConversations } from '../lib/contactFilters';
+import { partitionSidebarConversations, sortArchivedConversations } from '../lib/chatArchives';
 import { sortSidebarConversations } from '../lib/chatPins';
 
 export function useChatContacts({
@@ -85,10 +86,20 @@ export function useChatContacts({
     });
   }, [user?.user_id]);
 
-  const sidebarConversations = useMemo(
-    () => sortSidebarConversations(visibleConversations(conversations, myContacts)),
+  const visibleConvs = useMemo(
+    () => visibleConversations(conversations, myContacts),
     [conversations, myContacts],
   );
+
+  const sidebarConversations = useMemo(() => {
+    const { active } = partitionSidebarConversations(visibleConvs);
+    return sortSidebarConversations(active);
+  }, [visibleConvs]);
+
+  const archivedConversations = useMemo(() => {
+    const { archived } = partitionSidebarConversations(visibleConvs);
+    return sortArchivedConversations(archived);
+  }, [visibleConvs]);
 
   const activeConv = useMemo(
     () => sidebarConversations.find((c) => c.conversation_id === activeId)
@@ -189,6 +200,23 @@ export function useChatContacts({
     }
   };
 
+  const toggleArchive = async (conv) => {
+    if (!conv?.conversation_id) return;
+    const wasArchived = conv.archived;
+    try {
+      if (wasArchived) {
+        await api.delete(`/conversations/${conv.conversation_id}/archive`);
+      } else {
+        await api.post(`/conversations/${conv.conversation_id}/archive`);
+      }
+      await loadConversations();
+      if (!wasArchived && activeId === conv.conversation_id) leaveChat();
+      toast.success(wasArchived ? t('chatUnarchived') : t('chatArchived'));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('couldNotUpdateChat'));
+    }
+  };
+
   const togglePin = async (conv) => {
     if (!conv?.conversation_id) return;
     const wasPinned = conv.pinned;
@@ -237,6 +265,7 @@ export function useChatContacts({
     refreshContactsRosterRef,
     loadConversations,
     sidebarConversations,
+    archivedConversations,
     activeConv,
     peer,
     isGroup,
@@ -247,6 +276,7 @@ export function useChatContacts({
     toggleBlock,
     toggleMute,
     togglePin,
+    toggleArchive,
     removeContact,
     confirmRemoveContact,
     deleteConversation,

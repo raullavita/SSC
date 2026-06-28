@@ -18,6 +18,12 @@ from core.conversation_meta import (
     project_message_for_viewer,
     sanitize_conversation_for_api,
 )
+from core.conversation_archives import (
+    attach_archive_fields,
+    archive_conversation,
+    clear_archives_for_conversation,
+    unarchive_conversation,
+)
 from core.conversation_pins import (
     attach_pin_fields,
     clear_pins_for_conversation,
@@ -172,6 +178,7 @@ async def list_conversations(current=Depends(get_current_user)):
         c["last_activity"] = last_activity_from_message(last_msg)
         result.append(c)
     await attach_pin_fields(result, me)
+    await attach_archive_fields(result, me)
     result = sort_conversations_for_sidebar(result)
     return [sanitize_conversation_for_api(c, me) for c in result]
 
@@ -279,6 +286,18 @@ async def unpin_chat(conversation_id: str, current=Depends(get_current_user)):
     return sanitize_conversation_for_api(conv, current["user_id"])
 
 
+@router.post("/{conversation_id}/archive")
+async def archive_chat(conversation_id: str, current=Depends(get_current_user)):
+    conv = await archive_conversation(current["user_id"], conversation_id)
+    return sanitize_conversation_for_api(conv, current["user_id"])
+
+
+@router.delete("/{conversation_id}/archive")
+async def unarchive_chat(conversation_id: str, current=Depends(get_current_user)):
+    conv = await unarchive_conversation(current["user_id"], conversation_id)
+    return sanitize_conversation_for_api(conv, current["user_id"])
+
+
 @router.delete("/{conversation_id}")
 async def delete_conversation(conversation_id: str, current=Depends(get_current_user)):
     conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
@@ -287,5 +306,6 @@ async def delete_conversation(conversation_id: str, current=Depends(get_current_
     await db.messages.delete_many({"conversation_id": conversation_id})
     await db.message_reads.delete_many({"conversation_id": conversation_id})
     await clear_pins_for_conversation(conversation_id)
+    await clear_archives_for_conversation(conversation_id)
     await db.conversations.delete_one({"conversation_id": conversation_id})
     return {"ok": True}

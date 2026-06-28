@@ -80,4 +80,10 @@ def sanitize_conversation_for_api(conv: dict, viewer_id: str) -> dict:
         if isinstance(pinned_at, datetime):
             pinned_at = iso(pinned_at)
         out["pinned_at"] = pinned_at
+    out["archived"] = bool(conv.get("archived"))
+    if conv.get("archived_at"):
+        archived_at = conv["archived_at"]
+        if isinstance(archived_at, datetime):
+            archived_at = iso(archived_at)
+        out["archived_at"] = archived_at
     return out

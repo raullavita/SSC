@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, PushPin } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -112,6 +112,7 @@ export default function ChatHome() {
   const [storyGroup, setStoryGroup] = useState(null);
   const [groupCallState, setGroupCallState] = useState(null); // {mode, direction, members, signal}
   const [convActionsTarget, setConvActionsTarget] = useState(null);
+  const [archivedOpen, setArchivedOpen] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [messageActionTarget, setMessageActionTarget] = useState(null);
   const [unsendTarget, setUnsendTarget] = useState(null);
@@ -155,6 +156,7 @@ export default function ChatHome() {
     refreshContactsRosterRef,
     loadConversations,
     sidebarConversations,
+    archivedConversations,
     activeConv,
     peer,
     isGroup,
@@ -165,6 +167,7 @@ export default function ChatHome() {
     toggleBlock,
     toggleMute,
     togglePin,
+    toggleArchive,
     removeContact,
     confirmRemoveContact,
     deleteConversation,
@@ -856,6 +859,43 @@ export default function ChatHome() {
     }
   };
 
+  const renderSidebarConversationRow = useCallback((c) => {
+    const peerMuted = !c.is_group && isPeerMuted(c.peer?.user_id, myContacts);
+    return (
+      <ConversationListRow
+        key={c.conversation_id}
+        conversation={c}
+        activeId={activeId}
+        onSelect={goToConversation}
+        onOpenActions={setConvActionsTarget}
+      >
+        <Avatar
+          user={c.is_group ? null : c.peer}
+          isGroup={c.is_group}
+          size="md"
+          showOnline={!c.is_group}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium truncate">
+              {c.is_group ? (formatGroupConversationLabel(c) || t('group')) : `@${c.peer?.username}`}
+              {peerMuted && <span className="text-[#A1A1AA] font-mono text-[10px] ml-1">· {t('muted')}</span>}
+            </span>
+            <span className="text-[10px] font-mono text-[#A1A1AA] flex items-center gap-1 shrink-0">
+              {c.pinned && (
+                <PushPin size={12} className="text-[#00E5FF]" weight="fill" data-testid={`pin-indicator-${c.conversation_id}`} />
+              )}
+              {c.is_group ? `${c.participants.length}P` : c.peer?.language?.toUpperCase()}
+            </span>
+          </div>
+          <div className="text-[11px] text-[#A1A1AA] truncate font-mono">
+            {c.last_activity?.has_messages ? `· ${t('encryptedMessage')} ·` : t('noMessagesYet')}
+          </div>
+        </div>
+      </ConversationListRow>
+    );
+  }, [activeId, goToConversation, myContacts, t]);
+
   return (
     <div
       className="mobile-shell chat-shell flex bg-[#0A0A0A] text-[#F0F0F0] overflow-hidden"
@@ -910,48 +950,29 @@ export default function ChatHome() {
 
         <div className="flex-1 overflow-y-auto">
           {conversationsLoading && <ConversationListSkeleton />}
-          {!conversationsLoading && conversations.length === 0 && (
+          {!conversationsLoading && sidebarConversations.length === 0 && archivedConversations.length === 0 && (
             <div className="p-6 text-center text-xs font-mono text-[#A1A1AA] tracking-wider">
               {t('noConversations')}
               <p className="mt-2 normal-case font-sans tracking-normal">{t('noConversationsHint')}</p>
             </div>
           )}
-          {!conversationsLoading && sidebarConversations.map((c) => {
-            const peerMuted = !c.is_group && isPeerMuted(c.peer?.user_id, myContacts);
-            return (
-              <ConversationListRow
-                key={c.conversation_id}
-                conversation={c}
-                activeId={activeId}
-                onSelect={goToConversation}
-                onOpenActions={setConvActionsTarget}
+          {!conversationsLoading && sidebarConversations.map(renderSidebarConversationRow)}
+          {!conversationsLoading && archivedConversations.length > 0 && (
+            <div className="border-t border-[#27272A]">
+              <button
+                type="button"
+                data-testid="archived-chats-toggle"
+                onClick={() => setArchivedOpen((open) => !open)}
+                className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#1A1A1A] transition"
               >
-                <Avatar
-                  user={c.is_group ? null : c.peer}
-                  isGroup={c.is_group}
-                  size="md"
-                  showOnline={!c.is_group}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium truncate">
-                      {c.is_group ? (formatGroupConversationLabel(c) || t('group')) : `@${c.peer?.username}`}
-                      {peerMuted && <span className="text-[#A1A1AA] font-mono text-[10px] ml-1">· {t('muted')}</span>}
-                    </span>
-                    <span className="text-[10px] font-mono text-[#A1A1AA] flex items-center gap-1 shrink-0">
-                      {c.pinned && (
-                        <PushPin size={12} className="text-[#00E5FF]" weight="fill" data-testid={`pin-indicator-${c.conversation_id}`} />
-                      )}
-                      {c.is_group ? `${c.participants.length}P` : c.peer?.language?.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-[#A1A1AA] truncate font-mono">
-                    {c.last_activity?.has_messages ? `· ${t('encryptedMessage')} ·` : t('noMessagesYet')}
-                  </div>
-                </div>
-              </ConversationListRow>
-            );
-          })}
+                <span className="text-[10px] font-mono tracking-widest text-[#A1A1AA]">
+                  {t('archivedChatsTitle', { count: archivedConversations.length })}
+                </span>
+                {archivedOpen ? <CaretUp size={14} className="text-[#A1A1AA]" /> : <CaretDown size={14} className="text-[#A1A1AA]" />}
+              </button>
+              {archivedOpen && archivedConversations.map(renderSidebarConversationRow)}
+            </div>
+          )}
         </div>
       </aside>
 
@@ -1406,6 +1427,7 @@ export default function ChatHome() {
         onMute={toggleMute}
         onBlock={toggleBlock}
         onPin={togglePin}
+        onArchive={toggleArchive}
         onDelete={deleteConversation}
         onManageGroup={(conv) => {
           goToConversation(conv.conversation_id);

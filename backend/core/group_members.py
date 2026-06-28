@@ -8,6 +8,7 @@ from core.contact_helpers import PEER_ROSTER_FIELDS, are_contacts
 from core.database import db
 from core.last_seen import project_user_for_peer
 from core.conversation_meta import peer_summary, sanitize_conversation_for_api
+from core.conversation_archives import clear_archives_for_conversation
 from core.conversation_pins import clear_pins_for_conversation
 from core.push_helpers import send_push_for_group_added
 from core.realtime import manager
@@ -80,6 +81,7 @@ async def remove_group_member(
         await db.messages.delete_many({"conversation_id": conv["conversation_id"]})
         await db.message_reads.delete_many({"conversation_id": conv["conversation_id"]})
         await clear_pins_for_conversation(conv["conversation_id"])
+        await clear_archives_for_conversation(conv["conversation_id"])
         await db.conversations.delete_one({"conversation_id": conv["conversation_id"]})
         for pid in conv.get("participants", []):
             await manager.send_to_user(pid, {

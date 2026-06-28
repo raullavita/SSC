@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Bell, BellSlash, Prohibit, Trash, SignOut, UsersThree, PushPin } from '@phosphor-icons/react';
+import { X, Bell, BellSlash, Prohibit, Trash, SignOut, UsersThree, PushPin, Archive } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 
 /**
@@ -13,6 +13,7 @@ export default function ConversationActionsSheet({
   onMute,
   onBlock,
   onPin,
+  onArchive,
   onDelete,
   onManageGroup,
 }) {
@@ -90,14 +91,25 @@ export default function ConversationActionsSheet({
               {t('groupManageTitle')}
             </button>
           )}
+          {!conversation.archived && (
+            <button
+              type="button"
+              data-testid="conv-action-pin"
+              onClick={() => run(() => onPin?.(conversation))}
+              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
+            >
+              <PushPin size={18} className="text-[#00E5FF]" weight={conversation.pinned ? 'fill' : 'regular'} />
+              {conversation.pinned ? t('unpinChat') : t('pinChat')}
+            </button>
+          )}
           <button
             type="button"
-            data-testid="conv-action-pin"
-            onClick={() => run(() => onPin?.(conversation))}
+            data-testid="conv-action-archive"
+            onClick={() => run(() => onArchive?.(conversation))}
             className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
           >
-            <PushPin size={18} className="text-[#00E5FF]" weight={conversation.pinned ? 'fill' : 'regular'} />
-            {conversation.pinned ? t('unpinChat') : t('pinChat')}
+            <Archive size={18} className="text-[#00E5FF]" weight={conversation.archived ? 'fill' : 'regular'} />
+            {conversation.archived ? t('unarchiveChat') : t('archiveChat')}
           </button>
           <button
             type="button"
