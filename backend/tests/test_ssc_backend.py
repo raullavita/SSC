@@ -375,7 +375,8 @@ async def test_websocket_call_blocked_without_contact():
         "language": "en",
         "captcha_token": "TEST-TOKEN",
     }
-    r = requests.post(f"{API}/auth/register", json=carol, headers=REG_HEADERS)
+    carol_headers = {"X-Forwarded-For": f"10.0.2.{int(SUFFIX, 16) % 200 + 10}"}
+    r = requests.post(f"{API}/auth/register", json=carol, headers=carol_headers)
     assert r.status_code == 200, r.text
     carol_user = r.json()["user"]
     carol_token = r.json()["token"]
