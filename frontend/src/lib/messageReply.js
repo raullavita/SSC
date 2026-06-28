@@ -25,6 +25,10 @@ export function messagePreviewText(msg, plaintext, t) {
   switch (msg.message_type) {
     case 'voice':
       return t('replyPreviewVoice');
+    case 'sticker':
+      return t('replyPreviewSticker');
+    case 'gif':
+      return t('replyPreviewGif');
     case 'image':
       return t('replyPreviewImage');
     case 'file':

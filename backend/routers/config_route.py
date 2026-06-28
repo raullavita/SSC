@@ -1,7 +1,7 @@
 """Public client configuration (ICE, Turnstile, VAPID, egress map)."""
 from fastapi import APIRouter
 
-from core.config import ENV, TURNSTILE_SITEKEY, VAPID_PUBLIC
+from core.config import ENV, TENOR_API_KEY, TURNSTILE_SITEKEY, VAPID_PUBLIC
 from core.signal_policy import LIBSIGNAL_MAVEN_ARTIFACT_ANDROID, LIBSIGNAL_NPM_PACKAGE, LIBSIGNAL_PINNED_VERSION
 from core.egress_policy import build_ice_servers, egress_feature_enabled, egress_status_map, is_air_gapped_mode
 from core.translation_access import is_translation_allowed, translation_provider
@@ -45,4 +45,8 @@ async def public_config():
         "group_calls": group_calls_public_config(),
         "client_updates": client_updates_public_config(),
         "privacy": privacy_public_config(),
+        "gif_search": {
+            "tenor_api_key": TENOR_API_KEY,
+            "provider": "tenor" if TENOR_API_KEY else "",
+        },
     }

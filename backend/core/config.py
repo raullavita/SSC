@@ -17,6 +17,7 @@ TURNSTILE_SITEKEY = os.environ.get("TURNSTILE_SITEKEY", "")
 VAPID_PUBLIC = os.environ.get("VAPID_PUBLIC", "")
 VAPID_PRIVATE = os.environ.get("VAPID_PRIVATE", "")
 VAPID_EMAIL = os.environ.get("VAPID_EMAIL", "admin@ssc.local")
+TENOR_API_KEY = os.environ.get("TENOR_API_KEY", "")
 TRANSLATION_ENABLED = os.environ.get("TRANSLATION_ENABLED", "false").lower() == "true"
 TURN_URL = os.environ.get("TURN_URL", "")
 TURN_USERNAME = os.environ.get("TURN_USERNAME", "")

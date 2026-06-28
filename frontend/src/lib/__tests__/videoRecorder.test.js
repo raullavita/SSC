@@ -35,6 +35,7 @@ describe('videoRecorder', () => {
 
   it('resolves attachment message types', () => {
     expect(resolveAttachmentMessageType('image/png')).toBe('image');
+    expect(resolveAttachmentMessageType('image/gif')).toBe('gif');
     expect(resolveAttachmentMessageType('video/webm')).toBe('video');
     expect(resolveAttachmentMessageType('application/pdf')).toBe('file');
   });

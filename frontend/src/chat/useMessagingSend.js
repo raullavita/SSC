@@ -22,6 +22,8 @@ import {
   startVideoRecording,
   videoFilenameForMime,
 } from '../lib/videoRecorder';
+import { stickerToPngBlob } from '../lib/stickerPack';
+import { fetchGifBlob } from '../lib/gifSearch';
 import { ensureMediaPermissions } from '../lib/mediaPermissions';
 import { isPeerBlocked } from '../lib/contactFilters';
 import { resolveMentionedUserIds } from '../lib/groupMentions';
@@ -310,6 +312,44 @@ export function useMessagingSend({
     recipientsForActive, runMessagingGate, t,
   ]);
 
+  const sendMediaAttachment = useCallback(async (blob, messageType, mimeType, filename) => {
+    if (!blob || !activeConv || uploadBusy) return;
+    const gate = await runMessagingGate();
+    if (!gate) return;
+    setUploadBusy(true);
+    try {
+      const { fileId, attachmentEnc } = await uploadEncryptedAttachment(blob, filename, mimeType);
+      await sendMessage('', messageType, fileId, attachmentEnc);
+    } catch {
+      if (messageType === 'sticker') toast.error(t('stickerSendFailed'));
+      else if (messageType === 'gif') toast.error(t('gifSendFailed'));
+      else toast.error(t('uploadFailed'));
+    } finally {
+      setUploadBusy(false);
+    }
+  }, [activeConv, uploadBusy, runMessagingGate, sendMessage, setUploadBusy, t, uploadEncryptedAttachment]);
+
+  const sendBundledSticker = useCallback(async (sticker) => {
+    if (!sticker) return;
+    try {
+      const blob = await stickerToPngBlob(sticker);
+      await sendMediaAttachment(blob, 'sticker', 'image/png', `sticker-${sticker.id}.png`);
+    } catch {
+      toast.error(t('stickerSendFailed'));
+    }
+  }, [sendMediaAttachment, t]);
+
+  const sendRemoteGif = useCallback(async (gif) => {
+    if (!gif?.gifUrl) return;
+    try {
+      const blob = await fetchGifBlob(gif.gifUrl);
+      const mime = blob.type || 'image/gif';
+      await sendMediaAttachment(blob, 'gif', mime, 'gif.gif');
+    } catch {
+      toast.error(t('gifSendFailed'));
+    }
+  }, [sendMediaAttachment, t]);
+
   const attachFile = useCallback(async (file, { fromPaste = false } = {}) => {
     if (!file || !activeConv || uploadBusy) return;
     if (file.size > MAX_VIDEO_ATTACH_BYTES) {
@@ -479,6 +519,8 @@ export function useMessagingSend({
     sendMessage,
     editMessage,
     attachFile,
+    sendBundledSticker,
+    sendRemoteGif,
     startRecording,
     cancelRecording,
     stopRecordingAndSend,

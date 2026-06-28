@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images, FilmStrip } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images, FilmStrip, Smiley } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -29,6 +29,8 @@ import ChatMessageSearchBar from '../components/ChatMessageSearchBar';
 import GlobalMessageSearchModal from '../components/GlobalMessageSearchModal';
 import ChatMediaGalleryModal from '../components/ChatMediaGalleryModal';
 import VideoRecordPreview from '../components/VideoRecordPreview';
+import StickerGifPickerModal from '../components/StickerGifPickerModal';
+import { gifSearchEnabled, subscribeGifSearchPrefs } from '../lib/gifSearchPrefs';
 import { useGlobalMessageSearch } from '../chat/useGlobalMessageSearch';
 import { linkPreviewsEnabled, subscribeLinkPreviewPrefs } from '../lib/linkPreviewPrefs';
 import { clearLinkPreviewCache } from '../lib/linkPreviewFetch';
@@ -130,6 +132,8 @@ export default function ChatHome() {
   const [chatSearchOpen, setChatSearchOpen] = useState(false);
   const [mediaGalleryOpen, setMediaGalleryOpen] = useState(false);
   const [videoPreviewStream, setVideoPreviewStream] = useState(null);
+  const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
+  const [gifSearchOn, setGifSearchOn] = useState(() => gifSearchEnabled());
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -233,6 +237,7 @@ export default function ChatHome() {
   const imageMediaItems = useMemo(() => listChatImageMedia(messages), [messages]);
 
   useEffect(() => subscribeLinkPreviewPrefs(setLinkPreviewOn), []);
+  useEffect(() => subscribeGifSearchPrefs(setGifSearchOn), []);
 
   const {
     results: globalSearchResults,
@@ -494,6 +499,8 @@ export default function ChatHome() {
     sendMessage,
     editMessage,
     attachFile,
+    sendBundledSticker,
+    sendRemoteGif,
     startRecording,
     cancelRecording,
     stopRecordingAndSend,
@@ -697,6 +704,10 @@ export default function ChatHome() {
         setMediaGalleryOpen(false);
         return;
       }
+      if (stickerPickerOpen) {
+        setStickerPickerOpen(false);
+        return;
+      }
       if (searchOpen) {
         setSearchOpen(false);
         return;
@@ -746,6 +757,7 @@ export default function ChatHome() {
     onboardingOpen,
     globalSearchOpen,
     mediaGalleryOpen,
+    stickerPickerOpen,
     searchOpen,
     settingsOpen,
     storyGroup,
@@ -1509,6 +1521,16 @@ export default function ChatHome() {
               </button>
               <button
                 type="button"
+                onClick={() => setStickerPickerOpen(true)}
+                disabled={uploadBusy || !canMessagePeer}
+                data-testid="sticker-button"
+                className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
+                title={t('stickerGifPickerTitle')}
+              >
+                <Smiley size={18} />
+              </button>
+              <button
+                type="button"
                 onClick={onVideoClick}
                 onPointerDown={onVideoPointerDown}
                 onPointerUp={onVideoPointerUp}
@@ -1581,6 +1603,14 @@ export default function ChatHome() {
         myUserId={user?.user_id}
         peerUserId={peer?.user_id}
         onJumpToMessage={(messageId) => setPendingScrollMessageId(messageId)}
+      />
+
+      <StickerGifPickerModal
+        open={stickerPickerOpen}
+        onClose={() => setStickerPickerOpen(false)}
+        onPickSticker={sendBundledSticker}
+        onPickGif={sendRemoteGif}
+        gifSearchOn={gifSearchOn}
       />
 
       <GlobalMessageSearchModal

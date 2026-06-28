@@ -265,6 +265,24 @@ export default function Message({
               ) : (
                 <LegacyAttachmentPlaceholder kind="voice" />
               )
+            ) : msg.message_type === 'sticker' && msg.attachment_id ? (
+              attachmentEncrypted ? (
+                <EncryptedStickerAttachment
+                  msg={msg} fileId={msg.attachment_id}
+                  privateKey={privateKey} myUserId={myUserId} peerUserId={peerUserId}
+                />
+              ) : (
+                <LegacyAttachmentPlaceholder kind="sticker" />
+              )
+            ) : msg.message_type === 'gif' && msg.attachment_id ? (
+              attachmentEncrypted ? (
+                <EncryptedGifAttachment
+                  msg={msg} fileId={msg.attachment_id}
+                  privateKey={privateKey} myUserId={myUserId} peerUserId={peerUserId}
+                />
+              ) : (
+                <LegacyAttachmentPlaceholder kind="gif" />
+              )
             ) : msg.message_type === 'video' && msg.attachment_id ? (
               attachmentEncrypted ? (
                 <EncryptedVideoAttachment
@@ -415,6 +433,46 @@ function EncryptedFileAttachment({ msg, fileId, caption, privateKey, myUserId, p
       </div>
       <DownloadSimple size={16} className="text-[#A1A1AA] shrink-0" />
     </a>
+  );
+}
+
+function EncryptedStickerAttachment({ msg, fileId, privateKey, myUserId, peerUserId }) {
+  const { objectUrl, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
+
+  if (loading) return <span className="font-mono text-xs text-[#A1A1AA]">decrypting sticker…</span>;
+  if (error) return <span className="font-mono text-xs text-[#FF3B30]">[unable to decrypt sticker]</span>;
+
+  return (
+    <img
+      src={objectUrl}
+      alt="sticker"
+      className="w-32 h-32 object-contain"
+      data-testid={`sticker-${fileId}`}
+    />
+  );
+}
+
+function EncryptedGifAttachment({ msg, fileId, privateKey, myUserId, peerUserId }) {
+  const { objectUrl, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  if (loading) return <span className="font-mono text-xs text-[#A1A1AA]">decrypting gif…</span>;
+  if (error) return <span className="font-mono text-xs text-[#FF3B30]">[unable to decrypt gif]</span>;
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setPreviewOpen(true)}
+        className="block rounded-md overflow-hidden hover:brightness-110 transition"
+        data-testid={`gif-${fileId}`}
+      >
+        <img src={objectUrl} alt="gif" className="rounded-md max-w-[280px] max-h-[280px] object-cover cursor-zoom-in" />
+      </button>
+      {previewOpen && (
+        <ImagePreviewModal src={objectUrl} alt="gif" onClose={() => setPreviewOpen(false)} />
+      )}
+    </div>
   );
 }
 

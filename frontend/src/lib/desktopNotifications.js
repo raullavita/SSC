@@ -119,6 +119,8 @@ const SYSTEM_MESSAGE_TYPES = new Set(['sender_key_distribution', 'status_skdm'])
 function messagePreview(messageType) {
   switch (messageType) {
     case 'voice': return 'Voice message';
+    case 'sticker': return 'Sticker';
+    case 'gif': return 'GIF';
     case 'image': return 'Photo';
     case 'file': return 'File';
     case 'video': return 'Video';

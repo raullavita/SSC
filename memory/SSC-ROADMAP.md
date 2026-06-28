@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.21 done** → next **Q.22** | [~] Q.22 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.22 done** → next **Q.23** | [~] Q.23 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -295,7 +295,7 @@
 | 19 | **Q.19** | **In-chat media gallery** | git | [x] |
 | 20 | **Q.20** | **Voice note scrubber + playback speed** | git | [x] |
 | 21 | **Q.21** | **Video messages** (short clip attach, not live call) | git | [x] |
-| 22 | **Q.22** | **GIF / stickers** — start with bundled sticker pack + Tenor/Giphy opt-in (network toggle) | git | [ ] |
+| 22 | **Q.22** | **GIF / stickers** — start with bundled sticker pack + Tenor/Giphy opt-in (network toggle) | git | [x] |
 | 23 | **Q.23** | **Polls** (group-only) | git | [ ] |
 | 24 | **Q.24** | **Location sharing** (one-shot map pin, E2E) — **no** contact-card share | git | [ ] |
 

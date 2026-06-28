@@ -29,6 +29,7 @@ export function videoFilenameForMime(mime) {
 
 export function resolveAttachmentMessageType(mimeType = '') {
   const mime = (mimeType || '').toLowerCase();
+  if (mime === 'image/gif') return 'gif';
   if (mime.startsWith('image/')) return 'image';
   if (mime.startsWith('video/')) return 'video';
   return 'file';
