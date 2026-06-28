@@ -38,6 +38,10 @@ import {
 import { isElectronApp, isInstalledClient, isNativeApp } from '../lib/platform';
 import { scheduleBackgroundUpdateCheck } from '../lib/clientUpdates';
 import {
+  formatRetentionDuration,
+  normalizeRetentionHours,
+} from '../lib/retentionDisplay';
+import {
   areDesktopNotificationsEnabled,
   subscribeDesktopNavigation,
   syncDesktopNotificationPref,
@@ -95,6 +99,7 @@ export default function ChatHome() {
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [retentionHours, setRetentionHours] = useState(24);
+  const displayRetentionHours = normalizeRetentionHours(user?.retention_hours, retentionHours);
   const socketRef = useRef(null);
   const scrollRef = useRef(null);
   const { t } = useLocale();
@@ -771,7 +776,7 @@ export default function ChatHome() {
                           {`${formatPeerPresence(peer)} · ${peer?.language?.toUpperCase() || '—'}`}
                         </span>
                         <span className="text-[#34C759]" data-testid="chat-retention-badge">
-                          · {t('retentionBadge', { hours: String(retentionHours) })}
+                          · {formatRetentionDuration(displayRetentionHours, t)}
                         </span>
                       </div>
                     </div>
@@ -795,7 +800,7 @@ export default function ChatHome() {
                             : `${formatPeerPresence(peer)} · ${peer?.language?.toUpperCase() || '—'}`}
                         </span>
                         <span className="text-[#34C759]" data-testid="chat-retention-badge">
-                          · {t('retentionBadge', { hours: String(retentionHours) })}
+                          · {formatRetentionDuration(displayRetentionHours, t)}
                         </span>
                       </div>
                     </div>

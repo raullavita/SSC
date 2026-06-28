@@ -8,6 +8,9 @@ from core.auth import get_current_user
 from core.contact_helpers import get_user_public
 from core.database import db
 from core.models import UpdateProfileIn
+from core.retention_db import refresh_retention_after_user_change
+from core.retention import DEFAULT_RETENTION_HOURS
+from core.user_retention import normalize_user_retention_hours, user_retention_hours_from_doc
 from core.utils import validate_username
 from security import rate_limit_check
 
@@ -38,8 +41,18 @@ async def update_me(body: UpdateProfileIn, current=Depends(get_current_user)):
         raise HTTPException(403, "Username cannot be changed after registration")
     if body.language:
         update["language"] = body.language
+    if body.retention_hours is not None:
+        try:
+            new_hours = normalize_user_retention_hours(body.retention_hours)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        current_hours = user_retention_hours_from_doc(current)
+        if new_hours != current_hours:
+            update["retention_hours"] = new_hours
     if update:
         await db.users.update_one({"user_id": current["user_id"]}, {"$set": update})
+        if "retention_hours" in update:
+            await refresh_retention_after_user_change(current["user_id"])
     user = await db.users.find_one(
         {"user_id": current["user_id"]},
         {"_id": 0, "password_hash": 0, "totp_secret": 0, "totp_pending_secret": 0},

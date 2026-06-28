@@ -15,7 +15,7 @@ from core.signal_message_policy import SignalMessageValidationError, validate_se
 from core.signal_policy import ProtocolVersion
 from core.realtime import broadcast_message_to_conversation, broadcast_to_conversation
 from core.retention import expires_at_from_now, message_read_expiry_fields
-from core.retention_db import bump_conversation_activity
+from core.retention_db import bump_conversation_activity, get_effective_retention_for_conversation
 from core.utils import iso, now_utc
 from security import rate_limit_check
 
@@ -65,7 +65,8 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
             raise HTTPException(413, "Encrypted keys too large or too many")
 
     created = now_utc()
-    expires = expires_at_from_now()
+    retention_window = await get_effective_retention_for_conversation(body.conversation_id)
+    expires = expires_at_from_now(retention_window)
     msg = sanitize_message_for_storage({
         "message_id": f"m_{uuid.uuid4().hex[:14]}",
         "conversation_id": body.conversation_id,
@@ -111,12 +112,13 @@ async def mark_read(body: MarkReadIn, current=Depends(get_current_user)):
             return {"ok": True}
         up_to = last["message_id"]
     read_at = iso(now_utc())
+    retention_window = await get_effective_retention_for_conversation(body.conversation_id)
     await db.message_reads.update_one(
         {"conversation_id": body.conversation_id, "user_id": current["user_id"]},
         {"$set": {
             "last_read_message_id": up_to,
             "last_read_at": read_at,
-            **message_read_expiry_fields(),
+            **message_read_expiry_fields(retention_window),
         }},
         upsert=True,
     )

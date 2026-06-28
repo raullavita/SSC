@@ -42,17 +42,17 @@ def friend_request_resolved_expires_at() -> datetime:
     return expires_at_from_now()
 
 
-def conversation_activity_fields(at: Optional[datetime] = None) -> dict:
+def conversation_activity_fields(at: Optional[datetime] = None, hours: Optional[int] = None) -> dict:
     """Fields for new conversations or activity bumps (expires_at is BSON date for TTL)."""
     ts = at or now_utc()
     return {
         "last_activity_at": iso(ts),
-        "expires_at": expires_at_from_now(),
+        "expires_at": expires_at_from_now(hours),
     }
 
 
-def message_read_expiry_fields() -> dict:
-    return {"expires_at": expires_at_from_now()}
+def message_read_expiry_fields(hours: Optional[int] = None) -> dict:
+    return {"expires_at": expires_at_from_now(hours)}
 
 
 # Collections that must have a Mongo TTL index on expires_at (Engine 1.3)

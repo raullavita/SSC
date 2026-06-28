@@ -35,6 +35,7 @@ from core.models import (
     TwoFASetupVerifyIn,
     UsernameCheckIn,
 )
+from core.retention import DEFAULT_RETENTION_HOURS
 from core.utils import iso, now_utc, validate_username
 from security import rate_limit_check
 
@@ -65,6 +66,7 @@ async def register(body: RegisterIn, request: Request, response: Response):
         "username": body.username,
         "password_hash": hash_password(body.password),
         "language": body.language or "en",
+        "retention_hours": DEFAULT_RETENTION_HOURS,
         "public_key": body.public_key,
         "encrypted_private_key": body.encrypted_private_key,
         "pk_salt": body.pk_salt,
@@ -190,6 +192,7 @@ async def _google_find_or_create(claims: dict) -> tuple[dict, bool]:
             "username": None,
             "password_hash": None,
             "language": "en",
+            "retention_hours": DEFAULT_RETENTION_HOURS,
             "public_key": None,
             "encrypted_private_key": None,
             "pk_salt": None,

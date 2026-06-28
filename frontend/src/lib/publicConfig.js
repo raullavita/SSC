@@ -10,9 +10,18 @@ export async function fetchPublicConfig() {
 export async function fetchRetentionConfig() {
   try {
     const cfg = await fetchPublicConfig();
-    const hours = Number(cfg?.retention?.hours);
+    const retention = cfg?.retention || {};
+    const hours = Number(retention.hours);
+    const allowed = Array.isArray(retention.allowed_hours)
+      ? retention.allowed_hours.map((h) => Number(h)).filter((h) => Number.isFinite(h) && h > 0)
+      : [];
     if (Number.isFinite(hours) && hours > 0) {
-      return { hours };
+      return {
+        hours,
+        defaultHours: Number(retention.default_hours) || hours,
+        allowedHours: allowed.length ? allowed : undefined,
+        perUser: !!retention.per_user,
+      };
     }
   } catch {
     // Keep UI informative even if config request fails.

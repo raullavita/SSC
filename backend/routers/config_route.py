@@ -7,7 +7,7 @@ from core.egress_policy import build_ice_servers, egress_feature_enabled, egress
 from core.translation_access import is_translation_allowed, translation_provider
 from core.translation_policy import production_translation_mode
 from core.sfu_policy import group_calls_public_config
-from core.retention import DEFAULT_RETENTION_HOURS, retention_hours
+from core.user_retention import retention_public_config
 from core.client_updates_policy import client_updates_public_config
 from security import get_rate_limit_backend
 
@@ -17,7 +17,6 @@ router = APIRouter()
 @router.get("/config")
 async def public_config():
     turnstile_key = TURNSTILE_SITEKEY if egress_feature_enabled("turnstile") else ""
-    retention_window_hours = retention_hours()
     return {
         "turnstile_sitekey": turnstile_key,
         "vapid_public_key": VAPID_PUBLIC if egress_feature_enabled("web_push") else "",
@@ -27,10 +26,8 @@ async def public_config():
         "air_gapped_mode": is_air_gapped_mode(),
         "translation_enabled": is_translation_allowed(),
         "retention": {
-            "hours": retention_window_hours,
-            "default_hours": DEFAULT_RETENTION_HOURS,
+            **retention_public_config(),
             "ephemeral_default": True,
-            "summary": f"Messages, files, and call logs disappear after {retention_window_hours} hours by default.",
         },
         "translation_provider": translation_provider(),
         "translation_mode": production_translation_mode().value,

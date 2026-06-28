@@ -18,8 +18,7 @@ from core.conversation_meta import (
     project_message_for_viewer,
     sanitize_conversation_for_api,
 )
-from core.retention import conversation_activity_fields
-from core.retention_db import bump_conversation_activity
+from core.retention_db import bump_conversation_activity, conversation_activity_fields_for_participants
 from core.utils import iso, now_utc
 from security import rate_limit_check
 
@@ -70,6 +69,7 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
             raise HTTPException(400, "Group needs at least 1 other participant")
         participants = sorted({current["user_id"], *[p["user_id"] for p in peers]})
         created = now_utc()
+        activity = await conversation_activity_fields_for_participants(participants, created)
         conv = {
             "conversation_id": f"g_{uuid.uuid4().hex[:14]}",
             "participants": participants,
@@ -77,7 +77,7 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
             "admin_id": current["user_id"],
             "created_at": iso(created),
             "created_by": current["user_id"],
-            **conversation_activity_fields(created),
+            **activity,
         }
         await db.conversations.insert_one(conv)
         conv.pop("_id", None)
@@ -116,13 +116,14 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
         base["peer"] = peer_summary(peer)
         return sanitize_conversation_for_api(base, current["user_id"])
     created = now_utc()
+    activity = await conversation_activity_fields_for_participants(participants, created)
     conv = {
         "conversation_id": f"c_{uuid.uuid4().hex[:14]}",
         "participants": participants,
         "is_group": False,
         "created_at": iso(created),
         "created_by": current["user_id"],
-        **conversation_activity_fields(created),
+        **activity,
         "peer": peer_summary(peer),
     }
     await db.conversations.insert_one(conv)

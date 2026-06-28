@@ -1,6 +1,6 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-28 (TASK Q expansion wave · v1.0.12 · Q.4 auto-update)
+**Updated:** 2026-06-28 (TASK Q expansion wave · v1.0.12 · Q.5 per-user retention)
 **Repo:** `C:\Users\smash\SSC-main` · **GitHub:** https://github.com/raullavita/SSC (public, AGPL-3.0)
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
@@ -135,7 +135,7 @@
 | **Group call signaling cleartext** | Server sees SDP/ICE for group calls (TASK O.2) |
 | **Device wrap in localStorage** | Session/vault creds not hardware-backed yet (TASK O.3) |
 | **No third-party security audit** | Do not claim “audited like Signal” publicly |
-| **Retention not user-configurable** | Global 24h only; blueprint phase 2 (TASK M.6) |
+| **Retention not user-configurable** | ✅ Q.5 — per-user 1h–30d picker; group chats use shortest member timer |
 | **Kotlin/R8 metadata warnings** on APK build | Build succeeds; watch for runtime edge cases on older Android |
 | **No code signing** on Windows installer | SmartScreen will warn |
 | **iOS** | Not shipped (TASK K) |
@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.4 done** → next **Q.5** | [~] Q.5 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.5 done** → next **Q.6** | [~] Q.6 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -268,7 +268,7 @@
 
 | # | ID | Subtask | Owner | Status |
 |---|-----|---------|-------|--------|
-| 5 | **Q.5** | **Per-user retention timer** — 1h/2h/4h/8h/24h/7d/30d; Mongo TTL + UI in Settings; default 24h | git | [ ] |
+| 5 | **Q.5** | **Per-user retention timer** — 1h/2h/4h/8h/24h/7d/30d; Mongo TTL + UI in Settings; default 24h | git | [x] |
 | 6 | **Q.6** | **Privacy toggles** — read receipts on/off · typing on/off · last seen granularity · profile photo visibility | git | [ ] |
 
 #### Wave 3 — Chat table stakes (highest daily-use ROI)
@@ -630,7 +630,7 @@ Run on **tester-win (Win)** + **tester-android (Android)** against production AP
 | M.3 | **Settings: panic wipe** in Security section | `SettingsModal.jsx`, `PanicButton.jsx` | [x] |
 | M.4 | **Settings: push enable** + help/support link | `SettingsModal.jsx` | [x] |
 | M.5 | **Change password** (password accounts only) | `auth` router + Settings | [x] |
-| M.6 | **User retention picker** (1h / 6h / 24h / 7d) | backend policy + Settings | [ ] deferred v1.1 |
+| M.6 | **User retention picker** (1h / 6h / 24h / 7d) | backend policy + Settings | [x] shipped as **Q.5** (1/2/4/8/24h + 7d/30d) |
 | M.7 | **Delete account** flow | backend + Settings + confirm | [x] `POST /auth/delete-account` |
 | M.8 | **Loading / error states** — decrypt retry, skeletons | `Message.jsx`, `ChatHome.jsx`, `ChatSkeleton.jsx` | [x] |
 | M.9 | **Stories UX pass** — views, delete, navigation | `Stories.jsx` | [x] i18n + Escape + viewer polish |

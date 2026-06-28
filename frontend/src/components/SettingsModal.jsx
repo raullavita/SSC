@@ -16,6 +16,13 @@ import {
   SSC_SOURCE_REPO_URL,
 } from '../lib/openSourceLicenses';
 import { fetchRetentionConfig } from '../lib/publicConfig';
+import {
+  DEFAULT_RETENTION_HOURS,
+  formatRetentionDuration,
+  normalizeRetentionHours,
+  retentionOptionLabel,
+  RETENTION_HOUR_OPTIONS,
+} from '../lib/retentionDisplay';
 import Avatar from './Avatar';
 import TwoFAModal from './TwoFAModal';
 import PanicButton from './PanicButton';
@@ -71,7 +78,8 @@ export default function SettingsModal({ open, onClose }) {
   const [busy, setBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
-  const [retentionHours, setRetentionHours] = useState(24);
+  const [retentionHours, setRetentionHours] = useState(DEFAULT_RETENTION_HOURS);
+  const [retentionOptions, setRetentionOptions] = useState(RETENTION_HOUR_OPTIONS);
   const [blockedContacts, setBlockedContacts] = useState([]);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushOk, setPushOk] = useState(false);
@@ -96,6 +104,7 @@ export default function SettingsModal({ open, onClose }) {
   useEffect(() => {
     if (open && user) {
       setLanguage(user.language || 'en');
+      setRetentionHours(normalizeRetentionHours(user.retention_hours));
     }
     if (open && isElectronApp()) {
       setDesktopNotifEnabled(areDesktopNotificationsEnabled());
@@ -107,10 +116,15 @@ export default function SettingsModal({ open, onClose }) {
     let cancelled = false;
     (async () => {
       const retention = await fetchRetentionConfig();
-      if (!cancelled) setRetentionHours(retention.hours);
+      if (!cancelled) {
+        if (retention.allowedHours?.length) setRetentionOptions(retention.allowedHours);
+        if (!user?.retention_hours) {
+          setRetentionHours(normalizeRetentionHours(retention.hours));
+        }
+      }
     })();
     return () => { cancelled = true; };
-  }, [open]);
+  }, [open, user?.retention_hours]);
 
   useEffect(() => {
     if (!open || !isInstalledClient() || !user) return undefined;
@@ -348,6 +362,8 @@ export default function SettingsModal({ open, onClose }) {
     try {
       const payload = {};
       if (language !== (user?.language || 'en')) payload.language = language;
+      const savedRetention = normalizeRetentionHours(user?.retention_hours);
+      if (retentionHours !== savedRetention) payload.retention_hours = retentionHours;
       if (Object.keys(payload).length === 0) {
         onClose?.();
         return;
@@ -402,7 +418,8 @@ export default function SettingsModal({ open, onClose }) {
   if (!open) return null;
 
   const messagesProtected = userHasUnifiedIdentity(user);
-  const profileDirty = language !== (user?.language || 'en');
+  const profileDirty = language !== (user?.language || 'en')
+    || retentionHours !== normalizeRetentionHours(user?.retention_hours);
 
   return (
     <>
@@ -475,8 +492,8 @@ export default function SettingsModal({ open, onClose }) {
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-[#A1A1AA]">{t('settingsAutoDelete')}</span>
-                  <span className="font-mono text-[#34C759]">
-                    {t('retentionBadge', { hours: String(retentionHours) })}
+                  <span className="font-mono text-[#34C759]" data-testid="settings-retention-value">
+                    {formatRetentionDuration(retentionHours, t)}
                   </span>
                 </div>
                 <div className="flex justify-between gap-2">
@@ -485,6 +502,25 @@ export default function SettingsModal({ open, onClose }) {
                     {user?.totp_enabled ? t('on') : t('off')}
                   </span>
                 </div>
+              </div>
+
+              <div className="mt-3" data-testid="settings-retention-picker">
+                <label className="block text-[10px] font-mono text-[#A1A1AA] uppercase tracking-wider mb-1">
+                  {t('settingsRetention')}
+                </label>
+                <select
+                  value={retentionHours}
+                  onChange={(e) => setRetentionHours(normalizeRetentionHours(e.target.value))}
+                  className="w-full px-3 py-2.5 text-sm bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]"
+                  data-testid="settings-retention-select"
+                >
+                  {retentionOptions.map((hours) => (
+                    <option key={hours} value={hours}>
+                      {retentionOptionLabel(hours, t)}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-[10px] text-[#71717A]">{t('settingsRetentionHint')}</p>
               </div>
 
               {canChangePassword && (

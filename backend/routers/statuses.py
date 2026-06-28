@@ -19,6 +19,7 @@ from core.signal_message_policy import SignalMessageValidationError
 from core.signal_policy import ProtocolVersion
 from core.signal_status_policy import validate_status_payload
 from core.retention import expires_at_from_now
+from core.user_retention import user_retention_hours_from_doc
 from core.utils import iso, now_utc
 from security import rate_limit_check
 
@@ -66,7 +67,7 @@ async def create_status(body: CreateStatusIn, current=Depends(get_current_user))
                 raise HTTPException(403, "Can only send status to mutual contacts")
 
     created = now_utc()
-    expires = expires_at_from_now()
+    expires = expires_at_from_now(user_retention_hours_from_doc(current))
     doc = sanitize_status_for_storage({
         "status_id": f"s_{uuid.uuid4().hex[:14]}",
         "author_id": current["user_id"],

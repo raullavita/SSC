@@ -11,6 +11,7 @@ from core.file_validation import validate_upload
 from core.files import load_file_gridfs, save_file_gridfs
 from core.logging_config import logger
 from core.retention import expires_at_from_now
+from core.user_retention import user_retention_hours_from_doc
 from core.utils import iso, now_utc
 from security import rate_limit_check
 
@@ -56,7 +57,7 @@ async def upload_file(
         file.filename or "file.bin",
         normalized_type,
     )
-    expires = expires_at_from_now()
+    expires = expires_at_from_now(user_retention_hours_from_doc(current))
     record = {
         "file_id": file_id,
         "owner_id": current["user_id"],

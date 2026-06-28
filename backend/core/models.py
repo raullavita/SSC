@@ -46,6 +46,7 @@ class FinishGoogleSetupIn(BaseModel):
 class UpdateProfileIn(BaseModel):
     username: Optional[str] = None
     language: Optional[str] = None
+    retention_hours: Optional[int] = None
 
 
 class CreateConversationIn(BaseModel):
