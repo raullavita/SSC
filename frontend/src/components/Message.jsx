@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale } from '../context/LocaleContext';
-import { Translate, Paperclip, Check, Checks, Play, Pause, DownloadSimple } from '@phosphor-icons/react';
+import { Translate, Paperclip, Check, Checks, DownloadSimple } from '@phosphor-icons/react';
 import { decryptMessageBody } from '../lib/signal/migration';
 import { isSignalV1AttachmentMessage } from '../lib/signal/attachments';
 import { translateMessageText } from '../lib/translation/translateClient';
@@ -15,6 +15,7 @@ import { splitTextForHighlight } from '../lib/chatSearch';
 import RichTextContent from './RichTextContent';
 import { extractFirstPreviewUrl } from '../lib/linkPreview';
 import LinkPreviewCard from './LinkPreviewCard';
+import VoiceNotePlayer from './VoiceNotePlayer';
 
 function HighlightedText({ text, query }) {
   const parts = splitTextForHighlight(text, query);
@@ -408,50 +409,12 @@ function EncryptedFileAttachment({ msg, fileId, caption, privateKey, myUserId, p
 }
 
 function EncryptedVoiceAttachment({ msg, fileId, privateKey, myUserId, peerUserId }) {
-  const { objectUrl, blob, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
-  const audioRef = React.useRef(null);
-  const [playing, setPlaying] = useState(false);
+  const { objectUrl, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
 
   if (loading) return <span className="font-mono text-xs text-[#A1A1AA]">decrypting voice…</span>;
   if (error) return <span className="font-mono text-xs text-[#FF3B30]">[{error === 'NO_KEY' ? 'no key for voice' : 'unable to decrypt voice'}]</span>;
 
-  const togglePlay = () => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (el.paused) {
-      el.play().catch(() => {});
-    } else {
-      el.pause();
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-2 min-w-[200px]" data-testid={`voice-${fileId}`}>
-      <button
-        type="button"
-        onClick={togglePlay}
-        className="w-10 h-10 rounded-full bg-[#00E5FF] text-black flex items-center justify-center shrink-0 hover:brightness-110"
-        data-testid={`voice-play-${fileId}`}
-      >
-        {playing ? <Pause size={18} weight="fill" /> : <Play size={18} weight="fill" />}
-      </button>
-      <audio
-        ref={audioRef}
-        src={objectUrl}
-        preload="metadata"
-        className="flex-1 max-w-[160px] h-8"
-        controls
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onEnded={() => setPlaying(false)}
-        data-testid={`voice-audio-${fileId}`}
-      >
-        {blob && (
-          <a href={objectUrl} download={`voice-${fileId}`}>Download voice note</a>
-        )}
-      </audio>
-    </div>
-  );
+  return <VoiceNotePlayer objectUrl={objectUrl} fileId={fileId} />;
 }
 
 function LegacyAttachmentPlaceholder({ kind, caption, searchQuery = '' }) {
