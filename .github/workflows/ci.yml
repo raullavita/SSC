@@ -77,7 +77,7 @@ jobs:
       - name: Write CI .env
         run: |
           cat > .env <<'EOF'
-          MONGO_URL=mongodb://localhost:27017
+          MONGO_URL=mongodb://127.0.0.1:27017/?directConnection=true
           DB_NAME=ssc-ci
           JWT_SECRET=ci-only-jwt-secret-not-for-production
           CONTACT_GRAPH_PEPPER=ci-only-contact-graph-pepper
