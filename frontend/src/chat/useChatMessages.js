@@ -6,6 +6,7 @@ import { decryptMessageBody } from '../lib/signal/migration';
 import { processIncomingSkdmMessage } from '../lib/signal/groupMessages';
 import { readReceiptsEnabled } from '../lib/privacySettings';
 import { isMessageDeleted } from '../lib/messageDelete';
+import { filterMessagesForSearch, searchMatchIds } from '../lib/chatSearch';
 
 export function useChatMessages({
   activeId,
@@ -44,19 +45,20 @@ export function useChatMessages({
     return () => { cancelled = true; };
   }, [messages, privateKey, user?.user_id, peer?.user_id]);
 
-  const filteredMessages = useMemo(() => {
-    const q = messageFilter.trim().toLowerCase();
-    if (!q) return messages;
-    return messages.filter((m) => {
-      if (m.sender_id === user?.user_id && user?.username?.toLowerCase().includes(q)) return true;
-      if (isGroup && activeConv?.members) {
-        const sender = activeConv.members.find((mem) => mem.user_id === m.sender_id);
-        if (sender?.username?.toLowerCase().includes(q)) return true;
-      } else if (m.sender_id !== user?.user_id && peer?.username?.toLowerCase().includes(q)) return true;
-      const body = decryptedBodies[m.message_id];
-      return body && body.toLowerCase().includes(q);
-    });
-  }, [messages, messageFilter, decryptedBodies, user, peer, isGroup, activeConv]);
+  const searchContext = useMemo(
+    () => ({ user, peer, isGroup, activeConv }),
+    [user, peer, isGroup, activeConv],
+  );
+
+  const filteredMessages = useMemo(
+    () => filterMessagesForSearch(messages, messageFilter, decryptedBodies, searchContext),
+    [messages, messageFilter, decryptedBodies, searchContext],
+  );
+
+  const matchIds = useMemo(
+    () => searchMatchIds(messages, messageFilter, decryptedBodies, searchContext),
+    [messages, messageFilter, decryptedBodies, searchContext],
+  );
 
   useEffect(() => {
     if (!activeId) {
@@ -122,6 +124,7 @@ export function useChatMessages({
     messageFilter,
     setMessageFilter,
     filteredMessages,
+    searchMatchIds: matchIds,
     userNearBottomRef,
     onMessagesScroll,
   };

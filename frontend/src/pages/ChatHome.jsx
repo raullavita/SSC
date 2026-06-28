@@ -23,6 +23,8 @@ import CreateGroupModal from '../components/CreateGroupModal';
 import GroupManageModal from '../components/GroupManageModal';
 import { ConversationListSkeleton, MessagesSkeleton } from '../components/ChatSkeleton';
 import ConversationActionsSheet, { ConversationListRow } from '../components/ConversationActionsSheet';
+import ChatMessageSearchBar from '../components/ChatMessageSearchBar';
+import { clampSearchMatchIndex } from '../lib/chatSearch';
 import ProfileContactSheet from '../components/ProfileContactSheet';
 import VerifyHandshakeModal from '../components/VerifyHandshakeModal';
 import { useLocale } from '../context/LocaleContext';
@@ -104,7 +106,8 @@ export default function ChatHome() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [confirmRemoveUid, setConfirmRemoveUid] = useState(null);
-  const [mobileMsgSearchOpen, setMobileMsgSearchOpen] = useState(false);
+  const [chatSearchOpen, setChatSearchOpen] = useState(false);
+  const [searchMatchIndex, setSearchMatchIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
   const [groupManageOpen, setGroupManageOpen] = useState(false);
@@ -140,7 +143,8 @@ export default function ChatHome() {
 
   const leaveChat = useCallback(() => {
     setChatMenuOpen(false);
-    setMobileMsgSearchOpen(false);
+    setChatSearchOpen(false);
+    setSearchMatchIndex(0);
     goToConversation(null);
   }, [goToConversation]);
 
@@ -190,6 +194,7 @@ export default function ChatHome() {
     messageFilter,
     setMessageFilter,
     filteredMessages,
+    searchMatchIds,
     decryptedBodies,
     userNearBottomRef,
     onMessagesScroll,
@@ -584,8 +589,10 @@ export default function ChatHome() {
         setChatMenuOpen(false);
         return;
       }
-      if (mobileMsgSearchOpen) {
-        setMobileMsgSearchOpen(false);
+      if (chatSearchOpen) {
+        setChatSearchOpen(false);
+        setMessageFilter('');
+        setSearchMatchIndex(0);
         return;
       }
       if (settingsOpen) {
@@ -641,7 +648,7 @@ export default function ChatHome() {
     conversationId,
     groupOpen,
     leaveChat,
-    mobileMsgSearchOpen,
+    chatSearchOpen,
     onboardingOpen,
     searchOpen,
     settingsOpen,
@@ -851,6 +858,35 @@ export default function ChatHome() {
       }
     }
   };
+
+  useEffect(() => {
+    setSearchMatchIndex(0);
+  }, [messageFilter]);
+
+  useEffect(() => {
+    if (!chatSearchOpen || !messageFilter.trim() || searchMatchIds.length === 0) return;
+    const id = searchMatchIds[searchMatchIndex];
+    const el = document.querySelector(`[data-testid="message-${id}"]`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [searchMatchIndex, searchMatchIds, chatSearchOpen, messageFilter]);
+
+  const closeChatSearch = useCallback(() => {
+    setChatSearchOpen(false);
+    setMessageFilter('');
+    setSearchMatchIndex(0);
+  }, [setMessageFilter]);
+
+  const onSearchPrev = useCallback(() => {
+    setSearchMatchIndex((i) => clampSearchMatchIndex(i - 1, searchMatchIds.length));
+  }, [searchMatchIds.length]);
+
+  const onSearchNext = useCallback(() => {
+    setSearchMatchIndex((i) => clampSearchMatchIndex(i + 1, searchMatchIds.length));
+  }, [searchMatchIds.length]);
+
+  const activeSearchMatchId = messageFilter.trim() && searchMatchIds.length
+    ? searchMatchIds[searchMatchIndex]
+    : null;
 
   const onDraftChange = (v) => {
     setDraft(v);
@@ -1081,7 +1117,7 @@ export default function ChatHome() {
                           testId="mobile-search-messages"
                           onClick={() => {
                             setChatMenuOpen(false);
-                            setMobileMsgSearchOpen((v) => !v);
+                            setChatSearchOpen(true);
                           }}
                         >
                           {t('searchMessages')}
@@ -1107,6 +1143,15 @@ export default function ChatHome() {
                         </MenuAction>
                       </MobileChatMenu>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => (chatSearchOpen ? closeChatSearch() : setChatSearchOpen(true))}
+                      data-testid="open-chat-search"
+                      className={`w-10 h-10 rounded-md tac-border flex items-center justify-center ${chatSearchOpen ? 'bg-[#00E5FF]/15 border-[#00E5FF]/40' : 'bg-[#121212] active:bg-[#1A1A1A]'}`}
+                      title={t('searchMessages')}
+                    >
+                      <MagnifyingGlass size={18} />
+                    </button>
                     <button onClick={() => startCall('audio')} data-testid="start-voice-call" className="w-10 h-10 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center" title={t('voiceCall')}>
                       <Phone size={18} />
                     </button>
@@ -1142,6 +1187,15 @@ export default function ChatHome() {
                         <Translate size={14} /> {t('autoTr')} {autoTranslate ? t('on') : t('off')}
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => (chatSearchOpen ? closeChatSearch() : setChatSearchOpen(true))}
+                      data-testid="open-chat-search"
+                      className={`w-9 h-9 rounded-md tac-border flex items-center justify-center ${chatSearchOpen ? 'bg-[#00E5FF]/15 border-[#00E5FF]/40' : 'bg-[#121212] hover:bg-[#1A1A1A]'}`}
+                      title={t('searchMessages')}
+                    >
+                      <MagnifyingGlass size={16} />
+                    </button>
                     <button onClick={() => startCall('audio')} data-testid="start-voice-call" className="w-9 h-9 rounded-md tac-border bg-[#121212] hover:bg-[#1A1A1A] flex items-center justify-center" title={t('voiceCall')}>
                       <Phone size={16} />
                     </button>
@@ -1153,27 +1207,27 @@ export default function ChatHome() {
               </div>
             </header>
 
-            {(isSinglePane && mobileMsgSearchOpen) && (
-              <div className="md:hidden px-3 py-2 border-b border-[#27272A] shrink-0">
-                <input
-                  value={messageFilter}
-                  onChange={(e) => setMessageFilter(e.target.value)}
-                  placeholder={t('searchMessages')}
-                  className="w-full text-sm px-3 py-2 bg-[#1A1A1A] border border-[#27272A] rounded-md"
-                  data-testid="mobile-message-filter"
-                  autoFocus
-                />
-              </div>
-            )}
+            <ChatMessageSearchBar
+              open={chatSearchOpen}
+              query={messageFilter}
+              onQueryChange={setMessageFilter}
+              onClose={closeChatSearch}
+              matchIndex={searchMatchIndex}
+              matchCount={searchMatchIds.length}
+              onPrev={onSearchPrev}
+              onNext={onSearchNext}
+            />
 
             <div ref={scrollRef} onScroll={() => onMessagesScroll(scrollRef)} className={`chat-scroll px-3 ${splitLayout ? 'md:px-6' : ''} py-3 flex flex-col gap-3`}>
-              <div className={`${splitLayout ? 'block' : 'hidden'} px-3 py-1`}>
-                <input value={messageFilter} onChange={(e) => setMessageFilter(e.target.value)} placeholder={t('searchMessages')} className="w-full text-xs bg-transparent border-0 border-b border-[#27272A] pb-1" data-testid="message-filter" />
-              </div>
               {messagesLoading && <MessagesSkeleton />}
               {!messagesLoading && messages.length === 0 && (
                 <div className="text-center text-xs font-mono text-[#A1A1AA] tracking-wider my-8">
                   {t('emptyChatHint')}
+                </div>
+              )}
+              {!messagesLoading && messages.length > 0 && messageFilter.trim() && filteredMessages.length === 0 && (
+                <div className="text-center text-xs font-mono text-[#A1A1AA] tracking-wider my-8" data-testid="chat-search-no-results">
+                  {t('chatSearchNoResults')}
                 </div>
               )}
               {!messagesLoading && filteredMessages.map((m) => (
@@ -1196,6 +1250,9 @@ export default function ChatHome() {
                   quotedPreview={quoteByMessageId[m.message_id] || null}
                   onLongPress={onMessageLongPress}
                   onReactionToggle={onMessageReaction}
+                  searchQuery={chatSearchOpen ? messageFilter : ''}
+                  isSearchMatch={!!messageFilter.trim() && searchMatchIds.includes(m.message_id)}
+                  isActiveSearchMatch={m.message_id === activeSearchMatchId}
                 />
               ))}
               {typingFrom && (

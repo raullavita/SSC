@@ -21,6 +21,20 @@ import CountdownBadge from './CountdownBadge';
 import { useConversationLongPress } from './ConversationActionsSheet';
 import { isMessageDeleted } from '../lib/messageDelete';
 import { groupReactionsForDisplay } from '../lib/messageReactions';
+import { splitTextForHighlight } from '../lib/chatSearch';
+
+function HighlightedText({ text, query }) {
+  const parts = splitTextForHighlight(text, query);
+  return (
+    <>
+      {parts.map((part, i) => (
+        part.match
+          ? <mark key={i} className="bg-[#FFD600]/35 text-inherit rounded-sm px-0.5">{part.text}</mark>
+          : <span key={i}>{part.text}</span>
+      ))}
+    </>
+  );
+}
 
 export default function Message({
   msg, isMine, myUserId, privateKey, peerUserId = null, autoTranslate, translationEnabled = false,
@@ -30,6 +44,9 @@ export default function Message({
   quotedPreview = null,
   onLongPress,
   onReactionToggle,
+  searchQuery = '',
+  isSearchMatch = false,
+  isActiveSearchMatch = false,
 }) {
   const [plaintext, setPlaintext] = useState(null);
   const [translated, setTranslated] = useState(null);
@@ -161,7 +178,12 @@ export default function Message({
       className={`flex flex-col max-w-[78%] ${isMine ? 'self-end items-end' : 'self-start items-start'} fade-up`}
       {...(onLongPress && !deleted ? longPressHandlers : {})}
     >
-      <div className={`px-3 py-2 ${bubbleClass} text-sm leading-relaxed break-words shadow`} data-testid={`message-${msg.message_id}`}>
+      <div
+        className={`px-3 py-2 ${bubbleClass} text-sm leading-relaxed break-words shadow ${
+          isActiveSearchMatch ? 'ring-2 ring-[#FFD600]' : isSearchMatch ? 'ring-1 ring-[#00E5FF]/40' : ''
+        }`}
+        data-testid={`message-${msg.message_id}`}
+      >
         {deleted && (
           <span className="text-xs italic text-[#A1A1AA]" data-testid={`message-deleted-${msg.message_id}`}>
             {t('messageDeleted')}
@@ -217,18 +239,20 @@ export default function Message({
                 <EncryptedImageAttachment
                   msg={msg} fileId={msg.attachment_id} caption={plaintext}
                   privateKey={privateKey} myUserId={myUserId} peerUserId={peerUserId}
+                  searchQuery={searchQuery}
                 />
               ) : (
-                <LegacyAttachmentPlaceholder kind="image" caption={plaintext} />
+                <LegacyAttachmentPlaceholder kind="image" caption={plaintext} searchQuery={searchQuery} />
               )
             ) : msg.message_type === 'file' && msg.attachment_id ? (
               attachmentEncrypted ? (
                 <EncryptedFileAttachment
                   msg={msg} fileId={msg.attachment_id} caption={plaintext}
                   privateKey={privateKey} myUserId={myUserId} peerUserId={peerUserId}
+                  searchQuery={searchQuery}
                 />
               ) : (
-                <LegacyAttachmentPlaceholder kind="file" caption={plaintext} />
+                <LegacyAttachmentPlaceholder kind="file" caption={plaintext} searchQuery={searchQuery} />
               )
             ) : msg.message_type === 'voice' && msg.attachment_id ? (
               attachmentEncrypted ? (
@@ -240,7 +264,13 @@ export default function Message({
                 <LegacyAttachmentPlaceholder kind="voice" />
               )
             ) : (
-              <div>{showTranslated && translated ? translated : plaintext}</div>
+              <div>
+                {searchQuery.trim() ? (
+                  <HighlightedText text={showTranslated && translated ? translated : plaintext} query={searchQuery} />
+                ) : (
+                  showTranslated && translated ? translated : plaintext
+                )}
+              </div>
             )}
             {!isMine && translated && (
               <div className="mt-1 text-[10px] font-mono text-[#A1A1AA] tracking-wider uppercase">
@@ -382,7 +412,7 @@ function useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId) {
   return { objectUrl, blob, error, loading };
 }
 
-function EncryptedImageAttachment({ msg, fileId, caption, privateKey, myUserId, peerUserId }) {
+function EncryptedImageAttachment({ msg, fileId, caption, privateKey, myUserId, peerUserId, searchQuery = '' }) {
   const { objectUrl, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -401,7 +431,11 @@ function EncryptedImageAttachment({ msg, fileId, caption, privateKey, myUserId, 
       >
         <img src={objectUrl} alt={alt} className="rounded-md max-w-[280px] max-h-[280px] object-cover cursor-zoom-in" />
       </button>
-      {caption && <div className="mt-1 text-sm">{caption}</div>}
+      {caption && (
+        <div className="mt-1 text-sm">
+          {searchQuery.trim() ? <HighlightedText text={caption} query={searchQuery} /> : caption}
+        </div>
+      )}
       {previewOpen && (
         <ImagePreviewModal src={objectUrl} alt={alt} onClose={() => setPreviewOpen(false)} />
       )}
@@ -409,7 +443,7 @@ function EncryptedImageAttachment({ msg, fileId, caption, privateKey, myUserId, 
   );
 }
 
-function EncryptedFileAttachment({ msg, fileId, caption, privateKey, myUserId, peerUserId }) {
+function EncryptedFileAttachment({ msg, fileId, caption, privateKey, myUserId, peerUserId, searchQuery = '' }) {
   const { objectUrl, blob, error, loading } = useDecryptedAttachment(msg, fileId, privateKey, myUserId, peerUserId);
   if (loading) return <span className="font-mono text-xs text-[#A1A1AA]">decrypting file…</span>;
   if (error) return <span className="font-mono text-xs text-[#FF3B30]">[{error === 'NO_KEY' ? 'no key for file' : 'unable to decrypt file'}]</span>;
@@ -426,7 +460,9 @@ function EncryptedFileAttachment({ msg, fileId, caption, privateKey, myUserId, p
     >
       <Paperclip size={18} className="text-[#00E5FF] shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="text-sm truncate">{name}</div>
+        <div className="text-sm truncate">
+          {searchQuery.trim() ? <HighlightedText text={name} query={searchQuery} /> : name}
+        </div>
         {sizeLabel && (
           <div className="text-[10px] font-mono text-[#A1A1AA] tracking-wider">{sizeLabel}</div>
         )}
@@ -483,11 +519,15 @@ function EncryptedVoiceAttachment({ msg, fileId, privateKey, myUserId, peerUserI
   );
 }
 
-function LegacyAttachmentPlaceholder({ kind, caption }) {
+function LegacyAttachmentPlaceholder({ kind, caption, searchQuery = '' }) {
   return (
     <div className="font-mono text-xs text-[#A1A1AA]" data-testid={`legacy-attachment-${kind}`}>
       loading attachment…
-      {caption && kind !== 'voice' && <div className="mt-1 text-sm text-[#F0F0F0]">{caption}</div>}
+      {caption && kind !== 'voice' && (
+        <div className="mt-1 text-sm text-[#F0F0F0]">
+          {searchQuery.trim() ? <HighlightedText text={caption} query={searchQuery} /> : caption}
+        </div>
+      )}
     </div>
   );
 }
