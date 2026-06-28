@@ -35,7 +35,10 @@ def test_chat_home_registers_wipe_handlers():
 def test_message_tracks_blob_urls_and_wipe_listener():
     root = Path(__file__).resolve().parents[2]
     msg = (root / "frontend" / "src" / "components" / "Message.jsx").read_text(encoding="utf-8")
-    assert "registerBlobUrl" in msg
+    attachments = (root / "frontend" / "src" / "lib" / "attachmentDecrypt.js").read_text(encoding="utf-8")
+    assert "registerBlobUrl" in attachments
+    assert "subscribeMemoryWipe" in attachments
+    assert "unregisterBlobUrl" in attachments
     assert "subscribeMemoryWipe" in msg
     assert "setPlaintext(null)" in msg
 
