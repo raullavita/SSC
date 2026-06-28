@@ -241,6 +241,12 @@ export default function Message({
       </div>
       <div className={`mt-1 flex items-center gap-2 text-[10px] font-mono text-[#A1A1AA] tracking-wider ${isMine ? 'justify-end' : 'justify-start'}`}>
         <span>{new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        {msg.edited_at && (
+          <>
+            <span className="opacity-50">·</span>
+            <span data-testid={`message-edited-${msg.message_id}`}>{t('messageEdited')}</span>
+          </>
+        )}
         <span className="opacity-50">·</span>
         <CountdownBadge expiresAt={msg.expires_at} />
         {isMine && readReceiptsEnabled && (() => {

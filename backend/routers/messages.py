@@ -8,13 +8,18 @@ from core.contact_helpers import are_contacts
 from core.contact_graph import is_blocked_pair
 from core.database import db
 from core.logging_config import logger
-from core.models import MarkReadIn, SendMessageIn, UnsendMessageIn
+from core.models import EditMessageIn, MarkReadIn, SendMessageIn, UnsendMessageIn
 from core.message_delete import unsend_message_for_everyone
+from core.message_edit import edit_message_text
 from core.push_helpers import send_push_for_message
 from core.api_integrity import project_message_for_viewer, sanitize_message_for_storage
 from core.signal_message_policy import SignalMessageValidationError, validate_send_payload
 from core.signal_policy import ProtocolVersion
-from core.realtime import broadcast_message_to_conversation, broadcast_to_conversation
+from core.realtime import (
+    broadcast_message_edited_to_conversation,
+    broadcast_message_to_conversation,
+    broadcast_to_conversation,
+)
 from core.retention import expires_at_from_now, message_read_expiry_fields
 from core.message_replies import validate_reply_target
 from core.retention_db import bump_conversation_activity, get_effective_retention_for_conversation
@@ -120,6 +125,35 @@ async def unsend_message(body: UnsendMessageIn, current=Depends(get_current_user
         "message_id": body.message_id,
         "deleted_at": deleted_at,
     })
+    return project_message_for_viewer(msg, current["user_id"])
+
+
+@router.post("/edit")
+async def edit_message(body: EditMessageIn, current=Depends(get_current_user)):
+    conv = await db.conversations.find_one({"conversation_id": body.conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv["participants"]:
+        raise HTTPException(404, "Conversation not found")
+
+    if len(body.ciphertext or "") > 300000:
+        raise HTTPException(413, "Message too large")
+
+    if not rate_limit_check(f"msg-edit:{current['user_id']}", max_hits=20, window_sec=60):
+        logger.warning(f"rate-limit message-edit user={current['user_id']}")
+        raise HTTPException(429, "Too many edits, please slow down")
+
+    msg = await edit_message_text(
+        message_id=body.message_id,
+        conversation_id=body.conversation_id,
+        user_id=current["user_id"],
+        protocol=body.protocol,
+        ciphertext=body.ciphertext,
+        iv=body.iv,
+        encrypted_keys=body.encrypted_keys,
+        signal_message_type=body.signal_message_type,
+        distribution_id=body.distribution_id,
+    )
+    await bump_conversation_activity(body.conversation_id)
+    await broadcast_message_edited_to_conversation(body.conversation_id, msg)
     return project_message_for_viewer(msg, current["user_id"])
 
 

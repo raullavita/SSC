@@ -19,6 +19,7 @@ import { resolveIncomingSignaling, SignalingInboundError } from './signalingInbo
 import { handleIncomingCallOffer, reportIncomingCallOfferError } from './incomingCallHandler';
 import { readReceiptsEnabled, typingIndicatorsEnabled } from '../lib/privacySettings';
 import { applyMessageDeleted } from '../lib/messageDelete';
+import { applyMessageEdited } from '../lib/messageEdit';
 
 export function useChatSocket({
   user,
@@ -91,6 +92,12 @@ export function useChatSocket({
         } else if (data.type === 'message-deleted') {
           if (data.conversation_id === activeId) {
             setMessages((cur) => applyMessageDeleted(cur, data));
+          }
+          loadConversations();
+        } else if (data.type === 'message-edited') {
+          const edited = data.data;
+          if (edited?.conversation_id === activeId) {
+            setMessages((cur) => applyMessageEdited(cur, edited));
           }
           loadConversations();
         } else if (data.type === 'read') {

@@ -11,6 +11,7 @@ import { subscribeNativePush } from '../lib/native-push';
 import Message from '../components/Message';
 import MessageActionsSheet from '../components/MessageActionsSheet';
 import ReplyComposerBar from '../components/ReplyComposerBar';
+import EditMessageModal from '../components/EditMessageModal';
 import PanicButton from '../components/PanicButton';
 import CallModal from '../components/CallModal';
 import SettingsModal from '../components/SettingsModal';
@@ -57,6 +58,7 @@ import { useChatCalls } from '../chat/useChatCalls';
 import { useHoldToRecord } from '../chat/useHoldToRecord';
 import { buildQuotePreview, findMessageById } from '../lib/messageReply';
 import { applyMessageDeleted, canUnsendMessage } from '../lib/messageDelete';
+import { applyMessageEdited, canEditMessage } from '../lib/messageEdit';
 
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
@@ -104,6 +106,9 @@ export default function ChatHome() {
   const [replyTo, setReplyTo] = useState(null);
   const [messageActionTarget, setMessageActionTarget] = useState(null);
   const [unsendTarget, setUnsendTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [retentionHours, setRetentionHours] = useState(24);
@@ -307,6 +312,11 @@ export default function ChatHome() {
     setUnsendTarget(msg);
   }, []);
 
+  const onEditMessageRequest = useCallback((msg) => {
+    setEditTarget(msg);
+    setEditDraft(decryptedBodies[msg.message_id] || '');
+  }, [decryptedBodies]);
+
   const confirmUnsendMessage = useCallback(async () => {
     if (!unsendTarget || !activeId) return;
     try {
@@ -331,10 +341,13 @@ export default function ChatHome() {
     setReplyTo(null);
     setMessageActionTarget(null);
     setUnsendTarget(null);
+    setEditTarget(null);
+    setEditDraft('');
   }, [activeId]);
 
   const {
     sendMessage,
+    editMessage,
     attachFile,
     startRecording,
     cancelRecording,
@@ -358,6 +371,22 @@ export default function ChatHome() {
     setReplyTo,
     t,
   });
+
+  const saveEditMessage = useCallback(async (newText) => {
+    if (!editTarget) return;
+    setEditSaving(true);
+    try {
+      const data = await editMessage(editTarget, newText);
+      if (data) {
+        setMessages((cur) => applyMessageEdited(cur, data));
+        toast.success(t('messageEditSuccess'));
+        setEditTarget(null);
+        setEditDraft('');
+      }
+    } finally {
+      setEditSaving(false);
+    }
+  }, [editTarget, editMessage, setMessages, t]);
 
   const {
     startCall,
@@ -432,6 +461,11 @@ export default function ChatHome() {
         setProfileSheetOpen(false);
         return;
       }
+      if (editTarget) {
+        setEditTarget(null);
+        setEditDraft('');
+        return;
+      }
       if (unsendTarget) {
         setUnsendTarget(null);
         return;
@@ -497,6 +531,7 @@ export default function ChatHome() {
     convActionsTarget,
     messageActionTarget,
     unsendTarget,
+    editTarget,
     confirmRemoveUid,
     contactsOpen,
     profileSheetOpen,
@@ -1278,8 +1313,19 @@ export default function ChatHome() {
         message={messageActionTarget}
         onClose={() => setMessageActionTarget(null)}
         onReply={onReplyToMessage}
+        onEdit={onEditMessageRequest}
         onDelete={onDeleteMessageRequest}
+        showEdit={canEditMessage(messageActionTarget, user?.user_id)}
         showDelete={canUnsendMessage(messageActionTarget, user?.user_id)}
+      />
+
+      <EditMessageModal
+        open={!!editTarget}
+        draft={editDraft}
+        onDraftChange={setEditDraft}
+        onSave={saveEditMessage}
+        onClose={() => { setEditTarget(null); setEditDraft(''); }}
+        saving={editSaving}
       />
 
       <ConfirmDialog

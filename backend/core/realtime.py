@@ -28,3 +28,17 @@ async def broadcast_message_to_conversation(conversation_id: str, msg: dict):
             "type": "message",
             "data": project_message_for_viewer(msg, uid),
         })
+
+
+async def broadcast_message_edited_to_conversation(conversation_id: str, msg: dict):
+    """WebSocket message-edited events — per-recipient key projection."""
+    from core.api_integrity import project_message_for_viewer
+
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv:
+        return
+    for uid in conv["participants"]:
+        await manager.send_to_user(uid, {
+            "type": "message-edited",
+            "data": project_message_for_viewer(msg, uid),
+        })

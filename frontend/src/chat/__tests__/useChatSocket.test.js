@@ -100,4 +100,25 @@ describe('useChatSocket - signaling-error handling', () => {
     expect(next[0].message_type).toBe('deleted');
     expect(next[0].ciphertext).toBe('');
   });
+
+  it('applies message-edited payload in active conversation', () => {
+    const setMessages = jest.fn();
+    render(<TestComponent hookArgs={{ ...mockArgs, setMessages }} />);
+
+    global.mockSocketOptions.onMessage({
+      type: 'message-edited',
+      data: {
+        conversation_id: 'conv_456',
+        message_id: 'm_1',
+        ciphertext: 'new',
+        edited_at: '2026-06-29T12:00:00+00:00',
+      },
+    });
+
+    expect(setMessages).toHaveBeenCalled();
+    const updater = setMessages.mock.calls[0][0];
+    const next = updater([{ message_id: 'm_1', ciphertext: 'old' }]);
+    expect(next[0].ciphertext).toBe('new');
+    expect(next[0].edited_at).toBeTruthy();
+  });
 });

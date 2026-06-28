@@ -85,6 +85,17 @@ class UnsendMessageIn(BaseModel):
     message_id: str
 
 
+class EditMessageIn(BaseModel):
+    conversation_id: str
+    message_id: str
+    protocol: str
+    ciphertext: str
+    iv: Optional[str] = None
+    encrypted_keys: Optional[Dict[str, str]] = None
+    signal_message_type: Optional[int] = None
+    distribution_id: Optional[str] = None
+
+
 class TwoFASetupVerifyIn(BaseModel):
     code: str
 

@@ -220,6 +220,80 @@ export function useMessagingSend({
     canMessagePeer, isRequestPendingPeer, recipientsForActive, runMessagingGate, setDraft, replyTo, setReplyTo, t,
   ]);
 
+  const editMessage = useCallback(async (originalMsg, newText) => {
+    if (!activeConv || !originalMsg?.message_id || !newText?.trim()) return null;
+    if (!canMessagePeer) {
+      toast.info(isRequestPendingPeer ? t('requestPendingChat') : t('cannotMessageNonMutual'));
+      return null;
+    }
+    const protocol = originalMsg.protocol || ProtocolVersion.LEGACY_RSA;
+    try {
+      const gate = await runMessagingGate();
+      if (!gate) return null;
+
+      if (protocol === ProtocolVersion.SIGNAL_GROUP_V1) {
+        await ensureGroupSenderKeysDistributed({
+          conversationId: activeId,
+          members: activeConv.members || [],
+          ourUserId: user.user_id,
+        });
+        const enc = await encryptGroupText(activeId, user.user_id, newText.trim());
+        const { data } = await api.post('/messages/edit', {
+          conversation_id: activeId,
+          message_id: originalMsg.message_id,
+          protocol: ProtocolVersion.SIGNAL_GROUP_V1,
+          ciphertext: enc.ciphertext,
+          signal_message_type: enc.signal_message_type,
+          distribution_id: enc.distribution_id,
+        });
+        return data;
+      }
+
+      if (protocol === ProtocolVersion.SIGNAL_V1) {
+        const enc = await encryptSignalText(peer.user_id, user.user_id, newText.trim());
+        const { data } = await api.post('/messages/edit', {
+          conversation_id: activeId,
+          message_id: originalMsg.message_id,
+          protocol: ProtocolVersion.SIGNAL_V1,
+          ciphertext: enc.ciphertext,
+          signal_message_type: enc.signal_message_type,
+        });
+        return data;
+      }
+
+      if (!maySendLegacyRsa() || !privateKey) {
+        toast.error(t('encryptionNotReady'));
+        return null;
+      }
+      const recipients = recipientsForActive;
+      if (Object.keys(recipients).length < 2) {
+        toast.error('No recipients have encryption keys yet');
+        return null;
+      }
+      const enc = await encryptMessageForRecipients(newText.trim(), recipients);
+      const { data } = await api.post('/messages/edit', {
+        conversation_id: activeId,
+        message_id: originalMsg.message_id,
+        protocol: ProtocolVersion.LEGACY_RSA,
+        ciphertext: enc.ciphertext,
+        iv: enc.iv,
+        encrypted_keys: enc.encrypted_keys,
+      });
+      return data;
+    } catch (e) {
+      if (usesSignalOnlyMessaging()) {
+        toastEncryptFailure(e, t);
+      } else {
+        const detail = e?.response?.data?.detail;
+        toast.error(detail || t('messageEditFailed'));
+      }
+      return null;
+    }
+  }, [
+    activeConv, activeId, peer, user, privateKey, canMessagePeer, isRequestPendingPeer,
+    recipientsForActive, runMessagingGate, t,
+  ]);
+
   const attachFile = useCallback(async (file, { fromPaste = false } = {}) => {
     if (!file || !activeConv || uploadBusy) return;
     if (file.size > 25 * 1024 * 1024) {
@@ -310,6 +384,7 @@ export function useMessagingSend({
   return {
     voiceRecordingRef,
     sendMessage,
+    editMessage,
     attachFile,
     startRecording,
     cancelRecording,
