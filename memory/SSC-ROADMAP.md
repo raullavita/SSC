@@ -1,28 +1,29 @@
 # SSC Roadmap — single source of truth
 
-**Updated:** 2026-06-27 (v1.0.9 TASK O clients; full audit; J tomorrow)
-**Repo:** `C:\Users\smash\SSC-main`
+**Updated:** 2026-06-27 (public GitHub · v1.0.12 · CI · first contributor PR)
+**Repo:** `C:\Users\smash\SSC-main` · **GitHub:** https://github.com/raullavita/SSC (public, AGPL-3.0)
 **Rule:** After every engine step, feature, or deploy — update **this file only**. Do not maintain parallel roadmaps.
 
 **Companion docs:** `memory/SECURITY_MODEL.md` · `memory/PRODUCT_BLUEPRINT.md` · `memory/UNIFIED_IDENTITY_CHARTER.md` · `memory/PRD.md`
-**Public site:** `https://www.supersecurechat.com` (Firebase Hosting)
+**Public site:** `https://www.supersecurechat.com` (Firebase Hosting — construction gate)
 **Gate commands:** `backend/scripts/run_engineN_gate.py`
 
 ---
 
 ## How to use this doc
 
-1. **Done** — Engines 1–5, 8–10, 9 + TASK A–G code + TASK H (except H.7) + TASK L.1–L.6 + **v1.0.7** builds.
-2. **Now** — finish remaining non-paid items (landing polish ✅, **P.6** TURN off-LAN).
-3. **Tomorrow (27 Jun)** — **TASK J** all-day founder QA (tester-win ↔ tester-android) on v1.0.8 until green.
-4. **After J** — **TASK O** O.1–O.6 (code; O.5 = structured self-audit unless paid pen test).
-5. **Next week** — paid founder items (**P.8** code signing, **P.9** Play Console $25, **N.8** / **I.6** Play Store).
-6. **Website** — construction gate stays on until founder + agent agree app flow **≥90%**; then `REACT_APP_SITE_UNDER_CONSTRUCTION=false`.
-4. **Release gate** — TASK J green + TASK N legal pages + Turnstile + API domain before public launch.
+1. **Done** — Engines 1–5, 8–10, 9 + TASK A–G + TASK L + crypto hardening + **public repo** (CONTRIBUTING, SECURITY, CI, CodeQL, Dependabot, `main` protected).
+2. **Now (maintainer mode)** — wait on contributors; merge safe Dependabot patches; optional founder QA on local **v1.0.12** builds.
+3. **Open help issues** — **#2** desktop build docs · **#4** WebRTC signaling review (assigned **shwetaj2820**, no PR yet — normal).
+4. **Merged contributor work** — **#3** InstalledClientGate tests (**spxmiguel**, merged 27 Jun).
+5. **Before public user launch** — TASK J green (founder + tester devices) · **P.6** TURN off-LAN · **P.8** code signing · construction gate off · optional Play Store (**P.9**).
+6. **Not doing yet** — public installer hosting on GitHub Releases · mass marketing · paid pen test (unless budget).
 
-**Current builds:** APK **v1.0.9** (build 10) · Windows **`SSC-Setup-1.0.9.exe`** · API **`ssc-api-00022-jzs`**
-**Last deploy:** 27 Jun 2026 — TASK O crypto hardening clients; construction gate; landing v3
-**Next task:** **P.6** TURN off-LAN proof · **TASK J** founder QA scheduled **27 Jun 2026**
+**Current local builds:** Windows **`SSC-Setup-1.0.12.exe`** · APK rebuild when founder cuts next tag
+**GitHub release:** **v1.0.12** pre-release (source only — no `.exe` attached by design)
+**Production API:** `https://api.supersecurechat.com` (founder deploy when ready — not tied to every git push)
+**Last roadmap sync:** 27 Jun 2026 — removed stale Emergent branch; Dependabot majors ignored
+**Next founder task:** TASK J (device QA) when you choose · else let #4/#2 contributors land
 
 ---
 
@@ -36,7 +37,8 @@
 | **Redis** | Upstash (production) | Required for `ENV=production` |
 | **APK API URL** | Cloud Run (baked in build) | `frontend/.env.production.local` |
 | **Google OAuth** | ✅ Wired (phone + desktop) | Android `chat.ssc.secure://app` · desktop `chat.ssc.secure.desktop://` |
-| **Release builds** | **v1.0.7** | APK `Desktop\SSC\APK\SSC-app-release.apk` · Win `Desktop\SSC\SSC-Setup-1.0.7.exe` |
+| **Release builds (founder local)** | **v1.0.12** | Win `Desktop\SSC\SSC-Setup-1.0.12.exe` · APK rebuild on demand |
+| **GitHub** | public | CI + branch protection · Issues #2 #4 open · Discussions welcome pinned |
 | **LAN dev** | ✅ Docker mongo + redis + local backend | Founder laptop only — never give LAN IP to testers |
 | **Marketing domain** | `https://www.supersecurechat.com` | Firebase Hosting custom domain — live 26 Jun 2026 |
 | **API custom domain** | `https://api.supersecurechat.com` | SSL live · OAuth redirect migrated (P.4–P.5) |
@@ -77,17 +79,16 @@
 | Web/PWA as product | **Retired** — download landing only |
 | HIGH audit batch (OAuth, deep links, dev/prod) | ✅ `241ff6c` |
 
-### Test health (24 Jun 2026 — post-audit)
+### Test health (27 Jun 2026 — GitHub CI on `main`)
 
 | Metric | Value |
 |--------|-------|
-| pytest | **543 passed**, 1 failed (live API integration), 1 skipped |
-| Engine 1–5, 8, 9, 10 gates | **PASS** |
-| Unified identity + contacts graph gates | **PASS** |
-| Production `/api/health` | **PASS** (`mongo` ok · `redis` ok · `ws_fanout` redis) |
-| Frontend `yarn test:ci` | **67 passed** |
-| APK release build | **PASS** (v1.0.5 build 7) |
-| Desktop NSIS build | **PASS** (`SSC-Setup-1.0.5.exe`) |
+| GitHub CI | **Frontend tests** + **Backend tests** green on every `main` push |
+| pytest (CI) | Full suite with live API + Mongo + Redis in Actions |
+| Frontend `yarn test:ci` | **118 tests** (36 suites) incl. InstalledClientGate contributor tests |
+| Engine 1–5, 8, 9, 10 gates | **PASS** (local gate scripts) |
+| Production `/api/health` | **PASS** when API deployed (`mongo` · `redis`) |
+| Desktop NSIS build | **PASS** (`SSC-Setup-1.0.12.exe` founder local) |
 
 ---
 
