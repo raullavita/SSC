@@ -64,6 +64,22 @@ def test_sanitize_conversation_no_custom_name():
     assert "last_message" not in out
     assert out["display_label"] == group_display_label(3)
     assert GENERIC_GROUP_LABEL in out["display_label"]
+    assert out["pinned"] is False
+
+
+def test_sanitize_conversation_includes_pin_fields():
+    conv = {
+        "conversation_id": "c_abc",
+        "participants": ["u_a", "u_b"],
+        "is_group": False,
+        "created_at": "2026-06-23T12:00:00+00:00",
+        "peer": {"user_id": "u_b", "username": "bob"},
+        "pinned": True,
+        "pinned_at": "2026-06-29T08:00:00+00:00",
+    }
+    out = sanitize_conversation_for_api(conv, "u_a")
+    assert out["pinned"] is True
+    assert out["pinned_at"] == "2026-06-29T08:00:00+00:00"
 
 
 def test_group_display_label():

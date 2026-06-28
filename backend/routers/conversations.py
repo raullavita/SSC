@@ -18,6 +18,13 @@ from core.conversation_meta import (
     project_message_for_viewer,
     sanitize_conversation_for_api,
 )
+from core.conversation_pins import (
+    attach_pin_fields,
+    clear_pins_for_conversation,
+    pin_conversation,
+    sort_conversations_for_sidebar,
+    unpin_conversation,
+)
 from core.retention_db import bump_conversation_activity, conversation_activity_fields_for_participants
 from core.utils import iso, now_utc
 from security import rate_limit_check
@@ -163,8 +170,10 @@ async def list_conversations(current=Depends(get_current_user)):
             sort=[("created_at", -1)],
         )
         c["last_activity"] = last_activity_from_message(last_msg)
-        result.append(sanitize_conversation_for_api(c, me))
-    return result
+        result.append(c)
+    await attach_pin_fields(result, me)
+    result = sort_conversations_for_sidebar(result)
+    return [sanitize_conversation_for_api(c, me) for c in result]
 
 
 @router.get("/{conversation_id}/messages")
@@ -258,6 +267,18 @@ async def remove_conversation_member(
     return sanitize_conversation_for_api({**updated, "members": [m for m in members if m]}, me)
 
 
+@router.post("/{conversation_id}/pin")
+async def pin_chat(conversation_id: str, current=Depends(get_current_user)):
+    conv = await pin_conversation(current["user_id"], conversation_id)
+    return sanitize_conversation_for_api(conv, current["user_id"])
+
+
+@router.delete("/{conversation_id}/pin")
+async def unpin_chat(conversation_id: str, current=Depends(get_current_user)):
+    conv = await unpin_conversation(current["user_id"], conversation_id)
+    return sanitize_conversation_for_api(conv, current["user_id"])
+
+
 @router.delete("/{conversation_id}")
 async def delete_conversation(conversation_id: str, current=Depends(get_current_user)):
     conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
@@ -265,5 +286,6 @@ async def delete_conversation(conversation_id: str, current=Depends(get_current_
         raise HTTPException(404, "Conversation not found")
     await db.messages.delete_many({"conversation_id": conversation_id})
     await db.message_reads.delete_many({"conversation_id": conversation_id})
+    await clear_pins_for_conversation(conversation_id)
     await db.conversations.delete_one({"conversation_id": conversation_id})
     return {"ok": True}

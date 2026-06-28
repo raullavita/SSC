@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Bell, BellSlash, Prohibit, Trash, SignOut, UsersThree } from '@phosphor-icons/react';
+import { X, Bell, BellSlash, Prohibit, Trash, SignOut, UsersThree, PushPin } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 
 /**
@@ -12,6 +12,7 @@ export default function ConversationActionsSheet({
   onClose,
   onMute,
   onBlock,
+  onPin,
   onDelete,
   onManageGroup,
 }) {
@@ -89,6 +90,15 @@ export default function ConversationActionsSheet({
               {t('groupManageTitle')}
             </button>
           )}
+          <button
+            type="button"
+            data-testid="conv-action-pin"
+            onClick={() => run(() => onPin?.(conversation))}
+            className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
+          >
+            <PushPin size={18} className="text-[#00E5FF]" weight={conversation.pinned ? 'fill' : 'regular'} />
+            {conversation.pinned ? t('unpinChat') : t('pinChat')}
+          </button>
           <button
             type="button"
             data-testid="conv-action-delete"

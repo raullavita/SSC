@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, PushPin } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -164,6 +164,7 @@ export default function ChatHome() {
     rejectRequest,
     toggleBlock,
     toggleMute,
+    togglePin,
     removeContact,
     confirmRemoveContact,
     deleteConversation,
@@ -937,7 +938,10 @@ export default function ChatHome() {
                       {c.is_group ? (formatGroupConversationLabel(c) || t('group')) : `@${c.peer?.username}`}
                       {peerMuted && <span className="text-[#A1A1AA] font-mono text-[10px] ml-1">· {t('muted')}</span>}
                     </span>
-                    <span className="text-[10px] font-mono text-[#A1A1AA]">
+                    <span className="text-[10px] font-mono text-[#A1A1AA] flex items-center gap-1 shrink-0">
+                      {c.pinned && (
+                        <PushPin size={12} className="text-[#00E5FF]" weight="fill" data-testid={`pin-indicator-${c.conversation_id}`} />
+                      )}
                       {c.is_group ? `${c.participants.length}P` : c.peer?.language?.toUpperCase()}
                     </span>
                   </div>
@@ -1401,6 +1405,7 @@ export default function ChatHome() {
         onClose={() => setConvActionsTarget(null)}
         onMute={toggleMute}
         onBlock={toggleBlock}
+        onPin={togglePin}
         onDelete={deleteConversation}
         onManageGroup={(conv) => {
           goToConversation(conv.conversation_id);

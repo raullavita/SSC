@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { subscribeContactsRefresh } from '../lib/contactRealtime';
 import { visibleConversations } from '../lib/contactFilters';
+import { sortSidebarConversations } from '../lib/chatPins';
 
 export function useChatContacts({
   user,
@@ -85,7 +86,7 @@ export function useChatContacts({
   }, [user?.user_id]);
 
   const sidebarConversations = useMemo(
-    () => visibleConversations(conversations, myContacts),
+    () => sortSidebarConversations(visibleConversations(conversations, myContacts)),
     [conversations, myContacts],
   );
 
@@ -188,6 +189,22 @@ export function useChatContacts({
     }
   };
 
+  const togglePin = async (conv) => {
+    if (!conv?.conversation_id) return;
+    const wasPinned = conv.pinned;
+    try {
+      if (wasPinned) {
+        await api.delete(`/conversations/${conv.conversation_id}/pin`);
+      } else {
+        await api.post(`/conversations/${conv.conversation_id}/pin`);
+      }
+      await loadConversations();
+      toast.success(wasPinned ? t('chatUnpinned') : t('chatPinned'));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('couldNotUpdateChat'));
+    }
+  };
+
   const deleteConversation = async (conv) => {
     if (!conv?.conversation_id) return;
     try {
@@ -229,6 +246,7 @@ export function useChatContacts({
     rejectRequest,
     toggleBlock,
     toggleMute,
+    togglePin,
     removeContact,
     confirmRemoveContact,
     deleteConversation,

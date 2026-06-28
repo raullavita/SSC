@@ -74,4 +74,10 @@ def sanitize_conversation_for_api(conv: dict, viewer_id: str) -> dict:
         out["display_label"] = None
     if "last_activity" in conv:
         out["last_activity"] = conv["last_activity"]
+    out["pinned"] = bool(conv.get("pinned"))
+    if conv.get("pinned_at"):
+        pinned_at = conv["pinned_at"]
+        if isinstance(pinned_at, datetime):
+            pinned_at = iso(pinned_at)
+        out["pinned_at"] = pinned_at
     return out
