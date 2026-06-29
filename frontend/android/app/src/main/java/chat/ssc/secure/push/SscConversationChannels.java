@@ -39,6 +39,7 @@ public final class SscConversationChannels {
             NotificationManager.IMPORTANCE_DEFAULT
         );
         channel.setDescription("Notifications for one SSC chat");
+        SscNotificationSounds.applySoundToChannel(channel, context, SscNotificationSounds.getPreset(context));
         mgr.createNotificationChannel(channel);
     }
 

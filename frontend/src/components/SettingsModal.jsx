@@ -31,6 +31,12 @@ import PanicButton from './PanicButton';
 import { subscribePush } from '../lib/push';
 import { subscribeNativePush } from '../lib/native-push';
 import {
+  getNotificationSound,
+  NOTIFICATION_SOUND_PRESETS,
+  playNotificationSoundPreview,
+  setNotificationSound,
+} from '../lib/notificationSounds';
+import {
   areDesktopNotificationsEnabled,
   setDesktopNotificationsEnabled,
 } from '../lib/desktopNotifications';
@@ -120,6 +126,7 @@ export default function SettingsModal({ open, onClose }) {
   const [desktopNotifEnabled, setDesktopNotifEnabled] = useState(
     () => areDesktopNotificationsEnabled(),
   );
+  const [notifSound, setNotifSound] = useState(() => getNotificationSound());
   const [linkPreviewOn, setLinkPreviewOn] = useState(() => linkPreviewsEnabled());
   const [gifSearchOn, setGifSearchOn] = useState(() => gifSearchEnabled());
   const [pwCurrent, setPwCurrent] = useState('');
@@ -968,6 +975,28 @@ export default function SettingsModal({ open, onClose }) {
                 >
                   {pushBusy ? t('processing') : pushOk ? t('settingsPushEnabled') : t('settingsEnablePush')}
                 </button>
+              )}
+              {isInstalledClient() && (
+                <div className="mt-4">
+                  <label className="text-[10px] font-mono tracking-wider text-[#A1A1AA] block mb-2">
+                    {t('settingsNotifSoundLabel')}
+                  </label>
+                  <select
+                    value={notifSound}
+                    onChange={(e) => {
+                      const next = setNotificationSound(e.target.value);
+                      setNotifSound(next);
+                      playNotificationSoundPreview(next);
+                    }}
+                    className="w-full px-3 py-2.5 text-sm bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]"
+                    data-testid="settings-notification-sound"
+                  >
+                    {NOTIFICATION_SOUND_PRESETS.map((opt) => (
+                      <option key={opt.id} value={opt.id}>{t(opt.labelKey)}</option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-[10px] text-[#71717A]">{t('settingsNotifSoundHint')}</p>
+                </div>
               )}
             </Section>
 

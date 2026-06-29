@@ -14,6 +14,7 @@ import androidx.core.view.WindowCompat;
 
 import com.getcapacitor.BridgeActivity;
 
+import chat.ssc.secure.push.SscNotificationSounds;
 import chat.ssc.secure.plugins.SscDeviceSecretPlugin;
 import chat.ssc.secure.plugins.SscLibsignalPlugin;
 import chat.ssc.secure.plugins.SscMediaPermissionsPlugin;
@@ -75,6 +76,7 @@ public class MainActivity extends BridgeActivity {
             NotificationManager.IMPORTANCE_DEFAULT
         );
         messages.setDescription("SSC encrypted messages and alerts");
+        SscNotificationSounds.applySoundToChannel(messages, this, SscNotificationSounds.getPreset(this));
 
         NotificationChannel calls = new NotificationChannel(
             "ssc_calls",

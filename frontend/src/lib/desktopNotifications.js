@@ -3,6 +3,11 @@
  * Keeps WS alive via tray; shows native toasts + focuses window for calls when backgrounded.
  */
 import { isElectronApp } from './platform';
+import {
+  desktopNotificationSilentFlag,
+  playMessageNotificationSound,
+  shouldPlayCustomDesktopChime,
+} from './notificationSounds';
 
 export const DESKTOP_NOTIF_PREF_KEY = 'ssc_desktop_notifications_enabled';
 
@@ -131,23 +136,27 @@ export async function notifyDesktopMessage({
   const title = isGroup
     ? (groupName || 'Group message')
     : (senderUsername ? `@${senderUsername}` : 'New message');
-  await showDesktopNotification({
+  const shown = await showDesktopNotification({
     title,
     body: preview,
     tag: `ssc-msg-${conversationId}`,
     conversationId,
     kind: 'message',
+    silent: desktopNotificationSilentFlag(),
   });
+  if (shown && shouldPlayCustomDesktopChime()) playMessageNotificationSound();
 }
 
 export async function notifyDesktopFriendRequest(fromUsername) {
   if (!shouldNotifyWhileBackgrounded()) return;
-  await showDesktopNotification({
+  const shown = await showDesktopNotification({
     title: 'Friend request',
     body: fromUsername ? `@${fromUsername} wants to connect` : 'New friend request',
     tag: 'ssc-friend-request',
     kind: 'friend_request',
+    silent: desktopNotificationSilentFlag(),
   });
+  if (shown && shouldPlayCustomDesktopChime()) playMessageNotificationSound();
 }
 
 export function subscribeDesktopNavigation(handler) {

@@ -7,6 +7,7 @@ import { closeOAuthBrowser } from './oauthBrowser';
 import { isNativeApp } from './platform';
 import { initNativePush } from './native-push';
 import { drainPendingNotificationReplies, initNotificationReply } from './notificationReply';
+import { syncNativeNotificationSound } from './notificationSounds';
 
 let splashHidden = false;
 let lastDeepLink = '';
@@ -130,6 +131,7 @@ export async function initCapacitor() {
 
   await initNativePush();
   await initNotificationReply();
+  await syncNativeNotificationSound();
   await initNativeBackButton();
 }
 
