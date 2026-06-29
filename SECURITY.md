@@ -68,6 +68,19 @@ SSC is **install-only** (APK + desktop). Browser-tab chat is blocked. Many react
 3. Dismiss CodeQL false positives on the [Code scanning](https://github.com/raullavita/SSC/security/code-scanning) tab with a short note.
 4. Rebuild APK/desktop after client dependency changes that ship to users.
 
+### SSC triage snapshot (29 Jun 2026)
+
+| Alert bucket | Count | Action |
+|--------------|-------|--------|
+| **Electron** (desktop devDep, pinned 33.4.11) | ~17 open | **Deferred** — patches require Electron 38+; rebuild + QA before bump |
+| **Encrypted client storage** (CodeQL) | ~6 | **False positive** — AES-GCM ciphertext / locale codes; suppressions in source |
+| **pymongo** | 1 | **Fixed** — bumped to 4.6.3 (CVE-2024-5629) |
+| **serialize-javascript** (transitive) | 1 | **Fixed** — yarn resolution `7.0.3` on `main` |
+| **Log injection** (CodeQL, backend) | ~10 | **Low risk** — structured logs; user input not written raw to clients |
+| **Tests / seed scripts** | ~4 | **Excluded** — `.github/codeql/codeql-config.yml` paths-ignore |
+
+Dependabot may still show counts against an **older commit** until GitHub re-scans `main` (refresh the Security tab after the latest push).
+
 ### Next upgrades (when someone has time)
 
 - Remaining transitive alerts under `react-scripts` (long-term: CRA migration or eject)

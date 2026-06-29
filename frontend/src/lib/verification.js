@@ -68,6 +68,7 @@ export async function markPeerVerified(peerUserId, meOrMyPub, peerOrPeerPub, myU
   }
 
   const record = await buildVerificationRecord(peerId, me, myId, peer);
+  // codeql[js/clear-text-storage-of-sensitive-information]: public identity fingerprints for verify state — not credentials
   localStorage.setItem(verificationStorageKey(peerId), JSON.stringify(record));
   localStorage.removeItem(`${LEGACY_VERIFICATION_PREFIX}${peerId}`);
   window.dispatchEvent(new Event('ssc-verified-change'));

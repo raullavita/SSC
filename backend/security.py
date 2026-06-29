@@ -1,6 +1,7 @@
 """
 Security helpers extracted for organization (high priority refactor - safe incremental).
 """
+import hashlib
 import os
 import time
 import logging
@@ -8,6 +9,13 @@ from collections import defaultdict, deque
 from typing import Dict, Any
 
 from core.security_observability import security_event
+
+
+def _rate_limit_key_label(key: str) -> str:
+    """Opaque label for logs — never emit raw rate-limit bucket keys."""
+    if not key:
+        return "empty"
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
 
 logger = logging.getLogger("ssc")
 
@@ -72,7 +80,7 @@ def rate_limit_check(
         if int(count) > max_hits:
             logger.warning(
                 "rate-limit reject "
-                f"limiter={limiter} backend=redis key={key} "
+                f"limiter={limiter} backend=redis key={_rate_limit_key_label(key)} "
                 f"hits={int(count)} max_hits={max_hits} window_sec={window_sec}"
             )
             return False
@@ -85,7 +93,7 @@ def rate_limit_check(
     if len(bucket) >= max_hits:
         logger.warning(
             "rate-limit reject "
-            f"limiter={limiter} backend=memory key={key} "
+            f"limiter={limiter} backend=memory key={_rate_limit_key_label(key)} "
             f"hits={len(bucket)} max_hits={max_hits} window_sec={window_sec}"
         )
         return False

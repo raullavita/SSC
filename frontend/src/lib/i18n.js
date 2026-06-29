@@ -2734,6 +2734,7 @@ export function seedUiLangFromDeviceIfNeeded() {
 
 export function setStoredUiLang(code) {
   try {
+    // codeql[js/clear-text-storage-of-sensitive-information]: UI locale code only (e.g. en, fr) — not a secret
     localStorage.setItem(UI_LANG_KEY, normalizeLang(code));
   } catch { /* ignore */ }
 }

@@ -5,6 +5,8 @@ const GENERIC_TITLE = 'SSC';
 const GENERIC_BODY = 'New activity';
 
 self.addEventListener('message', (event) => {
+  const sourceUrl = event.source?.url || '';
+  if (sourceUrl && !sourceUrl.startsWith(self.location.origin)) return;
   if (event.data?.type !== PURGE_CACHES_MESSAGE) return;
   event.waitUntil((async () => {
     const keys = await caches.keys();

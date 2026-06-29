@@ -12,6 +12,7 @@ const credStorageKey = (userId) => `ssc_vault_wrap_${userId}`;
 export async function saveVaultCredential(userId, password) {
   if (!isInstalledClient() || !userId || !password || typeof localStorage === 'undefined') return;
   const blob = await wrapDeviceSecret(password);
+  // codeql[js/clear-text-storage-of-sensitive-information]: AES-GCM ciphertext only — vault password never stored plaintext
   if (blob) localStorage.setItem(credStorageKey(userId), blob);
 }
 

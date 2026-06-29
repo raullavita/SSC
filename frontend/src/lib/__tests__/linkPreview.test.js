@@ -1,5 +1,6 @@
 import {
   buildUrlFallbackPreview,
+  decodeHtmlEntities,
   extractFirstPreviewUrl,
   mergePreviewData,
   normalizePreviewUrl,
@@ -7,6 +8,11 @@ import {
 } from '../linkPreview';
 
 describe('linkPreview', () => {
+  it('decodes html entities in a single pass', () => {
+    expect(decodeHtmlEntities('Tom &amp; Jerry')).toBe('Tom & Jerry');
+    expect(decodeHtmlEntities('&amp;amp;')).toBe('&amp;');
+  });
+
   it('extracts and normalizes the first http(s) url', () => {
     expect(extractFirstPreviewUrl('See https://example.com/docs?q=1 today')).toBe(
       'https://example.com/docs?q=1',

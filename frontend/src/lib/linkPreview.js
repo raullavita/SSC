@@ -5,14 +5,20 @@
 const URL_PATTERN = /https?:\/\/[^\s<>"']+/gi;
 const PRIVATE_HOST_RE = /^(localhost|127\.|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/i;
 
+const HTML_ENTITY_MAP = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  '#39': "'",
+  '#x27': "'",
+};
+
 export function decodeHtmlEntities(value = '') {
-  return String(value)
-    .replace(/&amp;/gi, '&')
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&#x27;/gi, "'");
+  return String(value).replace(/&(#x27|#39|amp|lt|gt|quot);/gi, (entity, name) => {
+    const key = name.toLowerCase();
+    return HTML_ENTITY_MAP[key] ?? entity;
+  });
 }
 
 export function normalizePreviewUrl(rawUrl) {

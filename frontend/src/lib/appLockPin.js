@@ -65,6 +65,7 @@ async function writePinBlob(blob) {
   }
   const wrapped = await wrapDeviceSecret(blob);
   if (wrapped && typeof localStorage !== 'undefined') {
+    // codeql[js/clear-text-storage-of-sensitive-information]: PBKDF2 hash wrapped with device AES key (Q.49)
     localStorage.setItem(APP_LOCK_PIN_SECRET_KEY, wrapped);
   }
 }

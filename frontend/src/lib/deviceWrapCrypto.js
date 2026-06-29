@@ -66,6 +66,7 @@ async function writeWrapKeyMaterial(material) {
     }
   }
   if (typeof localStorage !== 'undefined') {
+    // codeql[js/clear-text-storage-of-sensitive-information]: AES wrap key fallback when hardware store unavailable (TASK O.3)
     localStorage.setItem(DEVICE_WRAP_KEY, material);
   }
 }

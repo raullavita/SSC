@@ -10,6 +10,7 @@ export const NATIVE_SESSION_WRAP_KEY = 'ssc_session_wrap_enc';
 export async function persistNativeSession(token) {
   if (!isInstalledClient() || !token || typeof localStorage === 'undefined') return;
   const blob = await wrapDeviceSecret(token);
+  // codeql[js/clear-text-storage-of-sensitive-information]: AES-GCM ciphertext only — never plaintext JWT (TASK B)
   if (blob) localStorage.setItem(NATIVE_SESSION_WRAP_KEY, blob);
 }
 

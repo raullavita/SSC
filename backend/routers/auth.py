@@ -340,6 +340,7 @@ async def google_start(platform: str = "native"):
         raise HTTPException(501, "Google login not configured on server")
     if platform not in INSTALLED_PLATFORMS:
         raise HTTPException(400, "Google OAuth requires platform=native or platform=desktop")
+    # codeql[py/redirect-to-url]: platform validated against INSTALLED_PLATFORMS; URL is server-built Google OAuth
     return RedirectResponse(authorization_url(platform))
 
 

@@ -1,0 +1,6 @@
+name: SSC CodeQL
+paths-ignore:
+  - backend/tests
+  - backend/scripts/seed_test_user.py
+  - backend/scripts/seed_test_friend.py
+  - frontend/src/lib/locales
