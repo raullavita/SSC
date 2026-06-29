@@ -291,3 +291,7 @@ class PrekeyBundleIn(BaseModel):
     kyber_prekey_signature: str = Field(min_length=64, max_length=128)
     one_time_prekeys: List[OneTimePreKeyIn] = Field(min_length=1, max_length=100)
     libsignal_version: Optional[str] = Field(default=None, max_length=32)
+
+
+class ConversationMuteIn(BaseModel):
+    duration: Literal["1h", "8h", "24h", "1w", "forever"] = "forever"

@@ -2,6 +2,7 @@ import {
   visibleConversations,
   isPeerBlocked,
   isPeerMuted,
+  isConversationMuted,
 } from '../contactFilters';
 
 describe('contactFilters', () => {
@@ -19,6 +20,18 @@ describe('contactFilters', () => {
     ];
     const visible = visibleConversations(convs, contacts);
     expect(visible.map((c) => c.conversation_id)).toEqual(['c2', 'g1']);
+  });
+
+  it('detects conversation mute from conv or contact fallback', () => {
+    expect(isConversationMuted({ muted: true, is_group: true })).toBe(true);
+    expect(isConversationMuted(
+      { is_group: false, peer: { user_id: 'u3' } },
+      contacts,
+    )).toBe(true);
+    expect(isConversationMuted(
+      { is_group: false, peer: { user_id: 'u1' } },
+      contacts,
+    )).toBe(false);
   });
 
   it('detects blocked and muted peers', () => {

@@ -73,7 +73,10 @@ public final class SscMessageNotification {
             .setAllowGeneratedReplies(true)
             .build();
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+        SscConversationChannels.ensureChannel(context, conversationId);
+        String channelId = SscConversationChannels.channelIdForConversation(conversationId);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_ssc_launcher_foreground)
             .setContentTitle(title)
             .setContentText(body)

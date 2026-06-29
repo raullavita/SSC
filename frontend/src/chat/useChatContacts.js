@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { api } from '../lib/api';
 import { subscribeContactsRefresh } from '../lib/contactRealtime';
 import { visibleConversations } from '../lib/contactFilters';
+import { syncConversationChannelMute, ensureConversationNotificationChannel } from '../lib/nativeNotificationChannels';
 import { partitionSidebarConversations, sortArchivedConversations } from '../lib/chatArchives';
 import { sortSidebarConversations } from '../lib/chatPins';
 
@@ -165,22 +166,62 @@ export function useChatContacts({
     }
   };
 
-  const toggleMute = async (uid) => {
-    const c = myContacts.find((x) => x.user_id === uid);
-    if (!c) return;
-    const wasMuted = c.muted;
+  const resolveDmConversationId = useCallback((uid) => {
+    const conv = conversationsRef.current.find((c) => !c.is_group && c.peer?.user_id === uid);
+    return conv?.conversation_id || null;
+  }, []);
+
+  const muteConversation = async (conversationId, duration = 'forever') => {
+    if (!conversationId) return;
     try {
-      if (wasMuted) {
-        await api.post(`/contacts/${uid}/unmute`);
-      } else {
-        await api.post(`/contacts/${uid}/mute`);
-      }
+      await api.post(`/conversations/${conversationId}/mute`, { duration });
+      await loadConversations();
       await loadMyContacts();
-      toast.success(wasMuted ? t('contactUnmuted') : t('contactMuted'));
+      await syncConversationChannelMute(conversationId, true);
+      toast.success(t('contactMuted'));
     } catch (e) {
       toast.error(e?.response?.data?.detail || t('couldNotUpdateContact'));
     }
   };
+
+  const unmuteConversation = async (conversationId) => {
+    if (!conversationId) return;
+    try {
+      await api.post(`/conversations/${conversationId}/unmute`);
+      await loadConversations();
+      await loadMyContacts();
+      await syncConversationChannelMute(conversationId, false);
+      toast.success(t('contactUnmuted'));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('couldNotUpdateContact'));
+    }
+  };
+
+  const toggleMute = async (uid) => {
+    const conversationId = resolveDmConversationId(uid);
+    const conv = conversationsRef.current.find((c) => c.conversation_id === conversationId);
+    if (conv?.muted) {
+      await unmuteConversation(conversationId);
+      return;
+    }
+    if (conversationId) {
+      await muteConversation(conversationId, 'forever');
+      return;
+    }
+    const c = myContacts.find((x) => x.user_id === uid);
+    if (!c) return;
+    try {
+      await api.post(`/contacts/${uid}/mute`, { duration: 'forever' });
+      await loadMyContacts();
+      toast.success(t('contactMuted'));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('couldNotUpdateContact'));
+    }
+  };
+
+  const prepareConversationChannel = useCallback(async (conversationId) => {
+    await ensureConversationNotificationChannel(conversationId);
+  }, []);
 
   const removeContact = (uid) => {
     setConfirmRemoveUid(uid);
@@ -275,6 +316,9 @@ export function useChatContacts({
     rejectRequest,
     toggleBlock,
     toggleMute,
+    muteConversation,
+    unmuteConversation,
+    prepareConversationChannel,
     togglePin,
     toggleArchive,
     removeContact,

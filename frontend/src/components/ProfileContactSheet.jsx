@@ -14,7 +14,7 @@ export default function ProfileContactSheet({
   peer,
   contact,
   onClose,
-  onMute,
+  onOpenMute,
   onBlock,
   onVerify,
 }) {
@@ -83,11 +83,11 @@ export default function ProfileContactSheet({
             <button
               type="button"
               data-testid="profile-sheet-mute"
-              onClick={() => run(() => onMute?.(peer.user_id))}
+              onClick={() => run(() => onOpenMute?.())}
               className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
             >
               {muted ? <Bell size={18} className="text-[#00E5FF]" /> : <BellSlash size={18} className="text-[#00E5FF]" />}
-              {muted ? t('unmute') : t('mute')}
+              {muted ? t('muteNotifications') : t('muteChat')}
             </button>
             <button
               type="button"

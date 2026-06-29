@@ -42,6 +42,7 @@ import { linkPreviewsEnabled, subscribeLinkPreviewPrefs } from '../lib/linkPrevi
 import { clearLinkPreviewCache } from '../lib/linkPreviewFetch';
 import { clampSearchMatchIndex } from '../lib/chatSearch';
 import ProfileContactSheet from '../components/ProfileContactSheet';
+import MuteDurationSheet from '../components/MuteDurationSheet';
 import VerifyHandshakeModal from '../components/VerifyHandshakeModal';
 import { useLocale } from '../context/LocaleContext';
 import { useMobileLayout, useSplitChatLayout } from '../lib/use-mobile';
@@ -105,9 +106,10 @@ import { listChatImageMedia } from '../lib/chatMediaGallery';
 
 import { startIncomingRingtone, stopIncomingRingtone } from '../lib/callRingtone';
 import {
+  isConversationMuted,
   isPeerBlocked,
-  isPeerMuted,
 } from '../lib/contactFilters';
+import { muteLabelForConversation } from '../lib/muteDurations';
 import { groupAvatarProps, groupDescriptionLine } from '../lib/groupAvatar';
 import { formatGroupConversationLabel } from '../lib/groupDisplayLabel';
 import { formatUserLabel, userHandle, userPrimaryLabel } from '../lib/displayName';
@@ -127,6 +129,7 @@ export default function ChatHome() {
   const { conversationId } = useParams();
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
+  const [muteSheetTarget, setMuteSheetTarget] = useState(null);
   const [composerCursor, setComposerCursor] = useState(0);
   const messageInputRef = useRef(null);
   const [autoTranslate, setAutoTranslate] = useState(false);
@@ -227,6 +230,9 @@ export default function ChatHome() {
     rejectRequest,
     toggleBlock,
     toggleMute,
+    muteConversation,
+    unmuteConversation,
+    prepareConversationChannel,
     togglePin,
     toggleArchive,
     removeContact,
@@ -1253,8 +1259,35 @@ export default function ChatHome() {
     requestAnimationFrame(syncComposerCursor);
   };
 
+  const openMuteSheet = useCallback((conversation) => {
+    if (!conversation?.conversation_id) return;
+    setMuteSheetTarget(conversation);
+  }, []);
+
+  const openMuteSheetForPeer = useCallback((uid) => {
+    const conv = conversations.find((c) => !c.is_group && c.peer?.user_id === uid)
+      || (activeConv?.peer?.user_id === uid ? activeConv : null);
+    if (conv) openMuteSheet(conv);
+  }, [conversations, activeConv, openMuteSheet]);
+
+  const muteSheetTitle = useMemo(() => {
+    if (!muteSheetTarget) return '';
+    if (muteSheetTarget.is_group) {
+      return formatGroupConversationLabel(muteSheetTarget) || t('group');
+    }
+    return userPrimaryLabel(muteSheetTarget.peer);
+  }, [muteSheetTarget, t]);
+
+  useEffect(() => {
+    if (!activeId) return;
+    prepareConversationChannel(activeId).catch(() => {});
+  }, [activeId, prepareConversationChannel]);
+
   const renderSidebarConversationRow = useCallback((c) => {
-    const peerMuted = !c.is_group && isPeerMuted(c.peer?.user_id, myContacts);
+    const mutedLabel = muteLabelForConversation(
+      { ...c, muted: isConversationMuted(c, myContacts) },
+      t,
+    );
     const groupDesc = c.is_group ? groupDescriptionLine(c) : '';
     const avatarProps = groupAvatarProps(c);
     return (
@@ -1274,7 +1307,7 @@ export default function ChatHome() {
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium truncate">
               {c.is_group ? (formatGroupConversationLabel(c) || t('group')) : userPrimaryLabel(c.peer)}
-              {peerMuted && <span className="text-[#A1A1AA] font-mono text-[10px] ml-1">· {t('muted')}</span>}
+              {mutedLabel && <span className="text-[#A1A1AA] font-mono text-[10px] ml-1">· {mutedLabel}</span>}
             </span>
             <span className="text-[10px] font-mono text-[#A1A1AA] flex items-center gap-1 shrink-0">
               {c.pinned && (
@@ -1531,7 +1564,7 @@ export default function ChatHome() {
                         </MenuAction>
                         <MenuAction
                           testId="mobile-mute"
-                          onClick={() => { setChatMenuOpen(false); toggleMute(peer.user_id); }}
+                          onClick={() => { setChatMenuOpen(false); openMuteSheetForPeer(peer.user_id); }}
                         >
                           {peerContact?.muted ? t('unmute') : t('mute')}
                         </MenuAction>
@@ -1578,8 +1611,8 @@ export default function ChatHome() {
                         <button onClick={() => toggleBlock(peer.user_id)} className="text-[10px] px-2 py-1 tac-border rounded" data-testid="block-button">
                           {peerContact?.blocked ? t('unblock').toUpperCase() : t('block').toUpperCase()}
                         </button>
-                        <button onClick={() => toggleMute(peer.user_id)} className="text-[10px] px-2 py-1 tac-border rounded" data-testid="mute-button">
-                          {peerContact?.muted ? t('unmute').toUpperCase() : t('mute').toUpperCase()}
+                        <button onClick={() => openMuteSheetForPeer(peer.user_id)} className="text-[10px] px-2 py-1 tac-border rounded" data-testid="mute-button">
+                          {(activeConv?.muted || peerContact?.muted) ? t('muteNotifications').toUpperCase() : t('muteChat').toUpperCase()}
                         </button>
                         <button onClick={() => removeContact(peer.user_id)} className="text-[10px] px-2 py-1 tac-border rounded text-[#FF3B30]" data-testid="delete-contact-button">
                           {t('deleteLabel')}
@@ -2066,7 +2099,7 @@ export default function ChatHome() {
           ? myContacts.find((x) => x.user_id === convActionsTarget.peer?.user_id)
           : null}
         onClose={() => setConvActionsTarget(null)}
-        onMute={toggleMute}
+        onOpenMute={openMuteSheet}
         onBlock={toggleBlock}
         onPin={togglePin}
         onArchive={toggleArchive}
@@ -2140,9 +2173,19 @@ export default function ChatHome() {
         peer={peer}
         contact={peerContact}
         onClose={() => setProfileSheetOpen(false)}
-        onMute={toggleMute}
+        onOpenMute={() => activeConv && openMuteSheet(activeConv)}
         onBlock={toggleBlock}
         onVerify={!isGroup && peer ? () => setVerifyOpen(true) : undefined}
+      />
+
+      <MuteDurationSheet
+        open={!!muteSheetTarget}
+        title={muteSheetTitle}
+        muted={!!muteSheetTarget?.muted}
+        mutedUntil={muteSheetTarget?.muted_until}
+        onClose={() => setMuteSheetTarget(null)}
+        onMute={(duration) => muteConversation(muteSheetTarget?.conversation_id, duration)}
+        onUnmute={() => unmuteConversation(muteSheetTarget?.conversation_id)}
       />
 
       <VerifyHandshakeModal

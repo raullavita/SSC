@@ -155,6 +155,7 @@ async def execute_server_panic_wipe(
     session_res = await db.user_sessions.delete_many({"user_id": user_id})
     push_res = await db.push_subscriptions.delete_many({"user_id": user_id})
     native_res = await db.native_push_tokens.delete_many({"user_id": user_id})
+    await db.conversation_mutes.delete_many({"user_id": user_id})
 
     if session_token:
         revoke_token(session_token, jwt_ttl_seconds(session_token))

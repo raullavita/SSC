@@ -107,4 +107,10 @@ def sanitize_conversation_for_api(conv: dict, viewer_id: str) -> dict:
         if isinstance(archived_at, datetime):
             archived_at = iso(archived_at)
         out["archived_at"] = archived_at
+    out["muted"] = bool(conv.get("muted"))
+    if conv.get("muted_until"):
+        muted_until = conv["muted_until"]
+        if isinstance(muted_until, datetime):
+            muted_until = iso(muted_until)
+        out["muted_until"] = muted_until
     return out

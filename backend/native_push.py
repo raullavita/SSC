@@ -112,9 +112,10 @@ async def send_native_to_users(
         uid = doc["user_id"]
         doc_silent = silent
         if sender_id:
-            from core.contact_graph import is_muted_pair
+            from core.conversation_mutes import should_silence_push
 
-            if await is_muted_pair(uid, sender_id):
+            conv_id = payload.get("conversation_id")
+            if await should_silence_push(uid, conv_id, sender_id):
                 doc_silent = True
 
         fcm_token = doc.get("token")
@@ -130,10 +131,15 @@ async def send_native_to_users(
                 android_cfg = messaging.AndroidConfig(priority="normal")
                 msg = messaging.Message(data=data, token=fcm_token, android=android_cfg)
             else:
+                channel_id = "ssc_calls" if is_call else "ssc_messages"
+                if not is_call and payload.get("conversation_id"):
+                    from core.conversation_mutes import android_channel_id_for_conversation
+
+                    channel_id = android_channel_id_for_conversation(payload["conversation_id"])
                 android_cfg = messaging.AndroidConfig(
                     priority="high" if is_call else "normal",
                     notification=messaging.AndroidNotification(
-                        channel_id="ssc_calls" if is_call else "ssc_messages",
+                        channel_id=channel_id,
                         sound="default",
                     ),
                 )

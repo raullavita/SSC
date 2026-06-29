@@ -11,7 +11,7 @@ export default function ConversationActionsSheet({
   conversation,
   contact,
   onClose,
-  onMute,
+  onOpenMute,
   onBlock,
   onPin,
   onArchive,
@@ -40,6 +40,8 @@ export default function ConversationActionsSheet({
     fn?.();
   };
 
+  const isMuted = !!conversation.muted || (!isGroup && !!contact?.muted);
+
   return (
     <div
       className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-end justify-center safe-bottom"
@@ -59,27 +61,25 @@ export default function ConversationActionsSheet({
         </div>
 
         <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            data-testid="conv-action-mute"
+            onClick={() => run(() => onOpenMute?.(conversation))}
+            className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
+          >
+            {isMuted ? <Bell size={18} className="text-[#00E5FF]" /> : <BellSlash size={18} className="text-[#00E5FF]" />}
+            {isMuted ? t('muteNotifications') : t('muteChat')}
+          </button>
           {!isGroup && contact && (
-            <>
-              <button
-                type="button"
-                data-testid="conv-action-mute"
-                onClick={() => run(() => onMute?.(contact.user_id))}
-                className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
-              >
-                {contact.muted ? <Bell size={18} className="text-[#00E5FF]" /> : <BellSlash size={18} className="text-[#00E5FF]" />}
-                {contact.muted ? t('unmute') : t('mute')}
-              </button>
-              <button
-                type="button"
-                data-testid="conv-action-block"
-                onClick={() => run(() => onBlock?.(contact.user_id))}
-                className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
-              >
-                <Prohibit size={18} className="text-[#FF9500]" />
-                {contact.blocked ? t('unblock') : t('block')}
-              </button>
-            </>
+            <button
+              type="button"
+              data-testid="conv-action-block"
+              onClick={() => run(() => onBlock?.(contact.user_id))}
+              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 text-sm"
+            >
+              <Prohibit size={18} className="text-[#FF9500]" />
+              {contact.blocked ? t('unblock') : t('block')}
+            </button>
           )}
           {isGroup && (
             <button

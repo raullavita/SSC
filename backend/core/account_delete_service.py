@@ -42,6 +42,7 @@ async def _purge_contact_graph(user_id: str, peer_ids: List[str]) -> int:
         await db.contact_mutes.delete_one({"seal": mute_seal(user_id, peer_id)})
         await db.contact_mutes.delete_one({"seal": mute_seal(peer_id, user_id)})
     r = await db.contact_rosters.delete_one({"user_id": user_id})
+    await db.conversation_mutes.delete_many({"user_id": user_id})
     return detached + (1 if r.deleted_count else 0)
 
 

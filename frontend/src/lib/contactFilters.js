@@ -34,3 +34,12 @@ export function isPeerMuted(peerUserId, contacts = []) {
   if (!peerUserId) return false;
   return contacts.some((c) => c.user_id === peerUserId && c.muted);
 }
+
+export function isConversationMuted(conversation, contacts = []) {
+  if (!conversation) return false;
+  if (conversation.muted) return true;
+  if (!conversation.is_group && conversation.peer?.user_id) {
+    return isPeerMuted(conversation.peer.user_id, contacts);
+  }
+  return false;
+}

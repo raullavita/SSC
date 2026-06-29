@@ -56,9 +56,10 @@ async def send_push(recipients: list, payload: dict, sender_id: str = None):
         for s in subs:
             p = dict(payload)
             if sender_id:
-                from core.contact_graph import is_muted_pair
+                from core.conversation_mutes import should_silence_push
 
-                if await is_muted_pair(s["user_id"], sender_id):
+                conv_id = payload.get("conversation_id")
+                if await should_silence_push(s["user_id"], conv_id, sender_id):
                     p["silent"] = True
             try:
                 webpush(

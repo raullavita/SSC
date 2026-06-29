@@ -42,6 +42,7 @@ from core.group_roles import (
 )
 from core.models import (
     AddGroupMembersIn,
+    ConversationMuteIn,
     CreateConversationIn,
     GroupPermissionsIn,
     GroupProfileIn,
@@ -63,6 +64,11 @@ from core.conversation_archives import (
     archive_conversation,
     clear_archives_for_conversation,
     unarchive_conversation,
+)
+from core.conversation_mutes import (
+    attach_mute_fields,
+    mute_conversation_for_user,
+    unmute_conversation_for_user,
 )
 from core.conversation_pins import (
     attach_pin_fields,
@@ -231,8 +237,35 @@ async def list_conversations(current=Depends(get_current_user)):
         result.append(c)
     await attach_pin_fields(result, me)
     await attach_archive_fields(result, me)
+    await attach_mute_fields(result, me)
     result = sort_conversations_for_sidebar(result)
     return [sanitize_conversation_for_api(c, me) for c in result]
+
+
+@router.post("/{conversation_id}/mute")
+async def mute_conversation_route(
+    conversation_id: str,
+    body: ConversationMuteIn,
+    current=Depends(get_current_user),
+):
+    result = await mute_conversation_for_user(
+        current["user_id"],
+        conversation_id,
+        duration=body.duration,
+    )
+    from core.contact_realtime import notify_contacts_changed
+
+    asyncio.create_task(notify_contacts_changed(current["user_id"], reason="mute"))
+    return {"ok": True, **result}
+
+
+@router.post("/{conversation_id}/unmute")
+async def unmute_conversation_route(conversation_id: str, current=Depends(get_current_user)):
+    await unmute_conversation_for_user(current["user_id"], conversation_id)
+    from core.contact_realtime import notify_contacts_changed
+
+    asyncio.create_task(notify_contacts_changed(current["user_id"], reason="unmute"))
+    return {"ok": True}
 
 
 @router.get("/{conversation_id}/messages")

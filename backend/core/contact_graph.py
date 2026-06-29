@@ -11,6 +11,7 @@ import hashlib
 import hmac
 import json
 import os
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -140,10 +141,35 @@ async def is_blocked_pair(user_a: str, user_b: str) -> bool:
     return False
 
 
+def _mute_doc_active(doc: Optional[dict]) -> bool:
+    if not doc:
+        return False
+    until = doc.get("muted_until")
+    if not until:
+        return True
+    try:
+        parsed = datetime.fromisoformat(str(until).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        now = now_utc()
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        return parsed > now
+    except ValueError:
+        return True
+
+
 async def is_muted_pair(muter: str, muted: str) -> bool:
-    return bool(
-        await db[COLLECTION_MUTES].find_one({"seal": mute_seal(muter, muted)}, {"_id": 1})
-    )
+    seal = mute_seal(muter, muted)
+    doc = await db[COLLECTION_MUTES].find_one({"seal": seal}, {"_id": 0, "muted_until": 1})
+    if not _mute_doc_active(doc):
+        if doc:
+            await db[COLLECTION_MUTES].delete_one({"seal": seal})
+            entries = await _load_roster_entries(muter)
+            entries = _upsert_roster_entry(entries, muted, muted=False)
+            await _save_roster_entries(muter, entries)
+        return False
+    return True
 
 
 async def are_contacts(user_a: str, user_b: str) -> bool:
@@ -197,18 +223,37 @@ async def set_block(blocker: str, blocked: str, *, blocked_flag: bool) -> None:
     await _save_roster_entries(blocker, entries)
 
 
-async def set_mute(muter: str, muted: str, *, muted_flag: bool) -> None:
+async def set_mute(
+    muter: str,
+    muted: str,
+    *,
+    muted_flag: bool,
+    muted_until: Optional[str] = None,
+) -> None:
     seal = mute_seal(muter, muted)
     if muted_flag:
+        update: Dict[str, Any] = {
+            "seal": seal,
+            "updated_at": iso(now_utc()),
+        }
+        if muted_until:
+            update["muted_until"] = muted_until
+        else:
+            update["muted_until"] = None
         await db[COLLECTION_MUTES].update_one(
             {"seal": seal},
-            {"$setOnInsert": {"seal": seal, "created_at": iso(now_utc())}},
+            {"$set": update, "$setOnInsert": {"seal": seal, "created_at": iso(now_utc())}},
             upsert=True,
         )
     else:
         await db[COLLECTION_MUTES].delete_one({"seal": seal})
     entries = await _load_roster_entries(muter)
-    entries = _upsert_roster_entry(entries, muted, muted=muted_flag)
+    row_fields: Dict[str, Any] = {"muted": muted_flag}
+    if muted_flag and muted_until:
+        row_fields["muted_until"] = muted_until
+    elif not muted_flag:
+        row_fields["muted_until"] = None
+    entries = _upsert_roster_entry(entries, muted, **row_fields)
     await _save_roster_entries(muter, entries)
 
 
@@ -227,14 +272,27 @@ async def get_mutual_contact_ids(user_id: str) -> List[str]:
     return out
 
 
-async def get_roster_prefs(user_id: str, contact_id: str) -> Dict[str, bool]:
+async def get_roster_prefs(user_id: str, contact_id: str) -> Dict[str, Any]:
     entries = await _load_roster_entries(user_id)
     row = next((e for e in entries if e.get("contact_id") == contact_id), None)
     if not row:
-        return {"blocked": False, "muted": False}
+        return {"blocked": False, "muted": False, "muted_until": None}
+    muted = bool(row.get("muted"))
+    muted_until = row.get("muted_until")
+    if muted:
+        doc = await db[COLLECTION_MUTES].find_one(
+            {"seal": mute_seal(user_id, contact_id)},
+            {"_id": 0, "muted_until": 1},
+        )
+        if not _mute_doc_active(doc):
+            muted = False
+            muted_until = None
+        elif doc and doc.get("muted_until"):
+            muted_until = doc.get("muted_until")
     return {
         "blocked": bool(row.get("blocked")),
-        "muted": bool(row.get("muted")),
+        "muted": muted,
+        "muted_until": muted_until,
     }
 
 

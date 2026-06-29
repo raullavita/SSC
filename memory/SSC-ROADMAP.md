@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.43 done** → next **Q.44** | [~] Q.44 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.44 done** → next **Q.45** | [~] Q.45 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -337,7 +337,7 @@
 |---|-----|---------|-------|--------|
 | 42 | **Q.42** | **Desktop notifications polish** — tray badge, focus on click | git | [x] |
 | 43 | **Q.43** | **Reply from notification** (Android first) | git | [x] |
-| 44 | **Q.44** | **Per-chat mute durations** + Android notification channels | git | [ ] |
+| 44 | **Q.44** | **Per-chat mute durations** + Android notification channels | git | [x] |
 | 45 | **Q.45** | **Custom notification sounds** (optional) | git | [ ] |
 
 #### Wave 9 — Translation & languages

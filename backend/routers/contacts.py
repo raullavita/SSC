@@ -20,7 +20,8 @@ from core.contact_graph import (
 )
 from core.database import db
 from core.logging_config import logger
-from core.models import FriendRequestActionIn, SendFriendRequestIn
+from core.conversation_mutes import mute_conversation_for_user, unmute_conversation_for_user
+from core.models import ConversationMuteIn, FriendRequestActionIn, SendFriendRequestIn
 from core.contact_realtime import (
     notify_contacts_changed,
     notify_friend_accepted,
@@ -195,11 +196,14 @@ async def list_contacts(current=Depends(get_current_user)):
         u = project_user_for_peer(user_map.get(contact_id))
         if not u:
             continue
-        result.append({
+        entry = {
             **u,
             "blocked": blocked_by_me,
             "muted": prefs.get("muted", False),
-        })
+        }
+        if prefs.get("muted_until"):
+            entry["muted_until"] = prefs["muted_until"]
+        result.append(entry)
     return result
 
 
@@ -225,14 +229,50 @@ async def unblock_contact(contact_user_id: str, current=Depends(get_current_user
 
 
 @router.post("/{contact_user_id}/mute")
-async def mute_contact(contact_user_id: str, current=Depends(get_current_user)):
-    await set_mute(current["user_id"], contact_user_id, muted_flag=True)
+async def mute_contact(
+    contact_user_id: str,
+    body: ConversationMuteIn = ConversationMuteIn(),
+    current=Depends(get_current_user),
+):
+    conv = await db.conversations.find_one(
+        {
+            "participants": {"$all": [current["user_id"], contact_user_id]},
+            "is_group": {"$ne": True},
+        },
+        {"_id": 0, "conversation_id": 1},
+    )
+    if conv:
+        await mute_conversation_for_user(
+            current["user_id"],
+            conv["conversation_id"],
+            duration=body.duration,
+        )
+    else:
+        from core.mute_duration import muted_until_from_duration
+
+        muted_until = muted_until_from_duration(body.duration)
+        await set_mute(
+            current["user_id"],
+            contact_user_id,
+            muted_flag=True,
+            muted_until=muted_until,
+        )
     asyncio.create_task(notify_contacts_changed(current["user_id"], reason="mute"))
     return {"ok": True}
 
 
 @router.post("/{contact_user_id}/unmute")
 async def unmute_contact(contact_user_id: str, current=Depends(get_current_user)):
-    await set_mute(current["user_id"], contact_user_id, muted_flag=False)
+    conv = await db.conversations.find_one(
+        {
+            "participants": {"$all": [current["user_id"], contact_user_id]},
+            "is_group": {"$ne": True},
+        },
+        {"_id": 0, "conversation_id": 1},
+    )
+    if conv:
+        await unmute_conversation_for_user(current["user_id"], conv["conversation_id"])
+    else:
+        await set_mute(current["user_id"], contact_user_id, muted_flag=False)
     asyncio.create_task(notify_contacts_changed(current["user_id"], reason="unmute"))
     return {"ok": True}
