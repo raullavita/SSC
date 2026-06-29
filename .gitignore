@@ -33,6 +33,8 @@ next-env.d.ts
 frontend/build/
 frontend/public/downloads/*.apk
 frontend/public/downloads/*.exe
+frontend/public/downloads/desktop/
+frontend/public/downloads/*.yml
 dist/
 dist
 
