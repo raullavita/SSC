@@ -36,6 +36,7 @@ function HighlightedText({ text, query }) {
 export default function Message({
   msg, isMine, myUserId, privateKey, peerUserId = null, autoTranslate, translationEnabled = false,
   translationOnDevice = false, serverTranslationAllowed = false,
+  translateModelDownload = null,
   targetLang, sourceLang, reads = [], participantsCount = 2,
   readReceiptsEnabled = true,
   quotedPreview = null,
@@ -384,7 +385,13 @@ export default function Message({
             <Translate size={10} /> translate
           </button>
         )}
-        {translating && <span>translating…</span>}
+        {translating && (
+          <span data-testid={`translating-${msg.message_id}`}>
+            {translateModelDownload?.state === 'downloading' && translateModelDownload.percent != null
+              ? t('translateDownloading', { percent: Math.round(translateModelDownload.percent) })
+              : t('translating')}
+          </span>
+        )}
       </div>
     </div>
   );

@@ -4,6 +4,10 @@
  */
 import path from 'node:path';
 import { env, pipeline } from '@xenova/transformers';
+import {
+  createProgressCallback,
+  markTranslateDownloadError,
+} from './progress.mjs';
 
 export const PROVIDER = 'transformers_on_device';
 
@@ -36,7 +40,13 @@ async function getPipeline(pairKey) {
   const modelId = MODEL_BY_PAIR[pairKey];
   if (!modelId) return null;
   if (!pipelines.has(pairKey)) {
-    pipelines.set(pairKey, pipeline('translation', modelId));
+    const progress_callback = createProgressCallback();
+    const promise = pipeline('translation', modelId, { progress_callback }).catch((err) => {
+      pipelines.delete(pairKey);
+      markTranslateDownloadError(err?.message || String(err));
+      throw err;
+    });
+    pipelines.set(pairKey, promise);
   }
   return pipelines.get(pairKey);
 }

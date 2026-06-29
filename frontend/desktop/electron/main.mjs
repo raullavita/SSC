@@ -19,6 +19,10 @@ import {
   invokeTranslate,
 } from './translate/bridge.mjs';
 import {
+  getTranslateDownloadStatus,
+  initTranslateProgress,
+} from './translate/progress.mjs';
+import {
   checkForUpdates,
   downloadUpdate,
   getUpdateStatus,
@@ -244,6 +248,9 @@ app.whenReady().then(() => {
     console.error('translate bridge init failed:', err);
   }
   createWindow();
+  if (mainWindow) {
+    initTranslateProgress(mainWindow);
+  }
   if (mainWindow && app.isPackaged) {
     initAutoUpdater(mainWindow);
   }
@@ -290,6 +297,8 @@ ipcMain.handle('desktop-translate', async (_event, args) => {
   if (translateInitError) throw new Error(translateInitError);
   return invokeTranslate(args || {});
 });
+
+ipcMain.handle('desktop-translate-download-status', () => getTranslateDownloadStatus());
 
 const SECURE_STORE_FILE = () => path.join(app.getPath('userData'), 'ssc-secure-store.json');
 

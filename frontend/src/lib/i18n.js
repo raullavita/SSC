@@ -303,6 +303,12 @@ const STRINGS = {
     initializing: 'Starting secure chat…',
     autoTranslateWarning: 'Auto-translate may process message text on the server while translating.',
     autoTranslateOnDevice: 'Auto-translate runs on your phone, so message text stays on-device.',
+    autoTranslateOnDeviceDesktop: 'Auto-translate runs on this computer — message text never leaves your device.',
+    translating: 'Translating…',
+    translateDownloading: 'Downloading translation model… {percent}%',
+    translateModelDownloading: 'Downloading on-device translation model (first use)',
+    translateModelDownloadReady: 'Translation model ready',
+    translateModelDownloadError: 'Translation model download failed — try again',
 
     // Settings
     settings: 'Settings',
@@ -1169,6 +1175,12 @@ const STRINGS = {
     initializing: 'INICIANDO CANAL SEGURO…',
     autoTranslateWarning: 'Auto-traducción envía texto descifrado al servidor — no es E2E total.',
     autoTranslateOnDevice: 'Auto-traducción en tu teléfono (ML Kit) — el texto no sale del dispositivo.',
+    autoTranslateOnDeviceDesktop: 'Auto-traducción en este equipo — el texto no sale del dispositivo.',
+    translating: 'Traduciendo…',
+    translateDownloading: 'Descargando modelo de traducción… {percent}%',
+    translateModelDownloading: 'Descargando modelo de traducción local (primer uso)',
+    translateModelDownloadReady: 'Modelo de traducción listo',
+    translateModelDownloadError: 'Falló la descarga del modelo — inténtalo de nuevo',
 
     settings: 'Ajustes',
     settingsLanguage: 'Idioma de la app',
@@ -2026,6 +2038,12 @@ const STRINGS = {
     initializing: 'INIȚIALIZARE_CANAL_SECURIZAT…',
     autoTranslateWarning: 'Auto-traducerea trimite text decriptat la server — nu e E2E complet.',
     autoTranslateOnDevice: 'Auto-traducerea rulează pe telefon (ML Kit) — textul rămâne pe dispozitiv.',
+    autoTranslateOnDeviceDesktop: 'Auto-traducerea rulează pe acest computer — textul nu părăsește dispozitivul.',
+    translating: 'Se traduce…',
+    translateDownloading: 'Se descarcă modelul de traducere… {percent}%',
+    translateModelDownloading: 'Se descarcă modelul local de traducere (prima utilizare)',
+    translateModelDownloadReady: 'Model de traducere pregătit',
+    translateModelDownloadError: 'Descărcarea modelului a eșuat — încearcă din nou',
 
     settings: 'Setări',
     settingsLanguage: 'Limba aplicației',

@@ -60,6 +60,11 @@ import {
   setNativeBackHandler,
 } from '../lib/nativeBack';
 import { isElectronApp, isInstalledClient, isNativeApp } from '../lib/platform';
+import {
+  getTranslateModelDownloadStatus,
+  subscribeTranslateModelDownloadProgress,
+} from '../lib/translation/translateModelProgress';
+import TranslationModelDownloadBanner from '../components/TranslationModelDownloadBanner';
 import { scheduleBackgroundUpdateCheck } from '../lib/clientUpdates';
 import {
   formatRetentionDuration,
@@ -136,6 +141,7 @@ export default function ChatHome() {
   const [translationEnabled, setTranslationEnabled] = useState(false);
   const [translationOnDevice, setTranslationOnDevice] = useState(false);
   const [serverTranslationAllowed, setServerTranslationAllowed] = useState(false);
+  const [translateModelDownload, setTranslateModelDownload] = useState({ state: 'idle' });
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -364,6 +370,21 @@ export default function ChatHome() {
   useEffect(() => {
     if (!translationEnabled) setAutoTranslate(false);
   }, [translationEnabled]);
+
+  useEffect(() => {
+    if (!isElectronApp() || !translationOnDevice) return undefined;
+    let cancelled = false;
+    getTranslateModelDownloadStatus().then((status) => {
+      if (!cancelled && status?.state) setTranslateModelDownload(status);
+    }).catch(() => {});
+    return subscribeTranslateModelDownloadProgress((status) => {
+      if (status?.state) setTranslateModelDownload(status);
+    });
+  }, [translationOnDevice]);
+
+  const onDeviceAutoTranslateHint = useCallback(() => (
+    isElectronApp() ? t('autoTranslateOnDeviceDesktop') : t('autoTranslateOnDevice')
+  ), [t]);
 
   // Build recipients map for outgoing message encryption
   const recipientsForActive = useMemo(() => {
@@ -1527,7 +1548,7 @@ export default function ChatHome() {
                               setChatMenuOpen(false);
                               setAutoTranslate((v) => {
                                 if (!v) {
-                                  toast.info(translationOnDevice ? t('autoTranslateOnDevice') : t('autoTranslateWarning'));
+                                  toast.info(translationOnDevice ? onDeviceAutoTranslateHint() : t('autoTranslateWarning'));
                                 }
                                 return !v;
                               });
@@ -1623,7 +1644,7 @@ export default function ChatHome() {
                       <button onClick={() => {
                         setAutoTranslate((v) => {
                           if (!v) {
-                            toast.info(translationOnDevice ? t('autoTranslateOnDevice') : t('autoTranslateWarning'));
+                            toast.info(translationOnDevice ? onDeviceAutoTranslateHint() : t('autoTranslateWarning'));
                           }
                           return !v;
                         });
@@ -1684,6 +1705,10 @@ export default function ChatHome() {
               onNext={onSearchNext}
             />
 
+            {translationOnDevice && (
+              <TranslationModelDownloadBanner status={translateModelDownload} />
+            )}
+
             <div ref={scrollRef} onScroll={() => onMessagesScroll(scrollRef)} className={`chat-scroll px-3 ${splitLayout ? 'md:px-6' : ''} py-3 flex flex-col gap-3`}>
               {messagesLoading && <MessagesSkeleton />}
               {!messagesLoading && messages.length === 0 && (
@@ -1708,6 +1733,7 @@ export default function ChatHome() {
                   translationEnabled={translationEnabled}
                   translationOnDevice={translationOnDevice}
                   serverTranslationAllowed={serverTranslationAllowed}
+                  translateModelDownload={translateModelDownload}
                   targetLang={user?.language || 'en'}
                   sourceLang={peer?.language}
                   reads={reads}

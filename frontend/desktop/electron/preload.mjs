@@ -50,6 +50,12 @@ const windowApi = {
 const translate = {
   getCapabilities: () => ipcRenderer.invoke('desktop-translate-capabilities'),
   translate: (args) => ipcRenderer.invoke('desktop-translate', args || {}),
+  getDownloadStatus: () => ipcRenderer.invoke('desktop-translate-download-status'),
+  onDownloadProgress: (callback) => {
+    const handler = (_event, payload) => callback(payload);
+    ipcRenderer.on('desktop-translate-download', handler);
+    return () => ipcRenderer.removeListener('desktop-translate-download', handler);
+  },
 };
 
 const updates = {
