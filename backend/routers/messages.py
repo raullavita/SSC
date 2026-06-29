@@ -1,10 +1,11 @@
 """Message send and read-receipt routes."""
 import asyncio
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from core.auth import get_current_user
 from core.contact_helpers import are_contacts
+from core.legacy_rsa_policy import reject_legacy_rsa_send_for_installed
 from core.contact_graph import is_blocked_pair
 from core.database import db
 from core.logging_config import logger
@@ -148,7 +149,7 @@ async def send_sealed_message(body: SendSealedMessageIn):
 
 
 @router.post("")
-async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
+async def send_message(body: SendMessageIn, request: Request, current=Depends(get_current_user)):
     conv = await db.conversations.find_one({"conversation_id": body.conversation_id}, {"_id": 0})
     if not conv or current["user_id"] not in conv["participants"]:
         raise HTTPException(404, "Conversation not found")
@@ -178,6 +179,8 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
         )
     except SignalMessageValidationError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+    reject_legacy_rsa_send_for_installed(request, normalized["protocol"])
 
     if normalized["protocol"] == ProtocolVersion.LEGACY_RSA.value:
         enc_keys = normalized["encrypted_keys"] or {}
@@ -283,7 +286,7 @@ async def unsend_message(body: UnsendMessageIn, current=Depends(get_current_user
 
 
 @router.post("/edit")
-async def edit_message(body: EditMessageIn, current=Depends(get_current_user)):
+async def edit_message(body: EditMessageIn, request: Request, current=Depends(get_current_user)):
     conv = await db.conversations.find_one({"conversation_id": body.conversation_id}, {"_id": 0})
     if not conv or current["user_id"] not in conv["participants"]:
         raise HTTPException(404, "Conversation not found")
@@ -294,6 +297,8 @@ async def edit_message(body: EditMessageIn, current=Depends(get_current_user)):
     if not rate_limit_check(f"msg-edit:{current['user_id']}", max_hits=20, window_sec=60):
         logger.warning(f"rate-limit message-edit user={current['user_id']}")
         raise HTTPException(429, "Too many edits, please slow down")
+
+    reject_legacy_rsa_send_for_installed(request, body.protocol)
 
     msg = await edit_message_text(
         message_id=body.message_id,

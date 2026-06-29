@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.53 done** → next **Q.54** | [~] Q.54 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.54 done** → next **Q.55** | [~] Q.55 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -357,7 +357,7 @@
 | 51 | **Q.51** | **Multi-device / linked devices** (Signal-style) | git | [x] |
 | 52 | **Q.52** | **Sealed sender** | git | [x] |
 | 53 | **Q.53** | **Key-change warnings** (prominent, no QR) | git | [x] |
-| 54 | **Q.54** | **Retire legacy RSA send path** (decrypt-only until migration complete) | git | [ ] |
+| 54 | **Q.54** | **Retire legacy RSA send path** (decrypt-only until migration complete) | git | [x] |
 | 55 | **Q.55** | **Post-quantum hybrid** — bump libsignal when upstream PQXDH available | git | [ ] |
 
 #### Wave 11 — Trust, ops, distribution

@@ -66,7 +66,9 @@ ENFORCEMENT_PATHS_85: Tuple[str, ...] = (
 
 ENFORCEMENT_PATHS_86: Tuple[str, ...] = (
     "backend/core/migration_policy.py",
+    "backend/core/legacy_rsa_policy.py",
     "frontend/src/lib/signal/migration.js",
+    "frontend/src/lib/signal/legacyRsaPolicy.js",
     "frontend/src/components/EncryptionModeBadge.jsx",
 )
 
@@ -456,6 +458,24 @@ def _check_step_86_api_default() -> ProofCheck:
     )
 
 
+def _check_step_86_legacy_send_retired() -> ProofCheck:
+    policy = (REPO_ROOT / "backend/core/legacy_rsa_policy.py").read_text(encoding="utf-8")
+    client = (REPO_ROOT / "frontend/src/lib/signal/legacyRsaPolicy.js").read_text(encoding="utf-8")
+    messages = (REPO_ROOT / "backend/routers/messages.py").read_text(encoding="utf-8")
+    stories = (REPO_ROOT / "frontend/src/components/Stories.jsx").read_text(encoding="utf-8")
+    ok = (
+        "reject_legacy_rsa_send_for_installed" in policy
+        and "maySendLegacyRsa" in client
+        and "reject_legacy_rsa_send_for_installed" in messages
+        and "maySendLegacyRsa" in stories
+    )
+    return ProofCheck(
+        name="engine8_step_86_legacy_send_retired",
+        passed=ok,
+        detail="Q.54 installed clients decrypt-only for legacy RSA" if ok else "legacy RSA send retirement incomplete",
+    )
+
+
 def _check_step_86() -> ProofCheck:
     from core.signal_policy import ENGINE8_STEPS
 
@@ -473,6 +493,7 @@ def run_signal_proof_step_86() -> SignalProofReport:
         _check_step_86_dual_read(),
         _check_step_86_migration_labels(),
         _check_step_86_api_default(),
+        _check_step_86_legacy_send_retired(),
         _check_step_86(),
     ]
     return SignalProofReport(checks=checks)

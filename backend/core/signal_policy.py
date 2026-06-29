@@ -150,6 +150,7 @@ ENGINE8_V1_SCOPE: Tuple[str, ...] = (
     "multi_device_linked",  # Q.51
     "sealed_sender",  # Q.52
     "key_change_warnings",  # Q.53
+    "legacy_rsa_send_retired",  # Q.54
 )
 
 ENGINE8_DEFERRED: Tuple[str, ...] = (

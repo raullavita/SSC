@@ -20,7 +20,8 @@ DUAL_READ_PROTOCOLS: FrozenSet[str] = frozenset({
 MIGRATION_CLIENT_REQUIREMENTS: Tuple[str, ...] = (
     "decrypt_legacy_rsa_and_signal_v1",
     "label_legacy_messages_in_ui",
-    "fallback_to_legacy_when_peer_no_prekeys",
+    "installed_clients_no_legacy_rsa_send",
+    "web_browser_may_send_legacy_rsa",
     "dual_write_signal_when_both_peers_ready",
 )
 

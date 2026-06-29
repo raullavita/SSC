@@ -1,6 +1,7 @@
 """Engine 8.6 — migration / dual-read policy tests."""
 from core.migration_policy import (
     DUAL_READ_PROTOCOLS,
+    MIGRATION_CLIENT_REQUIREMENTS,
     dual_read_active,
     is_legacy_protocol,
     is_signal_protocol,
@@ -32,3 +33,8 @@ def test_protocol_helpers():
     assert is_legacy_protocol(None) is True
     assert is_signal_protocol("signal_v1") is True
     assert is_signal_protocol("legacy_rsa") is False
+
+
+def test_migration_requirements_include_q54_send_retirement():
+    assert "installed_clients_no_legacy_rsa_send" in MIGRATION_CLIENT_REQUIREMENTS
+    assert "decrypt_legacy_rsa_and_signal_v1" in MIGRATION_CLIENT_REQUIREMENTS

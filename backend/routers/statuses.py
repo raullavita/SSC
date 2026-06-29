@@ -5,11 +5,12 @@ import asyncio
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from core.auth import get_current_user
 from core.contact_helpers import are_contacts, get_mutual_contact_ids
 from core.database import db
+from core.legacy_rsa_policy import reject_legacy_rsa_send_for_installed
 from core.logging_config import logger
 from core.models import CreateStatusIn, MarkStatusViewedIn
 from core.push_helpers import send_push_for_status
@@ -40,7 +41,7 @@ async def _user_can_view_status(user_id: str, status: dict) -> bool:
 
 
 @router.post("")
-async def create_status(body: CreateStatusIn, current=Depends(get_current_user)):
+async def create_status(body: CreateStatusIn, request: Request, current=Depends(get_current_user)):
     if not rate_limit_check(f"status:{current['user_id']}", max_hits=10, window_sec=60):
         logger.warning(f"rate-limit status user={current['user_id']}")
         raise HTTPException(429, "Too many statuses recently")
@@ -57,6 +58,8 @@ async def create_status(body: CreateStatusIn, current=Depends(get_current_user))
         )
     except SignalMessageValidationError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+    reject_legacy_rsa_send_for_installed(request, normalized["protocol"])
 
     if normalized["protocol"] == ProtocolVersion.LEGACY_RSA.value:
         enc_keys = normalized["encrypted_keys"] or {}

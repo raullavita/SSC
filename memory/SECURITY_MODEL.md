@@ -96,7 +96,8 @@ UI labels: **SIG** (green) vs **RSA** (yellow) on messages and composer hints.
 | Capability | SSC (today) | Signal / WhatsApp |
 |------------|-------------|-------------------|
 | 1:1 text ratchet (installed clients) | ✅ libsignal | ✅ |
-| 1:1 text (browser dev) | Legacy RSA | Full protocol |
+| 1:1 text (browser dev) | Legacy RSA send (decrypt dual-read) | Full protocol |
+| 1:1 text (installed) | Signal only — legacy RSA decrypt-only | Full protocol |
 | Groups (installed clients) | ✅ Sender Keys | Sender Keys |
 | Attachments (installed clients) | ✅ In-protocol | In-protocol |
 | Sealed sender | ✅ 1:1 installed clients | Signal ✅ |

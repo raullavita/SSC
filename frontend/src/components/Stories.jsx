@@ -13,6 +13,7 @@ import {
 } from '../lib/signal/statuses';
 import { subscribeMemoryWipe } from '../lib/memoryWipe';
 import { usesSignalOnlyMessaging } from '../lib/signal/installedMessaging';
+import { maySendLegacyRsa } from '../lib/signal/legacyRsaPolicy';
 import Avatar from './Avatar';
 import { useLocale } from '../context/LocaleContext';
 
@@ -140,7 +141,7 @@ function StoryCreator({ open, onClose, me, onCreated }) {
           status_type: 'text',
           background: bg,
         });
-      } else if (usesSignalOnlyMessaging()) {
+      } else if (usesSignalOnlyMessaging() || !maySendLegacyRsa()) {
         toast.error(t('encryptionNotReady'));
         return;
       } else {
