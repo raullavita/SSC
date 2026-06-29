@@ -24,6 +24,8 @@ def client_updates_public_config() -> Dict[str, Any]:
     android_dist = _env("SSC_ANDROID_APP_DISTRIBUTION_URL")
     play_store = _env("SSC_GOOGLE_PLAY_STORE_URL")
     prefer_play = _env_flag("SSC_ANDROID_PREFER_PLAY_STORE")
+    ios_store = _env("SSC_IOS_APP_STORE_URL")
+    ios_testflight = _env("SSC_IOS_TESTFLIGHT_URL")
     return {
         "latest_version": latest,
         "desktop": {
@@ -35,6 +37,11 @@ def client_updates_public_config() -> Dict[str, Any]:
             "app_distribution_url": android_dist or None,
             "play_store_url": play_store or None,
             "prefer_play_store": prefer_play,
+            "in_app_check": True,
+        },
+        "ios": {
+            "app_store_url": ios_store or None,
+            "testflight_url": ios_testflight or None,
             "in_app_check": True,
         },
     }

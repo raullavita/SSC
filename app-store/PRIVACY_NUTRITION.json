@@ -1,0 +1,36 @@
+{
+  "form_version": "2026-06",
+  "bundle_id": "chat.ssc.secure",
+  "summary": "Reference for App Store Connect App Privacy — review before publish.",
+  "data_linked_to_user": [
+    {
+      "type": "Email Address",
+      "purpose": ["App Functionality", "Account Management"],
+      "notes": "Registration and account recovery."
+    },
+    {
+      "type": "User ID",
+      "purpose": ["App Functionality"],
+      "notes": "@username and internal account id."
+    },
+    {
+      "type": "Photos or Videos",
+      "purpose": ["App Functionality"],
+      "notes": "User-sent attachments; encrypted ciphertext on server; ephemeral TTL."
+    },
+    {
+      "type": "Audio Data",
+      "purpose": ["App Functionality"],
+      "notes": "Voice notes and calls; E2E where protocol supports."
+    }
+  ],
+  "data_not_used_for_tracking": true,
+  "data_not_sold": true,
+  "message_content_on_server": "ciphertext_only",
+  "optional_crash_reporting": "Opt-in only (Q.59); off by default",
+  "privacy_policy_url": "https://www.supersecurechat.com/privacy",
+  "encryption": {
+    "e2e": "libsignal on device where available",
+    "transport": "HTTPS / WSS"
+  }
+}

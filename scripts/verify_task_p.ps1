@@ -67,3 +67,4 @@ Write-Host "  P.6 / Q.31 TURN off-LAN call test - run .\scripts\verify_turn_off_
 Write-Host "  P.7 Porkbun email: verify contact@supersecurechat.com in Porkbun + DNS fix button"
 Write-Host "  P.8 / Q.61 Code signing: see scripts/CODE_SIGNING_SETUP.txt (certs are founder-purchased)"
 Write-Host "  P.9 / Q.62 Play Store: see scripts/GOOGLE_PLAY_SETUP.txt (Play Console account + AAB upload)"
+Write-Host "  P.10 / Q.63 App Store: see scripts/APP_STORE_SETUP.txt (Apple Developer + Mac/Xcode build)"

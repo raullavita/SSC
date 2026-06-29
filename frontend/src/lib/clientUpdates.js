@@ -65,6 +65,44 @@ export async function checkForClientUpdate({ manual = false } = {}) {
     }
   }
 
+  if (isNativeApp() && getPlatform() === 'ios') {
+    try {
+      const policy = await fetchClientUpdatesPolicy();
+      const latest = policy?.latest_version;
+      const storeUrl = policy?.ios?.app_store_url;
+      const testflightUrl = policy?.ios?.testflight_url;
+      const downloadUrl = storeUrl || testflightUrl || null;
+      if (!latest) {
+        return { platform: 'ios', state: 'unknown', localVersion, downloadUrl };
+      }
+      if (!isVersionNewer(latest, localVersion)) {
+        return {
+          platform: 'ios',
+          state: 'current',
+          localVersion,
+          latestVersion: latest,
+          downloadUrl,
+        };
+      }
+      return {
+        platform: 'ios',
+        state: 'available',
+        localVersion,
+        latestVersion: latest,
+        downloadUrl,
+        useAppStore: !!storeUrl,
+        useTestFlight: !!testflightUrl && !storeUrl,
+      };
+    } catch (err) {
+      return {
+        platform: 'ios',
+        state: 'error',
+        localVersion,
+        message: err?.message || 'config_unavailable',
+      };
+    }
+  }
+
   return { platform: 'other', state: 'unsupported', localVersion };
 }
 
@@ -72,6 +110,10 @@ export async function openAndroidUpdateUrl(url) {
   if (!url) throw new Error('Update URL missing');
   const { Browser } = await import('@capacitor/browser');
   await Browser.open({ url, presentationStyle: 'fullscreen' });
+}
+
+export async function openIosUpdateUrl(url) {
+  return openAndroidUpdateUrl(url);
 }
 
 export async function applyDesktopUpdateFlow() {

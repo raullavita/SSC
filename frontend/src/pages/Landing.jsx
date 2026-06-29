@@ -30,6 +30,8 @@ const DOWNLOAD_APK_URL = process.env.REACT_APP_DOWNLOAD_APK_URL || '';
 const DOWNLOAD_WIN_URL = process.env.REACT_APP_DOWNLOAD_WIN_URL || '';
 const DOWNLOAD_ANDROID_BETA_URL = process.env.REACT_APP_DOWNLOAD_ANDROID_BETA_URL || '';
 const DOWNLOAD_PLAY_STORE_URL = process.env.REACT_APP_GOOGLE_PLAY_STORE_URL || '';
+const DOWNLOAD_IOS_APP_STORE_URL = process.env.REACT_APP_IOS_APP_STORE_URL || '';
+const DOWNLOAD_IOS_TESTFLIGHT_URL = process.env.REACT_APP_IOS_TESTFLIGHT_URL || '';
 const CONTACT_EMAIL = 'contact@supersecurechat.com';
 const SITE_ORIGIN = 'https://www.supersecurechat.com';
 
@@ -442,7 +444,7 @@ export default function Landing() {
                     body={t('landingDownloadsSubtitle')}
                   />
 
-                  <div className="mt-10 grid md:grid-cols-2 gap-6">
+                  <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <article className="rounded-xl border border-[#27272A] bg-[#121212] p-6 flex flex-col">
                       <div className="flex items-start gap-4">
                         <div className="w-11 h-11 rounded-lg bg-[#00E5FF]/10 flex items-center justify-center shrink-0">
@@ -500,6 +502,42 @@ export default function Landing() {
                           testId="landing-download-win"
                           icon={DownloadSimple}
                         />
+                      </div>
+                    </article>
+
+                    <article className="rounded-xl border border-[#27272A] bg-[#121212] p-6 flex flex-col">
+                      <div className="flex items-start gap-4">
+                        <div className="w-11 h-11 rounded-lg bg-[#00E5FF]/10 flex items-center justify-center shrink-0">
+                          <DeviceMobile size={24} className="text-[#00E5FF]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold">{t('landingGetIos')}</h3>
+                          <p className="mt-2 text-sm text-[#A1A1AA] leading-relaxed">{t('landingGetIosHint')}</p>
+                        </div>
+                      </div>
+                      <div className="mt-6 flex flex-col sm:flex-row flex-wrap gap-3">
+                        {DOWNLOAD_IOS_APP_STORE_URL ? (
+                          <ActionLink
+                            href={DOWNLOAD_IOS_APP_STORE_URL}
+                            label={t('landingDownloadAppStore')}
+                            testId="landing-download-app-store"
+                            external
+                            icon={DownloadSimple}
+                          />
+                        ) : null}
+                        {DOWNLOAD_IOS_TESTFLIGHT_URL ? (
+                          <ActionLink
+                            href={DOWNLOAD_IOS_TESTFLIGHT_URL}
+                            label={t('landingDownloadTestFlight')}
+                            testId="landing-download-testflight"
+                            variant="secondary"
+                            external
+                            icon={UsersThree}
+                          />
+                        ) : null}
+                        {!DOWNLOAD_IOS_APP_STORE_URL && !DOWNLOAD_IOS_TESTFLIGHT_URL ? (
+                          <p className="text-sm text-[#71717A]">{t('landingIosPending')}</p>
+                        ) : null}
                       </div>
                     </article>
                   </div>

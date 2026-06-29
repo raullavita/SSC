@@ -1,0 +1,66 @@
+SSC Q.63 / TASK K — iOS App Store listing
+=========================================
+
+Requires: Mac with Xcode + Apple Developer Program ($99/year).
+
+Prerequisites (repo):
+  - iOS scaffold: frontend/ios/
+  - Listing copy: app-store/LISTING_COPY.md
+  - Privacy labels ref: app-store/PRIVACY_NUTRITION.json
+  - Graphics: app-store/GRAPHICS_CHECKLIST.md
+  - Usage strings: frontend/ios/App/App/Info.plist (camera, mic, photos)
+  - Build script: SSC-BUILD-IOS.sh
+
+--- Step 1 — Apple Developer ---
+
+1. https://developer.apple.com/programs/enroll/
+2. Create App ID: chat.ssc.secure
+3. Enable Push Notifications capability (when APNs ready)
+
+--- Step 2 — Build on Mac ---
+
+  cd /path/to/SSC
+  ./SSC-BUILD-IOS.sh
+  open frontend/ios/App/App.xcworkspace
+
+In Xcode:
+  - Select your Team under Signing & Capabilities
+  - Product → Archive → Distribute App
+
+--- Step 3 — TestFlight (recommended before public) ---
+
+1. App Store Connect → My Apps → + → New App
+2. Upload archive via Xcode Organizer or Transporter
+3. Add internal testers → external testers when ready
+4. Copy public TestFlight link → SSC_IOS_TESTFLIGHT_URL
+
+--- Step 4 — App Store listing ---
+
+1. Paste metadata from app-store/LISTING_COPY.md
+2. Upload screenshots from app-store/store_graphics/
+3. App Privacy → use app-store/PRIVACY_NUTRITION.json as guide
+4. Provide demo account for App Review (encrypted field)
+5. Export compliance: uses encryption → exempt / standard HTTPS (follow Apple wizard)
+
+--- Step 5 — Wire live URLs ---
+
+  ./scripts/enable_app_store.ps1 -StoreUrl "https://apps.apple.com/app/idXXXXXXXXX"
+  # Optional TestFlight while in beta:
+  ./scripts/enable_app_store.ps1 -TestFlightUrl "https://testflight.apple.com/join/XXXX"
+
+API (cloud_run.env):
+  SSC_IOS_APP_STORE_URL=https://apps.apple.com/app/idXXXXXXXXX
+  SSC_IOS_TESTFLIGHT_URL=https://testflight.apple.com/join/XXXX
+
+Hosting (optional landing CTA):
+  REACT_APP_IOS_APP_STORE_URL=<store url>
+  REACT_APP_IOS_TESTFLIGHT_URL=<testflight url>
+
+Verify:
+  python -m pytest backend/tests/test_app_store_policy.py -q
+
+--- Known gaps (honest) ---
+
+- libsignal native on iOS: roadmap parity with Android — test Signal features before wide launch
+- APNs push: configure GoogleService-Info.plist + Apple push certs when enabling notifications
+- Build cannot run on Windows — use Mac or CI macOS runner

@@ -46,4 +46,6 @@ yarn cap:ios                 # opens Xcode
 
 ## 4. Gate
 
-iOS scaffold is **complete** when `frontend/ios/` exists and `cap add ios` succeeds. App Store ship is a separate milestone (P1 Play/iOS listing).
+iOS scaffold is **complete** when `frontend/ios/` exists and `cap add ios` succeeds.
+
+**Q.63 listing prep (repo):** `app-store/`, `scripts/APP_STORE_SETUP.txt`, `SSC-BUILD-IOS.sh`, Info.plist usage strings. Founder still needs Mac + Apple Developer + App Store Connect upload.

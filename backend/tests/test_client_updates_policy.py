@@ -19,6 +19,8 @@ def test_client_updates_defaults():
     assert cfg["android"]["app_distribution_url"] is None
     assert cfg["android"]["play_store_url"] is None
     assert cfg["android"]["prefer_play_store"] is False
+    assert cfg["ios"]["app_store_url"] is None
+    assert cfg["ios"]["testflight_url"] is None
 
 
 def test_public_config_includes_client_updates():

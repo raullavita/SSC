@@ -59,5 +59,12 @@ P.9 — Play Console public listing (Q.62 — $25 one-time)
   Validate assets: .\scripts\prepare_play_listing.ps1
   After live: .\scripts\enable_play_store.ps1 -StoreUrl "https://play.google.com/store/apps/details?id=chat.ssc.secure"
 
-P.10 — GCP log alerts
+P.10 — iOS App Store (Q.63 — $99/yr Apple Developer, requires Mac)
+  Full guide: scripts/APP_STORE_SETUP.txt
+  Listing copy: app-store/LISTING_COPY.md
+  Validate: .\scripts\prepare_app_store_listing.ps1  or  ./scripts/prepare_app_store_listing.sh
+  Build on Mac: ./SSC-BUILD-IOS.sh → Xcode Archive → TestFlight → App Store
+  After live: .\scripts\enable_app_store.ps1 -StoreUrl "https://apps.apple.com/app/idXXXXXXXXX"
+
+P.11 — GCP log alerts
   See memory/SECURITY_OBSERVABILITY_RUNBOOK.md
