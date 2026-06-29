@@ -370,7 +370,7 @@
 | 59 | **Q.59** | **Crash reporting opt-in** (Firebase Crashlytics or Sentry) | git | [x] |
 | 60 | **Q.60** | **Status page** (health + incident notes) | Founder | [x] |
 | 61 | **Q.61** | **Code signing** — Windows Authenticode + Mac notarize (TASK P.8) | Founder | [x] |
-| 62 | **Q.62** | **Google Play public listing** (TASK N.8 / P.9) | Founder | [ ] |
+| 62 | **Q.62** | **Google Play public listing** (TASK N.8 / P.9) | Founder | [x] |
 | 63 | **Q.63** | **iOS App Store** (TASK K) | Founder | [ ] |
 
 #### Wave 12 — Resume full QA

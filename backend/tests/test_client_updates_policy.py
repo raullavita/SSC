@@ -17,6 +17,8 @@ def test_client_updates_defaults():
     assert cfg["android"]["apk_url"] == DEFAULT_ANDROID_APK_URL
     assert cfg["android"]["in_app_check"] is True
     assert cfg["android"]["app_distribution_url"] is None
+    assert cfg["android"]["play_store_url"] is None
+    assert cfg["android"]["prefer_play_store"] is False
 
 
 def test_public_config_includes_client_updates():

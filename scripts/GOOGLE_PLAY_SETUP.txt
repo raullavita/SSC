@@ -1,0 +1,71 @@
+SSC Q.62 / TASK P.9 — Google Play public listing
+=================================================
+
+Prerequisites (repo — already done):
+  - Release AAB: SSC-BUILD-APK.bat → SSC-app-release.aab
+  - AGPL listing copy: play-store/LISTING_COPY.md
+  - Data safety answers: play-store/DATA_SAFETY.json
+  - Graphics checklist: play-store/GRAPHICS_CHECKLIST.md
+
+--- Step 1 — Play Console account (P.9, $25 one-time) ---
+
+1. https://play.google.com/console/signup
+2. Pay developer registration fee
+3. Create app → Android → app name "SSC" → default language English
+4. Package name (must match): chat.ssc.secure
+
+--- Step 2 — App signing ---
+
+1. Play Console → Setup → App integrity → Play App Signing (recommended: Google manages key)
+2. Upload key: use your release keystore (frontend/android/keystore.properties — gitignored)
+3. If no keystore yet:
+     keytool -genkey -v -keystore ssc-release.keystore -alias ssc -keyalg RSA -keysize 2048 -validity 10000
+   Add keystore.properties (see frontend/android/keystore.properties.example if present)
+
+--- Step 3 — Store listing ---
+
+1. Main store listing → paste from play-store/LISTING_COPY.md
+2. Upload graphics from play-store/store_graphics/ (see GRAPHICS_CHECKLIST.md)
+3. Category: Communication
+4. Contact email: contact@supersecurechat.com
+5. Website: https://www.supersecurechat.com
+6. Privacy policy: https://www.supersecurechat.com/privacy
+
+--- Step 4 — Policy declarations ---
+
+1. Data safety → use play-store/DATA_SAFETY.json as reference
+2. Content rating → complete questionnaire (chat app, user-generated content)
+3. Target audience → 18+ recommended
+4. News apps / COVID / Financial — No
+5. Ads — No
+6. Open-source / licensing — link https://github.com/raullavita/SSC (AGPL-3.0)
+
+--- Step 5 — Release ---
+
+1. Production → Create new release
+2. Upload SSC-app-release.aab (from Desktop\SSC\APK or build output)
+3. versionCode / versionName must match frontend/android/app/build.gradle
+4. Tag matching release on GitHub: git tag android-v1.0.11 && git push --tags
+5. Start with Internal testing → Closed testing → Production
+
+Upload helper (validates AAB + prints paths):
+  .\scripts\prepare_play_listing.ps1
+
+--- Step 6 — Wire live store URL ---
+
+After Play approves the listing, copy the public store URL, then:
+
+  .\scripts\enable_play_store.ps1 -StoreUrl "https://play.google.com/store/apps/details?id=chat.ssc.secure"
+
+Redeploy API (cloud_run.env):
+  SSC_GOOGLE_PLAY_STORE_URL=https://play.google.com/store/apps/details?id=chat.ssc.secure
+  SSC_ANDROID_PREFER_PLAY_STORE=true
+  SSC_CLIENT_LATEST_VERSION=<matching versionName>
+
+Rebuild Firebase hosting (optional landing CTA):
+  REACT_APP_GOOGLE_PLAY_STORE_URL=<same URL>
+  firebase deploy --only hosting
+
+Verify:
+  python -m pytest backend/tests/test_play_store_policy.py -q
+  .\scripts\verify_task_p.ps1

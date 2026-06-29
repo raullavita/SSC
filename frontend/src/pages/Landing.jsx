@@ -29,6 +29,7 @@ const APP_VERSION = getPublicAppVersion();
 const DOWNLOAD_APK_URL = process.env.REACT_APP_DOWNLOAD_APK_URL || '';
 const DOWNLOAD_WIN_URL = process.env.REACT_APP_DOWNLOAD_WIN_URL || '';
 const DOWNLOAD_ANDROID_BETA_URL = process.env.REACT_APP_DOWNLOAD_ANDROID_BETA_URL || '';
+const DOWNLOAD_PLAY_STORE_URL = process.env.REACT_APP_GOOGLE_PLAY_STORE_URL || '';
 const CONTACT_EMAIL = 'contact@supersecurechat.com';
 const SITE_ORIGIN = 'https://www.supersecurechat.com';
 
@@ -452,11 +453,21 @@ export default function Landing() {
                           <p className="mt-2 text-sm text-[#A1A1AA] leading-relaxed">{t('landingGetAndroidHint')}</p>
                         </div>
                       </div>
-                      <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                      <div className="mt-6 flex flex-col sm:flex-row flex-wrap gap-3">
+                        {DOWNLOAD_PLAY_STORE_URL ? (
+                          <ActionLink
+                            href={DOWNLOAD_PLAY_STORE_URL}
+                            label={t('landingDownloadPlay')}
+                            testId="landing-download-play"
+                            external
+                            icon={DownloadSimple}
+                          />
+                        ) : null}
                         <ActionLink
                           href={DOWNLOAD_APK_URL}
                           label={t('landingDownloadApk', { version: APP_VERSION })}
                           testId="landing-download-apk"
+                          variant={DOWNLOAD_PLAY_STORE_URL ? 'secondary' : 'primary'}
                           icon={DownloadSimple}
                         />
                         {DOWNLOAD_ANDROID_BETA_URL ? (

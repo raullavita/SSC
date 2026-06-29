@@ -40,14 +40,20 @@ export async function checkForClientUpdate({ manual = false } = {}) {
       }
       const apkUrl = policy?.android?.apk_url;
       const distUrl = policy?.android?.app_distribution_url;
-      const downloadUrl = distUrl || apkUrl || null;
+      const playUrl = policy?.android?.play_store_url;
+      const preferPlay = !!policy?.android?.prefer_play_store;
+      let downloadUrl = apkUrl || null;
+      if (preferPlay && playUrl) downloadUrl = playUrl;
+      else if (distUrl) downloadUrl = distUrl;
+      else if (playUrl) downloadUrl = playUrl;
       return {
         platform: 'android',
         state: 'available',
         localVersion,
         latestVersion: latest,
         downloadUrl,
-        useAppDistribution: !!distUrl,
+        useAppDistribution: !!distUrl && !preferPlay,
+        usePlayStore: !!playUrl && (preferPlay || !distUrl),
       };
     } catch (err) {
       return {

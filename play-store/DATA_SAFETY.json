@@ -1,0 +1,70 @@
+{
+  "form_version": "2026-06",
+  "app_package": "chat.ssc.secure",
+  "summary": "Honest defaults for Play Console Data safety — review before publish.",
+  "data_collected": [
+    {
+      "type": "Email address",
+      "required": true,
+      "purpose": ["Account management", "App functionality"],
+      "shared": false,
+      "encrypted_in_transit": true,
+      "user_can_request_deletion": true,
+      "notes": "Used for registration, verification, and account recovery."
+    },
+    {
+      "type": "User IDs",
+      "required": true,
+      "purpose": ["App functionality"],
+      "shared": false,
+      "encrypted_in_transit": true,
+      "user_can_request_deletion": true,
+      "notes": "@username and internal user id."
+    },
+    {
+      "type": "Photos and videos",
+      "required": false,
+      "purpose": ["App functionality"],
+      "shared": false,
+      "encrypted_in_transit": true,
+      "user_can_request_deletion": true,
+      "notes": "User-sent attachments; ciphertext on server; ephemeral TTL."
+    },
+    {
+      "type": "Audio files",
+      "required": false,
+      "purpose": ["App functionality"],
+      "shared": false,
+      "encrypted_in_transit": true,
+      "user_can_request_deletion": true,
+      "notes": "Voice notes; encrypted before upload."
+    },
+    {
+      "type": "Device or other IDs",
+      "required": true,
+      "purpose": ["App functionality", "Analytics"],
+      "shared": false,
+      "encrypted_in_transit": true,
+      "user_can_request_deletion": true,
+      "notes": "FCM push token; optional crash reports only when user opts in (Q.59)."
+    }
+  ],
+  "data_not_collected_for_sale": true,
+  "message_content_on_server": "ciphertext_only",
+  "encryption": {
+    "e2e_on_device": "libsignal PQXDH",
+    "transport": "HTTPS / WSS"
+  },
+  "security_practices": [
+    "Data is encrypted in transit",
+    "Users can request account deletion in-app",
+    "Ephemeral retention — server TTL deletes metadata and ciphertext"
+  ],
+  "play_console_declarations": {
+    "target_audience": "18+",
+    "ads": false,
+    "open_source_license": "GNU AGPL v3 — declare in licensing section",
+    "website_field": "https://www.supersecurechat.com",
+    "privacy_policy_url": "https://www.supersecurechat.com/privacy"
+  }
+}
