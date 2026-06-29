@@ -8,6 +8,7 @@ from core.contact_helpers import PEER_ROSTER_FIELDS, are_contacts
 from core.database import db
 from core.logging_config import logger
 from core.group_members import add_group_members, remove_group_member
+from core.member_joined import build_member_joined_at_for_participants
 from core.group_profile import (
     encode_group_photo,
     normalize_group_description,
@@ -101,6 +102,11 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
         activity = await conversation_activity_fields_for_participants(participants, created)
         owner_id = current["user_id"]
         member_roles = build_member_roles_for_participants(participants, owner_id=owner_id)
+        created_iso = iso(created)
+        member_joined_at = build_member_joined_at_for_participants(
+            participants,
+            joined_at=created_iso,
+        )
         conv = {
             "conversation_id": f"g_{uuid.uuid4().hex[:14]}",
             "participants": participants,
@@ -108,8 +114,9 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
             "owner_id": owner_id,
             "admin_id": owner_id,
             "member_roles": member_roles,
+            "member_joined_at": member_joined_at,
             "group_permissions": default_group_permissions(),
-            "created_at": iso(created),
+            "created_at": created_iso,
             "created_by": current["user_id"],
             **activity,
         }

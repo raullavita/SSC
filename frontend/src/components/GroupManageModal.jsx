@@ -19,8 +19,13 @@ import {
   canManageRoles,
   canRemoveMember,
   getMemberRole,
-  roleBadgeKey,
 } from '../lib/groupRoles';
+import {
+  buildGroupMemberRows,
+  formatMemberJoinedDate,
+  roleBadgeKey,
+  roleBadgeTone,
+} from '../lib/groupMembers';
 import Avatar from './Avatar';
 
 const GROUP_DESCRIPTION_MAX = 280;
@@ -30,11 +35,12 @@ export default function GroupManageModal({
   onClose,
   conversation,
   myUserId,
+  myUser,
   contacts = [],
   onUpdated,
   onLeave,
 }) {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [groupName, setGroupName] = useState('');
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
@@ -44,10 +50,13 @@ export default function GroupManageModal({
   const [photoBusy, setPhotoBusy] = useState(false);
   const photoInputRef = useRef(null);
 
-  const members = conversation?.members || [];
+  const memberRows = useMemo(
+    () => buildGroupMemberRows(conversation, myUser || { user_id: myUserId }),
+    [conversation, myUser, myUserId],
+  );
   const memberIds = useMemo(
-    () => new Set([myUserId, ...members.map((m) => m.user_id)]),
-    [members, myUserId],
+    () => new Set(memberRows.map((m) => m.user_id)),
+    [memberRows],
   );
   const myRole = conversation ? getMemberRole(conversation, myUserId) : ROLE_MEMBER;
   const showAddMembers = conversation ? canAddMembers(conversation, myUserId) : false;
@@ -350,20 +359,49 @@ export default function GroupManageModal({
           </div>
         )}
 
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] mb-2">{t('groupMembersTitle')}</p>
-        <ul className="space-y-1 mb-4">
-          {members.map((m) => {
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA]">{t('groupMembersTitle')}</p>
+          <span className="text-[10px] font-mono text-[#71717A]" data-testid="group-members-count">
+            {t('groupMembersCount', { count: memberRows.length })}
+          </span>
+        </div>
+        <ul className="space-y-1 mb-4" data-testid="group-member-list">
+          {memberRows.map((m) => {
             const role = getMemberRole(conversation, m.user_id);
             const badgeKey = roleBadgeKey(role);
+            const badgeTone = roleBadgeTone(role);
+            const joinedLabel = formatMemberJoinedDate(m.joined_at, locale);
             const removable = canRemoveMember(conversation, myUserId, m.user_id);
+            const isSelf = m.user_id === myUserId;
             return (
-              <li key={m.user_id} className="flex items-center justify-between gap-2 px-2 py-2 rounded-md bg-[#1A1A1A]">
+              <li key={m.user_id} className="flex items-center justify-between gap-2 px-2 py-2 rounded-md bg-[#1A1A1A]" data-testid={`group-member-row-${m.user_id}`}>
                 <div className="flex items-center gap-2 min-w-0">
                   <Avatar user={m} size="sm" />
-                  <span className="text-sm truncate">@{m.username}</span>
-                  {badgeKey && (
-                    <span className="text-[9px] font-mono text-[#00E5FF]">{t(badgeKey)}</span>
-                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-sm truncate">
+                        @{m.username}
+                        {isSelf && <span className="text-[#71717A] font-mono text-[10px] ml-1">({t('you')})</span>}
+                      </span>
+                      {badgeKey && (
+                        <span
+                          className={`shrink-0 text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                            badgeTone === 'owner'
+                              ? 'bg-[#FFD600]/15 text-[#FFD600]'
+                              : 'bg-[#00E5FF]/15 text-[#00E5FF]'
+                          }`}
+                          data-testid={`group-member-badge-${m.user_id}`}
+                        >
+                          {t(badgeKey)}
+                        </span>
+                      )}
+                    </div>
+                    {joinedLabel && (
+                      <p className="text-[10px] font-mono text-[#71717A] truncate" data-testid={`group-member-joined-${m.user_id}`}>
+                        {t('groupMemberJoined', { date: joinedLabel })}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {showRoleControls && m.user_id !== myUserId && role !== ROLE_OWNER && (

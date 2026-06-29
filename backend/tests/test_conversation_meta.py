@@ -72,6 +72,24 @@ def test_sanitize_conversation_no_custom_name():
     assert out["pinned"] is False
 
 
+def test_sanitize_conversation_exposes_member_joined_at():
+    conv = {
+        "conversation_id": "g_abc",
+        "participants": ["u_a", "u_b"],
+        "is_group": True,
+        "admin_id": "u_a",
+        "created_at": "2026-06-20T08:00:00+00:00",
+        "member_joined_at": {
+            "u_a": "2026-06-20T08:00:00+00:00",
+            "u_b": "2026-06-22T08:00:00+00:00",
+        },
+        "members": [{"user_id": "u_b", "username": "bob"}],
+    }
+    out = sanitize_conversation_for_api(conv, "u_a")
+    assert out["member_joined_at"]["u_b"] == "2026-06-22T08:00:00+00:00"
+    assert out["members"][0]["joined_at"] == "2026-06-22T08:00:00+00:00"
+
+
 def test_sanitize_conversation_exposes_group_profile_fields():
     conv = {
         "conversation_id": "g_abc",

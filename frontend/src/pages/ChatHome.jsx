@@ -1874,6 +1874,7 @@ export default function ChatHome() {
         onClose={() => setGroupManageOpen(false)}
         conversation={activeConv}
         myUserId={user?.user_id}
+        myUser={user}
         contacts={myContacts}
         onUpdated={refreshActiveGroup}
         onLeave={() => { setGroupManageOpen(false); leaveChat(); loadConversations(); }}

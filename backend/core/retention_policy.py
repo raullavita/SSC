@@ -147,7 +147,7 @@ COLLECTIONS: Dict[str, CollectionPolicy] = {
         ttl_field="expires_at",
         enforcement=EnforcementStatus.ENFORCED,
         engine1_step=None,
-        allowed_fields="conversation_id, participants, is_group, admin_id, owner_id, member_roles, group_permissions, group_photo, group_description, created_at, last_activity_at, expires_at",
+        allowed_fields="conversation_id, participants, is_group, admin_id, owner_id, member_roles, member_joined_at, group_permissions, group_photo, group_description, created_at, last_activity_at, expires_at",
     ),
     "message_reads": CollectionPolicy(
         name="message_reads",

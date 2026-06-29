@@ -16,6 +16,10 @@ from core.group_roles import (
     roles_after_member_added,
     roles_after_member_removed,
 )
+from core.member_joined import (
+    joined_at_after_member_added,
+    joined_at_after_member_removed,
+)
 from core.utils import iso, now_utc
 
 
@@ -61,17 +65,24 @@ async def add_group_members(
         return conv
     participants = sorted(set(participants))
     member_roles = roles_after_member_added(conv, added_ids)
+    member_joined_at = joined_at_after_member_added(conv, added_ids)
     await db.conversations.update_one(
         {"conversation_id": conv["conversation_id"]},
         {
             "$set": {
                 "participants": participants,
                 "member_roles": member_roles,
+                "member_joined_at": member_joined_at,
                 "updated_at": iso(now_utc()),
             }
         },
     )
-    conv = {**conv, "participants": participants, "member_roles": member_roles}
+    conv = {
+        **conv,
+        "participants": participants,
+        "member_roles": member_roles,
+        "member_joined_at": member_joined_at,
+    }
     await _broadcast_conv_update(conv)
     actor = await db.users.find_one({"user_id": actor_id}, PEER_ROSTER_FIELDS)
     for pid in added_ids:
@@ -101,9 +112,11 @@ async def remove_group_member(
             })
         return None
     member_roles, new_owner = roles_after_member_removed(conv, target_user_id)
+    member_joined_at = joined_at_after_member_removed(conv, target_user_id)
     patch = {
         "participants": participants,
         "member_roles": member_roles,
+        "member_joined_at": member_joined_at,
         "updated_at": iso(now_utc()),
     }
     if new_owner:

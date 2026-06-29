@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.26 done** → next **Q.27** | [~] Q.27 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.27 done** → next **Q.28** | [~] Q.28 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -305,7 +305,7 @@
 |---|-----|---------|-------|--------|
 | 25 | **Q.25** | **Admin roles & permissions** (owner/admin/member; who can post/add) | git | [x] |
 | 26 | **Q.26** | **Group photo + description** | git | [x] |
-| 27 | **Q.27** | **Member list polish** (admin badges, joined date) | git | [ ] |
+| 27 | **Q.27** | **Member list polish** (admin badges, joined date) | git | [x] |
 | 28 | **Q.28** | **Group topics / threads** (Telegram-style topics) | git | [ ] |
 | 29 | **Q.29** | **Large groups** (raise cap toward 50; perf test) | git | [ ] |
 | 30 | **Q.30** | **Broadcast lists** (one-to-many to contact subsets) | git | [ ] |
