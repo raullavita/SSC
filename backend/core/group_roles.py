@@ -146,6 +146,12 @@ def can_update_permissions(conv: dict, actor_id: str) -> bool:
     return get_member_role(conv, actor_id) == ROLE_OWNER
 
 
+def can_edit_group_profile(conv: dict, user_id: str) -> bool:
+    if not conv.get("is_group"):
+        return False
+    return is_privileged_role(get_member_role(conv, user_id))
+
+
 def apply_member_role(
     conv: dict,
     *,

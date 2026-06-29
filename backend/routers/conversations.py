@@ -1,24 +1,30 @@
 """Conversation CRUD routes."""
 import asyncio
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 
 from core.auth import get_current_user
 from core.contact_helpers import PEER_ROSTER_FIELDS, are_contacts
 from core.database import db
 from core.logging_config import logger
 from core.group_members import add_group_members, remove_group_member
+from core.group_profile import (
+    encode_group_photo,
+    normalize_group_description,
+    validate_group_photo_bytes,
+)
 from core.group_roles import (
     apply_group_permissions,
     apply_member_role,
     build_member_roles_for_participants,
     can_add_members,
+    can_edit_group_profile,
     can_manage_roles,
     can_remove_member,
     can_update_permissions,
     default_group_permissions,
 )
-from core.models import AddGroupMembersIn, CreateConversationIn, GroupPermissionsIn, MemberRoleIn
+from core.models import AddGroupMembersIn, CreateConversationIn, GroupPermissionsIn, GroupProfileIn, MemberRoleIn
 from core.push_helpers import send_push_for_group_added
 from core.realtime import manager
 from core.last_seen import project_user_for_peer
@@ -289,6 +295,109 @@ async def remove_conversation_member(
     peers_by_id = {p["user_id"]: p for p in peers_list}
     members = [project_user_for_peer(peers_by_id.get(p)) for p in updated["participants"] if p != me]
     return sanitize_conversation_for_api({**updated, "members": [m for m in members if m]}, me)
+
+
+async def _group_conversation_payload(conv: dict, viewer_id: str) -> dict:
+    peers_list = await db.users.find(
+        {"user_id": {"$in": conv.get("participants", [])}},
+        PEER_ROSTER_FIELDS,
+    ).to_list(100)
+    peers_by_id = {p["user_id"]: p for p in peers_list}
+    members = [
+        project_user_for_peer(peers_by_id.get(p))
+        for p in conv.get("participants", [])
+        if p != viewer_id
+    ]
+    return sanitize_conversation_for_api(
+        {**conv, "members": [m for m in members if m]},
+        viewer_id,
+    )
+
+
+@router.patch("/{conversation_id}/group-profile")
+async def update_group_profile(
+    conversation_id: str,
+    body: GroupProfileIn,
+    current=Depends(get_current_user),
+):
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv.get("participants", []):
+        raise HTTPException(404, "Conversation not found")
+    if not conv.get("is_group"):
+        raise HTTPException(400, "Not a group conversation")
+    if not can_edit_group_profile(conv, current["user_id"]):
+        raise HTTPException(403, "Only group admins can edit the profile")
+    description = normalize_group_description(body.description)
+    if description is None:
+        await db.conversations.update_one(
+            {"conversation_id": conversation_id},
+            {"$unset": {"group_description": ""}, "$set": {"updated_at": iso(now_utc())}},
+        )
+        updated = {**conv}
+        updated.pop("group_description", None)
+    else:
+        await db.conversations.update_one(
+            {"conversation_id": conversation_id},
+            {"$set": {"group_description": description, "updated_at": iso(now_utc())}},
+        )
+        updated = {**conv, "group_description": description}
+    from core.group_members import _broadcast_conv_update
+
+    await _broadcast_conv_update(updated)
+    return await _group_conversation_payload(updated, current["user_id"])
+
+
+@router.post("/{conversation_id}/group-photo")
+async def upload_group_photo(
+    conversation_id: str,
+    file: UploadFile = File(...),
+    current=Depends(get_current_user),
+):
+    if not rate_limit_check(f"group-photo:{current['user_id']}", max_hits=10, window_sec=3600):
+        raise HTTPException(429, "Too many group photo uploads")
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv.get("participants", []):
+        raise HTTPException(404, "Conversation not found")
+    if not conv.get("is_group"):
+        raise HTTPException(400, "Not a group conversation")
+    if not can_edit_group_profile(conv, current["user_id"]):
+        raise HTTPException(403, "Only group admins can edit the profile")
+    data = await file.read()
+    mime = validate_group_photo_bytes(data, (file.content_type or "").split(";")[0].strip().lower())
+    photo = encode_group_photo(data, mime)
+    await db.conversations.update_one(
+        {"conversation_id": conversation_id},
+        {"$set": {"group_photo": photo, "updated_at": iso(now_utc())}},
+    )
+    updated = {**conv, "group_photo": photo}
+    from core.group_members import _broadcast_conv_update
+
+    await _broadcast_conv_update(updated)
+    return await _group_conversation_payload(updated, current["user_id"])
+
+
+@router.delete("/{conversation_id}/group-photo")
+async def remove_group_photo(
+    conversation_id: str,
+    current=Depends(get_current_user),
+):
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv.get("participants", []):
+        raise HTTPException(404, "Conversation not found")
+    if not conv.get("is_group"):
+        raise HTTPException(400, "Not a group conversation")
+    if not can_edit_group_profile(conv, current["user_id"]):
+        raise HTTPException(403, "Only group admins can edit the profile")
+    await db.conversations.update_one(
+        {"conversation_id": conversation_id},
+        {"$unset": {"group_photo": ""}, "$set": {"updated_at": iso(now_utc())}},
+    )
+    updated = {**conv}
+    updated.pop("group_photo", None)
+    from core.group_members import _broadcast_conv_update
+
+    await _broadcast_conv_update(updated)
+    return await _group_conversation_payload(updated, current["user_id"])
 
 
 @router.patch("/{conversation_id}/group-permissions")

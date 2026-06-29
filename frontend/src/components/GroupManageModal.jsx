@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { X, UsersThree, MagnifyingGlass, SignOut } from '@phosphor-icons/react';
+import { X, UsersThree, MagnifyingGlass, SignOut, Camera } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useLocale } from '../context/LocaleContext';
+import { prepareAvatarFile } from '../lib/avatarUpload';
+import { groupAvatarProps } from '../lib/groupAvatar';
 import { getLocalGroupLabel, setLocalGroupLabel } from '../lib/groupLabels';
 import {
   ADD_MEMBERS_ADMINS,
@@ -13,12 +15,15 @@ import {
   ROLE_MEMBER,
   ROLE_OWNER,
   canAddMembers,
+  canEditGroupProfile,
   canManageRoles,
   canRemoveMember,
   getMemberRole,
   roleBadgeKey,
 } from '../lib/groupRoles';
 import Avatar from './Avatar';
+
+const GROUP_DESCRIPTION_MAX = 280;
 
 export default function GroupManageModal({
   open,
@@ -35,6 +40,9 @@ export default function GroupManageModal({
   const [busy, setBusy] = useState(false);
   const [postingPolicy, setPostingPolicy] = useState(POSTING_ALL);
   const [addMembersPolicy, setAddMembersPolicy] = useState(ADD_MEMBERS_ADMINS);
+  const [groupDescription, setGroupDescription] = useState('');
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const photoInputRef = useRef(null);
 
   const members = conversation?.members || [];
   const memberIds = useMemo(
@@ -45,6 +53,8 @@ export default function GroupManageModal({
   const showAddMembers = conversation ? canAddMembers(conversation, myUserId) : false;
   const showRoleControls = conversation ? canManageRoles(conversation, myUserId) : false;
   const showPermissionControls = showRoleControls;
+  const canEditProfile = conversation ? canEditGroupProfile(conversation, myUserId) : false;
+  const avatarProps = conversation ? groupAvatarProps(conversation) : { user: null, isGroup: true };
 
   useEffect(() => {
     if (!open || !conversation) return;
@@ -52,7 +62,8 @@ export default function GroupManageModal({
     setQ('');
     setPostingPolicy(conversation.group_permissions?.posting || POSTING_ALL);
     setAddMembersPolicy(conversation.group_permissions?.add_members || ADD_MEMBERS_ADMINS);
-  }, [open, conversation?.conversation_id, conversation?.group_permissions]);
+    setGroupDescription(conversation.group_description || '');
+  }, [open, conversation?.conversation_id, conversation?.group_permissions, conversation?.group_description]);
 
   const addable = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -68,6 +79,62 @@ export default function GroupManageModal({
     if (trimmed) setLocalGroupLabel(conversation.conversation_id, trimmed);
     toast.success(t('groupNameSaved'));
     onUpdated?.();
+  };
+
+  const saveDescription = async () => {
+    if (!conversation || busy) return;
+    setBusy(true);
+    try {
+      const { data } = await api.patch(`/conversations/${conversation.conversation_id}/group-profile`, {
+        description: groupDescription.trim() || null,
+      });
+      toast.success(t('groupProfileSaved'));
+      onUpdated?.(data);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('groupProfileFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onPhotoPick = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !conversation) return;
+    setPhotoBusy(true);
+    try {
+      const prepared = await prepareAvatarFile(file);
+      const form = new FormData();
+      form.append('file', prepared);
+      const { data } = await api.post(
+        `/conversations/${conversation.conversation_id}/group-photo`,
+        form,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      toast.success(t('groupProfileSaved'));
+      onUpdated?.(data);
+    } catch (err) {
+      const code = err?.message;
+      if (code === 'AVATAR_TYPE') toast.error(t('settingsAvatarTypeError'));
+      else if (code === 'AVATAR_TOO_LARGE') toast.error(t('settingsAvatarSizeError'));
+      else toast.error(err?.response?.data?.detail || t('groupPhotoFailed'));
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    if (!conversation) return;
+    setPhotoBusy(true);
+    try {
+      const { data } = await api.delete(`/conversations/${conversation.conversation_id}/group-photo`);
+      toast.success(t('groupProfileSaved'));
+      onUpdated?.(data);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('groupPhotoFailed'));
+    } finally {
+      setPhotoBusy(false);
+    }
   };
 
   const savePermissions = async () => {
@@ -157,6 +224,76 @@ export default function GroupManageModal({
         </div>
 
         <p className="text-[10px] font-mono text-[#71717A] mb-3">{t('groupPrivacyHint')}</p>
+
+        <div className="mb-4 p-3 rounded-md bg-[#1A1A1A] tac-border" data-testid="group-profile-panel">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] mb-2">{t('groupPhotoLabel')}</p>
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <Avatar {...avatarProps} size="lg" />
+              {canEditProfile && (
+                <>
+                  <button
+                    type="button"
+                    disabled={photoBusy || busy}
+                    onClick={() => photoInputRef.current?.click()}
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#00E5FF] text-black flex items-center justify-center shadow-lg"
+                    data-testid="group-photo-upload"
+                  >
+                    <Camera size={14} weight="bold" />
+                  </button>
+                  <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={onPhotoPick} />
+                </>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              {canEditProfile ? (
+                <>
+                  <p className="text-[10px] font-mono text-[#71717A]">{t('groupPhotoUpload')}</p>
+                  {conversation.group_photo && (
+                    <button
+                      type="button"
+                      onClick={removePhoto}
+                      disabled={photoBusy || busy}
+                      className="mt-2 text-[10px] font-mono text-[#FF3B30] hover:underline"
+                      data-testid="group-photo-remove"
+                    >
+                      {t('groupPhotoRemove')}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className="text-[10px] font-mono text-[#71717A]">{t('groupPhotoMembersHint')}</p>
+              )}
+            </div>
+          </div>
+
+          <label className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] block mt-3 mb-1">{t('groupDescriptionLabel')}</label>
+          {canEditProfile ? (
+            <>
+              <textarea
+                value={groupDescription}
+                onChange={(e) => setGroupDescription(e.target.value)}
+                placeholder={t('groupDescriptionPlaceholder')}
+                className="w-full min-h-[72px] px-3 py-2 text-sm rounded-md bg-[#121212] tac-border resize-y"
+                maxLength={GROUP_DESCRIPTION_MAX}
+                data-testid="group-description-input"
+              />
+              <button
+                type="button"
+                disabled={busy}
+                onClick={saveDescription}
+                className="mt-2 w-full py-2 text-xs font-mono tracking-wider border border-[#00E5FF]/40 text-[#00E5FF] rounded-md hover:bg-[#00E5FF]/10"
+                data-testid="group-description-save"
+              >
+                {t('groupDescriptionSave')}
+              </button>
+            </>
+          ) : groupDescription.trim() ? (
+            <p className="text-sm text-[#F0F0F0] whitespace-pre-wrap" data-testid="group-description-readonly">{groupDescription}</p>
+          ) : (
+            <p className="text-[10px] font-mono text-[#71717A]">{t('groupDescriptionEmpty')}</p>
+          )}
+        </div>
 
         <label className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] block mb-1">{t('groupRenameLabel')}</label>
         <div className="flex gap-2 mb-4">

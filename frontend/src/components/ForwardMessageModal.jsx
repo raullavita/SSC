@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { MagnifyingGlass, X } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 import Avatar from './Avatar';
+import { groupAvatarProps } from '../lib/groupAvatar';
 import { conversationForwardLabel } from '../lib/messageForward';
 
 export default function ForwardMessageModal({
@@ -102,7 +103,7 @@ export default function ForwardMessageModal({
                 data-testid={`forward-target-${id}`}
               >
                 <input type="checkbox" readOnly checked={checked} className="accent-[#00E5FF]" />
-                <Avatar user={c.is_group ? null : c.peer} isGroup={c.is_group} size="sm" />
+                <Avatar {...groupAvatarProps(c)} size="sm" />
                 <span className="text-sm truncate">{label}</span>
               </button>
             );

@@ -95,6 +95,7 @@ import {
   isPeerBlocked,
   isPeerMuted,
 } from '../lib/contactFilters';
+import { groupAvatarProps, groupDescriptionLine } from '../lib/groupAvatar';
 import { formatGroupConversationLabel } from '../lib/groupDisplayLabel';
 import { canPostInGroup } from '../lib/groupRoles';
 import { clearLocalGroupLabels } from '../lib/groupLabels';
@@ -1135,6 +1136,8 @@ export default function ChatHome() {
 
   const renderSidebarConversationRow = useCallback((c) => {
     const peerMuted = !c.is_group && isPeerMuted(c.peer?.user_id, myContacts);
+    const groupDesc = c.is_group ? groupDescriptionLine(c) : '';
+    const avatarProps = groupAvatarProps(c);
     return (
       <ConversationListRow
         key={c.conversation_id}
@@ -1144,8 +1147,7 @@ export default function ChatHome() {
         onOpenActions={setConvActionsTarget}
       >
         <Avatar
-          user={c.is_group ? null : c.peer}
-          isGroup={c.is_group}
+          {...avatarProps}
           size="md"
           showOnline={!c.is_group}
         />
@@ -1162,9 +1164,13 @@ export default function ChatHome() {
               {c.is_group ? `${c.participants.length}P` : c.peer?.language?.toUpperCase()}
             </span>
           </div>
-          <div className="text-[11px] text-[#A1A1AA] truncate font-mono">
-            {c.last_activity?.has_messages ? `· ${t('encryptedMessage')} ·` : t('noMessagesYet')}
-          </div>
+          {groupDesc ? (
+            <div className="text-[11px] text-[#A1A1AA] truncate">{groupDesc}</div>
+          ) : (
+            <div className="text-[11px] text-[#A1A1AA] truncate font-mono">
+              {c.last_activity?.has_messages ? `· ${t('encryptedMessage')} ·` : t('noMessagesYet')}
+            </div>
+          )}
         </div>
       </ConversationListRow>
     );
@@ -1315,11 +1321,16 @@ export default function ChatHome() {
                     className="flex items-center gap-2 md:gap-3 min-w-0 text-left hover:opacity-90 transition"
                     data-testid="chat-group-manage-tap"
                   >
-                    <Avatar user={null} isGroup size="sm" />
+                    <Avatar {...groupAvatarProps(activeConv)} size="sm" />
                     <div className="min-w-0">
                       <div className="text-sm font-medium truncate" data-testid="chat-peer-username">
                         {headerTitle}
                       </div>
+                      {isGroup && groupDescriptionLine(activeConv) && (
+                        <div className="text-[10px] text-[#A1A1AA] truncate" data-testid="chat-group-description">
+                          {groupDescriptionLine(activeConv)}
+                        </div>
+                      )}
                       <div className="text-[10px] font-mono tracking-wider truncate flex items-center gap-1 text-[#A1A1AA]">
                         <span className="truncate" data-testid="chat-peer-status">
                           {isGroup

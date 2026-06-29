@@ -78,6 +78,10 @@ export function canManageRoles(conv, userId) {
   return getMemberRole(conv, userId) === ROLE_OWNER;
 }
 
+export function canEditGroupProfile(conv, userId) {
+  return isPrivilegedRole(getMemberRole(conv, userId));
+}
+
 export function roleBadgeKey(role) {
   switch (role) {
     case ROLE_OWNER: return 'groupOwnerBadge';

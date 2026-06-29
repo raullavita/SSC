@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { MagnifyingGlass, X } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 import Avatar from './Avatar';
+import { groupAvatarProps } from '../lib/groupAvatar';
 import { splitTextForHighlight } from '../lib/chatSearch';
 import { MIN_GLOBAL_SEARCH_LENGTH, conversationSearchTitle } from '../lib/globalMessageSearch';
 
@@ -98,7 +99,7 @@ export default function GlobalMessageSearchModal({
                 data-testid={`global-search-result-${hit.message_id}`}
                 className="w-full text-left px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] flex items-start gap-3"
               >
-                <Avatar user={conv.is_group ? null : conv.peer} isGroup={conv.is_group} size="sm" />
+                <Avatar {...groupAvatarProps(conv)} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium truncate">{title}</span>

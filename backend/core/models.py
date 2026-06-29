@@ -146,6 +146,10 @@ class MemberRoleIn(BaseModel):
     role: Literal["owner", "admin", "member"]
 
 
+class GroupProfileIn(BaseModel):
+    description: Optional[str] = None
+
+
 class PushSubscribeIn(BaseModel):
     endpoint: str
     keys: Dict[str, str]

@@ -67,7 +67,23 @@ def test_sanitize_conversation_no_custom_name():
     assert out["owner_id"] == "u_a"
     assert out["member_roles"]["u_a"] == "owner"
     assert out["group_permissions"]["posting"] == "all"
+    assert "group_photo" not in out
+    assert "group_description" not in out
     assert out["pinned"] is False
+
+
+def test_sanitize_conversation_exposes_group_profile_fields():
+    conv = {
+        "conversation_id": "g_abc",
+        "participants": ["u_a", "u_b"],
+        "is_group": True,
+        "admin_id": "u_a",
+        "group_photo": "data:image/jpeg;base64,abc",
+        "group_description": "Squad chat",
+    }
+    out = sanitize_conversation_for_api(conv, "u_a")
+    assert out["group_photo"] == "data:image/jpeg;base64,abc"
+    assert out["group_description"] == "Squad chat"
 
 
 def test_sanitize_conversation_includes_pin_fields():

@@ -3,6 +3,7 @@ import {
   ROLE_MEMBER,
   ROLE_OWNER,
   canAddMembers,
+  canEditGroupProfile,
   canPostInGroup,
   canRemoveMember,
   getMemberRole,
@@ -50,5 +51,12 @@ describe('groupRoles', () => {
     const conv = group();
     expect(canRemoveMember(conv, 'u_admin', 'u_mem')).toBe(true);
     expect(canRemoveMember(conv, 'u_admin', 'u_owner')).toBe(false);
+  });
+
+  it('allows owner and admin to edit group profile', () => {
+    const conv = group();
+    expect(canEditGroupProfile(conv, 'u_owner')).toBe(true);
+    expect(canEditGroupProfile(conv, 'u_admin')).toBe(true);
+    expect(canEditGroupProfile(conv, 'u_mem')).toBe(false);
   });
 });

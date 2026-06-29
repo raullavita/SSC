@@ -18,6 +18,8 @@ CONVERSATION_STORE_FIELDS = (
     "owner_id",
     "member_roles",
     "group_permissions",
+    "group_photo",
+    "group_description",
     "created_at",
     "created_by",
     "last_activity_at",
@@ -75,6 +77,10 @@ def sanitize_conversation_for_api(conv: dict, viewer_id: str) -> dict:
         out["owner_id"] = role_fields["owner_id"]
         out["member_roles"] = role_fields["member_roles"]
         out["group_permissions"] = role_fields["group_permissions"]
+        if conv.get("group_photo"):
+            out["group_photo"] = conv["group_photo"]
+        if conv.get("group_description"):
+            out["group_description"] = conv["group_description"]
         out["members"] = conv.get("members") or []
         out["peer"] = None
     else:
