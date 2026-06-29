@@ -32,6 +32,7 @@ LIFESPAN_COLLECTIONS = {
     "contact_seals",
     "contact_blocks",
     "contact_mutes",
+    "conversation_mutes",
     "contact_rosters",
     "broadcast_lists",
 }

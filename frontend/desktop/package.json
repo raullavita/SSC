@@ -24,7 +24,8 @@
     "electron-builder": "25.1.8"
   },
   "resolutions": {
-    "protobufjs": "7.6.1"
+    "protobufjs": "7.6.3",
+    "tar": "7.5.16"
   },
   "build": {
     "appId": "chat.ssc.secure.desktop",

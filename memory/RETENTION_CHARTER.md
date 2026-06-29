@@ -71,6 +71,7 @@ This charter defines:
 | MongoDB | `broadcast_lists` | **Persistent** (panic may keep) | `list_id`, `owner_id`, `name`, `recipient_ids`, timestamps | Saved contact subsets for 1:1 fan-out sends (Q.30) |
 | MongoDB | `contact_blocks` | **Persistent** | `seal`, `created_at` | Blind block edge |
 | MongoDB | `contact_mutes` | **Persistent** | `seal`, `created_at` | Blind mute edge |
+| MongoDB | `conversation_mutes` | **Until unmutes or expiry** | `seal`, `user_id`, `conversation_id`, `duration`, `muted_until`, timestamps | Per-chat notification mute (Q.44) |
 | MongoDB | `friend_requests` | **Pending:** 7d TTL; **accepted/rejected:** purge 24h after resolution (step 1.3) | `request_id`, user ids, usernames, `status`, `created_at` | Request history |
 
 **Charter decision (v1.1, contact graph privacy):** Social graph **remains** until user removes it — required for app function and panic UX. Stored as **blind seals + encrypted rosters** — see `CONTACT_GRAPH_PRIVACY_CHARTER.md`.
