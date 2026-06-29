@@ -109,6 +109,38 @@ Dependabot may still show counts against an **older commit** until GitHub re-sca
 - Controlled Electron bump in `frontend/desktop` (test `SSC-BUILD-DESKTOP-WIN.bat`)
 - Backend grouped minor/patch Dependabot PRs (`/backend`)
 
+## Data lifecycle: 24h recycle vs panic wipe
+
+Plain-language summary for contributors. Deep charter: `memory/RETENTION_CHARTER.md` · server code: `backend/core/retention.py`, `backend/core/panic_wipe_service.py`.
+
+### After normal retention recycle (Mongo TTL, default 24h)
+
+MongoDB TTL indexes on `expires_at` purge rows when their window ends (`TTL_INDEX_COLLECTIONS` in `backend/core/retention.py`):
+
+| Removed from server | Stays on server |
+|---------------------|------------------|
+| Messages, files, stories/statuses | **Account** (`users` row) |
+| Conversation shells | **Contact graph** (seals, blocks, mutes, rosters) |
+| Message reads, reactions, poll votes | **Signal prekey bundles** (per-device keys) |
+| Call records, JWT sessions | **Broadcast lists** (metadata) |
+| Expired friend-request rows | Coarse profile fields (`last_seen` policy, privacy settings) |
+
+TTL is **automatic** — no user action. Per-user retention hours can shorten the window (max 30 days); see Settings.
+
+### After panic wipe (`POST /api/panic-wipe`)
+
+User-triggered emergency wipe. Server preserves account + social graph so login and contacts still work; chat footprint is erased.
+
+| **Preserved** (`PANIC_PRESERVE_COLLECTIONS`) | **Wiped** (`PANIC_WIPE_COLLECTIONS`) |
+|-----------------------------------------------|----------------------------------------|
+| `users` | `conversations`, `messages`, `message_reads` |
+| `friend_requests`, `contact_seals`, `contact_blocks`, `contact_mutes`, `contact_rosters` | `files`, `statuses`, `calls` |
+| `broadcast_lists` | `user_sessions`, `push_subscriptions`, `native_push_tokens` |
+
+### Installed client (one paragraph)
+
+Panic and logout run a **client-first** memory wipe (vault, caches, service worker caches) in `frontend/src/lib/memoryWipe.js`. Canonical chat history lives on the server until TTL or panic removes it. Local wipe succeeds even if the server call fails (offline-safe).
+
 ## Branch protection (`main`)
 
 `main` is protected on GitHub:

@@ -7,7 +7,6 @@ from core.device_policy import (
     create_link_token,
     consume_link_token,
     list_user_devices,
-    touch_device,
     unlink_device,
     migrate_legacy_single_device,
 )

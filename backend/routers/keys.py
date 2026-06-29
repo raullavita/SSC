@@ -1,6 +1,4 @@
 """Signal prekey bundle relay — Engine 8.3 + Q.51 multi-device."""
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from core.auth import get_current_user

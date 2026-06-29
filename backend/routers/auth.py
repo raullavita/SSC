@@ -1,5 +1,4 @@
 """Authentication routes: register, login, 2FA, Google OAuth."""
-import os
 import secrets
 import uuid
 from typing import Optional

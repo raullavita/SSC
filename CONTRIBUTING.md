@@ -23,7 +23,11 @@ copy .env.example .env   # fill MONGO_URL, JWT_SECRET
 cd ..\frontend && yarn install && copy .env.example .env
 ```
 
-See `README.md` for LAN APK and desktop builds.
+See `README.md` for LAN APK builds. **Windows desktop from a clean clone:** [docs/BUILD_WINDOWS.md](docs/BUILD_WINDOWS.md).
+
+**Data lifecycle (TTL vs panic):** [SECURITY.md § Data lifecycle](SECURITY.md#data-lifecycle-24h-recycle-vs-panic-wipe).
+
+**Dependabot / CodeQL triage:** [SECURITY.md § GitHub Security tab](SECURITY.md#github-security-tab-dependabot--codeql).
 
 ## Tests
 

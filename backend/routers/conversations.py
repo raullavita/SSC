@@ -14,7 +14,6 @@ from core.member_joined import build_member_joined_at_for_participants
 from core.group_limits import MAX_GROUP_PARTICIPANTS, assert_can_add_to_group, assert_group_size_allowed
 from core.group_topics import (
     GENERAL_TOPIC_ID,
-    bump_topic_activity,
     can_manage_group_topics,
     create_group_topic,
     delete_group_topic,

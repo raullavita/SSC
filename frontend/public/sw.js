@@ -5,6 +5,8 @@ const GENERIC_TITLE = 'SSC';
 const GENERIC_BODY = 'New activity';
 
 self.addEventListener('message', (event) => {
+  // Reject cross-origin postMessage (CodeQL: js/missing-origin-check).
+  if (event.origin && event.origin !== self.location.origin) return;
   const sourceUrl = event.source?.url || '';
   if (sourceUrl && !sourceUrl.startsWith(self.location.origin)) return;
   if (event.data?.type !== PURGE_CACHES_MESSAGE) return;

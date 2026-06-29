@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import base64
 import json
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 import pyotp
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response

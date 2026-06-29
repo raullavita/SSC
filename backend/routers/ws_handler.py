@@ -10,7 +10,6 @@ from core.database import db
 from core.logging_config import logger
 from core.push_helpers import send_push_for_call, send_push_for_call_end
 from core.realtime import broadcast_to_conversation, manager
-from core.utils import iso, now_utc
 from core.webrtc_signaling_policy import SignalingValidationError, validate_signaling_relay
 from core.privacy_settings import privacy_map_for_users, typing_indicators_enabled
 

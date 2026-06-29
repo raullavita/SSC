@@ -9,12 +9,10 @@ from core.contact_helpers import get_user_public
 from core.database import db
 from core.models import UpdateProfileIn
 from core.retention_db import refresh_retention_after_user_change
-from core.retention import DEFAULT_RETENTION_HOURS
 from core.user_retention import normalize_user_retention_hours, user_retention_hours_from_doc
 from core.bio_policy import normalize_bio
 from core.display_name_policy import normalize_display_name
 from core.privacy_settings import merge_privacy, normalize_privacy_patch, privacy_from_user
-from core.utils import validate_username
 from security import rate_limit_check
 
 router = APIRouter()

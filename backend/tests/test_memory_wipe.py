@@ -65,6 +65,8 @@ def test_sw_js_handles_purge_caches_message():
     root = Path(__file__).resolve().parents[2]
     sw = (root / "frontend" / "public" / "sw.js").read_text(encoding="utf-8")
     assert "SSC_PURGE_CACHES" in sw
+    assert "event.origin" in sw
+    assert "self.location.origin" in sw
     assert "caches.keys()" in sw
     assert "caches.delete" in sw
     assert "event.waitUntil" in sw
