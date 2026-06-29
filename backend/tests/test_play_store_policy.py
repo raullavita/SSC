@@ -55,7 +55,9 @@ def test_client_updates_prefers_play_store_field():
 
 
 def test_aab_build_documented():
-    bat = (REPO / "SSC-BUILD-APK.bat").read_text(encoding="utf-8")
+    wrapper = (REPO / "SSC-BUILD-APK.bat").read_text(encoding="utf-8")
+    assert "scripts\\build\\build_apk.bat" in wrapper
+    bat = (REPO / "scripts" / "build" / "build_apk.bat").read_text(encoding="utf-8")
     assert "bundleRelease" in bat
     assert ".aab" in bat
 
