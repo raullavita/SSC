@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images, FilmStrip, Smiley, ChartBar } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images, FilmStrip, Smiley, ChartBar, MapPin } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -138,6 +138,7 @@ export default function ChatHome() {
   const [pollModalOpen, setPollModalOpen] = useState(false);
   const [pollSending, setPollSending] = useState(false);
   const [pollVotingId, setPollVotingId] = useState(null);
+  const [locationConfirmOpen, setLocationConfirmOpen] = useState(false);
   const [gifSearchOn, setGifSearchOn] = useState(() => gifSearchEnabled());
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
@@ -534,6 +535,7 @@ export default function ChatHome() {
     sendBundledSticker,
     sendRemoteGif,
     sendPoll,
+    sendLocation,
     startRecording,
     cancelRecording,
     stopRecordingAndSend,
@@ -745,6 +747,10 @@ export default function ChatHome() {
         setPollModalOpen(false);
         return;
       }
+      if (locationConfirmOpen) {
+        setLocationConfirmOpen(false);
+        return;
+      }
       if (searchOpen) {
         setSearchOpen(false);
         return;
@@ -796,6 +802,7 @@ export default function ChatHome() {
     mediaGalleryOpen,
     stickerPickerOpen,
     pollModalOpen,
+    locationConfirmOpen,
     searchOpen,
     settingsOpen,
     storyGroup,
@@ -1583,6 +1590,16 @@ export default function ChatHome() {
               )}
               <button
                 type="button"
+                onClick={() => setLocationConfirmOpen(true)}
+                disabled={uploadBusy || !canMessagePeer}
+                data-testid="location-button"
+                className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
+                title={t('shareLocationTitle')}
+              >
+                <MapPin size={18} />
+              </button>
+              <button
+                type="button"
                 onClick={onVideoClick}
                 onPointerDown={onVideoPointerDown}
                 onPointerUp={onVideoPointerUp}
@@ -1892,6 +1909,19 @@ export default function ChatHome() {
         onSave={saveEditMessage}
         onClose={() => { setEditTarget(null); setEditDraft(''); }}
         saving={editSaving}
+      />
+
+      <ConfirmDialog
+        open={locationConfirmOpen}
+        title={t('shareLocationTitle')}
+        message={t('shareLocationConfirm')}
+        confirmLabel={t('shareLocationSubmit')}
+        onConfirm={() => {
+          setLocationConfirmOpen(false);
+          sendLocation();
+        }}
+        onCancel={() => setLocationConfirmOpen(false)}
+        testId="share-location-dialog"
       />
 
       <ConfirmDialog

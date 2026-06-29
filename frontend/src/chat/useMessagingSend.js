@@ -31,6 +31,11 @@ import {
   buildPollPayload,
   serializePollPayload,
 } from '../lib/pollMessage';
+import {
+  buildLocationPayload,
+  serializeLocationPayload,
+} from '../lib/locationMessage';
+import { captureCurrentLocation } from '../lib/locationShare';
 
 export function useMessagingSend({
   activeConv,
@@ -261,6 +266,38 @@ export function useMessagingSend({
       pollOptionCount: built.payload.options.length,
     });
   }, [isGroup, sendMessage, t]);
+
+  const sendLocation = useCallback(async () => {
+    if (!activeConv || uploadBusy) return;
+    if (!canMessagePeer) {
+      toast.info(isRequestPendingPeer ? t('requestPendingChat') : t('cannotMessageNonMutual'));
+      return;
+    }
+    setUploadBusy(true);
+    try {
+      const captured = await captureCurrentLocation();
+      if (!captured.ok) {
+        toast.error(t(captured.errorKey));
+        return;
+      }
+      const built = buildLocationPayload(captured.coords);
+      if (!built.ok) {
+        toast.error(t(built.errorKey));
+        return;
+      }
+      await sendMessage(serializeLocationPayload(built.payload), 'location');
+    } finally {
+      setUploadBusy(false);
+    }
+  }, [
+    activeConv,
+    uploadBusy,
+    canMessagePeer,
+    isRequestPendingPeer,
+    sendMessage,
+    setUploadBusy,
+    t,
+  ]);
 
   const editMessage = useCallback(async (originalMsg, newText) => {
     if (!activeConv || !originalMsg?.message_id || !newText?.trim()) return null;
@@ -546,6 +583,7 @@ export function useMessagingSend({
     sendBundledSticker,
     sendRemoteGif,
     sendPoll,
+    sendLocation,
     startRecording,
     cancelRecording,
     stopRecordingAndSend,

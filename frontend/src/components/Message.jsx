@@ -18,6 +18,7 @@ import LinkPreviewCard from './LinkPreviewCard';
 import VoiceNotePlayer from './VoiceNotePlayer';
 import VideoNotePlayer from './VideoNotePlayer';
 import PollMessage from './PollMessage';
+import LocationMessage from './LocationMessage';
 
 function HighlightedText({ text, query }) {
   const parts = splitTextForHighlight(text, query);
@@ -303,6 +304,8 @@ export default function Message({
                 onPollVote={onPollVote}
                 voting={pollVoting}
               />
+            ) : msg.message_type === 'location' ? (
+              <LocationMessage plaintext={plaintext} messageId={msg.message_id} />
             ) : (
               <div>
                 <RichTextContent
