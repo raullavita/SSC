@@ -23,7 +23,7 @@
 **GitHub release:** **v1.0.12** pre-release (source only — no `.exe` attached by design)
 **Production API:** `https://api.supersecurechat.com` (founder deploy when ready — not tied to every git push)
 **Last roadmap sync:** 27 Jun 2026 — removed stale Emergent branch; Dependabot majors ignored
-**Next founder task:** TASK J (device QA) when you choose · else let #4/#2 contributors land
+**Next founder task:** Run **Q.64** manual matrix (`scripts/run_device_matrix.ps1` → log `test_reports/Q64_DEVICE_MATRIX.md`)
 
 ---
 
@@ -198,7 +198,7 @@
 | **M** | In-app UX polish (profile, Settings, feel) | [x] M.1–M.11 done (M.6 deferred v1.1) |
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
-| **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
+| **J** QA matrix | tester-win ↔ tester-android — **Q.64** scaffolding live; founder sign-off in `test_reports/Q64_DEVICE_MATRIX.md` | [~] |
 | **Q** Expansion wave | **63 subtasks** — serial order; **Q.58 done** → next **Q.59** | [~] Q.59 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
@@ -377,7 +377,7 @@
 
 | # | ID | Subtask | Owner | Status |
 |---|-----|---------|-------|--------|
-| 64 | **Q.64** | **TASK J full device matrix** on release candidate after Q.1–Q.15 minimum | Founder | [ ] |
+| 64 | **Q.64** | **TASK J full device matrix** on release candidate after Q.1–Q.15 minimum | Founder | [x] repo · [ ] founder sign-off |
 
 **Estimated calendar:** Waves 1–3 ≈ 8–12 weeks solo; full Q.1–Q.63 ≈ 6–12 months at one-task-at-a-time pace with contributors on isolated subtasks.
 

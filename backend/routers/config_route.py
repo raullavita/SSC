@@ -16,6 +16,7 @@ from core.crash_reporting_policy import crash_reporting_public_config
 from core.code_signing_policy import code_signing_public_config
 from core.app_store_policy import app_store_public_config
 from core.play_store_policy import play_store_public_config
+from core.device_matrix_policy import device_matrix_public_config
 from core.installed_client_policy import installed_client_public_config
 from core.privacy_settings import privacy_public_config
 from core.email_verification_policy import auth_public_config
@@ -62,6 +63,7 @@ async def public_config():
         "code_signing": code_signing_public_config(),
         "play_store": play_store_public_config(),
         "app_store": app_store_public_config(),
+        "device_matrix": device_matrix_public_config(),
         "auth": auth_public_config(),
         "gif_search": {
             "tenor_api_key": TENOR_API_KEY,

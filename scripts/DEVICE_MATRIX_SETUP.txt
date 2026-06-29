@@ -1,0 +1,55 @@
+SSC Q.64 / TASK J — Full device matrix on release candidate
+=========================================================
+
+Repo wiring is complete when this file + device-matrix/ + smoke script exist.
+Founder must run the manual matrix and log results before wider testers.
+
+Prerequisites (repo):
+  - device-matrix/MATRIX.md          — full checklist
+  - device-matrix/RELEASE_CANDIDATE.json
+  - test_reports/Q64_DEVICE_MATRIX.md — sign-off log (fill in)
+  - test_reports/Q31_TURN_OFF_LAN_MATRIX.md — calls submatrix
+  - test_reports/TASK_J_QA_2026-06-27.md — prior fixes to retest
+
+--- Step 1 — Preflight (automated) ---
+
+  .\scripts\run_device_matrix.ps1
+
+Or:
+
+  python backend/scripts/device_matrix_smoke.py
+
+Expect exit 0: API health, /api/config device_matrix block, artifacts on disk.
+
+--- Step 2 — Install release candidate ---
+
+Primary (required):
+  - tester-win: Windows desktop installer (see REACT_APP_DOWNLOAD_WIN_URL)
+  - tester-android: APK or App Distribution (same version as RELEASE_CANDIDATE.json)
+
+Stretch (optional):
+  - tester-mac: Mac desktop build (Q.61 signing when ready)
+  - tester-ios: TestFlight (Q.63)
+
+--- Step 3 — Run matrix ---
+
+Work through device-matrix/MATRIX.md row by row.
+Log pass/fail in test_reports/Q64_DEVICE_MATRIX.md.
+
+Tips:
+  - Warm Signal: open DM, wait ~5s before first send/call
+  - Windows calls need app in foreground (no FCM when closed)
+  - Off-LAN calls: complete Q31 TURN matrix when testing calls
+  - Do not recreate tester accounts until retention row (I.4) is logged
+
+--- Step 4 — Sign-off ---
+
+When all primary rows pass:
+
+  $env:SSC_DEVICE_MATRIX_COMPLETE = "1"
+  $env:SSC_DEVICE_MATRIX_REPORT_PATH = "test_reports/Q64_DEVICE_MATRIX.md"
+
+Redeploy API if you want matrix_complete=true on /api/config.
+
+Mark founder sign-off in test_reports/Q64_DEVICE_MATRIX.md.
+Repo Q.64 is [x] for scaffolding; TASK J founder column updates when sign-off is done.

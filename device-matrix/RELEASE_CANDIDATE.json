@@ -1,0 +1,47 @@
+{
+  "matrix_id": "Q.64",
+  "minimum_wave": "Q.15",
+  "release_candidate_version": "1.0.12",
+  "api_url": "https://api.supersecurechat.com",
+  "primary_devices": [
+    {
+      "id": "tester-win",
+      "platform": "windows",
+      "role": "desktop",
+      "install_source": "REACT_APP_DOWNLOAD_WIN_URL or /downloads/desktop/"
+    },
+    {
+      "id": "tester-android",
+      "platform": "android",
+      "role": "phone",
+      "install_source": "REACT_APP_DOWNLOAD_APK_URL or Firebase App Distribution"
+    }
+  ],
+  "stretch_devices": [
+    {
+      "id": "tester-mac",
+      "platform": "mac",
+      "role": "desktop",
+      "install_source": "SSC-BUILD-DESKTOP.sh (Mac) — optional for Q.64"
+    },
+    {
+      "id": "tester-ios",
+      "platform": "ios",
+      "role": "phone",
+      "install_source": "SSC_IOS_TESTFLIGHT_URL — optional after Q.63"
+    }
+  ],
+  "prerequisites": [
+    "Waves Q.1–Q.15 minimum shipped in this build",
+    "Production API healthy (/api/health)",
+    "Mutual contacts between tester accounts",
+    "Signal session warmed (~5s in chat before first send/call)",
+    "Do not recreate tester accounts until retention proof (I.4) is logged",
+    "Windows app in foreground for calls (no FCM when closed)"
+  ],
+  "submatrices": [
+    "test_reports/Q31_TURN_OFF_LAN_MATRIX.md",
+    "test_reports/TASK_J_QA_2026-06-27.md"
+  ],
+  "founder_report": "test_reports/Q64_DEVICE_MATRIX.md"
+}
