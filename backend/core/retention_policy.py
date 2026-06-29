@@ -73,6 +73,16 @@ COLLECTIONS: Dict[str, CollectionPolicy] = {
         allowed_fields="user_id, ciphertext, iv, version, updated_at",
         notes="Pepper-encrypted roster — staff-blind without CONTACT_GRAPH_PEPPER.",
     ),
+    "broadcast_lists": CollectionPolicy(
+        name="broadcast_lists",
+        tier=RetentionTier.SOCIAL_GRAPH,
+        max_lifetime="until_user_removes_or_account_delete",
+        ttl_field=None,
+        enforcement=EnforcementStatus.ENFORCED,
+        engine1_step=None,
+        allowed_fields="list_id, owner_id, name, recipient_ids, created_at, updated_at",
+        notes="Saved contact subsets for client-side 1:1 fan-out sends (Q.30).",
+    ),
     "contact_blocks": CollectionPolicy(
         name="contact_blocks",
         tier=RetentionTier.SOCIAL_GRAPH,

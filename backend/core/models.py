@@ -159,6 +159,16 @@ class GroupTopicRenameIn(BaseModel):
     name: str = Field(min_length=1, max_length=64)
 
 
+class BroadcastListIn(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+    recipient_ids: List[str] = Field(min_length=1, max_length=50)
+
+
+class BroadcastListUpdateIn(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=64)
+    recipient_ids: Optional[List[str]] = Field(default=None, min_length=1, max_length=50)
+
+
 class PushSubscribeIn(BaseModel):
     endpoint: str
     keys: Dict[str, str]

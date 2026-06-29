@@ -50,6 +50,8 @@ async def _ensure_indexes() -> None:
     await db.contact_blocks.create_index("seal", unique=True)
     await db.contact_mutes.create_index("seal", unique=True)
     await db.contact_rosters.create_index("user_id", unique=True)
+    await db.broadcast_lists.create_index("list_id", unique=True)
+    await db.broadcast_lists.create_index([("owner_id", 1), ("updated_at", -1)])
 
     from core.contact_graph import migrate_legacy_contacts
 

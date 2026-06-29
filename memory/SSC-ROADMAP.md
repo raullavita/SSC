@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.29 done** → next **Q.30** | [~] Q.30 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.30 done** → next **Q.31** | [~] Q.31 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -308,7 +308,7 @@
 | 27 | **Q.27** | **Member list polish** (admin badges, joined date) | git | [x] |
 | 28 | **Q.28** | **Group topics / threads** (Telegram-style topics) | git | [x] |
 | 29 | **Q.29** | **Large groups** (raise cap toward 50; perf test) | git | [x] |
-| 30 | **Q.30** | **Broadcast lists** (one-to-many to contact subsets) | git | [ ] |
+| 30 | **Q.30** | **Broadcast lists** (one-to-many to contact subsets) | git | [x] |
 
 #### Wave 6 — Calls & realtime (no screen share)
 

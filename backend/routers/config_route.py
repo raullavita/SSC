@@ -8,6 +8,7 @@ from core.translation_access import is_translation_allowed, translation_provider
 from core.translation_policy import production_translation_mode
 from core.sfu_policy import group_calls_public_config
 from core.group_limits import group_limits_public_config
+from core.broadcast_lists import broadcast_lists_public_config
 from core.user_retention import retention_public_config
 from core.client_updates_policy import client_updates_public_config
 from core.privacy_settings import privacy_public_config
@@ -45,6 +46,7 @@ async def public_config():
         },
         "group_calls": group_calls_public_config(),
         "groups": group_limits_public_config(),
+        "broadcast_lists": broadcast_lists_public_config(),
         "client_updates": client_updates_public_config(),
         "privacy": privacy_public_config(),
         "gif_search": {

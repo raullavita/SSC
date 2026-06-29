@@ -68,6 +68,7 @@ This charter defines:
 |-------|------------|----------------------|----------------|------|
 | MongoDB | `contact_seals` | **Persistent** (panic may keep — wife scenario) | `seal`, `created_at` | Blind pair edge (no plaintext user ids) |
 | MongoDB | `contact_rosters` | **Persistent** | `user_id`, `ciphertext`, `iv`, `version` | Pepper-encrypted friend list |
+| MongoDB | `broadcast_lists` | **Persistent** (panic may keep) | `list_id`, `owner_id`, `name`, `recipient_ids`, timestamps | Saved contact subsets for 1:1 fan-out sends (Q.30) |
 | MongoDB | `contact_blocks` | **Persistent** | `seal`, `created_at` | Blind block edge |
 | MongoDB | `contact_mutes` | **Persistent** | `seal`, `created_at` | Blind mute edge |
 | MongoDB | `friend_requests` | **Pending:** 7d TTL; **accepted/rejected:** purge 24h after resolution (step 1.3) | `request_id`, user ids, usernames, `status`, `created_at` | Request history |

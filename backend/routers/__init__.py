@@ -3,6 +3,7 @@ from fastapi import APIRouter
 
 from routers.auth import router as auth_router
 from routers.config_route import router as config_router
+from routers.broadcast_lists import router as broadcast_lists_router
 from routers.contacts import router as contacts_router
 from routers.conversations import router as conversations_router
 from routers.files import router as files_router
@@ -23,6 +24,7 @@ def include_routers(api: APIRouter):
     api.include_router(auth_router, prefix="/auth")
     api.include_router(users_router, prefix="/users")
     api.include_router(contacts_router, prefix="/contacts")
+    api.include_router(broadcast_lists_router, prefix="/broadcast-lists")
     api.include_router(conversations_router, prefix="/conversations")
     api.include_router(messages_router, prefix="/messages")
     api.include_router(translate_router, prefix="/translate")

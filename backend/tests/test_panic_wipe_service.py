@@ -11,6 +11,7 @@ def test_panic_preserves_account_and_social_graph():
     assert "users" in PANIC_PRESERVE_COLLECTIONS
     assert "contact_seals" in PANIC_PRESERVE_COLLECTIONS
     assert "contact_rosters" in PANIC_PRESERVE_COLLECTIONS
+    assert "broadcast_lists" in PANIC_PRESERVE_COLLECTIONS
     assert "friend_requests" in PANIC_PRESERVE_COLLECTIONS
 
 

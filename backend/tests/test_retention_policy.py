@@ -33,6 +33,7 @@ LIFESPAN_COLLECTIONS = {
     "contact_blocks",
     "contact_mutes",
     "contact_rosters",
+    "broadcast_lists",
 }
 
 

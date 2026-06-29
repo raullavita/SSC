@@ -76,6 +76,7 @@ async def execute_account_delete(
     peer_ids = await _peer_ids_for_user(user_id)
     detached = await _purge_contact_graph(user_id, peer_ids)
 
+    await db.broadcast_lists.delete_many({"owner_id": user_id})
     fr = await db.friend_requests.delete_many({
         "$or": [{"from_user_id": user_id}, {"to_user_id": user_id}],
     })

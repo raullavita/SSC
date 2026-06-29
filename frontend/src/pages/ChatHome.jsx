@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images, FilmStrip, Smiley, ChartBar, MapPin } from '@phosphor-icons/react';
+import { MagnifyingGlass, Plus, SignOut, Phone, VideoCamera, PaperPlaneTilt, Paperclip, ShieldCheck, Translate, X, UsersThree, Gear, Microphone, CaretLeft, CaretDown, CaretUp, PushPin, Images, FilmStrip, Smiley, ChartBar, MapPin, Megaphone } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -25,6 +25,8 @@ import CreateGroupModal from '../components/CreateGroupModal';
 import GroupManageModal from '../components/GroupManageModal';
 import GroupTopicsBar from '../components/GroupTopicsBar';
 import CreateGroupTopicModal from '../components/CreateGroupTopicModal';
+import BroadcastListsModal from '../components/BroadcastListsModal';
+import BroadcastSendModal from '../components/BroadcastSendModal';
 import { ConversationListSkeleton, MessagesSkeleton } from '../components/ChatSkeleton';
 import ConversationActionsSheet, { ConversationListRow } from '../components/ConversationActionsSheet';
 import ChatMessageSearchBar from '../components/ChatMessageSearchBar';
@@ -148,6 +150,9 @@ export default function ChatHome() {
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
+  const [broadcastListsOpen, setBroadcastListsOpen] = useState(false);
+  const [broadcastSendOpen, setBroadcastSendOpen] = useState(false);
+  const [broadcastSendList, setBroadcastSendList] = useState(null);
   const [groupManageOpen, setGroupManageOpen] = useState(false);
   const [activeTopicId, setActiveTopicId] = useState(GENERAL_TOPIC_ID);
   const [topicModalOpen, setTopicModalOpen] = useState(false);
@@ -809,6 +814,15 @@ export default function ChatHome() {
         setGroupOpen(false);
         return;
       }
+      if (broadcastSendOpen) {
+        setBroadcastSendOpen(false);
+        setBroadcastSendList(null);
+        return;
+      }
+      if (broadcastListsOpen) {
+        setBroadcastListsOpen(false);
+        return;
+      }
       if (onboardingOpen) {
         setOnboardingOpen(false);
         return;
@@ -845,6 +859,8 @@ export default function ChatHome() {
     profileSheetOpen,
     conversationId,
     groupOpen,
+    broadcastSendOpen,
+    broadcastListsOpen,
     leaveChat,
     chatSearchOpen,
     onboardingOpen,
@@ -1259,6 +1275,14 @@ export default function ChatHome() {
             <button onClick={() => setGroupOpen(true)} title={t('createGroup')} data-testid="new-group-button"
               className="w-10 h-10 rounded-md tac-border bg-[#121212] hover:bg-[#1A1A1A] flex items-center justify-center">
               <UsersThree size={16} />
+            </button>
+            <button
+              onClick={() => { setBroadcastSendList(null); setBroadcastSendOpen(true); }}
+              title={t('broadcastSendTitle')}
+              data-testid="broadcast-send-button"
+              className="w-10 h-10 rounded-md tac-border bg-[#121212] hover:bg-[#1A1A1A] flex items-center justify-center"
+            >
+              <Megaphone size={16} />
             </button>
           </div>
           <button onClick={() => setContactsOpen(true)} data-testid="open-contacts-button"
@@ -1922,6 +1946,33 @@ export default function ChatHome() {
         myUserId={user?.user_id}
         contacts={myContacts}
         onCreated={(c) => { loadConversations(); goToConversation(c.conversation_id); }}
+      />
+
+      <BroadcastListsModal
+        open={broadcastListsOpen}
+        onClose={() => setBroadcastListsOpen(false)}
+        contacts={myContacts}
+        onSendList={(row) => {
+          setBroadcastSendList(row);
+          setBroadcastListsOpen(false);
+          setBroadcastSendOpen(true);
+        }}
+      />
+
+      <BroadcastSendModal
+        open={broadcastSendOpen}
+        onClose={() => { setBroadcastSendOpen(false); setBroadcastSendList(null); }}
+        initialList={broadcastSendList}
+        contacts={myContacts}
+        conversations={conversations}
+        user={user}
+        privateKey={privateKey}
+        refreshUser={refreshUser}
+        loadConversations={loadConversations}
+        onManageLists={() => {
+          setBroadcastSendOpen(false);
+          setBroadcastListsOpen(true);
+        }}
       />
 
       <GroupManageModal

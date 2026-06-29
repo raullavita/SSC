@@ -24,6 +24,7 @@ PANIC_PRESERVE_COLLECTIONS = frozenset({
     "contact_blocks",
     "contact_mutes",
     "contact_rosters",
+    "broadcast_lists",
 })
 
 # Collections panic wipe may delete from (audit / gate tests).

@@ -24,3 +24,10 @@ def test_public_config_exposes_group_limits():
     data = asyncio.run(public_config())
 
     assert data["groups"]["max_participants"] == 50
+
+
+def test_public_config_exposes_broadcast_lists_limits():
+    data = asyncio.run(public_config())
+
+    assert data["broadcast_lists"]["max_lists"] == 20
+    assert data["broadcast_lists"]["max_recipients"] == 50
