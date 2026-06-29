@@ -44,6 +44,8 @@ Help is welcome on: encryption flows, WebRTC signaling, Android/Electron libsign
 
 ZAP runs against a **throwaway CI instance** (Mongo + Redis + uvicorn), not production. Failures on High-risk findings block the ZAP workflow; tune `.zap/rules.tsv` only for documented false positives.
 
+Public threat model (users): **`/security`** on the website — companion to `memory/SECURITY_MODEL.md`.
+
 Local smoke (API must be running on port 8000):
 
 ```bash
