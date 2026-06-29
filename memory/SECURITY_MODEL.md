@@ -99,8 +99,8 @@ UI labels: **SIG** (green) vs **RSA** (yellow) on messages and composer hints.
 | 1:1 text (browser dev) | Legacy RSA | Full protocol |
 | Groups (installed clients) | ✅ Sender Keys | Sender Keys |
 | Attachments (installed clients) | ✅ In-protocol | In-protocol |
-| Sealed sender | ❌ | Signal ✅ |
-| Multi-device | ❌ | ✅ |
+| Sealed sender | ✅ 1:1 installed clients | Signal ✅ |
+| Multi-device | ✅ linked devices (Q.51) | ✅ |
 | Default server deletion | 24h TTL (strong default) | Optional disappearing |
 | Published audit | ❌ | Years of scrutiny |
 | Global HTTPS prod | ✅ Cloud Run | ✅ |

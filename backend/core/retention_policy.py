@@ -133,6 +133,16 @@ COLLECTIONS: Dict[str, CollectionPolicy] = {
         allowed_fields="token, user_id, created_at, expires_at, consumed_at",
         notes="Short-lived QR link tokens.",
     ),
+    "sealed_delivery_tokens": CollectionPolicy(
+        name="sealed_delivery_tokens",
+        tier=RetentionTier.EPHEMERAL,
+        max_lifetime="2m",
+        ttl_field="expires_at",
+        enforcement=EnforcementStatus.ENFORCED,
+        engine1_step=None,
+        allowed_fields="token_hash, conversation_id, issued_by, created_at, expires_at, consumed_at",
+        notes="One-time tokens for unidentified message send — Q.52.",
+    ),
     "friend_requests": CollectionPolicy(
         name="friend_requests",
         tier=RetentionTier.SOCIAL_GRAPH,

@@ -90,6 +90,8 @@ async def unsend_message_for_everyone(
         raise HTTPException(404, "Message not found")
     if is_message_deleted(msg):
         raise HTTPException(400, "Message already deleted")
+    if msg.get("sealed_sender"):
+        raise HTTPException(400, "Sealed messages cannot be unsent")
     if msg.get("sender_id") != user_id:
         raise HTTPException(403, "Only the sender can delete for everyone")
     if not message_within_retention(msg):

@@ -8,6 +8,7 @@ import {
   hasSignalSession,
   isNativeLibsignalAvailable,
 } from './nativeLibsignal';
+import { getResolvedSenderId } from './sealedSender';
 import { ensureSignalSession, forceRefreshSignalSession } from './x3dh';
 
 /** Match the native-plugin "session not found" error family across Android and Electron. */
@@ -61,6 +62,7 @@ export async function decryptSignalText(peerUserId, ourUserId, msg, peerDeviceId
 /** Remote user id for session lookup: sender when receiving, peer when viewing own sends. */
 export function signalRemoteUserId(msg, { myUserId, peerUserId }) {
   if (!msg || !myUserId) return null;
-  if (msg.sender_id === myUserId) return peerUserId;
-  return msg.sender_id;
+  const senderId = getResolvedSenderId(msg, myUserId);
+  if (senderId === myUserId) return peerUserId;
+  return senderId;
 }

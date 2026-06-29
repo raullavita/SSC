@@ -37,6 +37,7 @@ import {
 } from '../lib/locationMessage';
 import { captureCurrentLocation } from '../lib/locationShare';
 import { canPostInGroup } from '../lib/groupRoles';
+import { sealedSenderEnabled, sendSealedDirectMessage } from '../lib/signal/sealedSender';
 
 export function useMessagingSend({
   activeConv,
@@ -197,24 +198,46 @@ export function useMessagingSend({
       }
 
       if (useSignal && !isGroup) {
-        let enc;
-        if (attachmentId && attachmentEnc?.signal_meta) {
-          enc = await encryptSignalAttachment(peer.user_id, user.user_id, attachmentEnc.signal_meta);
+        if (sealedSenderEnabled(user)) {
+          let bodyFields;
+          if (attachmentId && attachmentEnc?.signal_meta) {
+            const { buildSignalAttachmentEnvelope } = await import('../lib/signal/attachments');
+            bodyFields = {
+              attachment_envelope: buildSignalAttachmentEnvelope(attachmentEnc.signal_meta),
+            };
+          } else {
+            bodyFields = { text: text || '' };
+          }
+          await sendSealedDirectMessage({
+            conversationId: activeId,
+            peerUserId: peer.user_id,
+            ourUserId: user.user_id,
+            bodyFields,
+            messageType: type,
+            attachmentId: attachmentId || undefined,
+            attachmentContentType: attachmentEnc?.content_type,
+            replyToMessageId: replyToMessageId || undefined,
+          });
         } else {
-          const { encryptSignalTextForPeerDevices } = await import('../lib/signal/multiDeviceMessaging');
-          enc = await encryptSignalTextForPeerDevices(peer.user_id, user.user_id, text || '');
+          let enc;
+          if (attachmentId && attachmentEnc?.signal_meta) {
+            enc = await encryptSignalAttachment(peer.user_id, user.user_id, attachmentEnc.signal_meta);
+          } else {
+            const { encryptSignalTextForPeerDevices } = await import('../lib/signal/multiDeviceMessaging');
+            enc = await encryptSignalTextForPeerDevices(peer.user_id, user.user_id, text || '');
+          }
+          await api.post('/messages', {
+            conversation_id: activeId,
+            protocol: ProtocolVersion.SIGNAL_V1,
+            ciphertext: enc.ciphertext,
+            signal_message_type: enc.signal_message_type,
+            signal_device_ciphertexts: enc.signal_device_ciphertexts,
+            message_type: type,
+            attachment_id: attachmentId || undefined,
+            attachment_content_type: attachmentEnc?.content_type,
+            reply_to_message_id: replyToMessageId || undefined,
+          });
         }
-        await api.post('/messages', {
-          conversation_id: activeId,
-          protocol: ProtocolVersion.SIGNAL_V1,
-          ciphertext: enc.ciphertext,
-          signal_message_type: enc.signal_message_type,
-          signal_device_ciphertexts: enc.signal_device_ciphertexts,
-          message_type: type,
-          attachment_id: attachmentId || undefined,
-          attachment_content_type: attachmentEnc?.content_type,
-          reply_to_message_id: replyToMessageId || undefined,
-        });
         setDraft('');
         setReplyTo?.(null);
         return;

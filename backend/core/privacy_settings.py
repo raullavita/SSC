@@ -13,6 +13,7 @@ DEFAULT_PRIVACY: Dict[str, Any] = {
     "typing_indicators": True,
     "last_seen": "contacts",
     "profile_photo": "contacts",
+    "sealed_sender": True,
 }
 
 LAST_SEEN_OPTIONS: tuple[str, ...] = ("hidden", "online_only", "contacts")
@@ -32,6 +33,8 @@ def privacy_from_user(user: Optional[dict]) -> Dict[str, Any]:
         out["last_seen"] = raw["last_seen"]
     if raw.get("profile_photo") in PROFILE_PHOTO_OPTIONS:
         out["profile_photo"] = raw["profile_photo"]
+    if isinstance(raw.get("sealed_sender"), bool):
+        out["sealed_sender"] = raw["sealed_sender"]
     return out
 
 
@@ -59,6 +62,10 @@ def normalize_privacy_patch(patch: Optional[dict]) -> Dict[str, Any]:
             allowed = ", ".join(PROFILE_PHOTO_OPTIONS)
             raise ValueError(f"privacy.profile_photo must be one of: {allowed}")
         out["profile_photo"] = mode
+    if "sealed_sender" in patch:
+        if not isinstance(patch["sealed_sender"], bool):
+            raise ValueError("privacy.sealed_sender must be a boolean")
+        out["sealed_sender"] = patch["sealed_sender"]
     return out
 
 

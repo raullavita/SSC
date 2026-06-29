@@ -8,6 +8,7 @@ export function isMessageDeleted(msg) {
 export function canUnsendMessage(msg, userId) {
   if (!msg || !userId) return false;
   if (isMessageDeleted(msg)) return false;
+  if (msg.sealed_sender) return false;
   if (msg.sender_id !== userId) return false;
   if (msg.expires_at) {
     const exp = new Date(msg.expires_at);

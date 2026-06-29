@@ -71,6 +71,7 @@ import {
   normalizeRetentionHours,
 } from '../lib/retentionDisplay';
 import { readReceiptsEnabled, typingIndicatorsEnabled } from '../lib/privacySettings';
+import { getResolvedSenderId } from '../lib/signal/sealedSender';
 import {
   areDesktopNotificationsEnabled,
   bindDesktopBadgeClearOnFocus,
@@ -1725,7 +1726,7 @@ export default function ChatHome() {
                 <Message
                   key={m.message_id}
                   msg={m}
-                  isMine={m.sender_id === user?.user_id}
+                  isMine={getResolvedSenderId(m, user?.user_id) === user?.user_id}
                   myUserId={user?.user_id}
                   peerUserId={peer?.user_id}
                   privateKey={privateKey}

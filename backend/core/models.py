@@ -56,6 +56,7 @@ class PrivacySettingsIn(BaseModel):
     typing_indicators: Optional[bool] = None
     last_seen: Optional[Literal["hidden", "online_only", "contacts"]] = None
     profile_photo: Optional[Literal["hidden", "contacts"]] = None
+    sealed_sender: Optional[bool] = None
 
 
 class UpdateProfileIn(BaseModel):
@@ -72,6 +73,23 @@ class CreateConversationIn(BaseModel):
     peer_usernames: Optional[List[str]] = None
     name: Optional[str] = None
     is_group: Optional[bool] = False
+
+
+class SealedDeliveryTokenIn(BaseModel):
+    conversation_id: str
+
+
+class SendSealedMessageIn(BaseModel):
+    delivery_token: str = Field(min_length=16, max_length=256)
+    conversation_id: str
+    ciphertext: str
+    protocol: str = "signal_v1"
+    signal_device_ciphertexts: Optional[Dict[str, Dict[str, Any]]] = None
+    signal_message_type: Optional[int] = None
+    message_type: str = "text"
+    attachment_id: Optional[str] = None
+    attachment_content_type: Optional[str] = None
+    reply_to_message_id: Optional[str] = None
 
 
 class SendMessageIn(BaseModel):

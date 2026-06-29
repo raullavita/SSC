@@ -8,12 +8,23 @@ from core.contact_helpers import are_contacts
 from core.contact_graph import is_blocked_pair
 from core.database import db
 from core.logging_config import logger
-from core.models import EditMessageIn, MarkReadIn, MessageReactionIn, PollVoteIn, SendMessageIn, UnsendMessageIn
+from core.models import (
+    EditMessageIn,
+    MarkReadIn,
+    MessageReactionIn,
+    PollVoteIn,
+    SealedDeliveryTokenIn,
+    SendMessageIn,
+    SendSealedMessageIn,
+    UnsendMessageIn,
+)
 from core.message_polls import normalize_poll_option_count, set_poll_vote
 from core.message_reactions import set_message_reaction
 from core.message_delete import unsend_message_for_everyone
 from core.message_edit import edit_message_text
-from core.push_helpers import send_push_for_message
+from core.push_helpers import send_push_for_message, send_push_for_sealed_message
+from core.sealed_sender_policy import MAX_SEALED_PAYLOAD_B64
+from core.sealed_sender_tokens import consume_delivery_token, mint_delivery_token
 from core.api_integrity import project_message_for_viewer, sanitize_message_for_storage
 from core.signal_message_policy import SignalMessageValidationError, validate_send_payload
 from core.signal_policy import ProtocolVersion
@@ -41,21 +52,108 @@ from security import rate_limit_check
 router = APIRouter()
 
 
+async def _validate_direct_message_send(conv: dict, user_id: str, conversation_id: str) -> None:
+    if conv.get("is_group") and not can_post_in_group(conv, user_id):
+        raise HTTPException(403, "Only admins can post in this group")
+    if not conv.get("is_group") and len(conv.get("participants", [])) == 2:
+        other = [p for p in conv["participants"] if p != user_id][0]
+        if await is_blocked_pair(user_id, other):
+            raise HTTPException(403, "Cannot message this user — blocked")
+        if not await are_contacts(user_id, other):
+            raise HTTPException(403, "Contact required to message this user")
+
+
+@router.post("/sealed-token")
+async def create_sealed_delivery_token(body: SealedDeliveryTokenIn, current=Depends(get_current_user)):
+    conv = await db.conversations.find_one({"conversation_id": body.conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv["participants"]:
+        raise HTTPException(404, "Conversation not found")
+    if conv.get("is_group"):
+        raise HTTPException(400, "Sealed sender is 1:1 only")
+    if len(conv.get("participants") or []) != 2:
+        raise HTTPException(400, "Sealed sender requires a 1:1 conversation")
+    if not rate_limit_check(f"sealed-token:{current['user_id']}", max_hits=30, window_sec=60):
+        raise HTTPException(429, "Too many sealed delivery tokens, please slow down")
+    await _validate_direct_message_send(conv, current["user_id"], body.conversation_id)
+    return await mint_delivery_token(current["user_id"], body.conversation_id)
+
+
+@router.post("/sealed")
+async def send_sealed_message(body: SendSealedMessageIn):
+    if len(body.ciphertext or "") > MAX_SEALED_PAYLOAD_B64:
+        raise HTTPException(413, "Message too large")
+    issuer_id = await consume_delivery_token(body.delivery_token, body.conversation_id)
+    if not issuer_id:
+        raise HTTPException(401, "Invalid or expired delivery token")
+    if not rate_limit_check(f"sealed-send:{issuer_id}", max_hits=30, window_sec=60):
+        raise HTTPException(429, "Too many sealed messages sent, please slow down")
+
+    conv = await db.conversations.find_one({"conversation_id": body.conversation_id}, {"_id": 0})
+    if not conv or issuer_id not in conv["participants"]:
+        raise HTTPException(404, "Conversation not found")
+    if conv.get("is_group") or len(conv.get("participants") or []) != 2:
+        raise HTTPException(400, "Sealed sender is 1:1 only")
+    await _validate_direct_message_send(conv, issuer_id, body.conversation_id)
+
+    try:
+        normalized = validate_send_payload(
+            protocol=body.protocol,
+            ciphertext=body.ciphertext,
+            iv=None,
+            encrypted_keys=None,
+            signal_message_type=body.signal_message_type,
+            is_group=False,
+            participant_ids=list(conv.get("participants") or []),
+            attachment_id=body.attachment_id,
+            attachment_iv=None,
+            attachment_encrypted_keys=None,
+            distribution_id=None,
+        )
+    except SignalMessageValidationError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    if normalized["protocol"] != ProtocolVersion.SIGNAL_V1.value:
+        raise HTTPException(400, "Sealed sender requires signal_v1")
+
+    reply_to = await validate_reply_target(body.conversation_id, body.reply_to_message_id)
+    created = now_utc()
+    retention_window = await get_effective_retention_for_conversation(body.conversation_id)
+    expires = expires_at_from_now(retention_window)
+    msg = sanitize_message_for_storage({
+        "message_id": f"m_{uuid.uuid4().hex[:14]}",
+        "conversation_id": body.conversation_id,
+        "sender_id": None,
+        "sealed_sender": True,
+        "protocol": normalized["protocol"],
+        "ciphertext": normalized["ciphertext"],
+        "iv": None,
+        "encrypted_keys": None,
+        "signal_message_type": normalized["signal_message_type"],
+        "message_type": body.message_type,
+        "attachment_id": body.attachment_id,
+        "attachment_content_type": body.attachment_content_type,
+        "reply_to_message_id": reply_to,
+        "signal_device_ciphertexts": body.signal_device_ciphertexts,
+        "created_at": iso(created),
+        "expires_at": expires,
+    })
+    await db.messages.insert_one(msg)
+    await bump_conversation_activity(body.conversation_id)
+    msg["expires_at"] = iso(expires)
+    msg.pop("_id", None)
+    from core.last_seen import touch_last_seen
+    await touch_last_seen(db, issuer_id)
+    await broadcast_message_to_conversation(body.conversation_id, msg)
+    asyncio.create_task(send_push_for_sealed_message(conv, msg))
+    return project_message_for_viewer(msg, issuer_id)
+
+
 @router.post("")
 async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
     conv = await db.conversations.find_one({"conversation_id": body.conversation_id}, {"_id": 0})
     if not conv or current["user_id"] not in conv["participants"]:
         raise HTTPException(404, "Conversation not found")
 
-    if conv.get("is_group") and not can_post_in_group(conv, current["user_id"]):
-        raise HTTPException(403, "Only admins can post in this group")
-
-    if not conv.get("is_group") and len(conv.get("participants", [])) == 2:
-        other = [p for p in conv["participants"] if p != current["user_id"]][0]
-        if await is_blocked_pair(current["user_id"], other):
-            raise HTTPException(403, "Cannot message this user — blocked")
-        if not await are_contacts(current["user_id"], other):
-            raise HTTPException(403, "Contact required to message this user")
+    await _validate_direct_message_send(conv, current["user_id"], body.conversation_id)
 
     if len(body.ciphertext or "") > 300000:
         raise HTTPException(413, "Message too large")

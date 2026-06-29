@@ -91,6 +91,17 @@ async def send_push_for_message(conv: dict, sender: dict, msg: dict):
     )
     await send_push(recipients, payload, sender["user_id"])
 
+
+async def send_push_for_sealed_message(conv: dict, msg: dict):
+    """Generic push without sender attribution — Q.52."""
+    recipients = list(conv.get("participants") or [])
+    payload = build_generic_push(
+        ACTIVITY_MESSAGE,
+        conversation_id=conv["conversation_id"],
+        tag=conv["conversation_id"],
+    )
+    await send_push(recipients, payload, sender_id=None)
+
 async def send_push_for_call_end(to_user: str, from_user: dict):
     """Silent native push so background clients stop ringing when the caller hangs up."""
     if db is None or not to_user:

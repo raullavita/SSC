@@ -15,6 +15,10 @@ api.interceptors.request.use((config) => {
   if (isInstalledClient()) {
     config.headers['X-SSC-Client'] = 'installed';
   }
+  if (config.skipAuth) {
+    delete config.headers.Authorization;
+    return config;
+  }
   if (usesCookieAuth()) {
     return config;
   }

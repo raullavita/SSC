@@ -40,6 +40,8 @@ def project_message_for_viewer(msg: dict, viewer_id: str) -> dict:
             if k in msg
         }
     out = dict(msg)
+    if out.get("sealed_sender"):
+        out["sender_id"] = None
     protocol = normalize_message_protocol(out.get("protocol"))
     out["protocol"] = protocol
     if protocol in ("signal_v1", "signal_group_v1"):

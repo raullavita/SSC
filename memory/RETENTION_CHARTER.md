@@ -74,6 +74,7 @@ This charter defines:
 | MongoDB | `conversation_mutes` | **Until unmutes or expiry** | `seal`, `user_id`, `conversation_id`, `duration`, `muted_until`, timestamps | Per-chat notification mute (Q.44) |
 | MongoDB | `signal_devices` | **Until unlink / account delete** | `user_id`, `device_id`, `device_name`, `platform`, timestamps | Linked device registry (Q.51) |
 | MongoDB | `device_link_tokens` | **10m TTL** | `token`, `user_id`, `expires_at` | Ephemeral device link QR tokens (Q.51) |
+| MongoDB | `sealed_delivery_tokens` | **2m TTL** | `token_hash`, `conversation_id`, `issued_by`, `expires_at` | One-time sealed sender delivery tokens (Q.52) |
 | MongoDB | `friend_requests` | **Pending:** 7d TTL; **accepted/rejected:** purge 24h after resolution (step 1.3) | `request_id`, user ids, usernames, `status`, `created_at` | Request history |
 
 **Charter decision (v1.1, contact graph privacy):** Social graph **remains** until user removes it — required for app function and panic UX. Stored as **blind seals + encrypted rosters** — see `CONTACT_GRAPH_PRIVACY_CHARTER.md`.

@@ -69,6 +69,8 @@ async def edit_message_text(
         raise HTTPException(404, "Message not found")
     if not is_editable_text_message(msg):
         raise HTTPException(400, "Only text messages can be edited")
+    if msg.get("sealed_sender"):
+        raise HTTPException(400, "Sealed messages cannot be edited")
     if msg.get("sender_id") != user_id:
         raise HTTPException(403, "Only the sender can edit this message")
     if not message_within_edit_window(msg):

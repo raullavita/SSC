@@ -5,6 +5,7 @@ export const DEFAULT_PRIVACY = {
   typing_indicators: true,
   last_seen: 'contacts',
   profile_photo: 'contacts',
+  sealed_sender: true,
 };
 
 export const LAST_SEEN_OPTIONS = ['hidden', 'online_only', 'contacts'];
@@ -18,7 +19,12 @@ export function privacyFromUser(user) {
     typing_indicators: typeof raw.typing_indicators === 'boolean' ? raw.typing_indicators : DEFAULT_PRIVACY.typing_indicators,
     last_seen: LAST_SEEN_OPTIONS.includes(raw.last_seen) ? raw.last_seen : DEFAULT_PRIVACY.last_seen,
     profile_photo: PROFILE_PHOTO_OPTIONS.includes(raw.profile_photo) ? raw.profile_photo : DEFAULT_PRIVACY.profile_photo,
+    sealed_sender: typeof raw.sealed_sender === 'boolean' ? raw.sealed_sender : DEFAULT_PRIVACY.sealed_sender,
   };
+}
+
+export function sealedSenderEnabled(user) {
+  return privacyFromUser(user).sealed_sender !== false;
 }
 
 export function readReceiptsEnabled(user) {

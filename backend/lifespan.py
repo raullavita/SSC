@@ -75,6 +75,8 @@ async def _ensure_indexes() -> None:
     await db.signal_devices.create_index([("user_id", 1), ("device_id", 1)], unique=True)
     await db.device_link_tokens.create_index("token", unique=True)
     await db.device_link_tokens.create_index("expires_at", expireAfterSeconds=0)
+    await db.sealed_delivery_tokens.create_index("token_hash", unique=True)
+    await db.sealed_delivery_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.passkey_credentials.create_index("credential_id", unique=True)
     await db.passkey_credentials.create_index([("user_id", 1), ("created_at", 1)])
     await backfill_retention_ttl_fields()

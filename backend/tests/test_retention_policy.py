@@ -37,6 +37,7 @@ LIFESPAN_COLLECTIONS = {
     "broadcast_lists",
     "signal_devices",
     "device_link_tokens",
+    "sealed_delivery_tokens",
 }
 
 

@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.51 done** → next **Q.52** | [~] Q.52 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.52 done** → next **Q.53** | [~] Q.53 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -355,7 +355,7 @@
 | 49 | **Q.49** | **App lock** — PIN / biometric on cold start | git | [x] |
 | 50 | **Q.50** | **Hardware-backed device wrap** finish (TASK O.3) | git | [x] |
 | 51 | **Q.51** | **Multi-device / linked devices** (Signal-style) | git | [x] |
-| 52 | **Q.52** | **Sealed sender** | git | [ ] |
+| 52 | **Q.52** | **Sealed sender** | git | [x] |
 | 53 | **Q.53** | **Key-change warnings** (prominent, no QR) | git | [ ] |
 | 54 | **Q.54** | **Retire legacy RSA send path** (decrypt-only until migration complete) | git | [ ] |
 | 55 | **Q.55** | **Post-quantum hybrid** — bump libsignal when upstream PQXDH available | git | [ ] |

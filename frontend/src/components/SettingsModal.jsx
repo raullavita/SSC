@@ -852,6 +852,21 @@ export default function SettingsModal({ open, onClose }) {
                   data-testid="settings-privacy-typing"
                 />
               </label>
+              {isInstalledClient() && (
+                <>
+                  <label className="flex items-center justify-between gap-3 py-2 cursor-pointer">
+                    <span className="text-xs text-[#A1A1AA]">{t('settingsPrivacySealedSender')}</span>
+                    <input
+                      type="checkbox"
+                      checked={privacy.sealed_sender !== false}
+                      onChange={(e) => setPrivacy((p) => ({ ...p, sealed_sender: e.target.checked }))}
+                      className="accent-[#00E5FF]"
+                      data-testid="settings-privacy-sealed-sender"
+                    />
+                  </label>
+                  <p className="text-[10px] text-[#71717A] -mt-1 mb-1">{t('settingsPrivacySealedSenderHint')}</p>
+                </>
+              )}
               <div className="mt-2">
                 <label className="block text-[10px] font-mono text-[#A1A1AA] uppercase tracking-wider mb-1">
                   {t('settingsPrivacyLastSeen')}

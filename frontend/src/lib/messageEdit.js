@@ -28,6 +28,7 @@ export function isEditableTextMessage(msg) {
 export function canEditMessage(msg, userId) {
   if (!msg || !userId) return false;
   if (!isEditableTextMessage(msg)) return false;
+  if (msg.sealed_sender) return false;
   if (msg.sender_id !== userId) return false;
   if (!messageWithinEditWindow(msg)) return false;
   if (msg.expires_at) {

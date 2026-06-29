@@ -18,6 +18,10 @@ import {
   isSignalV1Message,
   signalRemoteUserId,
 } from './messages';
+import {
+  cacheResolvedSender,
+  parseSealedPlaintext,
+} from './sealedSender';
 import { isNativeLibsignalAvailable } from './nativeLibsignal';
 import { usesSignalOnlyMessaging } from './installedMessaging';
 
@@ -45,10 +49,23 @@ export async function decryptMessageBody(msg, { myUserId, peerUserId, privateKey
     return plaintext;
   }
   if (isSignalV1Message(msg)) {
-    const remoteId = signalRemoteUserId(msg, { myUserId, peerUserId });
+    let remoteId = signalRemoteUserId(msg, { myUserId, peerUserId });
+    if (!remoteId && msg?.sealed_sender) {
+      remoteId = peerUserId;
+    }
     if (!remoteId || !myUserId) throw new Error('NO_KEY');
     const { decryptSignalTextForLocalDevice } = await import('./multiDeviceMessaging');
-    const plaintext = await decryptSignalTextForLocalDevice(msg, remoteId, myUserId);
+    let plaintext = await decryptSignalTextForLocalDevice(msg, remoteId, myUserId);
+    const sealed = parseSealedPlaintext(plaintext);
+    if (sealed) {
+      cacheResolvedSender(msg.message_id, sealed.sender_user_id);
+      const inner = sealed.body || {};
+      if (typeof inner.text === 'string') {
+        plaintext = inner.text;
+      } else if (typeof inner.attachment_envelope === 'string') {
+        plaintext = inner.attachment_envelope;
+      }
+    }
     if (isSignalAttachmentEnvelope(plaintext)) {
       const meta = parseSignalAttachmentEnvelope(plaintext);
       return meta?.caption ?? '';

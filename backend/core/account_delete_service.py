@@ -84,6 +84,7 @@ async def execute_account_delete(
     await db.signal_prekey_bundles.delete_many({"user_id": user_id})
     await db.signal_devices.delete_many({"user_id": user_id})
     await db.device_link_tokens.delete_many({"user_id": user_id})
+    await db.sealed_delivery_tokens.delete_many({"issued_by": user_id})
     await db.passkey_credentials.delete_many({"user_id": user_id})
     try:
         await db.contacts.delete_many({"$or": [{"user_id": user_id}, {"contact_id": user_id}]})

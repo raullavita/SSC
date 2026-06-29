@@ -440,6 +440,8 @@ const STRINGS = {
     settingsPrivacy: 'Privacy',
     settingsPrivacyReadReceipts: 'Read receipts',
     settingsPrivacyTyping: 'Typing indicators',
+    settingsPrivacySealedSender: 'Sealed sender (1:1)',
+    settingsPrivacySealedSenderHint: 'Hides your identity from server metadata on direct messages. Recipients still see who sent it after decrypt.',
     settingsPrivacyLastSeen: 'Last seen',
     settingsPrivacyLastSeen_hidden: 'Hidden',
     settingsPrivacyLastSeen_online_only: 'Online only (no timestamp)',

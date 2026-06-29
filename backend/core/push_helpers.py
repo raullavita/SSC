@@ -6,6 +6,10 @@ async def send_push_for_message(*args, **kwargs):
     return await push_module.send_push_for_message(*args, **kwargs)
 
 
+async def send_push_for_sealed_message(*args, **kwargs):
+    return await push_module.send_push_for_sealed_message(*args, **kwargs)
+
+
 async def send_push_for_call(*args, **kwargs):
     return await push_module.send_push_for_call(*args, **kwargs)
 
