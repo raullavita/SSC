@@ -13,6 +13,24 @@ export function getPublicAppVersion() {
 /** @type {SiteUpdateEntry[]} */
 export const PUBLIC_SITE_UPDATES = [
   {
+    id: '2026-06-29-trust-ops',
+    date: '2026-06-29',
+    titleKey: 'siteUpdateTrustOpsTitle',
+    bodyKey: 'siteUpdateTrustOpsBody',
+  },
+  {
+    id: '2026-06-29-distribution',
+    date: '2026-06-29',
+    titleKey: 'siteUpdateDistributionTitle',
+    bodyKey: 'siteUpdateDistributionBody',
+  },
+  {
+    id: '2026-06-29-installed-only',
+    date: '2026-06-29',
+    titleKey: 'siteUpdateInstalledOnlyTitle',
+    bodyKey: 'siteUpdateInstalledOnlyBody',
+  },
+  {
     id: '2026-06-28-auto-update',
     date: '2026-06-28',
     titleKey: 'siteUpdateAutoUpdateTitle',

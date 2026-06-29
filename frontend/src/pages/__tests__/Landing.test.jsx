@@ -73,7 +73,8 @@ describe('Landing', () => {
     expect(screen.getByTestId('public-construction-updates')).toBeInTheDocument();
     expect(screen.getByTestId('public-construction-no-downloads')).toBeInTheDocument();
     expect(screen.getByText(translate('publicSiteNoDownloadsTitle', 'en'))).toBeInTheDocument();
-    expect(screen.getByTestId('site-update-2026-06-28-desktop-translate')).toBeInTheDocument();
+    expect(screen.getByTestId('site-update-2026-06-29-trust-ops')).toBeInTheDocument();
+    expect(screen.getByTestId('site-update-2026-06-29-installed-only')).toBeInTheDocument();
     expect(screen.queryByTestId('landing-download-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('landing-screenshots-section')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: translate('landingLogin', 'en') })).not.toBeInTheDocument();

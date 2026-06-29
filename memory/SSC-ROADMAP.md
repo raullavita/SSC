@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — **Q.64** scaffolding live; founder sign-off in `test_reports/Q64_DEVICE_MATRIX.md` | [~] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.58 done** → next **Q.59** | [~] Q.59 open |
+| **Q** Expansion wave | **Q.1–Q.64** repo complete; founder device sign-off on Q.64 | [x] code · [ ] founder QA |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
