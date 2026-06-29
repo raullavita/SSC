@@ -34,6 +34,8 @@ const secureStorage = {
 const notifications = {
   show: (opts) => ipcRenderer.invoke('desktop-show-notification', opts || {}),
   setEnabled: (enabled) => ipcRenderer.invoke('desktop-set-notifications-enabled', enabled),
+  setBadgeCount: (count) => ipcRenderer.invoke('desktop-set-badge-count', count),
+  getBadgeCount: () => ipcRenderer.invoke('desktop-get-badge-count'),
   onNavigate: (callback) => {
     const handler = (_event, payload) => callback(payload);
     ipcRenderer.on('desktop-navigate', handler);

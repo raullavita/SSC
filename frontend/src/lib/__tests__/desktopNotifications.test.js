@@ -3,6 +3,10 @@ import {
   areDesktopNotificationsEnabled,
   setDesktopNotificationsEnabled,
   isAppInBackground,
+  setDesktopBadgeCount,
+  incrementDesktopBadge,
+  clearDesktopBadge,
+  getDesktopBadgeCount,
 } from '../desktopNotifications';
 
 describe('desktopNotifications', () => {
@@ -10,7 +14,11 @@ describe('desktopNotifications', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    window.sscDesktop = { isDesktop: true, platform: 'win32', notifications: { setEnabled: jest.fn() } };
+    window.sscDesktop = {
+      isDesktop: true,
+      platform: 'win32',
+      notifications: { setEnabled: jest.fn(), setBadgeCount: jest.fn() },
+    };
   });
 
   afterEach(() => {
@@ -35,5 +43,15 @@ describe('desktopNotifications', () => {
     Object.defineProperty(document, 'hidden', { configurable: true, value: false });
     Object.defineProperty(document, 'hasFocus', { configurable: true, value: () => false });
     expect(isAppInBackground()).toBe(true);
+  });
+
+  it('tracks and syncs tray badge count', () => {
+    setDesktopBadgeCount(3);
+    expect(getDesktopBadgeCount()).toBe(3);
+    expect(window.sscDesktop.notifications.setBadgeCount).toHaveBeenCalledWith(3);
+    incrementDesktopBadge();
+    expect(getDesktopBadgeCount()).toBe(4);
+    clearDesktopBadge();
+    expect(getDesktopBadgeCount()).toBe(0);
   });
 });

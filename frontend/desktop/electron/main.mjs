@@ -25,6 +25,7 @@ import {
   initAutoUpdater,
   installUpdate,
 } from './update/bridge.mjs';
+import { badgeOverlayImage, formatBadgeLabel, trayTooltipForCount } from './badge.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DESKTOP_AUTH_SCHEME = 'chat.ssc.secure.desktop';
@@ -34,6 +35,7 @@ let pendingAuthUrl = null;
 let tray = null;
 let isQuitting = false;
 let notificationsAllowed = true;
+let trayBadgeCount = 0;
 let libsignalInitError = null;
 let translateInitError = null;
 
@@ -61,11 +63,36 @@ function getTrayIcon() {
   return img;
 }
 
-function focusMainWindow() {
+function applyTrayBadge(count) {
+  trayBadgeCount = Math.max(0, Math.floor(count));
+  const label = formatBadgeLabel(trayBadgeCount);
+  if (tray) tray.setToolTip(trayTooltipForCount(trayBadgeCount));
+
+  if (process.platform === 'darwin' || process.platform === 'linux') {
+    app.setBadgeCount(trayBadgeCount);
+  }
+  if (process.platform === 'darwin' && app.dock?.setBadge) {
+    app.dock.setBadge(label);
+  }
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (process.platform === 'win32') {
+      if (trayBadgeCount > 0) {
+        const overlay = badgeOverlayImage();
+        mainWindow.setOverlayIcon(overlay.isEmpty() ? null : overlay, `${trayBadgeCount} new`);
+      } else {
+        mainWindow.setOverlayIcon(null, '');
+      }
+    }
+  }
+}
+
+function focusMainWindow({ clearBadge = false } = {}) {
   if (!mainWindow) return false;
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.show();
   mainWindow.focus();
+  if (clearBadge) applyTrayBadge(0);
   return true;
 }
 
@@ -78,7 +105,7 @@ function createTray() {
   const menu = Menu.buildFromTemplate([
     {
       label: 'Open SSC',
-      click: () => focusMainWindow(),
+      click: () => focusMainWindow({ clearBadge: true }),
     },
     { type: 'separator' },
     {
@@ -90,7 +117,10 @@ function createTray() {
     },
   ]);
   tray.setContextMenu(menu);
-  tray.on('double-click', () => focusMainWindow());
+  tray.on('double-click', () => focusMainWindow({ clearBadge: true }));
+  if (process.platform !== 'darwin') {
+    tray.on('click', () => focusMainWindow({ clearBadge: true }));
+  }
 }
 
 function isDesktopAuthUrl(url) {
@@ -187,7 +217,7 @@ if (!singleInstance) {
   app.on('second-instance', (_event, argv) => {
     const authUrl = argv.find((arg) => arg.startsWith(`${DESKTOP_AUTH_SCHEME}://`));
     if (authUrl) routeAuthDeepLink(authUrl);
-    focusMainWindow();
+    focusMainWindow({ clearBadge: true });
   });
 }
 
@@ -309,7 +339,14 @@ ipcMain.handle('desktop-set-notifications-enabled', (_event, enabled) => {
   return true;
 });
 
-ipcMain.handle('desktop-focus-window', () => focusMainWindow());
+ipcMain.handle('desktop-focus-window', () => focusMainWindow({ clearBadge: true }));
+
+ipcMain.handle('desktop-set-badge-count', (_event, count) => {
+  applyTrayBadge(count);
+  return trayBadgeCount;
+});
+
+ipcMain.handle('desktop-get-badge-count', () => trayBadgeCount);
 
 ipcMain.handle('desktop-update-check', async (_event, opts = {}) => checkForUpdates(opts));
 ipcMain.handle('desktop-update-download', async () => downloadUpdate());
@@ -328,12 +365,15 @@ ipcMain.handle('desktop-show-notification', (_event, opts = {}) => {
     icon: icon.isEmpty() ? undefined : icon,
   });
   notification.on('click', () => {
-    focusMainWindow();
-    if (opts.conversationId && mainWindow) {
+    focusMainWindow({ clearBadge: true });
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (opts.conversationId) {
       mainWindow.webContents.send('desktop-navigate', { conversationId: opts.conversationId });
-    } else if (opts.kind === 'call' && mainWindow) {
+    } else if (opts.kind === 'friend_request') {
+      mainWindow.webContents.send('desktop-navigate', { route: '/chat', panel: 'contacts' });
+    } else if (opts.kind === 'call') {
       mainWindow.webContents.send('desktop-navigate', { route: '/chat' });
-    } else if (opts.kind === 'friend_request' && mainWindow) {
+    } else {
       mainWindow.webContents.send('desktop-navigate', { route: '/chat' });
     }
   });

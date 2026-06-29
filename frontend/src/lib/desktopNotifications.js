@@ -6,6 +6,8 @@ import { isElectronApp } from './platform';
 
 export const DESKTOP_NOTIF_PREF_KEY = 'ssc_desktop_notifications_enabled';
 
+let desktopBadgeCount = 0;
+
 export function areDesktopNotificationsEnabled() {
   if (!isElectronApp()) return false;
   const v = localStorage.getItem(DESKTOP_NOTIF_PREF_KEY);
@@ -29,6 +31,43 @@ export function syncDesktopNotificationPref() {
   }
 }
 
+export function getDesktopBadgeCount() {
+  return desktopBadgeCount;
+}
+
+export function setDesktopBadgeCount(count) {
+  if (!isElectronApp()) return 0;
+  desktopBadgeCount = Math.max(0, Math.floor(Number(count) || 0));
+  try {
+    const result = window.sscDesktop?.notifications?.setBadgeCount?.(desktopBadgeCount);
+    Promise.resolve(result).catch(() => {});
+  } catch {
+    // ignore IPC errors in dev shell
+  }
+  return desktopBadgeCount;
+}
+
+export function incrementDesktopBadge(delta = 1) {
+  return setDesktopBadgeCount(desktopBadgeCount + Math.max(1, Math.floor(delta)));
+}
+
+export function clearDesktopBadge() {
+  return setDesktopBadgeCount(0);
+}
+
+export function bindDesktopBadgeClearOnFocus() {
+  if (!isElectronApp() || typeof window === 'undefined') return () => {};
+  const clear = () => {
+    if (!document.hidden && document.hasFocus()) clearDesktopBadge();
+  };
+  window.addEventListener('focus', clear);
+  document.addEventListener('visibilitychange', clear);
+  return () => {
+    window.removeEventListener('focus', clear);
+    document.removeEventListener('visibilitychange', clear);
+  };
+}
+
 export function isAppInBackground() {
   if (typeof document === 'undefined') return false;
   return document.hidden || !document.hasFocus();
@@ -37,7 +76,9 @@ export function isAppInBackground() {
 async function showDesktopNotification(opts) {
   if (!isElectronApp() || !areDesktopNotificationsEnabled()) return false;
   try {
-    return await window.sscDesktop?.notifications?.show?.(opts);
+    const shown = await window.sscDesktop?.notifications?.show?.(opts);
+    if (shown && opts?.incrementBadge !== false) incrementDesktopBadge();
+    return shown;
   } catch {
     return false;
   }
@@ -75,6 +116,7 @@ export async function notifyDesktopIncomingCall({
     urgency: 'critical',
     kind: 'call',
     conversationId,
+    incrementBadge: false,
   });
 }
 

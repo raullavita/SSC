@@ -67,6 +67,7 @@ import {
 import { readReceiptsEnabled, typingIndicatorsEnabled } from '../lib/privacySettings';
 import {
   areDesktopNotificationsEnabled,
+  bindDesktopBadgeClearOnFocus,
   subscribeDesktopNavigation,
   syncDesktopNotificationPref,
 } from '../lib/desktopNotifications';
@@ -997,9 +998,16 @@ export default function ChatHome() {
       return undefined;
     }
     syncDesktopNotificationPref();
+    return bindDesktopBadgeClearOnFocus();
+  }, [user?.user_id]);
+
+  useEffect(() => {
+    if (!isElectronApp() || !user?.user_id) return undefined;
     return subscribeDesktopNavigation((payload) => {
       if (payload?.conversationId) {
         goToConversation(payload.conversationId);
+      } else if (payload?.panel === 'contacts') {
+        setContactsOpen(true);
       } else if (payload?.route) {
         navigate(payload.route);
       }
