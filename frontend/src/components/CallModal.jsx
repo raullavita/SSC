@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Phone, VideoCamera, MicrophoneSlash, Microphone, VideoCameraSlash, ArrowsLeftRight, CameraRotate } from '@phosphor-icons/react';
+import { Phone, VideoCamera, MicrophoneSlash, Microphone, VideoCameraSlash, ArrowsLeftRight, CameraRotate, ArrowsClockwise } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 import { useMobileLayout } from '../lib/use-mobile';
 import { getBackendUrl } from '../lib/platform';
@@ -18,7 +18,15 @@ import {
   replaceVideoTrackFacing,
 } from '../lib/callMedia';
 import Avatar from './Avatar';
+import CallQualityIndicator from './CallQualityIndicator';
+import { useCallQualityMonitor } from '../chat/useCallQualityMonitor';
 import { icePathLabel, summarizeIceConnection } from '../lib/callIceDiagnostics';
+import {
+  DISCONNECTED_GRACE_MS,
+  MAX_RECONNECT_ATTEMPTS,
+  reconnectDelayMs,
+  shouldAttemptReconnect,
+} from '../lib/callReconnect';
 
 /**
  * CallModal handles WebRTC voice/video calls.
@@ -67,7 +75,15 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
   const [duration, setDuration] = useState(0);
   const [icePath, setIcePath] = useState('');
   const [modeBusy, setModeBusy] = useState(false);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const startedAtRef = useRef(null);
+  const reconnectAttemptRef = useRef(0);
+  const disconnectedTimerRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
+  const signalingCtxRef = useRef(null);
+  const giveUpReconnectRef = useRef(() => {});
+  const scheduleReconnectRef = useRef(() => {});
+  const quality = useCallQualityMonitor(pcRef, status === 'connected');
 
   useEffect(() => {
     activeModeRef.current = activeMode;
@@ -94,6 +110,11 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => () => {
+    if (disconnectedTimerRef.current) clearTimeout(disconnectedTimerRef.current);
+    if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+  }, []);
+
   useEffect(() => {
     if (status !== 'connected') return;
     startedAtRef.current = Date.now();
@@ -110,12 +131,86 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
     }
   }, [activeMode, refreshRemoteBindings]);
 
+  const clearReconnectTimers = () => {
+    if (disconnectedTimerRef.current) {
+      clearTimeout(disconnectedTimerRef.current);
+      disconnectedTimerRef.current = null;
+    }
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  };
+
+  const giveUpReconnect = useCallback((reason) => {
+    clearReconnectTimers();
+    setEndReason(reason);
+    setStatus('ended');
+    if (reason === 'failed') toast.error(t('callReconnectFailed'));
+    else toast.message(t('callPeerDisconnected'));
+    setTimeout(() => onClose?.(), 1800);
+  }, [onClose, t]);
+
+  const attemptIceRestart = useCallback(async () => {
+    const pc = pcRef.current;
+    const signalingCtx = signalingCtxRef.current;
+    if (!pc || !signalingCtx || renegotiatingRef.current) return false;
+    const attempt = reconnectAttemptRef.current;
+    if (!shouldAttemptReconnect(pc.connectionState, attempt)) {
+      giveUpReconnect('failed');
+      return false;
+    }
+    reconnectAttemptRef.current = attempt + 1;
+    setReconnectAttempt(reconnectAttemptRef.current);
+    setStatus('reconnecting');
+    renegotiatingRef.current = true;
+    try {
+      const offer = await pc.createOffer({ iceRestart: true });
+      await pc.setLocalDescription(offer);
+      await sendSignaling(socket, {
+        type: 'call-offer',
+        to: peer.user_id,
+        mode: activeModeRef.current,
+        sdp: offer,
+        renegotiate: true,
+        ice_restart: true,
+      }, signalingCtx);
+      return true;
+    } catch (err) {
+      if (!toastSignalingFailure(err, t)) {
+        toast.error(t('callReconnectFailed'));
+      }
+      if (!shouldAttemptReconnect(pc.connectionState, reconnectAttemptRef.current)) {
+        giveUpReconnect('failed');
+      }
+      return false;
+    } finally {
+      renegotiatingRef.current = false;
+    }
+  }, [giveUpReconnect, peer.user_id, socket, t]);
+
+  useEffect(() => {
+    giveUpReconnectRef.current = giveUpReconnect;
+  }, [giveUpReconnect]);
+
+  const scheduleReconnect = useCallback((delayMs) => {
+    clearReconnectTimers();
+    reconnectTimerRef.current = setTimeout(() => {
+      attemptIceRestart();
+    }, delayMs);
+  }, [attemptIceRestart]);
+
+  useEffect(() => {
+    scheduleReconnectRef.current = scheduleReconnect;
+  }, [scheduleReconnect]);
+
   const setupCall = async () => {
     const rtcConfig = await getRTCConfig();
     const pc = new RTCPeerConnection(rtcConfig);
     pcRef.current = pc;
 
     const signalingCtx = { peerUserId: peer.user_id, ourUserId: user?.user_id, peer, user, isGroup: false };
+    signalingCtxRef.current = signalingCtx;
 
     // Show at most one encryption-failure toast per call setup to avoid flooding
     // the user with one notification per ICE candidate (typically 8–15 candidates).
@@ -148,22 +243,36 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'connected') {
+      const state = pc.connectionState;
+      if (state === 'connected') {
+        clearReconnectTimers();
+        reconnectAttemptRef.current = 0;
+        setReconnectAttempt(0);
         setStatus('connected');
         refreshIcePath();
         setTimeout(refreshIcePath, 2000);
+        return;
       }
-      if (pc.connectionState === 'failed') {
-        setEndReason('failed');
-        setStatus('ended');
-        toast.error(t('callStatusFailed'));
-        setTimeout(() => onClose?.(), 1800);
-      } else if (pc.connectionState === 'disconnected') {
-        setEndReason('disconnected');
-        setStatus('ended');
-        toast.message(t('callPeerDisconnected'));
-        setTimeout(() => onClose?.(), 1500);
-      } else if (pc.connectionState === 'closed') {
+      if (state === 'disconnected') {
+        setStatus('reconnecting');
+        clearReconnectTimers();
+        disconnectedTimerRef.current = setTimeout(() => {
+          if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+            scheduleReconnectRef.current(reconnectDelayMs(reconnectAttemptRef.current));
+          }
+        }, DISCONNECTED_GRACE_MS);
+        return;
+      }
+      if (state === 'failed') {
+        if (shouldAttemptReconnect(state, reconnectAttemptRef.current)) {
+          setStatus('reconnecting');
+          scheduleReconnectRef.current(reconnectDelayMs(reconnectAttemptRef.current));
+        } else {
+          giveUpReconnectRef.current('failed');
+        }
+        return;
+      }
+      if (state === 'closed') {
         onClose?.();
       }
     };
@@ -211,6 +320,24 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
       requestAnimationFrame(() => refreshRemoteBindings());
     }
   }, [refreshRemoteBindings]);
+
+  const handleIceRestartOffer = async (data, signalingCtx) => {
+    const pc = pcRef.current;
+    if (!pc || renegotiatingRef.current) return;
+    renegotiatingRef.current = true;
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await sendSignaling(socket, { type: 'call-answer', to: peer.user_id, sdp: answer }, signalingCtx);
+    } catch (err) {
+      if (!toastSignalingFailure(err, t)) {
+        toast.error(t('callReconnectFailed'));
+      }
+    } finally {
+      renegotiatingRef.current = false;
+    }
+  };
 
   const handleRenegotiationOffer = async (data, signalingCtx) => {
     const pc = pcRef.current;
@@ -263,7 +390,9 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
           toast.error(t('callSdpFailed'));
         }
       } else if (data.type === 'call-offer' && data.from === peer.user_id) {
-        if (status === 'connected' || pc.remoteDescription) {
+        if (data.ice_restart) {
+          await handleIceRestartOffer(data, signalingCtx);
+        } else if (status === 'connected' || status === 'reconnecting' || pc.remoteDescription) {
           await handleRenegotiationOffer(data, signalingCtx);
         }
       } else if (data.type === 'ice-candidate' && data.from === peer.user_id) {
@@ -289,6 +418,7 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
   }, [peer.user_id, user?.user_id, onClose, status, handleRenegotiationOffer, applyRemoteMode, t]);
 
   const cleanup = () => {
+    clearReconnectTimers();
     try { pcRef.current?.close(); } catch {}
     try { localStreamRef.current?.getTracks().forEach((track) => track.stop()); } catch {}
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
@@ -376,6 +506,9 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
       const path = icePathLabelText();
       return path ? `E2E · ${path} · ${fmt(duration)}` : `E2E · ${fmt(duration)}`;
     }
+    if (status === 'reconnecting') {
+      return t('callStatusReconnecting', { attempt: String(reconnectAttempt || 1) });
+    }
     if (status === 'calling') return t('callStatusCalling');
     if (status === 'ringing') return t('callStatusRinging');
     if (endReason === 'declined') return t('callStatusDeclined');
@@ -434,9 +567,24 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
             data-testid="call-local-video"
           />
         )}
-        <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 rounded font-mono text-[10px] tracking-widest text-[#A1A1AA] z-10" data-testid="call-status-label">
-          {statusLabel()}
+        <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 rounded font-mono text-[10px] tracking-widest text-[#A1A1AA] z-10 flex items-center gap-2" data-testid="call-status-label">
+          <span>{statusLabel()}</span>
+          {status === 'connected' && <CallQualityIndicator level={quality.level} />}
         </div>
+        {status === 'reconnecting' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 z-[6]">
+            <p className="font-mono text-xs tracking-widest text-[#FFD600] mb-3">{t('callStatusReconnecting', { attempt: String(reconnectAttempt || 1) })}</p>
+            <button
+              type="button"
+              onClick={() => attemptIceRestart()}
+              data-testid="call-reconnect-retry"
+              className="px-4 py-2 rounded-md tac-border bg-[#1A1A1A] hover:bg-[#232323] text-xs font-mono flex items-center gap-2"
+            >
+              <ArrowsClockwise size={14} />
+              {t('callReconnectRetry')}
+            </button>
+          </div>
+        )}
         {activeMode === 'video' && videoOff && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#121212]/80 z-[5] pointer-events-none">
             <VideoCameraSlash size={48} className="text-[#71717A]" />
@@ -476,9 +624,10 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
           </>
         )}
 
-        {status === 'connected' && (
+        {(status === 'connected' || status === 'reconnecting') && (
           <button
             onClick={switchCallMode}
+            disabled={status === 'reconnecting'}
             disabled={modeBusy}
             data-testid="call-mode-switch-button"
             title={activeMode === 'video' ? t('switchToAudioCall') : t('switchToVideoCall')}

@@ -12,6 +12,13 @@ import {
   oppositeCameraFacing,
   replaceVideoTrackFacingOnMesh,
 } from '../lib/callMedia';
+import CallQualityIndicator from './CallQualityIndicator';
+import { createQualitySampler, pickWorstQuality } from '../lib/callQuality';
+import {
+  MAX_RECONNECT_ATTEMPTS,
+  reconnectDelayMs,
+  shouldAttemptReconnect,
+} from '../lib/callReconnect';
 
 /**
  * GroupCallModal — full-mesh WebRTC for up to ~6 participants in a group.
@@ -60,6 +67,9 @@ export default function GroupCallModal({
   // Guard: show at most one encryption-failure toast per call to avoid flooding
   // the user with one notification per ICE candidate (typically 8–15 per peer).
   const signalingErrShownRef = useRef(false);
+  const qualitySamplerRef = useRef(createQualitySampler());
+  const peerReconnectAttemptsRef = useRef({});
+  const [groupQuality, setGroupQuality] = useState('unknown');
 
   const signalingCtx = useMemo(() => ({
     ourUserId: me?.user_id,
@@ -94,6 +104,22 @@ export default function GroupCallModal({
     return () => clearInterval(t);
   }, []);
 
+  useEffect(() => {
+    if (status !== 'connected') return undefined;
+    const poll = async () => {
+      const pcs = Object.values(peersRef.current).map((p) => p.pc).filter(Boolean);
+      if (!pcs.length) {
+        setGroupQuality('unknown');
+        return;
+      }
+      const levels = await Promise.all(pcs.map((pc) => qualitySamplerRef.current.sample(pc).then((s) => s.level)));
+      setGroupQuality(pickWorstQuality(levels));
+    };
+    poll();
+    const id = setInterval(poll, 2000);
+    return () => clearInterval(id);
+  }, [status, peers]);
+
   const createPeerConnection = async (peerId, peerUsername) => {
     const rtcConfig = await getRTCConfig();
     const pc = new RTCPeerConnection(rtcConfig);
@@ -112,6 +138,34 @@ export default function GroupCallModal({
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => pc.addTrack(t, localStreamRef.current));
     }
+    pc.onconnectionstatechange = () => {
+      const state = pc.connectionState;
+      if (state === 'connected') {
+        peerReconnectAttemptsRef.current[peerId] = 0;
+        return;
+      }
+      if (state === 'disconnected' || state === 'failed') {
+        const attempt = peerReconnectAttemptsRef.current[peerId] || 0;
+        if (!shouldAttemptReconnect(state, attempt)) return;
+        peerReconnectAttemptsRef.current[peerId] = attempt + 1;
+        setTimeout(async () => {
+          try {
+            const offer = await pc.createOffer({ iceRestart: true });
+            await pc.setLocalDescription(offer);
+            await relaySignaling({
+              type: 'call-offer',
+              to: peerId,
+              mode,
+              sdp: offer,
+              renegotiate: true,
+              ice_restart: true,
+            });
+          } catch {
+            /* peer may have left */
+          }
+        }, reconnectDelayMs(attempt));
+      }
+    };
     peersRef.current[peerId] = { pc, username: peerUsername };
     return pc;
   };
@@ -189,7 +243,7 @@ export default function GroupCallModal({
       if (data.type === 'call-offer' && fromId !== me.user_id) {
         let entry = peersRef.current[fromId];
         if (!entry) {
-          const pc = await createPeerConnection(fromId, data.from_username || 'peer');
+          await createPeerConnection(fromId, data.from_username || 'peer');
           entry = peersRef.current[fromId];
         }
         await entry.pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
@@ -270,8 +324,9 @@ export default function GroupCallModal({
 
   return (
     <div className="fixed inset-0 z-[9998] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 safe-top safe-bottom">
-      <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 rounded font-mono text-[10px] tracking-widest text-[#A1A1AA]">
-        GROUP_CALL · E2E · {fmt(duration)} · {tiles.length} ON CALL
+      <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 rounded font-mono text-[10px] tracking-widest text-[#A1A1AA] flex items-center gap-2">
+        <span>GROUP_CALL · E2E · {fmt(duration)} · {tiles.length} ON CALL</span>
+        <CallQualityIndicator level={groupQuality} />
       </div>
       <div className="w-full max-w-5xl grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
         {tiles.map((t) => (
