@@ -109,7 +109,11 @@ async def test_upload_prekey_bundle_handler():
     with patch("routers.keys.db") as mock_db:
         mock_db.signal_prekey_bundles = mock_coll
         mock_db.users = mock_users
-        with patch("routers.keys.rate_limit_check", return_value=True):
+        with patch("routers.keys.rate_limit_check", return_value=True), patch(
+            "routers.keys.migrate_legacy_single_device", new_callable=AsyncMock
+        ), patch("routers.keys.ensure_primary_device", new_callable=AsyncMock), patch(
+            "routers.keys.touch_device", new_callable=AsyncMock
+        ):
             result = await upload_prekey_bundle(body, current=current)
 
     assert result["status"] == "ok"
