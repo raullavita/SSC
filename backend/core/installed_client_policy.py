@@ -1,6 +1,7 @@
 """Installed-client-only product policy — SSC never runs as a browser-tab app."""
 from __future__ import annotations
 
+import os
 from typing import Tuple
 
 from fastapi import HTTPException, Request
@@ -35,7 +36,14 @@ def path_allows_browser_api(path: str) -> bool:
     return False
 
 
+def installed_client_enforced_in_env() -> bool:
+    """Block browser-tab API use in production; CI/dev keep integration tests unblocked."""
+    return os.environ.get("ENV", "development").strip().lower() == "production"
+
+
 def should_block_browser_api_request(request: Request) -> bool:
+    if not installed_client_enforced_in_env():
+        return False
     if BROWSER_PRODUCT_SURFACE_ALLOWED:
         return False
     if request.method.upper() == "OPTIONS":

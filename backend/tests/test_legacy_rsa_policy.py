@@ -10,6 +10,11 @@ from core.legacy_rsa_policy import (
 from core.signal_policy import ProtocolVersion
 
 
+@pytest.fixture(autouse=True)
+def _production_env(monkeypatch):
+    monkeypatch.setenv("ENV", "production")
+
+
 def _request(installed: bool):
     req = MagicMock()
     req.headers = {"x-ssc-client": "installed"} if installed else {}
@@ -36,3 +41,8 @@ def test_allow_signal_from_installed():
 
 def test_policy_flag_enabled():
     assert INSTALLED_LEGACY_RSA_SEND_RETIRED is True
+
+
+def test_development_env_allows_legacy_rsa_send(monkeypatch):
+    monkeypatch.setenv("ENV", "development")
+    reject_legacy_rsa_send_for_installed(_request(True), ProtocolVersion.LEGACY_RSA.value)

@@ -117,11 +117,18 @@ def _check_web_no_localstorage_jwt() -> ProofCheck:
         return ProofCheck(name="web_no_localstorage_jwt", passed=False, detail="api.js missing")
     text = api_js.read_text(encoding="utf-8")
     leaks = "localStorage.getItem('ssc_token')" in text or 'localStorage.getItem("ssc_token")' in text
-    ok = "usesCookieAuth()" in text and not leaks
+    ok = (
+        not leaks
+        and "withCredentials: false" in text
+        and "getSessionToken" in text
+        and "X-SSC-Client" in text
+    )
     return ProofCheck(
         name="web_no_localstorage_jwt",
         passed=ok,
-        detail="api.js uses cookie auth without localStorage JWT" if ok else "ssc_token still read from localStorage",
+        detail="api.js uses installed bearer auth without localStorage JWT"
+        if ok
+        else "api.js still exposes JWT via localStorage or missing installed-client auth",
     )
 
 

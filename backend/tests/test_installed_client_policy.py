@@ -32,6 +32,11 @@ def test_public_paths_allow_browser():
         assert path_allows_browser_api(path) is True
 
 
+@pytest.fixture(autouse=True)
+def _production_env(monkeypatch):
+    monkeypatch.setenv("ENV", "production")
+
+
 def test_auth_path_blocks_browser():
     req = _request("/api/auth/login")
     assert should_block_browser_api_request(req) is True
@@ -40,6 +45,12 @@ def test_auth_path_blocks_browser():
 def test_messages_path_blocks_browser():
     req = _request("/api/messages/send")
     assert should_block_browser_api_request(req) is True
+
+
+def test_development_env_allows_browser_product_api(monkeypatch):
+    monkeypatch.setenv("ENV", "development")
+    req = _request("/api/auth/login")
+    assert should_block_browser_api_request(req) is False
 
 
 def test_installed_header_allows_product_api():
