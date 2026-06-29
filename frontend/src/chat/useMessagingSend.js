@@ -55,6 +55,7 @@ export function useMessagingSend({
   uploadBusy,
   replyTo,
   setReplyTo,
+  activeTopicId,
   t,
 }) {
   const voiceRecordingRef = useRef(null);
@@ -134,6 +135,7 @@ export function useMessagingSend({
   const sendMessage = useCallback(async (text, type = 'text', attachmentId = null, attachmentEnc = null, opts = {}) => {
     const { pollOptionCount } = opts;
     const pollPayload = pollOptionCount ? { poll_option_count: pollOptionCount } : {};
+    const topicPayload = isGroup && activeTopicId ? { topic_id: activeTopicId } : {};
     const replyToMessageId = replyTo?.message_id || null;
     const mentionedUserIds = isGroup && text && type === 'text'
       ? resolveMentionedUserIds(text, activeConv?.members || [])
@@ -187,6 +189,7 @@ export function useMessagingSend({
           reply_to_message_id: replyToMessageId || undefined,
           ...mentionPayload,
           ...pollPayload,
+          ...topicPayload,
         });
         setDraft('');
         setReplyTo?.(null);
@@ -240,6 +243,7 @@ export function useMessagingSend({
         reply_to_message_id: replyToMessageId || undefined,
         ...mentionPayload,
         ...pollPayload,
+        ...topicPayload,
       });
       setDraft('');
       setReplyTo?.(null);
@@ -252,7 +256,7 @@ export function useMessagingSend({
       }
     }
   }, [
-    activeConv, activeId, isGroup, peer, user, privateKey, myContacts,
+    activeConv, activeId, activeTopicId, isGroup, peer, user, privateKey, myContacts,
     canMessagePeer, isRequestPendingPeer, recipientsForActive, runMessagingGate, setDraft, replyTo, setReplyTo, t,
   ]);
 

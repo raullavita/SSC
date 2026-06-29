@@ -81,6 +81,7 @@ class SendMessageIn(BaseModel):
     forwarded_from_message_id: Optional[str] = None
     mentioned_user_ids: Optional[List[str]] = None
     poll_option_count: Optional[int] = None
+    topic_id: Optional[str] = None
 
 
 class UnsendMessageIn(BaseModel):
@@ -148,6 +149,14 @@ class MemberRoleIn(BaseModel):
 
 class GroupProfileIn(BaseModel):
     description: Optional[str] = None
+
+
+class GroupTopicIn(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
+
+
+class GroupTopicRenameIn(BaseModel):
+    name: str = Field(min_length=1, max_length=64)
 
 
 class PushSubscribeIn(BaseModel):

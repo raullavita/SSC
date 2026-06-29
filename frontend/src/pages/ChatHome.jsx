@@ -23,6 +23,8 @@ import Avatar from '../components/Avatar';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CreateGroupModal from '../components/CreateGroupModal';
 import GroupManageModal from '../components/GroupManageModal';
+import GroupTopicsBar from '../components/GroupTopicsBar';
+import CreateGroupTopicModal from '../components/CreateGroupTopicModal';
 import { ConversationListSkeleton, MessagesSkeleton } from '../components/ChatSkeleton';
 import ConversationActionsSheet, { ConversationListRow } from '../components/ConversationActionsSheet';
 import ChatMessageSearchBar from '../components/ChatMessageSearchBar';
@@ -98,6 +100,7 @@ import {
 import { groupAvatarProps, groupDescriptionLine } from '../lib/groupAvatar';
 import { formatGroupConversationLabel } from '../lib/groupDisplayLabel';
 import { canPostInGroup } from '../lib/groupRoles';
+import { GENERAL_TOPIC_ID } from '../lib/groupTopics';
 import { clearLocalGroupLabels } from '../lib/groupLabels';
 
 import { registerMemoryWipeHandler, registerSocketCloser } from '../lib/memoryWipe';
@@ -146,6 +149,10 @@ export default function ChatHome() {
   const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
   const [groupManageOpen, setGroupManageOpen] = useState(false);
+  const [activeTopicId, setActiveTopicId] = useState(GENERAL_TOPIC_ID);
+  const [topicModalOpen, setTopicModalOpen] = useState(false);
+  const [topicBusy, setTopicBusy] = useState(false);
+  const activeTopicIdRef = useRef(GENERAL_TOPIC_ID);
 
   const [storyGroup, setStoryGroup] = useState(null);
   const [groupCallState, setGroupCallState] = useState(null); // {mode, direction, members, signal}
@@ -240,6 +247,7 @@ export default function ChatHome() {
     privateKey,
     isGroup,
     activeConv,
+    activeTopicId,
   });
 
   const imageMediaItems = useMemo(() => listChatImageMedia(messages), [messages]);
@@ -565,6 +573,7 @@ export default function ChatHome() {
     uploadBusy,
     replyTo,
     setReplyTo,
+    activeTopicId,
     t,
   });
 
@@ -679,11 +688,47 @@ export default function ChatHome() {
     conversationsRef,
     myContactsRef,
     refreshContactsRosterRef,
+    activeTopicIdRef,
   });
 
   useEffect(() => {
     setActiveId(conversationId || null);
   }, [conversationId]);
+
+  useEffect(() => {
+    activeTopicIdRef.current = activeTopicId;
+  }, [activeTopicId]);
+
+  useEffect(() => {
+    setActiveTopicId(GENERAL_TOPIC_ID);
+    setReplyTo(null);
+  }, [activeId, setReplyTo]);
+
+  const onSelectGroupTopic = useCallback((topicId) => {
+    setActiveTopicId(topicId || GENERAL_TOPIC_ID);
+    setReplyTo(null);
+    setChatSearchOpen(false);
+    setMessageFilter('');
+  }, [setMessageFilter, setReplyTo]);
+
+  const createGroupTopic = useCallback(async (name) => {
+    if (!activeId || topicBusy) return;
+    setTopicBusy(true);
+    try {
+      const { data } = await api.post(`/conversations/${activeId}/topics`, { name });
+      await loadConversations();
+      const created = (data.group_topics || [])
+        .filter((topic) => topic.topic_id !== GENERAL_TOPIC_ID)
+        .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0];
+      if (created?.topic_id) setActiveTopicId(created.topic_id);
+      setTopicModalOpen(false);
+      toast.success(t('groupTopicCreated'));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('groupTopicCreateFailed'));
+    } finally {
+      setTopicBusy(false);
+    }
+  }, [activeId, loadConversations, t, topicBusy]);
 
   useEffect(() => {
     if (!isNativeApp()) return undefined;
@@ -1497,6 +1542,16 @@ export default function ChatHome() {
               </div>
             </header>
 
+            {isGroup && (
+              <GroupTopicsBar
+                conversation={activeConv}
+                activeTopicId={activeTopicId}
+                myUserId={user?.user_id}
+                onSelectTopic={onSelectGroupTopic}
+                onCreateTopic={() => setTopicModalOpen(true)}
+              />
+            )}
+
             <ChatMessageSearchBar
               open={chatSearchOpen}
               query={messageFilter}
@@ -1878,6 +1933,13 @@ export default function ChatHome() {
         contacts={myContacts}
         onUpdated={refreshActiveGroup}
         onLeave={() => { setGroupManageOpen(false); leaveChat(); loadConversations(); }}
+      />
+
+      <CreateGroupTopicModal
+        open={topicModalOpen}
+        onClose={() => setTopicModalOpen(false)}
+        onCreate={createGroupTopic}
+        busy={topicBusy}
       />
 
       <ConversationActionsSheet

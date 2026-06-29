@@ -26,6 +26,12 @@ from core.retention import expires_at_from_now, message_read_expiry_fields
 from core.message_replies import validate_reply_target
 from core.message_forwards import validate_forward_source
 from core.group_roles import can_post_in_group
+from core.group_topics import (
+    GENERAL_TOPIC_ID,
+    bump_topic_activity,
+    ensure_group_topics,
+    resolve_message_topic_id,
+)
 from core.message_mentions import validate_mentioned_users_for_group
 from core.retention_db import bump_conversation_activity, get_effective_retention_for_conversation
 from core.privacy_settings import read_receipts_enabled
@@ -80,7 +86,16 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
         if len(enc_keys) > 50 or any(len(v) > 1000 for v in enc_keys.values()):
             raise HTTPException(413, "Encrypted keys too large or too many")
 
+    topic_id = resolve_message_topic_id(conv, body.topic_id)
     reply_to = await validate_reply_target(body.conversation_id, body.reply_to_message_id)
+    if reply_to and topic_id:
+        ref = await db.messages.find_one(
+            {"message_id": reply_to, "conversation_id": body.conversation_id},
+            {"_id": 0, "topic_id": 1},
+        )
+        ref_topic = (ref or {}).get("topic_id") or GENERAL_TOPIC_ID
+        if ref_topic != topic_id:
+            raise HTTPException(400, "Reply must be in the same topic")
     forwarded_from = await validate_forward_source(
         user_id=current["user_id"],
         forwarded_from_message_id=body.forwarded_from_message_id,
@@ -121,10 +136,22 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
         "forwarded_from_message_id": forwarded_from,
         "mentioned_user_ids": mentioned_user_ids or None,
         "poll_option_count": poll_option_count,
+        "topic_id": topic_id,
         "created_at": iso(created),
         "expires_at": expires,
     })
     await db.messages.insert_one(msg)
+    if topic_id:
+        enriched = ensure_group_topics(conv)
+        topics = bump_topic_activity(
+            list(enriched.get("group_topics") or []),
+            topic_id,
+            iso(created),
+        )
+        await db.conversations.update_one(
+            {"conversation_id": body.conversation_id},
+            {"$set": {"group_topics": topics, "updated_at": iso(now_utc())}},
+        )
     await bump_conversation_activity(body.conversation_id)
     msg["expires_at"] = iso(expires)
     msg.pop("_id", None)

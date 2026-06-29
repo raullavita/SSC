@@ -1,7 +1,9 @@
 """Conversation CRUD routes."""
 import asyncio
 import uuid
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 
 from core.auth import get_current_user
 from core.contact_helpers import PEER_ROSTER_FIELDS, are_contacts
@@ -9,6 +11,18 @@ from core.database import db
 from core.logging_config import logger
 from core.group_members import add_group_members, remove_group_member
 from core.member_joined import build_member_joined_at_for_participants
+from core.group_topics import (
+    GENERAL_TOPIC_ID,
+    bump_topic_activity,
+    can_manage_group_topics,
+    create_group_topic,
+    delete_group_topic,
+    ensure_group_topics,
+    message_topic_query_filter,
+    rename_group_topic,
+    resolve_message_topic_id,
+    validate_topic_for_group,
+)
 from core.group_profile import (
     encode_group_photo,
     normalize_group_description,
@@ -25,7 +39,15 @@ from core.group_roles import (
     can_update_permissions,
     default_group_permissions,
 )
-from core.models import AddGroupMembersIn, CreateConversationIn, GroupPermissionsIn, GroupProfileIn, MemberRoleIn
+from core.models import (
+    AddGroupMembersIn,
+    CreateConversationIn,
+    GroupPermissionsIn,
+    GroupProfileIn,
+    GroupTopicIn,
+    GroupTopicRenameIn,
+    MemberRoleIn,
+)
 from core.push_helpers import send_push_for_group_added
 from core.realtime import manager
 from core.last_seen import project_user_for_peer
@@ -107,7 +129,7 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
             participants,
             joined_at=created_iso,
         )
-        conv = {
+        conv = ensure_group_topics({
             "conversation_id": f"g_{uuid.uuid4().hex[:14]}",
             "participants": participants,
             "is_group": True,
@@ -119,7 +141,7 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
             "created_at": created_iso,
             "created_by": current["user_id"],
             **activity,
-        }
+        })
         await db.conversations.insert_one(conv)
         conv.pop("_id", None)
         member_map = {current["user_id"]: peer_summary(current)}
@@ -212,12 +234,20 @@ async def list_conversations(current=Depends(get_current_user)):
 
 
 @router.get("/{conversation_id}/messages")
-async def list_messages(conversation_id: str, current=Depends(get_current_user)):
+async def list_messages(
+    conversation_id: str,
+    topic_id: Optional[str] = Query(default=None),
+    current=Depends(get_current_user),
+):
     conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
     if not conv or current["user_id"] not in conv["participants"]:
         raise HTTPException(404, "Conversation not found")
+    query = {"conversation_id": conversation_id}
+    if conv.get("is_group"):
+        resolved_topic = resolve_message_topic_id(conv, topic_id)
+        query.update(message_topic_query_filter(resolved_topic))
     msgs = await db.messages.find(
-        {"conversation_id": conversation_id}, {"_id": 0}
+        query, {"_id": 0}
     ).sort("created_at", 1).to_list(500)
     projected = [project_message_for_viewer(m, current["user_id"]) for m in msgs]
     from core.message_polls import attach_poll_votes_to_messages
@@ -401,6 +431,92 @@ async def remove_group_photo(
     )
     updated = {**conv}
     updated.pop("group_photo", None)
+    from core.group_members import _broadcast_conv_update
+
+    await _broadcast_conv_update(updated)
+    return await _group_conversation_payload(updated, current["user_id"])
+
+
+@router.post("/{conversation_id}/topics")
+async def create_conversation_topic(
+    conversation_id: str,
+    body: GroupTopicIn,
+    current=Depends(get_current_user),
+):
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv.get("participants", []):
+        raise HTTPException(404, "Conversation not found")
+    if not conv.get("is_group"):
+        raise HTTPException(400, "Not a group conversation")
+    if not can_manage_group_topics(conv, current["user_id"]):
+        raise HTTPException(403, "Only group admins can manage topics")
+    topics, _topic = create_group_topic(conv, name=body.name, created_by=current["user_id"])
+    updated = {**ensure_group_topics(conv), "group_topics": topics}
+    await db.conversations.update_one(
+        {"conversation_id": conversation_id},
+        {"$set": {"group_topics": topics, "updated_at": iso(now_utc())}},
+    )
+    from core.group_members import _broadcast_conv_update
+
+    await _broadcast_conv_update(updated)
+    return await _group_conversation_payload(updated, current["user_id"])
+
+
+@router.patch("/{conversation_id}/topics/{topic_id}")
+async def rename_conversation_topic(
+    conversation_id: str,
+    topic_id: str,
+    body: GroupTopicRenameIn,
+    current=Depends(get_current_user),
+):
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv.get("participants", []):
+        raise HTTPException(404, "Conversation not found")
+    if not conv.get("is_group"):
+        raise HTTPException(400, "Not a group conversation")
+    if not can_manage_group_topics(conv, current["user_id"]):
+        raise HTTPException(403, "Only group admins can manage topics")
+    validate_topic_for_group(conv, topic_id)
+    topics = rename_group_topic(conv, topic_id, body.name)
+    updated = {**ensure_group_topics(conv), "group_topics": topics}
+    await db.conversations.update_one(
+        {"conversation_id": conversation_id},
+        {"$set": {"group_topics": topics, "updated_at": iso(now_utc())}},
+    )
+    from core.group_members import _broadcast_conv_update
+
+    await _broadcast_conv_update(updated)
+    return await _group_conversation_payload(updated, current["user_id"])
+
+
+@router.delete("/{conversation_id}/topics/{topic_id}")
+async def delete_conversation_topic(
+    conversation_id: str,
+    topic_id: str,
+    current=Depends(get_current_user),
+):
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv.get("participants", []):
+        raise HTTPException(404, "Conversation not found")
+    if not conv.get("is_group"):
+        raise HTTPException(400, "Not a group conversation")
+    if not can_manage_group_topics(conv, current["user_id"]):
+        raise HTTPException(403, "Only group admins can manage topics")
+    validate_topic_for_group(conv, topic_id)
+    if topic_id == GENERAL_TOPIC_ID:
+        raise HTTPException(400, "Cannot delete the default topic")
+    msg_count = await db.messages.count_documents({
+        "conversation_id": conversation_id,
+        **message_topic_query_filter(topic_id),
+    })
+    if msg_count > 0:
+        raise HTTPException(400, "Delete messages in this topic before removing it")
+    topics = delete_group_topic(conv, topic_id)
+    updated = {**ensure_group_topics(conv), "group_topics": topics}
+    await db.conversations.update_one(
+        {"conversation_id": conversation_id},
+        {"$set": {"group_topics": topics, "updated_at": iso(now_utc())}},
+    )
     from core.group_members import _broadcast_conv_update
 
     await _broadcast_conv_update(updated)

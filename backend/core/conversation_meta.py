@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 
 from core.group_roles import roles_for_api
 from core.member_joined import enrich_members_with_joined_at, member_joined_at_for_api
+from core.group_topics import topics_for_api
 from core.utils import iso
 
 GENERIC_GROUP_LABEL = "Group"
@@ -19,6 +20,7 @@ CONVERSATION_STORE_FIELDS = (
     "owner_id",
     "member_roles",
     "member_joined_at",
+    "group_topics",
     "group_permissions",
     "group_photo",
     "group_description",
@@ -83,6 +85,7 @@ def sanitize_conversation_for_api(conv: dict, viewer_id: str) -> dict:
             out["group_photo"] = conv["group_photo"]
         if conv.get("group_description"):
             out["group_description"] = conv["group_description"]
+        out["group_topics"] = topics_for_api(conv)
         joined_map = member_joined_at_for_api(conv)
         out["member_joined_at"] = joined_map
         out["members"] = enrich_members_with_joined_at(conv.get("members") or [], joined_map)

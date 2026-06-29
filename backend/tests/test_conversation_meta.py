@@ -90,6 +90,19 @@ def test_sanitize_conversation_exposes_member_joined_at():
     assert out["members"][0]["joined_at"] == "2026-06-22T08:00:00+00:00"
 
 
+def test_sanitize_conversation_exposes_group_topics():
+    conv = {
+        "conversation_id": "g_abc",
+        "participants": ["u_a", "u_b"],
+        "is_group": True,
+        "admin_id": "u_a",
+        "created_at": "2026-06-20T08:00:00+00:00",
+    }
+    out = sanitize_conversation_for_api(conv, "u_a")
+    assert out["group_topics"][0]["topic_id"] == "general"
+    assert out["group_topics"][0]["is_default"] is True
+
+
 def test_sanitize_conversation_exposes_group_profile_fields():
     conv = {
         "conversation_id": "g_abc",

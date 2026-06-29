@@ -15,6 +15,7 @@ export function useChatMessages({
   privateKey,
   isGroup,
   activeConv,
+  activeTopicId,
 }) {
   const [messages, setMessages] = useState([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
@@ -71,7 +72,10 @@ export function useChatMessages({
     setMessagesLoading(true);
     (async () => {
       try {
-        const { data } = await api.get(`/conversations/${activeId}/messages`);
+        const topicQuery = isGroup && activeTopicId
+          ? `?topic_id=${encodeURIComponent(activeTopicId)}`
+          : '';
+        const { data } = await api.get(`/conversations/${activeId}/messages${topicQuery}`);
         const visible = [];
         for (const msg of data) {
           if (msg?.message_type === SKDM_MESSAGE_TYPE) {
@@ -97,7 +101,7 @@ export function useChatMessages({
       } catch {}
       finally { setMessagesLoading(false); }
     })();
-  }, [activeId, user?.user_id, peer?.user_id]);
+  }, [activeId, activeTopicId, isGroup, user?.user_id, peer?.user_id]);
 
   useEffect(() => {
     if (!activeId || messages.length === 0) return;

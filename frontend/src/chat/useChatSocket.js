@@ -22,6 +22,7 @@ import { applyMessageDeleted } from '../lib/messageDelete';
 import { applyMessageEdited } from '../lib/messageEdit';
 import { applyMessageReactionUpdate } from '../lib/messageReactions';
 import { applyPollVoteUpdate } from '../lib/pollMessage';
+import { messageBelongsToTopic } from '../lib/groupTopics';
 
 export function useChatSocket({
   user,
@@ -39,6 +40,7 @@ export function useChatSocket({
   conversationsRef,
   myContactsRef,
   refreshContactsRosterRef,
+  activeTopicIdRef,
 }) {
   useEffect(() => {
     if (!user) return undefined;
@@ -60,7 +62,10 @@ export function useChatSocket({
             }).catch((err) => {
               console.warn('[SSC] incoming status SKDM failed:', err?.message || err);
             });
-          } else if (incoming.conversation_id === activeId) {
+          } else if (
+            incoming.conversation_id === activeId
+            && messageBelongsToTopic(incoming, activeTopicIdRef?.current)
+          ) {
             setMessages((m) => [...m, incoming]);
           }
           loadConversations();
