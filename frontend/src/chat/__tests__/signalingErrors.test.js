@@ -1,18 +1,23 @@
-import { toast } from 'sonner';
-import {
-  serverSignalingErrorI18nKey,
-  toastServerSignalingError,
-} from '../signalingErrors';
+const { TextEncoder, TextDecoder } = require('util');
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 jest.mock('sonner', () => ({
   toast: { error: jest.fn() },
 }));
+
+const { toast } = require('sonner');
+const {
+  serverSignalingErrorI18nKey,
+  toastServerSignalingError,
+} = require('../signalingErrors');
 
 describe('signalingErrors', () => {
   const t = jest.fn((key) => key);
 
   beforeEach(() => {
     jest.clearAllMocks();
+    t.mockImplementation((key) => key);
   });
 
   it('maps permission denied to callSignalingNotPermitted', () => {
