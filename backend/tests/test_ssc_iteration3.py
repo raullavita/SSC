@@ -4,7 +4,7 @@
 - /api/contacts dedup
 - Statuses CRUD + per-viewer encrypted_keys gating + TTL index
 - WebSocket status-new notification
-- WebSocket call-offer `group: true` passthrough
+- WebSocket call-offer `group: true` signal_v1 passthrough
 """
 import os
 import json
@@ -352,13 +352,17 @@ async def test_ws_status_new_notification():
         requests.delete(f"{API}/statuses/{expected_sid}", headers=auth_h(a_token))
 
 
-# ─── WebSocket: call-offer `group: true` passthrough ─────────────────────
+# ─── WebSocket: call-offer `group: true` signal_v1 passthrough ───────────
+_VALID_SIGNAL_CT = base64.b64encode(b"x" * 32).decode("ascii")
+
+
 @pytest.mark.asyncio
 async def test_ws_call_offer_group_passthrough():
     a_token = state["a_token"]
     b_token = state["b_token"]
     a_url = ws_connect_url(API, WS_BASE, a_token)
     b_url = ws_connect_url(API, WS_BASE, b_token)
+    dist_id = str(uuid.uuid4())
     async with websockets.connect(a_url) as a_ws, \
                websockets.connect(b_url) as b_ws:
         for ws in (a_ws, b_ws):
@@ -371,7 +375,10 @@ async def test_ws_call_offer_group_passthrough():
             "to": state["b_user"]["user_id"],
             "group": True,
             "mode": "audio",
-            "sdp": {"type": "offer", "sdp": "fake"},
+            "signaling_protocol": "signal_v1",
+            "signaling_ciphertext": _VALID_SIGNAL_CT,
+            "signal_message_type": 7,
+            "distribution_id": dist_id,
             "members": members,
             "call_id": "cg1",
         }))
@@ -392,5 +399,8 @@ async def test_ws_call_offer_group_passthrough():
         assert got.get("mode") == "audio"
         assert got.get("members") == members
         assert got.get("from") == state["a_user"]["user_id"]
-        assert isinstance(got.get("sdp"), dict)
-        assert got["sdp"].get("sdp") == "fake"
+        assert got.get("signaling_protocol") == "signal_v1"
+        assert got.get("signaling_ciphertext") == _VALID_SIGNAL_CT
+        assert got.get("signal_message_type") == 7
+        assert got.get("distribution_id") == dist_id
+        assert not got.get("sdp")
