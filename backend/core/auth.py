@@ -105,6 +105,23 @@ def verify_turnstile(token: str, remote_ip: str, *, skip: bool = False) -> bool:
         return False
 
 
+def _public_user_projection() -> dict:
+    return {
+        "_id": 0,
+        "password_hash": 0,
+        "totp_secret": 0,
+        "totp_pending_secret": 0,
+        "recovery_encrypted_private_key": 0,
+        "recovery_pk_salt": 0,
+    }
+
+
+def _finalize_current_user(user: dict) -> dict:
+    from core.recovery_key_policy import sanitize_user_recovery_fields
+
+    return sanitize_user_recovery_fields(user)
+
+
 async def get_current_user(
     authorization: Optional[str] = Header(None),
     session_token: Optional[str] = Cookie(None),
@@ -115,12 +132,9 @@ async def get_current_user(
     if token:
         user_id = decode_jwt(token)
         if user_id:
-            user = await db.users.find_one(
-                {"user_id": user_id},
-                {"_id": 0, "password_hash": 0, "totp_secret": 0, "totp_pending_secret": 0},
-            )
+            user = await db.users.find_one({"user_id": user_id}, _public_user_projection())
             if user:
-                return user
+                return _finalize_current_user(user)
     if session_token or token:
         st = session_token or token
         sess = await db.user_sessions.find_one({"session_token": st}, {"_id": 0})
@@ -133,8 +147,8 @@ async def get_current_user(
             if expires_at and expires_at > datetime.now(timezone.utc):
                 user = await db.users.find_one(
                     {"user_id": sess["user_id"]},
-                    {"_id": 0, "password_hash": 0, "totp_secret": 0, "totp_pending_secret": 0},
+                    _public_user_projection(),
                 )
                 if user:
-                    return user
+                    return _finalize_current_user(user)
     raise HTTPException(401, "Not authenticated")

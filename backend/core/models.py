@@ -252,6 +252,33 @@ class PasskeyDeleteIn(BaseModel):
     credential_id: str = Field(min_length=8, max_length=512)
 
 
+class RecoverySetupIn(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
+    recovery_encrypted_private_key: str = Field(min_length=16, max_length=20000)
+    recovery_pk_salt: str = Field(min_length=8, max_length=128)
+    recovery_codes: List[str] = Field(min_length=10, max_length=10)
+
+
+class RecoveryRegenerateIn(BaseModel):
+    password: str = Field(min_length=1, max_length=128)
+    recovery_encrypted_private_key: str = Field(min_length=16, max_length=20000)
+    recovery_pk_salt: str = Field(min_length=8, max_length=128)
+    recovery_codes: List[str] = Field(min_length=10, max_length=10)
+
+
+class RecoveryFetchWrapIn(BaseModel):
+    identifier: str = Field(min_length=3, max_length=128)
+    recovery_codes: List[str] = Field(min_length=10, max_length=10)
+
+
+class RecoveryResetPasswordIn(BaseModel):
+    identifier: str = Field(min_length=3, max_length=128)
+    recovery_codes: List[str] = Field(min_length=10, max_length=10)
+    new_password: str = Field(min_length=8, max_length=128)
+    encrypted_private_key: str = Field(min_length=16, max_length=20000)
+    pk_salt: str = Field(min_length=8, max_length=128)
+
+
 class PrekeyBundleIn(BaseModel):
     registration_id: int = Field(ge=1, le=16380)
     device_id: int = Field(default=1, ge=1, le=1)

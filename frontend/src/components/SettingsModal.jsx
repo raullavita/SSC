@@ -25,6 +25,7 @@ import {
 } from '../lib/retentionDisplay';
 import Avatar from './Avatar';
 import TwoFAModal from './TwoFAModal';
+import RecoveryKeyModal from './RecoveryKeyModal';
 import HelpCenterModal from './HelpCenterModal';
 import PanicButton from './PanicButton';
 import { subscribePush } from '../lib/push';
@@ -105,6 +106,7 @@ export default function SettingsModal({ open, onClose }) {
   const [busy, setBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [passkeysEnabled, setPasskeysEnabled] = useState(false);
   const [passkeys, setPasskeys] = useState([]);
@@ -694,6 +696,26 @@ export default function SettingsModal({ open, onClose }) {
                 </button>
               </div>
 
+              {user?.encrypted_private_key && (
+                <div className="mt-4" data-testid="settings-recovery-key">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] mb-2">
+                    {t('settingsRecoveryKey')}
+                  </p>
+                  <p className="text-[10px] text-[#71717A] mb-3">{t('settingsRecoveryKeyHint')}</p>
+                  {user?.recovery_enabled && (
+                    <p className="text-xs text-[#34C759] mb-2">{t('settingsRecoveryKeyEnabled')}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setRecoveryOpen(true)}
+                    className="w-full py-2.5 text-xs font-mono tracking-wider border border-[#27272A] rounded-md hover:bg-[#232323]"
+                    data-testid="settings-open-recovery"
+                  >
+                    {user?.recovery_enabled ? t('settingsRecoveryKeyManage') : t('settingsRecoveryKeySetup')}
+                  </button>
+                </div>
+              )}
+
               {passkeysEnabled && (
                 <div className="mt-4" data-testid="settings-passkeys">
                   <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] mb-2">{t('settingsPasskeys')}</p>
@@ -1073,6 +1095,11 @@ export default function SettingsModal({ open, onClose }) {
       </div>
 
       <TwoFAModal open={twoFAOpen} onClose={() => { setTwoFAOpen(false); refreshUser(); }} />
+      <RecoveryKeyModal
+        open={recoveryOpen}
+        onClose={() => { setRecoveryOpen(false); refreshUser(); }}
+        recoveryEnabled={!!user?.recovery_enabled}
+      />
       <HelpCenterModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </>
   );

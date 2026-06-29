@@ -3,6 +3,7 @@ from fastapi import APIRouter
 
 from routers.auth import router as auth_router
 from routers.passkeys import router as passkeys_router
+from routers.recovery import router as recovery_router
 from routers.config_route import router as config_router
 from routers.broadcast_lists import router as broadcast_lists_router
 from routers.contacts import router as contacts_router
@@ -25,6 +26,7 @@ def include_routers(api: APIRouter):
     api.include_router(config_router)
     api.include_router(auth_router, prefix="/auth")
     api.include_router(passkeys_router, prefix="/auth/passkey")
+    api.include_router(recovery_router, prefix="/auth/recovery")
     api.include_router(users_router, prefix="/users")
     api.include_router(contacts_router, prefix="/contacts")
     api.include_router(broadcast_lists_router, prefix="/broadcast-lists")

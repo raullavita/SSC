@@ -202,6 +202,15 @@ export default function Login() {
                   {show ? <EyeSlash size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+              <p className="mt-2 text-right">
+                <Link
+                  to="/recovery"
+                  className="text-[10px] font-mono text-[#00E5FF] hover:underline"
+                  data-testid="login-forgot-password-link"
+                >
+                  {t('forgotPassword')}
+                </Link>
+              </p>
             </div>
 
             {needs2FA && (

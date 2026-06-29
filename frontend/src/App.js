@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LocaleProvider, useLocale } from './context/LocaleContext';
 import { Toaster } from 'sonner';
 import Login from './pages/Login';
+import RecoveryPassword from './pages/RecoveryPassword';
 import Register from './pages/Register';
 import VerifyEmail from './pages/VerifyEmail';
 import SetupUsername from './pages/SetupUsername';
@@ -130,6 +131,7 @@ function AppRouter() {
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/login" element={<InstalledClientGate><Login /></InstalledClientGate>} />
+      <Route path="/recovery" element={<InstalledClientGate><RecoveryPassword /></InstalledClientGate>} />
       <Route path="/auth/google" element={<InstalledClientGate><GoogleAuthCallback /></InstalledClientGate>} />
       <Route path="/register" element={<InstalledClientGate><Register /></InstalledClientGate>} />
       <Route path="/verify-email" element={<VerifyEmail />} />
