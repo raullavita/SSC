@@ -100,6 +100,7 @@ UI labels: **SIG** (green) vs **RSA** (yellow) on messages and composer hints.
 | Groups (installed clients) | ✅ Sender Keys | Sender Keys |
 | Attachments (installed clients) | ✅ In-protocol | In-protocol |
 | Sealed sender | ✅ 1:1 installed clients | Signal ✅ |
+| Key-change warnings | ✅ in-chat banner + safety number | Signal ✅ |
 | Multi-device | ✅ linked devices (Q.51) | ✅ |
 | Default server deletion | 24h TTL (strong default) | Optional disappearing |
 | Published audit | ❌ | Years of scrutiny |

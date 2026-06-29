@@ -14,6 +14,7 @@ import {
 } from '../lib/signal/groupMessages';
 import { SKDM_MESSAGE_TYPE } from '../lib/signal/constants';
 import { STATUS_SKDM_MESSAGE_TYPE, processIncomingStatusSkdmMessage } from '../lib/signal/statuses';
+import { handlePeerIdentityRotation } from '../lib/keyChangeWarnings';
 import { deleteSignalSession } from '../lib/signal/nativeLibsignal';
 import { resolveIncomingSignaling, SignalingInboundError } from './signalingInbound';
 import {
@@ -146,8 +147,10 @@ export function useChatSocket({
           deleteSignalSession(data.user_id).catch((err) => {
             console.warn('[SSC] deleteSignalSession after identity-changed failed:', err?.message || err);
           });
+          handlePeerIdentityRotation(data.user_id);
+          loadConversations();
           if (data.user_id === peer?.user_id) {
-            toast.message(t('signalIdentityRotated'));
+            toast.warning(t('keyChangeWarningToast'));
           }
         } else if (data.type === 'signaling-error') {
           console.warn('[SSC] signaling rejected by server:', data.detail || data.original_type);

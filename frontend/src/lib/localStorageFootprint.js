@@ -3,6 +3,7 @@
  * Panic removes peer verification metadata; normal logout preserves it.
  * JWT (ssc_token) is not stored after Engine 5.4 — only purged if legacy remains.
  */
+import { purgeTrustedIdentitiesOnPanic } from './keyChangeWarnings';
 import { purgeVerificationStorageOnPanic } from './verification';
 import { LEGACY_JWT_KEY } from './sessionConstants';
 
@@ -26,6 +27,7 @@ export function clearLocalStorageSessionSecrets() {
 export function applyLocalStoragePanicPolicy(reason) {
   if (reason !== 'panic' || typeof localStorage === 'undefined') return;
   purgeVerificationStorageOnPanic();
+  purgeTrustedIdentitiesOnPanic();
   const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i += 1) {
     const key = localStorage.key(i);

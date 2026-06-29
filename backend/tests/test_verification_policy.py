@@ -46,14 +46,26 @@ def test_safety_number_module_signal_iterations():
     assert "api.qrserver.com" not in text
 
 
-def test_verify_modal_local_qr():
+def test_verify_modal_text_only_no_qr():
     root = Path(__file__).resolve().parents[2]
     modal = (root / "frontend" / "src" / "components" / "VerifyHandshakeModal.jsx").read_text(encoding="utf-8")
-    assert "from 'qrcode'" in modal
-    assert "QRCode.toDataURL" in modal
+    assert "from 'qrcode'" not in modal
+    assert "QRCode.toDataURL" not in modal
     assert "verify-paste-input" in modal
+    assert "verify-safety-number" in modal
     assert "api.qrserver.com" not in modal
     assert "localStorage.setItem" not in modal
+
+
+def test_key_change_warning_banner_wired():
+    root = Path(__file__).resolve().parents[2]
+    chat = (root / "frontend" / "src" / "pages" / "ChatHome.jsx").read_text(encoding="utf-8")
+    banner = (root / "frontend" / "src" / "components" / "KeyChangeWarningBanner.jsx").read_text(encoding="utf-8")
+    assert "KeyChangeWarningBanner" in chat
+    assert "key-change-warning-banner" in banner
+    warnings = (root / "frontend" / "src" / "lib" / "keyChangeWarnings.js").read_text(encoding="utf-8")
+    assert "isPeerIdentityChanged" in warnings
+    assert "handlePeerIdentityRotation" in warnings
 
 
 def test_chat_home_hides_default_verify_ui():

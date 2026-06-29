@@ -44,6 +44,13 @@ import { clampSearchMatchIndex } from '../lib/chatSearch';
 import ProfileContactSheet from '../components/ProfileContactSheet';
 import MuteDurationSheet from '../components/MuteDurationSheet';
 import VerifyHandshakeModal from '../components/VerifyHandshakeModal';
+import KeyChangeWarningBanner from '../components/KeyChangeWarningBanner';
+import {
+  KEY_CHANGE_EVENT,
+  acknowledgePeerIdentity,
+  isPeerIdentityChanged,
+  seedTrustedIdentityIfMissing,
+} from '../lib/keyChangeWarnings';
 import { useLocale } from '../context/LocaleContext';
 import { useMobileLayout, useSplitChatLayout } from '../lib/use-mobile';
 import MobileChatMenu, { MenuAction } from '../components/MobileChatMenu';
@@ -193,6 +200,7 @@ export default function ChatHome() {
   const [forwardBusy, setForwardBusy] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [keyChangeWarning, setKeyChangeWarning] = useState(false);
   const [retentionHours, setRetentionHours] = useState(24);
   const displayRetentionHours = normalizeRetentionHours(user?.retention_hours, retentionHours);
   const socketRef = useRef(null);
@@ -342,6 +350,25 @@ export default function ChatHome() {
     : canMessagePeer;
   const isRequestPendingPeer = !isGroup && !!peer
     && outgoingRequests.some((r) => r.to_user_id === peer.user_id);
+
+  useEffect(() => {
+    if (!peer?.user_id || isGroup) {
+      setKeyChangeWarning(false);
+      return;
+    }
+    seedTrustedIdentityIfMissing(peer);
+    setKeyChangeWarning(isPeerIdentityChanged(peer));
+  }, [peer, isGroup]);
+
+  useEffect(() => {
+    const onKeyChange = (event) => {
+      if (event?.detail?.peerUserId === peer?.user_id) {
+        setKeyChangeWarning(event.detail.active !== false);
+      }
+    };
+    window.addEventListener(KEY_CHANGE_EVENT, onKeyChange);
+    return () => window.removeEventListener(KEY_CHANGE_EVENT, onKeyChange);
+  }, [peer?.user_id]);
 
   useEffect(() => {
     (async () => {
@@ -1708,6 +1735,17 @@ export default function ChatHome() {
 
             {translationOnDevice && (
               <TranslationModelDownloadBanner status={translateModelDownload} />
+            )}
+
+            {!isGroup && keyChangeWarning && peer && (
+              <KeyChangeWarningBanner
+                peerUsername={peer.username}
+                onReview={() => setVerifyOpen(true)}
+                onDismiss={() => {
+                  acknowledgePeerIdentity(peer);
+                  setKeyChangeWarning(false);
+                }}
+              />
             )}
 
             <div ref={scrollRef} onScroll={() => onMessagesScroll(scrollRef)} className={`chat-scroll px-3 ${splitLayout ? 'md:px-6' : ''} py-3 flex flex-col gap-3`}>

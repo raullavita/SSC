@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import QRCode from 'qrcode';
-import { X, ShieldCheck, Check, QrCode, ClipboardText } from '@phosphor-icons/react';
+import { X, ShieldCheck, Check, ClipboardText } from '@phosphor-icons/react';
 import { IDENTITY_KEY_TYPES } from '../lib/identityKey';
 import {
-  buildVerifyQrPayload,
   parseVerifyQrPayload,
   safetyNumbersMatch,
 } from '../lib/safetyNumber';
+import { acknowledgePeerIdentity } from '../lib/keyChangeWarnings';
 import {
   clearPeerVerification,
   computeSafetyNumberForUsers,
@@ -16,20 +15,21 @@ import {
 } from '../lib/verification';
 
 /**
- * Verified Handshake — safety number v3 + local QR (Engine 8.2).
+ * Verified Handshake — safety number v3, text compare only (Q.53 — no QR).
  */
 export default function VerifyHandshakeModal({ open, onClose, me, peer }) {
   const [code, setCode] = useState('');
   const [canonical, setCanonical] = useState('');
   const [keyType, setKeyType] = useState('');
-  const [qrDataUrl, setQrDataUrl] = useState('');
   const [verified, setVerified] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pasteValue, setPasteValue] = useState('');
   const [pasteMatch, setPasteMatch] = useState(null);
 
   useEffect(() => {
-    if (!open || !me?.public_key || !peer?.public_key) return;
+    const meReady = me?.public_key || me?.signal_identity_key_public || me?.signal_prekeys_ready;
+    const peerReady = peer?.public_key || peer?.signal_identity_key_public || peer?.signal_prekeys_ready;
+    if (!open || !meReady || !peerReady) return;
     let mounted = true;
     (async () => {
       try {
@@ -39,18 +39,10 @@ export default function VerifyHandshakeModal({ open, onClose, me, peer }) {
         setCanonical(result.canonical);
         setKeyType(result.keyType);
         setVerified(await isPeerVerified(peer.user_id, me, peer, me.user_id, peer));
-        const payload = buildVerifyQrPayload(result.canonical, peer.user_id);
-        const url = await QRCode.toDataURL(payload, {
-          width: 240,
-          margin: 1,
-          color: { dark: '#00E5FF', light: '#121212' },
-        });
-        if (mounted) setQrDataUrl(url);
       } catch {
         if (mounted) {
           setCode('');
           setCanonical('');
-          setQrDataUrl('');
           setVerified(false);
         }
       }
@@ -76,6 +68,7 @@ export default function VerifyHandshakeModal({ open, onClose, me, peer }) {
     setBusy(true);
     try {
       await markPeerVerified(peer.user_id, me, peer, me.user_id, peer);
+      acknowledgePeerIdentity(peer);
       setVerified(true);
       toast.success('Identity verified');
     } catch {
@@ -109,18 +102,8 @@ export default function VerifyHandshakeModal({ open, onClose, me, peer }) {
 
         <p className="text-xs text-[#A1A1AA] mb-4">
           Compare this 60-digit safety number with <span className="text-white">@{peer?.username}</span> in person or on a trusted call.
-          QR is generated on your device — nothing is sent to third parties.
+          Nothing is sent to third parties.
         </p>
-
-        <div className="flex justify-center mb-3">
-          {qrDataUrl ? (
-            <img src={qrDataUrl} alt="safety number QR" className="w-[240px] h-[240px] rounded-md tac-border" data-testid="verify-qr" />
-          ) : (
-            <div className="w-[240px] h-[240px] bg-[#1A1A1A] rounded-md flex items-center justify-center">
-              <QrCode size={32} className="text-[#A1A1AA]" />
-            </div>
-          )}
-        </div>
 
         <div className="bg-[#1A1A1A] tac-border rounded-md p-3 mb-3">
           <div className="text-[10px] font-mono text-[#A1A1AA] tracking-widest mb-1">SAFETY_NUMBER</div>
@@ -129,13 +112,13 @@ export default function VerifyHandshakeModal({ open, onClose, me, peer }) {
 
         <div className="bg-[#1A1A1A] tac-border rounded-md p-3 mb-4">
           <div className="text-[10px] font-mono text-[#A1A1AA] tracking-widest mb-2 flex items-center gap-1">
-            <ClipboardText size={12} /> PASTE_PEER_NUMBER_OR_SCAN_QR
+            <ClipboardText size={12} /> PASTE_PEER_NUMBER
           </div>
           <input
             type="text"
             value={pasteValue}
             onChange={(e) => setPasteValue(e.target.value)}
-            placeholder="Paste 60 digits or ssc-verify:… payload"
+            placeholder="Paste 60 digits from your contact"
             className="w-full bg-[#121212] border border-[#2A2A2A] rounded-md px-2 py-2 text-xs font-mono text-white"
             data-testid="verify-paste-input"
           />

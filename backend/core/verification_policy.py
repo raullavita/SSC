@@ -25,6 +25,8 @@ CLIENT_VERIFICATION_CONTROLS: Tuple[str, ...] = (
     "frontend/src/lib/verification.js",
     "frontend/src/lib/safetyNumber.js",
     "frontend/src/lib/identityKey.js",
+    "frontend/src/lib/keyChangeWarnings.js",
     "frontend/src/components/VerifyHandshakeModal.jsx",
+    "frontend/src/components/KeyChangeWarningBanner.jsx",
     "frontend/src/pages/ChatHome.jsx",
 )
