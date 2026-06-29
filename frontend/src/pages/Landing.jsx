@@ -102,6 +102,7 @@ function SiteHeader({ t, installed, publicConstruction }) {
           <Link to="/terms" className="btn-ghost hidden lg:inline-flex">{t('landingNavTerms')}</Link>
           <Link to="/security" className="btn-ghost hidden lg:inline-flex">{t('landingNavThreatModel')}</Link>
           <Link to="/vdp" className="btn-ghost hidden lg:inline-flex">{t('landingNavVdp')}</Link>
+          <Link to="/status" className="btn-ghost hidden lg:inline-flex">{t('landingNavStatus')}</Link>
           <LanguagePicker className="w-28 hidden sm:flex" />
           {installed ? (
             <>
@@ -135,6 +136,9 @@ function SiteFooter({ t }) {
           </Link>
           <Link to="/vdp" className="text-[#A1A1AA] hover:text-white transition" data-testid="landing-vdp-link">
             {t('landingNavVdp')}
+          </Link>
+          <Link to="/status" className="text-[#A1A1AA] hover:text-white transition" data-testid="landing-status-link">
+            {t('landingNavStatus')}
           </Link>
           <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#A1A1AA] hover:text-white transition">
             {CONTACT_EMAIL}

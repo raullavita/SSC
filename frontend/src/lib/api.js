@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getBackendUrl, isInstalledClient, isNativeApp } from './platform';
-import { getSessionToken, usesCookieAuth } from './sessionStore';
+import { getSessionToken } from './sessionStore';
 
 const BACKEND_URL = getBackendUrl();
 export const API = `${BACKEND_URL}/api`;
@@ -8,7 +8,7 @@ export const WS_URL = BACKEND_URL.replace(/^https?/, (m) => (m === 'https' ? 'ws
 
 export const api = axios.create({
   baseURL: API,
-  withCredentials: usesCookieAuth(),
+  withCredentials: false,
 });
 
 api.interceptors.request.use((config) => {
@@ -17,9 +17,6 @@ api.interceptors.request.use((config) => {
   }
   if (config.skipAuth) {
     delete config.headers.Authorization;
-    return config;
-  }
-  if (usesCookieAuth()) {
     return config;
   }
   const token = getSessionToken();

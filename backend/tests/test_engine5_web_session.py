@@ -16,15 +16,14 @@ def test_engine5_step_5_3_marked_complete():
 def test_session_store_module_exists():
     text = (FRONTEND / "lib" / "sessionStore.js").read_text(encoding="utf-8")
     assert "usesCookieAuth" in text
+    assert "return false" in text
     assert "persistSessionToken" in text
     assert "purgeLegacyJwtFromStorage" in text
-    assert "usesCookieAuth()" in text
 
 
-def test_api_js_cookie_auth_on_web():
+def test_api_js_no_cookie_auth():
     text = (FRONTEND / "lib" / "api.js").read_text(encoding="utf-8")
-    assert "withCredentials: usesCookieAuth()" in text
-    assert "usesCookieAuth()" in text
+    assert "withCredentials: false" in text
     assert "localStorage.getItem('ssc_token')" not in text
     assert "localStorage.getItem(\"ssc_token\")" not in text
 

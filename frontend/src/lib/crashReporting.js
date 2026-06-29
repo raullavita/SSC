@@ -193,7 +193,15 @@ export async function initCrashReportingFromStorage() {
 }
 
 export function crashReportingProviderLabel() {
-  if (isNativeApp()) return 'Firebase Crashlytics';
+  if (isNativeApp()) {
+    try {
+      const { Capacitor } = require('@capacitor/core');
+      if (Capacitor?.getPlatform?.() === 'ios') return 'Sentry';
+    } catch {
+      /* optional */
+    }
+    return 'Firebase Crashlytics';
+  }
   if (isElectronApp()) return 'Sentry';
   return 'none';
 }

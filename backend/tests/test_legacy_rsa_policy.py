@@ -23,8 +23,11 @@ def test_reject_legacy_rsa_from_installed_client():
     assert "legacy_rsa_send_retired" in str(exc.value.detail)
 
 
-def test_allow_legacy_rsa_from_browser():
-    reject_legacy_rsa_send_for_installed(_request(False), ProtocolVersion.LEGACY_RSA.value)
+def test_reject_legacy_rsa_from_browser():
+    with pytest.raises(HTTPException) as exc:
+        reject_legacy_rsa_send_for_installed(_request(False), ProtocolVersion.LEGACY_RSA.value)
+    assert exc.value.status_code == 403
+    assert "install the SSC app" in str(exc.value.detail)
 
 
 def test_allow_signal_from_installed():

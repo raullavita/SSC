@@ -1,4 +1,10 @@
-import { isElectronApp, isInstalledClient, isNativeApp, prefersHashRouter } from '../platform';
+import {
+  isBrowserTab,
+  isElectronApp,
+  isInstalledClient,
+  isNativeApp,
+  prefersHashRouter,
+} from '../platform';
 
 describe('platform', () => {
   const original = window.sscDesktop;
@@ -14,10 +20,11 @@ describe('platform', () => {
     expect(prefersHashRouter()).toBe(true);
   });
 
-  it('browser dev shell is not an installed client', () => {
+  it('browser tab is not an installed client', () => {
     window.sscDesktop = undefined;
     expect(isElectronApp()).toBe(false);
     expect(isNativeApp()).toBe(false);
     expect(isInstalledClient()).toBe(false);
+    expect(isBrowserTab()).toBe(true);
   });
 });

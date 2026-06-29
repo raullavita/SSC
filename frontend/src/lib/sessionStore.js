@@ -15,9 +15,9 @@ import { LEGACY_JWT_KEY } from './sessionConstants';
 
 let nativeMemoryToken = null;
 
-/** Browser dev shell uses cookie auth; installed clients use in-memory Bearer token. */
+/** Cookie auth retired — SSC is installed-apps only. */
 export function usesCookieAuth() {
-  return !isInstalledClient();
+  return false;
 }
 
 /** Purge legacy JWT from localStorage (pre-5.3 web / pre-5.4 native installs). */

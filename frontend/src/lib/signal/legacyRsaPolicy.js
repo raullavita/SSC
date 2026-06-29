@@ -1,11 +1,8 @@
-import { isInstalledClient } from '../platform';
-
 /**
- * Q.54 — Installed clients are decrypt-only for legacy RSA during migration.
- * Browser/PWA may still send legacy_rsa when Signal is unavailable.
+ * Q.54 — Legacy RSA send retired everywhere. Installed clients decrypt-only during migration.
  */
 export function maySendLegacyRsa() {
-  return !isInstalledClient();
+  return false;
 }
 
 /** Dual-read window: all clients may decrypt inbound legacy_rsa ciphertext. */

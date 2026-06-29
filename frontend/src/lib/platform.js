@@ -1,5 +1,6 @@
 /**
- * Platform detection — installed clients (Capacitor + Electron) vs browser dev shell.
+ * Platform detection — installed clients only (Android, iOS, Windows, Mac).
+ * Browser tabs are not a product surface.
  */
 let _capacitor = null;
 
@@ -39,10 +40,16 @@ export function isNativeApp() {
   return !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform());
 }
 
+/** True when loaded in a normal browser tab (not installed SSC). */
+export function isBrowserTab() {
+  return !isInstalledClient();
+}
+
 export function getPlatform() {
   const Cap = getCapacitor();
   if (Cap && Cap.getPlatform) return Cap.getPlatform();
-  return 'web';
+  if (isElectronApp()) return process.platform === 'darwin' ? 'mac' : 'windows';
+  return 'unsupported';
 }
 
 /** Backend base URL (no trailing slash). Set at build time via REACT_APP_BACKEND_URL. */

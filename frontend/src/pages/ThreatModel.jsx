@@ -66,7 +66,7 @@ export default function ThreatModel() {
             During migration, older <span className="text-[#FFD600] font-mono text-xs">RSA</span> messages may still appear.
             Installed apps can <strong className="text-white">read</strong> legacy traffic but
             <strong className="text-white"> send</strong> with Signal only.
-            Browser-tab chat is a developer shell — not a product surface — and does not ship libsignal.
+            SSC does not run in a web browser — install the Android, iOS, Windows, or Mac app.
           </p>
 
           <h2 className="font-mono text-xs tracking-[0.2em] uppercase text-[#00E5FF] pt-4">What the server can see</h2>

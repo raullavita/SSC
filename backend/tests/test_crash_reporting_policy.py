@@ -21,8 +21,9 @@ def test_crash_reporting_public_config_shape():
     assert cfg["opt_in_default"] is False
     assert cfg["storage_key"] == CRASH_REPORTING_STORAGE_KEY
     assert cfg["providers"]["android"] == "firebase_crashlytics"
-    assert cfg["providers"]["desktop"] == "sentry"
-    assert cfg["providers"]["web"] == "none"
+    assert cfg["providers"]["ios"] == "sentry"
+    assert cfg["providers"]["windows"] == "sentry"
+    assert "web" not in cfg["providers"]
     assert "stack_trace" in cfg["collected_when_opted_in"]
     for field in NEVER_COLLECTED:
         assert field in cfg["never_collected"]

@@ -8,6 +8,10 @@ from fastapi.responses import JSONResponse
 
 import os
 
+from core.installed_client_policy import (
+    INSTALLED_CLIENT_REQUIRED_DETAIL,
+    should_block_browser_api_request,
+)
 from core.logging_config import logger
 from core.logging_policy import format_client_ip, safe_request_path
 
@@ -41,6 +45,15 @@ def setup_middleware(app: FastAPI):
         if os.environ.get("ENV", "development").lower() == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
+
+    @app.middleware("http")
+    async def installed_client_only_api(request: Request, call_next):
+        if should_block_browser_api_request(request):
+            return JSONResponse(
+                status_code=403,
+                content={"detail": INSTALLED_CLIENT_REQUIRED_DETAIL},
+            )
+        return await call_next(request)
 
     @app.middleware("http")
     async def log_requests(request: Request, call_next):

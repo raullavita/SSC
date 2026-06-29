@@ -4,10 +4,7 @@ import { DeviceMobile, Desktop } from '@phosphor-icons/react';
 import { isInstalledClient } from '../lib/platform';
 import { useLocale } from '../context/LocaleContext';
 
-/**
- * Blocks browser-tab register/login/chat — SSC is installed-apps only.
- * Founder LAN dev: set REACT_APP_BROWSER_DEV=true in frontend/.env
- */
+/** Blocks browser-tab access — SSC is installed on Android, iOS, Windows, or Mac only. */
 export default function InstalledClientGate({ children }) {
   const { t } = useLocale();
 
@@ -29,10 +26,17 @@ export default function InstalledClientGate({ children }) {
             </div>
           </div>
           <div className="p-4 rounded-md tac-border bg-[#121212] flex items-start gap-3">
+            <DeviceMobile size={22} className="text-[#00E5FF] shrink-0 mt-0.5" />
+            <div>
+              <div className="text-sm font-medium">{t('landingGetIos')}</div>
+              <p className="text-xs text-[#A1A1AA] mt-1">{t('landingGetIosHint')}</p>
+            </div>
+          </div>
+          <div className="p-4 rounded-md tac-border bg-[#121212] flex items-start gap-3">
             <Desktop size={22} className="text-[#00E5FF] shrink-0 mt-0.5" />
             <div>
-              <div className="text-sm font-medium">{t('landingGetWindows')}</div>
-              <p className="text-xs text-[#A1A1AA] mt-1">{t('landingGetWindowsHint')}</p>
+              <div className="text-sm font-medium">{t('landingGetDesktop')}</div>
+              <p className="text-xs text-[#A1A1AA] mt-1">{t('landingGetDesktopHint')}</p>
             </div>
           </div>
         </div>

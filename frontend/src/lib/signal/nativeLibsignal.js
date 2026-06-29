@@ -19,7 +19,7 @@ export function isNativeLibsignalAvailable() {
 export async function getPinnedLibsignalVersion() {
   const client = getLibsignalClient();
   if (!client) {
-    return { version: LIBSIGNAL_PINNED_VERSION, source: 'policy-only-browser-dev' };
+    return { version: LIBSIGNAL_PINNED_VERSION, source: 'installed-only' };
   }
   return client.getPinnedVersion();
 }
@@ -51,7 +51,7 @@ export async function setNativeLocalDeviceId(deviceId) {
 export async function hasSignalSession(peerUserId, peerDeviceId = 1) {
   const client = getLibsignalClient();
   if (!client) {
-    return { has_session: false, skipped: true, reason: 'browser-dev' };
+    return { has_session: false, skipped: true, reason: 'installed-only' };
   }
   return client.hasSession({ peer_user_id: peerUserId, peer_device_id: peerDeviceId });
 }
@@ -126,7 +126,7 @@ export async function processGroupSenderKeyDistribution(senderUserId, skdm) {
 export async function hasGroupSenderKey(senderUserId, distributionId) {
   const client = getLibsignalClient();
   if (!client) {
-    return { has_sender_key: false, skipped: true, reason: 'browser-dev' };
+    return { has_sender_key: false, skipped: true, reason: 'installed-only' };
   }
   return client.hasGroupSenderKey({
     sender_user_id: senderUserId,

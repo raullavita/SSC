@@ -18,6 +18,7 @@ import Privacy from './pages/Privacy';
 import Terms from './pages/Terms';
 import ThreatModel from './pages/ThreatModel';
 import VulnerabilityDisclosure from './pages/VulnerabilityDisclosure';
+import Status from './pages/Status';
 import InstalledClientGate from './components/InstalledClientGate';
 import DeepLinkListener from './components/DeepLinkListener';
 import { getSessionToken } from './lib/sessionStore';
@@ -155,11 +156,12 @@ function AppRouter() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/security" element={<ThreatModel />} />
       <Route path="/vdp" element={<VulnerabilityDisclosure />} />
+      <Route path="/status" element={<Status />} />
       <Route path="/login" element={<InstalledClientGate><Login /></InstalledClientGate>} />
       <Route path="/recovery" element={<InstalledClientGate><RecoveryPassword /></InstalledClientGate>} />
       <Route path="/auth/google" element={<InstalledClientGate><GoogleAuthCallback /></InstalledClientGate>} />
       <Route path="/register" element={<InstalledClientGate><Register /></InstalledClientGate>} />
-      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/verify-email" element={<InstalledClientGate><VerifyEmail /></InstalledClientGate>} />
       <Route path="/setup" element={<InstalledClientGate><SetupUsername /></InstalledClientGate>} />
       <Route path="/chat" element={<InstalledClientGate><Protected><ChatHome /></Protected></InstalledClientGate>} />
       <Route path="/chat/:conversationId" element={<InstalledClientGate><Protected><ChatHome /></Protected></InstalledClientGate>} />
@@ -171,7 +173,9 @@ function AppRouter() {
 export default function App() {
   const Router = prefersHashRouter() ? HashRouter : BrowserRouter;
   useEffect(() => {
-    void initCrashReportingFromStorage();
+    if (isInstalledClient()) {
+      void initCrashReportingFromStorage();
+    }
   }, []);
   return (
     <div className="App grain">

@@ -12,9 +12,9 @@ describe('legacyRsaPolicy', () => {
     expect(maySendLegacyRsa()).toBe(false);
   });
 
-  it('allows legacy RSA send on browser shell', () => {
+  it('blocks legacy RSA send on browser shell', () => {
     isInstalledClient.mockReturnValue(false);
-    expect(maySendLegacyRsa()).toBe(true);
+    expect(maySendLegacyRsa()).toBe(false);
   });
 
   it('always allows legacy RSA decrypt during migration', () => {

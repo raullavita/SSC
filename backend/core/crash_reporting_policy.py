@@ -10,8 +10,9 @@ CRASH_REPORTING_STORAGE_KEY = "ssc_crash_reporting_opt_in"
 
 PROVIDERS_BY_SURFACE: Dict[str, str] = {
     "android": "firebase_crashlytics",
-    "desktop": "sentry",
-    "web": "none",
+    "ios": "sentry",
+    "windows": "sentry",
+    "mac": "sentry",
 }
 
 COLLECTED_WHEN_OPTED_IN: Tuple[str, ...] = (
