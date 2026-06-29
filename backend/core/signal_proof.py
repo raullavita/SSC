@@ -71,7 +71,6 @@ ENFORCEMENT_PATHS_86: Tuple[str, ...] = (
     "backend/core/legacy_rsa_policy.py",
     "frontend/src/lib/signal/migration.js",
     "frontend/src/lib/signal/legacyRsaPolicy.js",
-    "frontend/src/components/EncryptionModeBadge.jsx",
 )
 
 ENFORCEMENT_PATHS_87: Tuple[str, ...] = (
@@ -836,16 +835,15 @@ def _check_q55_libsignal_bump() -> ProofCheck:
 def _check_q55_client_policy() -> ProofCheck:
     client = (REPO_ROOT / "frontend/src/lib/signal/pqxdhPolicy.js").read_text(encoding="utf-8")
     prekeys = (REPO_ROOT / "frontend/src/lib/signal/prekeys.js").read_text(encoding="utf-8")
-    badge = (REPO_ROOT / "frontend/src/components/EncryptionModeBadge.jsx").read_text(encoding="utf-8")
     ok = (
         "PQXDH_HYBRID_ENABLED" in client
         and "bundleHasKyberPrekeys" in prekeys
-        and "signalUsesPqxdh" in badge
+        and "signalUsesPqxdh" in client
     )
     return ProofCheck(
         name="q55_client_policy",
         passed=ok,
-        detail="Q.55 client PQXDH policy + upload guard + UI labels" if ok else "client PQXDH policy incomplete",
+        detail="Q.55 client PQXDH policy + upload guard" if ok else "client PQXDH policy incomplete",
     )
 
 

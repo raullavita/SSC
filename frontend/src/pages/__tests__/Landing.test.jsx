@@ -57,6 +57,8 @@ describe('Landing', () => {
     isInstalledClient.mockReturnValue(false);
     isSitePublicConstructionMode.mockReturnValue(false);
     renderLanding();
+    expect(screen.getByTestId('landing-updates-section')).toBeInTheDocument();
+    expect(screen.getByTestId('site-update-2026-06-29-trust-ops')).toBeInTheDocument();
     expect(screen.getByTestId('landing-download-panel')).toBeInTheDocument();
     expect(screen.getByText(translate('landingGetAndroid', 'en'))).toBeInTheDocument();
     expect(screen.getByTestId('landing-screenshots-section')).toBeInTheDocument();

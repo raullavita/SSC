@@ -20,10 +20,11 @@ import {
 import { useLocale } from '../context/LocaleContext';
 import LanguagePicker from '../components/LanguagePicker';
 import LandingScreenshots from '../components/LandingScreenshots';
+import SiteUpdatesSection from '../components/SiteUpdatesSection';
 import MarketingPage from '../components/MarketingPage';
 import { isInstalledClient } from '../lib/platform';
 import { isSitePublicConstructionMode } from '../lib/siteGate';
-import { getPublicAppVersion, PUBLIC_SITE_UPDATES } from '../lib/siteStage';
+import { getPublicAppVersion } from '../lib/siteStage';
 
 const APP_VERSION = getPublicAppVersion();
 const DOWNLOAD_APK_URL = process.env.REACT_APP_DOWNLOAD_APK_URL || '';
@@ -94,10 +95,13 @@ function SiteHeader({ t, installed, publicConstruction }) {
           </div>
         </a>
         <nav className="flex items-center gap-1 sm:gap-2">
-          {publicConstruction ? (
-            <NavAnchor href="#updates">{t('publicSiteNavUpdates')}</NavAnchor>
-          ) : !installed ? (
-            <NavAnchor href="#downloads">{t('landingNavDownloads')}</NavAnchor>
+          {!installed ? (
+            <>
+              <NavAnchor href="#updates">{t('publicSiteNavUpdates')}</NavAnchor>
+              {!publicConstruction ? (
+                <NavAnchor href="#downloads">{t('landingNavDownloads')}</NavAnchor>
+              ) : null}
+            </>
           ) : null}
           <NavAnchor href="#about">{t('landingNavAbout')}</NavAnchor>
           <NavAnchor href="#contact">{t('landingNavContact')}</NavAnchor>
@@ -201,36 +205,7 @@ function PublicConstructionLanding({ t }) {
         </div>
       </section>
 
-      <section id="updates" className="border-t border-[#27272A]/80 bg-[#0D0D0D]/60" data-testid="public-construction-updates">
-        <div className="max-w-6xl mx-auto px-6 py-20 md:py-24">
-          <SectionHeading
-            label={t('publicSiteUpdatesLabel')}
-            title={t('publicSiteUpdatesTitle')}
-            body={t('publicSiteUpdatesBody')}
-          />
-
-          <div className="mt-8 grid md:grid-cols-3 gap-4">
-            <article className="md:col-span-1 rounded-xl border border-[#27272A] bg-[#121212] p-5">
-              <p className="text-xs uppercase tracking-widest text-[#71717A]">{t('publicSiteStageLabel')}</p>
-              <p className="mt-3 text-lg font-semibold text-[#FFD600]">{t('publicSiteStagePrivateDev')}</p>
-              <p className="mt-2 text-sm text-[#A1A1AA]">{t('publicSiteStageVersion', { version: APP_VERSION })}</p>
-            </article>
-            <div className="md:col-span-2 space-y-4">
-              {PUBLIC_SITE_UPDATES.map((entry) => (
-                <article
-                  key={entry.id}
-                  className="rounded-xl border border-[#27272A] bg-[#121212] px-5 py-4"
-                  data-testid={`site-update-${entry.id}`}
-                >
-                  <time className="text-xs text-[#71717A]">{entry.date}</time>
-                  <h3 className="mt-1 text-base font-semibold text-white">{t(entry.titleKey)}</h3>
-                  <p className="mt-2 text-sm text-[#A1A1AA] leading-relaxed">{t(entry.bodyKey)}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <SiteUpdatesSection t={t} dataTestId="public-construction-updates" />
 
       <section className="border-t border-[#27272A]/80" data-testid="public-construction-no-downloads">
         <div className="max-w-6xl mx-auto px-6 py-16 md:py-20">
@@ -434,6 +409,10 @@ export default function Landing() {
                 </div>
               </div>
             </section>
+
+            {!installed ? (
+              <SiteUpdatesSection t={t} dataTestId="landing-updates-section" />
+            ) : null}
 
             {!installed ? (
               <section id="downloads" className="border-t border-[#27272A]/80 bg-[#0D0D0D]/60">

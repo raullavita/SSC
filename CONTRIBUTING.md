@@ -25,10 +25,15 @@ cd ..\frontend && yarn install && copy .env.example .env
 
 See `README.md` for LAN APK and desktop builds.
 
-## Before you PR
+## Tests
 
-- Run `cd frontend && yarn test:ci`
-- Run `cd backend && .\venv\Scripts\python.exe -m pytest tests/ -q` (with local API if integration tests apply)
+All automated tests live under **`backend/tests/`** (there is no separate top-level `tests/` package).
+
+- Frontend: `cd frontend && yarn test:ci`
+- Backend (unit/policy): `cd backend && python -m pytest tests/ -q --ignore=tests/test_ssc_backend.py --ignore=tests/test_ssc_iteration2.py --ignore=tests/test_ssc_iteration3.py`
+- Backend (full + live API): start `docker compose up -d`, run `uvicorn server:app --port 8000`, then `python -m pytest tests/ -q`
+
+## Before you PR
 - No secrets, personal emails, or home LAN IPs in the diff
 - Match existing code style; small PRs are easier to review
 

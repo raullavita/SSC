@@ -85,7 +85,7 @@
 |--------|-------|
 | GitHub CI | **Frontend tests** + **Backend tests** green on every `main` push |
 | pytest (CI) | Full suite with live API + Mongo + Redis in Actions |
-| Frontend `yarn test:ci` | **118 tests** (36 suites) incl. InstalledClientGate contributor tests |
+| Frontend `yarn test:ci` | **373 tests** (105 suites) incl. InstalledClientGate contributor tests |
 | Engine 1–5, 8, 9, 10 gates | **PASS** (local gate scripts) |
 | Production `/api/health` | **PASS** when API deployed (`mongo` · `redis`) |
 | Desktop NSIS build | **PASS** (`SSC-Setup-1.0.12.exe` founder local) |
@@ -140,7 +140,7 @@
 | **No code signing** on Windows installer | SmartScreen will warn |
 | **iOS** | Not shipped (TASK K) |
 | **Dual RSA legacy path** still internal | Migration incomplete; installed clients use Signal |
-| **Dead components** | `VerifyHandshakeModal.jsx`, `EncryptionModeBadge.jsx` unused (kept for advanced Settings later) |
+| **Dead components** | `VerifyHandshakeModal.jsx` kept for advanced Settings; removed `AuthCallback.jsx`, `EncryptionModeBadge.jsx` |
 | **eslint** | `ChatHome` back-handler missing deps (cosmetic) |
 | **Integration test** `test_ssc_iteration2` | Requires live API + test accounts; run manually |
 
@@ -197,7 +197,7 @@
 | **L.7** | Turnstile + API domain + TURN proof | [~] Turnstile + API domain done; TURN off-LAN pending P.6 |
 | **M** | In-app UX polish (profile, Settings, feel) | [x] M.1–M.11 done (M.6 deferred v1.1) |
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
-| **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
+| **O** | Crypto hardening (RSA retire, group signaling, keystore) | [x] O.1–O.6 · founder retest pending |
 | **J** QA matrix | tester-win ↔ tester-android — **Q.64** scaffolding live; founder sign-off in `test_reports/Q64_DEVICE_MATRIX.md` | [~] |
 | **Q** Expansion wave | **Q.1–Q.64** repo complete; founder device sign-off on Q.64 | [x] code · [ ] founder QA |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
