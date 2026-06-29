@@ -25,11 +25,35 @@ async function readWrapKeyMaterial() {
   if (hw) {
     const stored = await getHardwareSecret(DEVICE_WRAP_KEY);
     if (stored) return stored;
+    if (typeof localStorage !== 'undefined') {
+      const legacy = localStorage.getItem(DEVICE_WRAP_KEY);
+      if (legacy) {
+        await writeWrapKeyMaterial(legacy);
+        return legacy;
+      }
+    }
+    return null;
   }
   if (typeof localStorage !== 'undefined') {
     return localStorage.getItem(DEVICE_WRAP_KEY);
   }
   return null;
+}
+
+/** One-time migration for legacy installs — safe to call on every cold start. */
+export async function migrateDeviceWrapKeyToHardware() {
+  if (typeof crypto?.subtle === 'undefined') return false;
+  const hw = await isHardwareSecretStoreAvailable();
+  if (!hw || typeof localStorage === 'undefined') return false;
+  const legacy = localStorage.getItem(DEVICE_WRAP_KEY);
+  if (!legacy) return false;
+  const existing = await getHardwareSecret(DEVICE_WRAP_KEY);
+  if (existing) {
+    localStorage.removeItem(DEVICE_WRAP_KEY);
+    return true;
+  }
+  await writeWrapKeyMaterial(legacy);
+  return !localStorage.getItem(DEVICE_WRAP_KEY);
 }
 
 async function writeWrapKeyMaterial(material) {

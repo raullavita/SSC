@@ -10,6 +10,7 @@ import { purgeLegacyVerificationFlags } from './verification';
 import { clearSessionToken, getSessionToken, usesBearerAuth } from './sessionStore';
 import { clearVaultCredential, clearAllVaultCredentials } from './vaultCredentialStore';
 import { clearAppLockSettings } from './appLockStore';
+import { clearDeviceWrapSecret } from './deviceWrapCrypto';
 
 /** Plain login — no scary banner for the next person who opens the app. */
 export const PANIC_REDIRECT = '/login';
@@ -48,6 +49,7 @@ export function executeClientFootprintWipe(reason, { userId } = {}) {
   if (reason === 'panic') {
     clearAllVaultCredentials();
     clearAppLockSettings().catch(() => {});
+    clearDeviceWrapSecret().catch(() => {});
   } else if (userId) {
     clearVaultCredential(userId);
   }

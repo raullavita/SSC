@@ -54,4 +54,24 @@ describe('vaultCredentialStore', () => {
     clearAllVaultCredentials();
     expect(await loadVaultCredential('b')).toBeNull();
   });
+
+  it('stores wrap key material in hardware when available', async () => {
+    const {
+      isHardwareSecretStoreAvailable,
+      getHardwareSecret,
+      setHardwareSecret,
+    } = require('../hardwareSecretStore');
+    let hwValue = null;
+    isHardwareSecretStoreAvailable.mockResolvedValue(true);
+    getHardwareSecret.mockImplementation(async () => hwValue);
+    setHardwareSecret.mockImplementation(async (_key, value) => {
+      hwValue = value;
+      return true;
+    });
+
+    await saveVaultCredential('user-hw', 'hw-pass');
+    expect(setHardwareSecret).toHaveBeenCalledWith(DEVICE_WRAP_KEY, expect.any(String));
+    expect(localStorage.getItem(DEVICE_WRAP_KEY)).toBeNull();
+    expect(await loadVaultCredential('user-hw')).toBe('hw-pass');
+  });
 });

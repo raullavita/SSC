@@ -133,7 +133,7 @@
 | **API on default Cloud Run URL** | OAuth/CORS trust gap until custom API domain (I.1) |
 | **TURN not verified** off-LAN | Video/voice may fail on cellular ↔ Wi‑Fi (TASK I.3) |
 | ~~Group call signaling cleartext~~ | **Resolved** — Q.34 / TASK O.2: group SDP/ICE must be `signal_v1` (server + clients reject legacy) |
-| **Device wrap in localStorage** | Session/vault creds not hardware-backed yet (TASK O.3) |
+
 | **No third-party security audit** | Do not claim “audited like Signal” publicly |
 | **Retention not user-configurable** | ✅ Q.5 — per-user 1h–30d picker; group chats use shortest member timer |
 | **Kotlin/R8 metadata warnings** on APK build | Build succeeds; watch for runtime edge cases on older Android |
@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.49 done** → next **Q.50** | [~] Q.50 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.50 done** → next **Q.51** | [~] Q.51 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -353,7 +353,7 @@
 | # | ID | Subtask | Owner | Status |
 |---|-----|---------|-------|--------|
 | 49 | **Q.49** | **App lock** — PIN / biometric on cold start | git | [x] |
-| 50 | **Q.50** | **Hardware-backed device wrap** finish (TASK O.3) | git | [ ] |
+| 50 | **Q.50** | **Hardware-backed device wrap** finish (TASK O.3) | git | [x] |
 | 51 | **Q.51** | **Multi-device / linked devices** (Signal-style) | git | [ ] |
 | 52 | **Q.52** | **Sealed sender** | git | [ ] |
 | 53 | **Q.53** | **Key-change warnings** (prominent, no QR) | git | [ ] |
@@ -698,7 +698,7 @@ Run on **tester-win (Win)** + **tester-android (Android)** against production AP
 | Crypto design (installed) | **A-** | libsignal 0.96.2; contact-gated prekeys |
 | Server exposure | **B** | ciphertext messages; group call SDP gap |
 | Abuse resistance | **B** | rate limits ✅; Turnstile ✅ (register/login) |
-| Client secret storage | **B-** | AES device wrap in localStorage |
+| Client secret storage | **B** | AES device wrap; wrap key in hardware store (Electron safeStorage / Android EncryptedSharedPreferences) |
 | Product UX | **B-** | TASK M complete; founder QA (J) still pending |
 | Public launch readiness | **C+** → target **B-** after J + O + P.6 |
 

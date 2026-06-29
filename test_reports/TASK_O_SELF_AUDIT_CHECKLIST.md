@@ -18,10 +18,10 @@ Mark each item PASS / FAIL / N/A with evidence (screenshot, log, or test name).
 
 ## O.3 — Hardware-backed device wrap
 
-- [ ] Windows: device wrap key in Electron `safeStorage` (not plaintext localStorage)
-- [ ] Android: `SscDeviceSecret` EncryptedSharedPreferences used
-- [ ] Session restore works after app restart
-- [ ] Panic wipe clears device secrets
+- [ ] Windows: device wrap key in Electron `safeStorage` (not plaintext localStorage) — *evidence: `deviceWrapCrypto.test.js` migration + `vaultCredentialStore.test.js` hardware path; manual TASK J*
+- [ ] Android: `SscDeviceSecret` EncryptedSharedPreferences used — *evidence: `SscDeviceSecretPlugin.java` + `deviceWrapCrypto.test.js`; manual TASK J*
+- [ ] Session restore works after app restart — *evidence: `sessionStore.test.js`, `nativeSessionStore.test.js`*
+- [ ] Panic wipe clears device secrets — *evidence: `clientFootprintOrchestrator.test.js` panic path*
 
 ## O.4 — Security UI
 

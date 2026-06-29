@@ -4,6 +4,7 @@
  * Native (5.4 + B): in-memory Bearer at runtime; encrypted wrap via nativeSessionStore.js.
  */
 import { isInstalledClient } from './platform';
+import { migrateDeviceWrapKeyToHardware } from './deviceWrapCrypto';
 import {
   clearNativeSession,
   persistNativeSession,
@@ -34,6 +35,7 @@ export function purgeLegacyWebJwtFromStorage() {
 export async function bootstrapSessionFromDevice() {
   if (usesCookieAuth()) return null;
   if (nativeMemoryToken) return nativeMemoryToken;
+  await migrateDeviceWrapKeyToHardware();
   const token = await restoreNativeSession();
   if (token) nativeMemoryToken = token;
   return nativeMemoryToken;
