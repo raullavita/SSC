@@ -25,6 +25,7 @@ import {
 } from '../lib/retentionDisplay';
 import Avatar from './Avatar';
 import TwoFAModal from './TwoFAModal';
+import HelpCenterModal from './HelpCenterModal';
 import PanicButton from './PanicButton';
 import { subscribePush } from '../lib/push';
 import { subscribeNativePush } from '../lib/native-push';
@@ -97,6 +98,7 @@ export default function SettingsModal({ open, onClose }) {
   const [busy, setBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [retentionHours, setRetentionHours] = useState(DEFAULT_RETENTION_HOURS);
   const [retentionOptions, setRetentionOptions] = useState(RETENTION_HOUR_OPTIONS);
   const [privacy, setPrivacy] = useState(() => ({ ...DEFAULT_PRIVACY }));
@@ -857,6 +859,14 @@ export default function SettingsModal({ open, onClose }) {
 
             <Section icon={Lifebuoy} title={t('settingsHelp')} testId="settings-help-section">
               <p className="text-xs text-[#A1A1AA] mb-3">{t('settingsHelpHint')}</p>
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                className="w-full mb-3 py-2.5 text-xs font-mono tracking-wider border border-[#27272A] rounded-md hover:bg-[#232323] text-left px-3"
+                data-testid="settings-open-help-center"
+              >
+                {t('helpCenterOpen')}
+              </button>
               <a
                 href={`mailto:${SUPPORT_EMAIL}`}
                 className="text-xs text-[#00E5FF] hover:underline break-all block mb-2"
@@ -971,6 +981,7 @@ export default function SettingsModal({ open, onClose }) {
       </div>
 
       <TwoFAModal open={twoFAOpen} onClose={() => { setTwoFAOpen(false); refreshUser(); }} />
+      <HelpCenterModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </>
   );
 }
