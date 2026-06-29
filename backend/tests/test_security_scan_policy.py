@@ -3,6 +3,7 @@ from pathlib import Path
 
 from core.security_scan_policy import (
     FORBIDDEN_PUBLIC_LEAKS,
+    FORBIDDEN_SERVER_SECRET_LEAKS,
     SECURITY_SCAN_REQUIREMENTS,
     SECURITY_SMOKE_SCRIPT,
     ZAP_RULES_PATH,
@@ -22,10 +23,15 @@ def test_security_scan_enabled():
 
 
 def test_forbidden_leaks_detected():
-    assert "jwt_secret" in FORBIDDEN_PUBLIC_LEAKS
+    assert "jwt_secret" in FORBIDDEN_SERVER_SECRET_LEAKS
     found = response_leaks_secrets('{"error":"jwt_secret leaked"}')
     assert "jwt_secret" in found
     assert not response_leaks_secrets('{"status":"ok"}')
+    # OpenAPI may document client crypto field names — not server secret leaks.
+    assert not response_leaks_secrets(
+        '{"encrypted_private_key": "schema"}',
+        forbidden=FORBIDDEN_SERVER_SECRET_LEAKS,
+    )
 
 
 def test_security_headers_check():

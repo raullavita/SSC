@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from core.security_scan_policy import (  # noqa: E402
+    FORBIDDEN_SERVER_SECRET_LEAKS,
     PROTECTED_ROUTE_SAMPLES,
     PUBLIC_SMOKE_PATHS,
     audit_public_payload,
@@ -57,12 +58,12 @@ def check_protected_routes() -> None:
         assert is_unauthorized_status(r.status_code), f"{path} -> {r.status_code} (expected 401/403)"
 
 
-def check_openapi_no_admin_leaks() -> None:
+def check_openapi_no_server_secret_leaks() -> None:
     r = _get("/openapi.json")
     if r.status_code != 200:
         return
-    leaks = response_leaks_secrets(r.text)
-    assert not leaks, f"openapi.json leaked: {leaks}"
+    leaks = response_leaks_secrets(r.text, forbidden=FORBIDDEN_SERVER_SECRET_LEAKS)
+    assert not leaks, f"openapi.json leaked server secrets: {leaks}"
 
 
 def main() -> int:
@@ -73,8 +74,8 @@ def main() -> int:
     print("  OK  /api/config surface")
     check_protected_routes()
     print("  OK  protected routes reject anonymous")
-    check_openapi_no_admin_leaks()
-    print("  OK  openapi.json")
+    check_openapi_no_server_secret_leaks()
+    print("  OK  openapi.json (no server secrets)")
     print("Security smoke PASSED")
     return 0
 

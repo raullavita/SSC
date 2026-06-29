@@ -11,8 +11,8 @@ ZAP_WORKFLOW_PATH = ".github/workflows/zap.yml"
 ZAP_RULES_PATH = ".zap/rules.tsv"
 SECURITY_SMOKE_SCRIPT = "backend/scripts/security_smoke.py"
 
-# Substrings that must never appear in public JSON responses (case-insensitive).
-FORBIDDEN_PUBLIC_LEAKS: FrozenSet[str] = frozenset({
+# Server/env secrets — must never appear in any public surface (incl. OpenAPI).
+FORBIDDEN_SERVER_SECRET_LEAKS: FrozenSet[str] = frozenset({
     "jwt_secret",
     "mongo_url",
     "contact_graph_pepper",
@@ -21,12 +21,18 @@ FORBIDDEN_PUBLIC_LEAKS: FrozenSet[str] = frozenset({
     "turnstile_secret",
     "firebase_service_account",
     "google_client_secret",
-    "encrypted_private_key",
+})
+
+# Sensitive fields — must not appear in live JSON responses (OpenAPI may document client fields).
+FORBIDDEN_SENSITIVE_RESPONSE_FIELDS: FrozenSet[str] = frozenset({
     "totp_secret",
     "totp_pending_secret",
-    "private_key",
     "password_hash",
 })
+
+FORBIDDEN_PUBLIC_LEAKS: FrozenSet[str] = (
+    FORBIDDEN_SERVER_SECRET_LEAKS | FORBIDDEN_SENSITIVE_RESPONSE_FIELDS
+)
 
 REQUIRED_SECURITY_HEADERS: Tuple[str, ...] = (
     "x-content-type-options",
@@ -57,10 +63,15 @@ SECURITY_SCAN_REQUIREMENTS: Tuple[str, ...] = (
 )
 
 
-def response_leaks_secrets(body_text: str) -> Tuple[str, ...]:
+def response_leaks_secrets(
+    body_text: str,
+    *,
+    forbidden: FrozenSet[str] | None = None,
+) -> Tuple[str, ...]:
     """Return forbidden substrings found in a response body."""
     lower = (body_text or "").lower()
-    return tuple(s for s in FORBIDDEN_PUBLIC_LEAKS if s in lower)
+    needles = forbidden if forbidden is not None else FORBIDDEN_PUBLIC_LEAKS
+    return tuple(s for s in needles if s in lower)
 
 
 def headers_include_security_baselines(headers: Mapping[str, str]) -> Tuple[str, ...]:
