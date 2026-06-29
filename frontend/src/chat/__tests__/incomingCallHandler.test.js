@@ -18,7 +18,11 @@ import { api } from '../../lib/api';
 import { notifyDesktopIncomingCall } from '../../lib/desktopNotifications';
 import { ensureSignalSession } from '../../lib/signal/x3dh';
 import { resolveIncomingSignaling } from '../signalingInbound';
-import { handleIncomingCallOffer, reportIncomingCallOfferError } from '../incomingCallHandler';
+import {
+  handleIncomingCallOffer,
+  handleIncomingSfuInvite,
+  reportIncomingCallOfferError,
+} from '../incomingCallHandler';
 
 describe('incomingCallHandler', () => {
   const t = (key) => key;
@@ -69,5 +73,24 @@ describe('incomingCallHandler', () => {
   it('reportIncomingCallOfferError surfaces toast', () => {
     reportIncomingCallOfferError(new Error('boom'), { t, toast });
     expect(toast.error).toHaveBeenCalledWith('callIncomingFailed');
+  });
+
+  it('sets SFU group call state for call-sfu-invite', async () => {
+    await handleIncomingSfuInvite(
+      {
+        type: 'call-sfu-invite',
+        from: 'host',
+        mode: 'audio',
+        conversation_id: 'g1',
+        members: [{ user_id: 'host' }, { user_id: 'me' }],
+      },
+      { user: { user_id: 'me' }, t, toast, setGroupCallState },
+    );
+
+    expect(setGroupCallState).toHaveBeenCalledWith(expect.objectContaining({
+      mediaMode: 'sfu',
+      direction: 'incoming',
+      conversationId: 'g1',
+    }));
   });
 });

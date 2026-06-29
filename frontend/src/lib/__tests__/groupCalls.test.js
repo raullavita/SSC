@@ -1,4 +1,9 @@
-import { clearGroupCallPolicyCache, fetchGroupCallPolicy, validateGroupCallSize } from '../groupCalls';
+import {
+  clearGroupCallPolicyCache,
+  fetchGroupCallPolicy,
+  resolveGroupCallMediaMode,
+  validateGroupCallSize,
+} from '../groupCalls';
 
 describe('groupCalls', () => {
   beforeEach(() => {
@@ -35,5 +40,20 @@ describe('groupCalls', () => {
       }),
     });
     expect(await validateGroupCallSize(10)).toBeNull();
+  });
+
+  it('selects mesh for groups within cap', () => {
+    const policy = { max_mesh_participants: 8, sfu_enabled: true, sfu_url: 'wss://sfu.test' };
+    expect(resolveGroupCallMediaMode(5, policy)).toBe('mesh');
+  });
+
+  it('selects sfu above mesh cap when enabled', () => {
+    const policy = { max_mesh_participants: 8, sfu_enabled: true, sfu_url: 'wss://sfu.test' };
+    expect(resolveGroupCallMediaMode(8, policy)).toBe('sfu');
+  });
+
+  it('returns null above mesh cap without SFU', () => {
+    const policy = { max_mesh_participants: 8, sfu_enabled: false, sfu_url: null };
+    expect(resolveGroupCallMediaMode(8, policy)).toBeNull();
   });
 });

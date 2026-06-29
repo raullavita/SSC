@@ -38,6 +38,21 @@ services:
     profiles:
       - prod
 
+  sfu:
+    build: ./sfu
+    container_name: ssc-sfu
+    ports:
+      - "4443:4443"
+      - "40000-40100:40000-40100/udp"
+      - "40000-40100:40000-40100/tcp"
+    environment:
+      SFU_PORT: "4443"
+      SFU_ANNOUNCED_IP: "127.0.0.1"
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-must-differ-from-production}
+    restart: unless-stopped
+    profiles:
+      - sfu
+
 volumes:
   ssc_mongo_data:
   ssc_redis_data:
@@ -50,3 +65,7 @@ volumes:
 #
 # Full stack (includes backend container):
 #   docker compose --profile prod up -d --build
+#
+# SFU (mediasoup) for group calls 9+:
+#   docker compose --profile sfu up -d --build
+#   Set SFU_URL=ws://localhost:4443/ws and SFU_ENABLED=true in backend/.env

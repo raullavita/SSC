@@ -1,7 +1,6 @@
 """
-Group call SFU policy — mesh limit + future mediasoup integration.
+Group call SFU policy — mesh limit + mediasoup integration (Q.35).
 
-Phase A: config contract only. mediasoup deploy is Phase B.
 See memory/SFU_CHARTER.md.
 """
 from __future__ import annotations
@@ -10,7 +9,9 @@ import os
 from typing import Any, Dict
 
 MESH_MAX_PARTICIPANTS = 8
+SFU_MIN_PARTICIPANTS = MESH_MAX_PARTICIPANTS + 1
 SELECTED_SFU_STACK = "mediasoup"
+MEDIASOUP_VERSION = "3.14.4"
 
 
 def group_calls_public_config() -> Dict[str, Any]:
@@ -21,9 +22,11 @@ def group_calls_public_config() -> Dict[str, Any]:
     return {
         "mode": "sfu" if sfu_enabled else "mesh",
         "max_mesh_participants": MESH_MAX_PARTICIPANTS,
+        "sfu_min_participants": SFU_MIN_PARTICIPANTS,
         "sfu_enabled": sfu_enabled,
         "sfu_url": sfu_url,
         "selected_stack": SELECTED_SFU_STACK,
+        "mediasoup_version": MEDIASOUP_VERSION if sfu_enabled else None,
     }
 
 

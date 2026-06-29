@@ -43,8 +43,8 @@ Full-mesh means each participant opens N−1 peer connections — workable to ~6
 | Phase | Description | Status |
 |-------|-------------|--------|
 | A | Policy + `/api/config` exposes `group_calls` caps | ✅ |
-| B | mediasoup server + TURN integration | ⬜ Deferred |
-| C | Client `GroupCallModal` SFU join path | ⬜ Blocked on B |
+| B | mediasoup server + TURN integration | ✅ `sfu/` service + docker profile `sfu` |
+| C | Client SFU join path (`GroupCallSfuModal` + `groupCallSfu.js`) | ✅ Q.35 |
 
 ---
 
@@ -59,4 +59,4 @@ Full-mesh means each participant opens N−1 peer connections — workable to ~6
 }
 ```
 
-When `sfu_enabled` becomes true, clients with >6 members use SFU URL; otherwise enforce mesh cap.
+When `sfu_enabled` is true and total participants exceed `max_mesh_participants` (8), clients use `GroupCallSfuModal` + `POST /api/calls/sfu-join`; otherwise mesh (`GroupCallModal`).

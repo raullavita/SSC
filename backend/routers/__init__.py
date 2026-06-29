@@ -14,6 +14,7 @@ from routers.panic import router as panic_router
 from routers.push_routes import router as push_router
 from routers.retention import router as retention_router
 from routers.statuses import router as statuses_router
+from routers.sfu_route import router as sfu_router
 from routers.translate import router as translate_router
 from routers.users import router as users_router
 
@@ -33,4 +34,5 @@ def include_routers(api: APIRouter):
     api.include_router(push_router, prefix="/push")
     api.include_router(retention_router)
     api.include_router(statuses_router, prefix="/statuses")
+    api.include_router(sfu_router)
     api.include_router(keys_router, prefix="/keys")

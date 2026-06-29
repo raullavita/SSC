@@ -138,6 +138,29 @@ def test_group_call_mute_all_passes_through():
     assert out["type"] == "call-mute-all"
 
 
+def test_call_sfu_invite_ok():
+    out = validate_signaling_relay({
+        "type": "call-sfu-invite",
+        "to": "u2",
+        "group": True,
+        "mode": "video",
+        "conversation_id": "g_conv1",
+        "members": [{"user_id": "u1"}, {"user_id": "u2"}],
+    })
+    assert out["type"] == "call-sfu-invite"
+    assert out["conversation_id"] == "g_conv1"
+
+
+def test_call_sfu_invite_requires_group_and_conversation():
+    with pytest.raises(SignalingValidationError):
+        validate_signaling_relay({
+            "type": "call-sfu-invite",
+            "to": "u2",
+            "mode": "audio",
+            "conversation_id": "g_conv1",
+        })
+
+
 def test_server_sees_plaintext_matrix():
     assert server_sees_signaling_plaintext("signal_v1", is_group=False) is False
     assert server_sees_signaling_plaintext("legacy_cleartext", is_group=False) is True

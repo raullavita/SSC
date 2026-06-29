@@ -16,7 +16,11 @@ import { SKDM_MESSAGE_TYPE } from '../lib/signal/constants';
 import { STATUS_SKDM_MESSAGE_TYPE, processIncomingStatusSkdmMessage } from '../lib/signal/statuses';
 import { deleteSignalSession } from '../lib/signal/nativeLibsignal';
 import { resolveIncomingSignaling, SignalingInboundError } from './signalingInbound';
-import { handleIncomingCallOffer, reportIncomingCallOfferError } from './incomingCallHandler';
+import {
+  handleIncomingCallOffer,
+  handleIncomingSfuInvite,
+  reportIncomingCallOfferError,
+} from './incomingCallHandler';
 import { readReceiptsEnabled, typingIndicatorsEnabled } from '../lib/privacySettings';
 import { applyMessageDeleted } from '../lib/messageDelete';
 import { applyMessageEdited } from '../lib/messageEdit';
@@ -96,6 +100,15 @@ export function useChatSocket({
           }).catch((err) => {
             reportIncomingCallOfferError(err, { t, toast });
           });
+        } else if (data.type === 'call-sfu-invite') {
+          handleIncomingSfuInvite(data, {
+            user,
+            t,
+            toast,
+            setGroupCallState,
+          }).catch((err) => {
+            reportIncomingCallOfferError(err, { t, toast });
+          });
         } else if (data.type === 'message-deleted') {
           if (data.conversation_id === activeId) {
             setMessages((cur) => applyMessageDeleted(cur, data));
@@ -148,7 +161,7 @@ export function useChatSocket({
           } else if (data.type === 'friend-accepted' && data.contact_username) {
             toast.success(t('friendRequestAcceptedBy', { user: data.contact_username }));
           }
-        } else if (['call-answer', 'ice-candidate', 'call-end', 'call-reject'].includes(data.type)) {
+        } else if (['call-answer', 'ice-candidate', 'call-end', 'call-reject', 'call-raise-hand', 'call-mute-all'].includes(data.type)) {
           (async () => {
             let signal = data;
             if (user?.user_id && data.type !== 'call-end' && data.type !== 'call-reject') {

@@ -70,6 +70,44 @@ export async function handleIncomingCallOffer(data, {
   });
 }
 
+/** Handle WS call-sfu-invite — SFU group calls (no SDP). */
+export async function handleIncomingSfuInvite(data, {
+  user,
+  t,
+  toast,
+  setGroupCallState,
+}) {
+  if (!data?.from || !data?.conversation_id) return;
+
+  const { data: peerData } = await api.get(`/users/${data.from}/public`);
+  const members = (data.members || []).filter((m) => m.user_id !== user?.user_id);
+  if (members.length === 0) {
+    members.push({ user_id: data.from, username: peerData.username });
+  }
+
+  setGroupCallState({
+    mode: data.mode || 'audio',
+    mediaMode: 'sfu',
+    direction: 'incoming',
+    members,
+    conversationId: data.conversation_id,
+    signal: {
+      from: data.from,
+      from_username: peerData.username,
+      members: data.members,
+    },
+  });
+
+  notifyDesktopIncomingCall({
+    fromUsername: peerData.username,
+    mode: data.mode || 'audio',
+    group: true,
+    conversationId: data.conversation_id,
+  }).catch((err) => {
+    console.warn('[SSC] desktop incoming SFU call notification failed:', err?.message || err);
+  });
+}
+
 /** Surface unexpected call-offer handler failures to the user. */
 export function reportIncomingCallOfferError(err, { t, toast }) {
   console.error('[SSC] incoming call-offer handler failed:', err?.message || err);

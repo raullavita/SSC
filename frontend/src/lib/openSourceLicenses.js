@@ -19,7 +19,7 @@ export const COPYLEFT_NOTICES = [
   },
   {
     id: 'mediasoup',
-    name: 'mediasoup (planned SFU)',
+    name: 'mediasoup SFU (group calls 9+)',
     version: 'Phase B — not deployed',
     license: 'AGPL-3.0',
     url: 'https://github.com/versatica/mediasoup',

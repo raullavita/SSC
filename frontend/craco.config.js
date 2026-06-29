@@ -27,6 +27,7 @@ let webpackConfig = {
   jest: {
     moduleNameMapper: {
       '^react-router-dom$': path.resolve(__dirname, 'src/__mocks__/react-router-dom.js'),
+      '^mediasoup-client$': path.resolve(__dirname, 'src/__mocks__/mediasoup-client.js'),
     },
   },
   eslint: {

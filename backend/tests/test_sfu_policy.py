@@ -29,6 +29,8 @@ def test_group_calls_config_sfu_when_url_set(monkeypatch):
     assert cfg["sfu_enabled"] is True
     assert cfg["mode"] == "sfu"
     assert cfg["sfu_url"] == "wss://sfu.example.com"
+    assert cfg["sfu_min_participants"] == 9
+    assert cfg["mediasoup_version"] == "3.14.4"
 
 
 def test_sfu_charter_exists():

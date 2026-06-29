@@ -59,13 +59,21 @@ export function useChatCalls({
         toast.error(t('groupCallNoMembers'));
         return;
       }
-      const { validateGroupCallSize } = await import('../lib/groupCalls');
+      const { validateGroupCallSize, resolveGroupCallModeForStart } = await import('../lib/groupCalls');
       const capErr = await validateGroupCallSize(members.length);
       if (capErr) {
         toast.error(capErr);
         return;
       }
-      setGroupCallState({ mode, direction: 'outgoing', members, signal: null, conversationId: activeId });
+      const mediaMode = await resolveGroupCallModeForStart(members.length);
+      setGroupCallState({
+        mode,
+        mediaMode,
+        direction: 'outgoing',
+        members,
+        signal: null,
+        conversationId: activeId,
+      });
       return;
     }
     if (!peer) return;

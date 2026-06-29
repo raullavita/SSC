@@ -67,6 +67,7 @@ def register_websocket(app):
                 elif t in (
                     "call-offer", "call-answer", "ice-candidate",
                     "call-end", "call-reject", "call-raise-hand", "call-mute-all",
+                    "call-sfu-invite",
                 ):
                     to_user = data.get("to")
                     if to_user:
@@ -95,7 +96,7 @@ def register_websocket(app):
                                 "from_username": user.get("username"),
                             }
                             await manager.send_to_user(to_user, payload)
-                            if t == "call-offer":
+                            if t in ("call-offer", "call-sfu-invite"):
                                 mode = data.get("mode", "audio")
                                 conv_id = data.get("conversation_id")
                                 asyncio.create_task(send_push_for_call(to_user, user, mode, conv_id, group))

@@ -24,15 +24,15 @@ These libraries are **linked or bundled** in conveyed builds and require corresp
 | **SSC usage** | Android APK: X3DH, Double Ratchet, Sender Keys via `SscLibsignalPlugin` |
 | **Corresponding source** | This repository + upstream libsignal tag `v0.96.2` |
 
-### mediasoup (planned — SFU Phase B)
+### mediasoup (SFU Phase B — Q.35)
 
 | Field | Value |
 |-------|-------|
-| **Component** | mediasoup server + client integration |
+| **Component** | mediasoup server (`sfu/`) + `mediasoup-client` in frontend |
 | **License** | [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html) |
 | **Upstream** | https://github.com/versatica/mediasoup |
-| **SSC usage** | Planned self-hosted SFU for group calls >6 participants (`memory/SFU_CHARTER.md`) |
-| **Status** | **Not deployed** — listed for future compliance |
+| **SSC usage** | Self-hosted SFU for group calls 9+ (`memory/SFU_CHARTER.md`) |
+| **Status** | Code shipped — enable with `SFU_URL` + `docker compose --profile sfu` |
 
 ---
 

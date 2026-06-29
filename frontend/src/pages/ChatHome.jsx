@@ -47,6 +47,7 @@ import { useLocale } from '../context/LocaleContext';
 import { useMobileLayout, useSplitChatLayout } from '../lib/use-mobile';
 import MobileChatMenu, { MenuAction } from '../components/MobileChatMenu';
 import GroupCallModal from '../components/GroupCallModal';
+import GroupCallSfuModal from '../components/GroupCallSfuModal';
 import { StoriesBar, StoryViewer } from '../components/Stories';
 import ContactsModal from '../components/ContactsModal';
 import { formatPeerPresence } from '../lib/presence';
@@ -2120,12 +2121,32 @@ export default function ChatHome() {
         </div>
       )}
       {groupCallState && groupCallState.direction !== 'incoming' && (
-        <GroupCallModal mode={groupCallState.mode}
-          direction={groupCallState.direction === 'incoming-accepted' ? 'incoming' : 'outgoing'}
-          members={groupCallState.members} me={user} user={user}
-          conversation={activeConv}
-          conversationId={groupCallState.conversationId || activeId} socket={socketRef.current} signal={groupCallState.signal}
-          onClose={() => setGroupCallState(null)} />
+        groupCallState.mediaMode === 'sfu' ? (
+          <GroupCallSfuModal
+            mode={groupCallState.mode}
+            direction={groupCallState.direction === 'incoming-accepted' ? 'incoming' : 'outgoing'}
+            members={groupCallState.members}
+            me={user}
+            conversation={activeConv}
+            conversationId={groupCallState.conversationId || activeId}
+            socket={socketRef.current}
+            signal={groupCallState.signal}
+            onClose={() => setGroupCallState(null)}
+          />
+        ) : (
+          <GroupCallModal
+            mode={groupCallState.mode}
+            direction={groupCallState.direction === 'incoming-accepted' ? 'incoming' : 'outgoing'}
+            members={groupCallState.members}
+            me={user}
+            user={user}
+            conversation={activeConv}
+            conversationId={groupCallState.conversationId || activeId}
+            socket={socketRef.current}
+            signal={groupCallState.signal}
+            onClose={() => setGroupCallState(null)}
+          />
+        )
       )}
     </div>
   );

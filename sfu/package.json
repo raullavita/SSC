@@ -1,0 +1,19 @@
+{
+  "name": "ssc-sfu",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SSC mediasoup SFU — group calls 9+ (Q.35)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "health": "node -e \"require('http').get(process.env.SFU_HEALTH_URL||'http://127.0.0.1:4443/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))\""
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "mediasoup": "^3.14.4",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

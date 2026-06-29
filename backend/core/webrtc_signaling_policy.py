@@ -21,7 +21,13 @@ from core.signal_message_policy import (
 SENSITIVE_SIGNALING_TYPES = frozenset({"call-offer", "call-answer", "ice-candidate"})
 CONTROL_SIGNALING_TYPES = frozenset({"call-end", "call-reject"})
 GROUP_CALL_MODERATION_TYPES = frozenset({"call-raise-hand", "call-mute-all"})
-ALL_SIGNALING_TYPES = SENSITIVE_SIGNALING_TYPES | CONTROL_SIGNALING_TYPES | GROUP_CALL_MODERATION_TYPES
+SFU_SIGNALING_TYPES = frozenset({"call-sfu-invite"})
+ALL_SIGNALING_TYPES = (
+    SENSITIVE_SIGNALING_TYPES
+    | CONTROL_SIGNALING_TYPES
+    | GROUP_CALL_MODERATION_TYPES
+    | SFU_SIGNALING_TYPES
+)
 
 
 class SignalingProtocol(str, Enum):
@@ -101,6 +107,15 @@ def validate_signaling_relay(data: Dict[str, Any]) -> Dict[str, Any]:
             raise SignalingValidationError(f"{msg_type} requires group=true")
         if msg_type == "call-raise-hand" and not isinstance(data.get("raised"), bool):
             raise SignalingValidationError("raised boolean required for call-raise-hand")
+        return data
+
+    if msg_type in SFU_SIGNALING_TYPES:
+        if not data.get("group"):
+            raise SignalingValidationError(f"{msg_type} requires group=true")
+        if not data.get("conversation_id"):
+            raise SignalingValidationError("conversation_id required for call-sfu-invite")
+        if msg_type == "call-sfu-invite" and data.get("mode") not in ("audio", "video"):
+            raise SignalingValidationError("mode must be audio or video for call-sfu-invite")
         return data
 
     # Q.34 / TASK O.2 — group SDP/ICE must be signal_v1 ciphertext (no cleartext fallback).
