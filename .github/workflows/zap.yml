@@ -1,42 +1,22 @@
-name: CI
+name: OWASP ZAP Baseline
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: zap-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  frontend-test:
-    name: Frontend tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: yarn
-          cache-dependency-path: frontend/yarn.lock
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Run Jest (CI)
-        run: yarn test:ci
-
-  backend-test:
-    name: Backend tests
+  zap-baseline:
+    name: OWASP ZAP baseline
     runs-on: ubuntu-latest
     services:
       mongo:
@@ -78,15 +58,15 @@ jobs:
         run: |
           cat > .env <<'EOF'
           MONGO_URL=mongodb://127.0.0.1:27017/?directConnection=true
-          DB_NAME=ssc-ci
-          JWT_SECRET=ci-only-jwt-secret-not-for-production
-          CONTACT_GRAPH_PEPPER=ci-only-contact-graph-pepper
+          DB_NAME=ssc-ci-zap
+          JWT_SECRET=ci-only-jwt-secret-not-for-production-zap-scan
+          CONTACT_GRAPH_PEPPER=ci-only-contact-graph-pepper-zap
           REDIS_URL=redis://localhost:6379/0
           ENV=development
           LOG_LEVEL=WARNING
           EOF
 
-      - name: Run pytest with live API
+      - name: Start API
         run: |
           uvicorn server:app --host 127.0.0.1 --port 8000 &
           for i in $(seq 1 60); do
@@ -100,5 +80,14 @@ jobs:
             fi
             sleep 2
           done
-          python -m pytest tests/ -q --timeout=120
-          python scripts/security_smoke.py
+
+      - name: Security smoke (pre-ZAP)
+        run: python scripts/security_smoke.py
+
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: "http://127.0.0.1:8000/api/"
+          rules_file_name: ".zap/rules.tsv"
+          cmd_options: "-a -I"
+          allow_issue_writing: false

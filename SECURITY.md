@@ -34,6 +34,23 @@ Copy from `*.example` files only. If a secret was ever committed, **rotate it** 
 
 Help is welcome on: encryption flows, WebRTC signaling, Android/Electron libsignal, tests, i18n, accessibility, and documentation. Do not paste production URLs with tokens or personal emails in PRs.
 
+## Automated security scans (Q.56)
+
+| Scan | When | What it checks |
+|------|------|----------------|
+| **CodeQL** | Every push to `main` | Static analysis on Python + JavaScript source |
+| **Security smoke** | Backend CI (after pytest) | Public API paths leak no secrets; protected routes return 401/403; baseline security headers |
+| **OWASP ZAP baseline** | `.github/workflows/zap.yml` on `main` / PRs | Passive scan of ephemeral CI API (`http://127.0.0.1:8000/api/`); rule overrides in `.zap/rules.tsv` |
+
+ZAP runs against a **throwaway CI instance** (Mongo + Redis + uvicorn), not production. Failures on High-risk findings block the ZAP workflow; tune `.zap/rules.tsv` only for documented false positives.
+
+Local smoke (API must be running on port 8000):
+
+```bash
+cd backend
+python scripts/security_smoke.py
+```
+
 ## GitHub Security tab (Dependabot + CodeQL)
 
 A high alert count on a public repo is **normal** after enabling Dependabot and CodeQL — especially with Create React App (`react-scripts`), which pulls in many transitive dev dependencies.

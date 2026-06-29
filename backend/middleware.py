@@ -37,11 +37,9 @@ def setup_middleware(app: FastAPI):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "camera=(self), microphone=(self), geolocation=(self)"
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         if os.environ.get("ENV", "development").lower() == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-            response.headers["Content-Security-Policy"] = (
-                "default-src 'self'; frame-ancestors 'none'; base-uri 'self'"
-            )
         return response
 
     @app.middleware("http")

@@ -1,0 +1,11 @@
+# Q.56 — OWASP ZAP baseline rule overrides for SSC API CI scans.
+# Format: RULE_ID	ACTION	(NAME)
+# See https://www.zaproxy.org/docs/alerts/
+
+# API returns JSON only — passive scan noise on HTML-oriented rules
+10038	IGNORE	(Content-Security-Policy — API JSON; minimal CSP set in middleware)
+10036	IGNORE	(Server header disclosure — uvicorn/FastAPI in CI)
+10035	IGNORE	(Strict-Transport-Security — HTTP localhost in CI; production sets HSTS)
+10098	IGNORE	(Cross-Domain Misconfiguration — CORS required for Capacitor clients)
+90022	IGNORE	(Application Error Disclosure — generic 500 handler by design)
+10109	IGNORE	(Modern Web Application — API-only backend)

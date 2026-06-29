@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.55 done** → next **Q.56** | [~] Q.56 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.56 done** → next **Q.57** | [~] Q.57 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -364,7 +364,7 @@
 
 | # | ID | Subtask | Owner | Status |
 |---|-----|---------|-------|--------|
-| 56 | **Q.56** | **OWASP ZAP CI** + security smoke | git | [ ] |
+| 56 | **Q.56** | **OWASP ZAP CI** + security smoke | git | [x] |
 | 57 | **Q.57** | **Public threat-model page** (user-readable) | git | [ ] |
 | 58 | **Q.58** | **disclose.io** + security.txt | Founder | [ ] |
 | 59 | **Q.59** | **Crash reporting opt-in** (Firebase Crashlytics or Sentry) | git | [ ] |
