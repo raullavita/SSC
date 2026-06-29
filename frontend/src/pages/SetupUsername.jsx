@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 
 import { generateRSAKeypair, wrapPrivateKey } from '../lib/crypto';
-import { LANGS } from '../lib/i18n';
+import { MESSAGE_LANGS } from '../lib/translation/translationLanguages';
 import { bootstrapSignalIdentity } from '../lib/signalIdentityBootstrap';
 import { isInstalledClient } from '../lib/platform';
 import { saveVaultCredential } from '../lib/vaultCredentialStore';
@@ -129,7 +129,7 @@ export default function SetupUsername() {
             <label className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#A1A1AA]">{t('preferredLanguage')}</label>
             <select data-testid="setup-language-select" value={language} onChange={(e) => onLanguageChange(e.target.value)}
               className="w-full mt-1.5 px-3 py-2.5 text-sm bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]">
-              {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+              {MESSAGE_LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>
           </div>
           <button type="submit" disabled={status.available !== true || !passwordReady || busy} data-testid="setup-submit-button"

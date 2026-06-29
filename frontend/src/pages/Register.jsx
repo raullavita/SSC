@@ -10,7 +10,7 @@ import { generateRSAKeypair, wrapPrivateKey } from '../lib/crypto';
 import Turnstile from '../components/Turnstile';
 import LanguagePicker from '../components/LanguagePicker';
 import { fetchGoogleConfig, signInWithGoogle } from '../lib/google-auth';
-import { LANGS } from '../lib/i18n';
+import { MESSAGE_LANGS } from '../lib/translation/translationLanguages';
 import { bootstrapSignalIdentity } from '../lib/signalIdentityBootstrap';
 import { isInstalledClient } from '../lib/platform';
 import { saveVaultCredential } from '../lib/vaultCredentialStore';
@@ -219,7 +219,7 @@ export default function Register() {
               <label className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#A1A1AA]">{t('preferredLanguage')}</label>
               <select data-testid="register-language-select" value={language} onChange={(e) => onLanguageChange(e.target.value)}
                 className="w-full mt-1.5 px-3 py-2.5 text-sm bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]">
-                {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+                {MESSAGE_LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
               </select>
               <p className="mt-1 text-[10px] text-[#A1A1AA] font-mono">{t('registerLangHint')}</p>
             </div>

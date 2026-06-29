@@ -8,18 +8,13 @@ import {
   createProgressCallback,
   markTranslateDownloadError,
 } from './progress.mjs';
+import {
+  modelForPair,
+  planTranslationRoute,
+  SUPPORTED,
+} from './routing.mjs';
 
 export const PROVIDER = 'transformers_on_device';
-
-const SUPPORTED = new Set(['en', 'es', 'ro']);
-
-/** Direct OPUS-MT pairs (Xenova ONNX builds). */
-const MODEL_BY_PAIR = {
-  'en-es': 'Xenova/opus-mt-en-es',
-  'es-en': 'Xenova/opus-mt-es-en',
-  'en-ro': 'Xenova/opus-mt-en-ro',
-  'ro-en': 'Xenova/opus-mt-ro-en',
-};
 
 const pipelines = new Map();
 
@@ -37,7 +32,7 @@ function normalizeLang(code, fallback = null) {
 }
 
 async function getPipeline(pairKey) {
-  const modelId = MODEL_BY_PAIR[pairKey];
+  const modelId = modelForPair(...pairKey.split('-'));
   if (!modelId) return null;
   if (!pipelines.has(pairKey)) {
     const progress_callback = createProgressCallback();
@@ -61,19 +56,20 @@ async function translatePair(text, source, target) {
 }
 
 async function translateText(text, source, target) {
-  if (source === 'es' && target === 'ro') {
-    const mid = await translatePair(text, 'es', 'en');
-    if (!mid) throw new Error('es-en translation failed');
-    return translatePair(mid, 'en', 'ro');
+  const route = planTranslationRoute(source, target);
+  if (route.length === 0) return text;
+
+  let current = text;
+  for (const leg of route) {
+    const modelId = modelForPair(leg.source, leg.target);
+    if (!modelId) {
+      throw new Error(`unsupported language pair ${leg.source}->${leg.target}`);
+    }
+    const out = await translatePair(current, leg.source, leg.target);
+    if (!out) throw new Error(`${leg.source}-${leg.target} translation failed`);
+    current = out;
   }
-  if (source === 'ro' && target === 'es') {
-    const mid = await translatePair(text, 'ro', 'en');
-    if (!mid) throw new Error('ro-en translation failed');
-    return translatePair(mid, 'en', 'es');
-  }
-  const direct = await translatePair(text, source, target);
-  if (!direct) throw new Error(`unsupported language pair ${source}->${target}`);
-  return direct;
+  return current;
 }
 
 export async function getTranslateCapabilities() {
@@ -81,7 +77,7 @@ export async function getTranslateCapabilities() {
     on_device: true,
     provider: PROVIDER,
     requires_model_download: true,
-    languages: [...SUPPORTED],
+    languages: [...SUPPORTED].sort(),
   };
 }
 

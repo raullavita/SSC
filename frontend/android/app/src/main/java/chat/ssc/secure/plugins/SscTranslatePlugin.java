@@ -12,6 +12,8 @@ import com.google.mlkit.nl.translate.Translation;
 import com.google.mlkit.nl.translate.Translator;
 import com.google.mlkit.nl.translate.TranslatorOptions;
 
+import org.json.JSONArray;
+
 /**
  * On-device translation — Engine 9 (Google ML Kit, no server plaintext).
  */
@@ -19,6 +21,9 @@ import com.google.mlkit.nl.translate.TranslatorOptions;
 public class SscTranslatePlugin extends Plugin {
 
     private static final String PROVIDER = "mlkit_on_device";
+    private static final String[] SUPPORTED_LANG_TAGS = {
+            "de", "en", "es", "fr", "it", "pt", "ro",
+    };
 
     @PluginMethod
     public void getCapabilities(PluginCall call) {
@@ -26,6 +31,11 @@ public class SscTranslatePlugin extends Plugin {
         ret.put("on_device", true);
         ret.put("provider", PROVIDER);
         ret.put("requires_model_download", true);
+        JSONArray langs = new JSONArray();
+        for (String tag : SUPPORTED_LANG_TAGS) {
+            langs.put(tag);
+        }
+        ret.put("languages", langs);
         call.resolve(ret);
     }
 
@@ -85,10 +95,22 @@ public class SscTranslatePlugin extends Plugin {
             return fallback;
         }
         String tag = code.toLowerCase().trim().split("-")[0];
+        if (!isSupportedTag(tag)) {
+            return fallback;
+        }
         String mapped = TranslateLanguage.fromLanguageTag(tag);
         if (mapped == null) {
             return fallback;
         }
         return mapped;
+    }
+
+    private static boolean isSupportedTag(String tag) {
+        for (String supported : SUPPORTED_LANG_TAGS) {
+            if (supported.equals(tag)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

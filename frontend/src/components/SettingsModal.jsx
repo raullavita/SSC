@@ -6,7 +6,7 @@ import {
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
-import { LANGS } from '../lib/i18n';
+import { MESSAGE_LANGS } from '../lib/translation/translationLanguages';
 import { isElectronApp, isInstalledClient, isNativeApp } from '../lib/platform';
 import { userHasUnifiedIdentity } from '../lib/signalIdentityBootstrap';
 import { prepareAvatarFile } from '../lib/avatarUpload';
@@ -1034,7 +1034,7 @@ export default function SettingsModal({ open, onClose }) {
                 className="w-full px-3 py-2.5 text-sm bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]"
                 data-testid="settings-language-select"
               >
-                {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+                {MESSAGE_LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
               </select>
               <p className="mt-2 text-[10px] text-[#71717A]">{t('settingsLanguageHint')}</p>
             </Section>

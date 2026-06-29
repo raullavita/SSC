@@ -1,9 +1,11 @@
 import { api } from '../../api';
 import {
+  getTranslationCapabilities,
   isOnDeviceTranslationAvailable,
   translateOnDevice,
 } from '../nativeTranslate';
 import {
+  isOnDeviceTranslationPairSupported,
   resolveTranslationAvailability,
   translateMessageText,
 } from '../translateClient';
@@ -17,8 +19,16 @@ jest.mock('../../api', () => ({
 
 jest.mock('../nativeTranslate', () => ({
   isOnDeviceTranslationAvailable: jest.fn(),
+  getTranslationCapabilities: jest.fn(),
   translateOnDevice: jest.fn(),
 }));
+
+const desktopCaps = {
+  on_device: true,
+  provider: 'transformers_on_device',
+  requires_model_download: true,
+  languages: ['de', 'en', 'es', 'fr', 'it', 'ro'],
+};
 
 describe('translateClient', () => {
   beforeEach(() => {
@@ -28,6 +38,7 @@ describe('translateClient', () => {
   describe('resolveTranslationAvailability', () => {
     it('prefers on-device when native bridge is available', async () => {
       isOnDeviceTranslationAvailable.mockReturnValue(true);
+      getTranslationCapabilities.mockResolvedValue(desktopCaps);
       api.get.mockResolvedValue({ data: { translation_enabled: true } });
 
       await expect(resolveTranslationAvailability()).resolves.toEqual({
@@ -35,6 +46,8 @@ describe('translateClient', () => {
         serverAllowed: true,
         enabled: true,
         mode: 'on_device',
+        capabilities: desktopCaps,
+        languages: desktopCaps.languages,
       });
     });
 
@@ -47,6 +60,8 @@ describe('translateClient', () => {
         serverAllowed: true,
         enabled: true,
         mode: 'server',
+        capabilities: null,
+        languages: [],
       });
     });
 
@@ -59,6 +74,8 @@ describe('translateClient', () => {
         serverAllowed: false,
         enabled: false,
         mode: 'off',
+        capabilities: null,
+        languages: [],
       });
     });
   });
@@ -79,6 +96,7 @@ describe('translateClient', () => {
 
     it('routes through on-device translation when available', async () => {
       isOnDeviceTranslationAvailable.mockReturnValue(true);
+      getTranslationCapabilities.mockResolvedValue(desktopCaps);
       translateOnDevice.mockResolvedValue({
         translated: 'Hello',
         provider: 'transformers_on_device',
@@ -96,8 +114,24 @@ describe('translateClient', () => {
       expect(translateOnDevice).toHaveBeenCalledWith('Hola', 'es', 'en');
     });
 
+    it('rejects unsupported on-device pairs per platform capability', async () => {
+      isOnDeviceTranslationAvailable.mockReturnValue(true);
+      getTranslationCapabilities.mockResolvedValue(desktopCaps);
+
+      await expect(translateMessageText({
+        text: 'Olá',
+        sourceLang: 'en',
+        targetLang: 'pt',
+      })).resolves.toEqual({
+        translated: null,
+        note: 'unsupported language pair',
+      });
+      expect(translateOnDevice).not.toHaveBeenCalled();
+    });
+
     it('treats identical on-device output as same language', async () => {
       isOnDeviceTranslationAvailable.mockReturnValue(true);
+      getTranslationCapabilities.mockResolvedValue(desktopCaps);
       translateOnDevice.mockResolvedValue({
         translated: 'Same',
         provider: 'transformers_on_device',
@@ -141,6 +175,13 @@ describe('translateClient', () => {
         targetLang: 'es',
         serverAllowed: false,
       })).rejects.toThrow('TRANSLATION_UNAVAILABLE');
+    });
+  });
+
+  describe('isOnDeviceTranslationPairSupported', () => {
+    it('checks capability language lists', () => {
+      expect(isOnDeviceTranslationPairSupported('en', 'fr', desktopCaps)).toBe(true);
+      expect(isOnDeviceTranslationPairSupported('en', 'pt', desktopCaps)).toBe(false);
     });
   });
 });

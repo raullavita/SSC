@@ -36,7 +36,7 @@ describe('nativeTranslate', () => {
       on_device: true,
       provider: 'transformers_on_device',
       requires_model_download: true,
-      languages: ['en', 'es', 'ro'],
+      languages: ['de', 'en', 'es', 'fr', 'it', 'ro'],
     };
     isElectronApp.mockReturnValue(true);
     window.sscDesktop = {

@@ -4,25 +4,54 @@
  * Web: server path only when backend explicitly enables it (dev/demo).
  */
 import { api } from '../api';
-import { isOnDeviceTranslationAvailable, translateOnDevice } from './nativeTranslate';
+import {
+  isOnDeviceTranslationAvailable,
+  getTranslationCapabilities,
+  translateOnDevice,
+} from './nativeTranslate';
+import {
+  isPairSupportedOnPlatform,
+  languagesForProvider,
+  normalizeMessageLang,
+} from './translationLanguages';
 
 const BAD_RESPONSE = /PLEASE SELECT TWO DISTINCT LANGUAGES|MYMEMORY WARNING|AUTO_DETECT LANGUAGE NOT SUPPORTED/i;
+
+let cachedCapabilities = null;
 
 export async function resolveTranslationAvailability() {
   const onDevice = isOnDeviceTranslationAvailable();
   let serverAllowed = false;
+  let capabilities = null;
   try {
     const { data } = await api.get('/config');
     serverAllowed = !!data?.translation_enabled;
   } catch {
     serverAllowed = false;
   }
+  if (onDevice) {
+    try {
+      capabilities = await getTranslationCapabilities();
+      cachedCapabilities = capabilities;
+    } catch {
+      capabilities = cachedCapabilities;
+    }
+  }
   return {
     onDevice,
     serverAllowed,
     enabled: onDevice || serverAllowed,
     mode: onDevice ? 'on_device' : (serverAllowed ? 'server' : 'off'),
+    capabilities,
+    languages: capabilities?.languages || (onDevice ? [] : []),
   };
+}
+
+export function isOnDeviceTranslationPairSupported(sourceLang, targetLang, capabilities) {
+  const languages = capabilities?.languages?.length
+    ? capabilities.languages
+    : languagesForProvider(capabilities?.provider);
+  return isPairSupportedOnPlatform(sourceLang, targetLang, languages);
 }
 
 function sameLanguage(sourceLang, targetLang) {
@@ -51,6 +80,21 @@ export async function translateMessageText({
   }
 
   if (isOnDeviceTranslationAvailable()) {
+    const src = normalizeMessageLang(sourceLang, 'en');
+    const tgt = normalizeMessageLang(targetLang, null);
+    if (!tgt) {
+      return { translated: null, note: 'unsupported target language' };
+    }
+    if (!cachedCapabilities) {
+      try {
+        cachedCapabilities = await getTranslationCapabilities();
+      } catch {
+        cachedCapabilities = null;
+      }
+    }
+    if (cachedCapabilities && !isOnDeviceTranslationPairSupported(src, tgt, cachedCapabilities)) {
+      return { translated: null, note: 'unsupported language pair' };
+    }
     const result = await translateOnDevice(text, sourceLang, targetLang);
     const out = result?.translated;
     if (result?.note === 'same language' || !out || out.toLowerCase() === text.toLowerCase()) {
