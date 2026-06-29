@@ -96,6 +96,7 @@ import {
   isPeerMuted,
 } from '../lib/contactFilters';
 import { formatGroupConversationLabel } from '../lib/groupDisplayLabel';
+import { canPostInGroup } from '../lib/groupRoles';
 import { clearLocalGroupLabels } from '../lib/groupLabels';
 
 import { registerMemoryWipeHandler, registerSocketCloser } from '../lib/memoryWipe';
@@ -299,6 +300,9 @@ export default function ChatHome() {
   const showTranslateControls = translationEnabled && !sameLangAsPeer;
   const peerContact = peer ? myContacts.find((c) => c.user_id === peer.user_id) : null;
   const canMessagePeer = isGroup || !peer || (!!peerContact && !peerContact.blocked);
+  const canComposeInChat = isGroup
+    ? canPostInGroup(activeConv, user?.user_id)
+    : canMessagePeer;
   const isRequestPendingPeer = !isGroup && !!peer
     && outgoingRequests.some((r) => r.to_user_id === peer.user_id);
 
@@ -1547,12 +1551,17 @@ export default function ChatHome() {
                 {isRequestPendingPeer ? t('requestPendingChat') : t('cannotMessageNonMutual')}
               </div>
             )}
+            {isGroup && !canComposeInChat && (
+              <div className="px-3 py-2 border-t border-[#27272A] text-[11px] text-[#FFD600] bg-[#FFD600]/10" data-testid="group-posting-restricted">
+                {t('groupPostingRestricted')}
+              </div>
+            )}
             <ReplyComposerBar quote={replyComposerQuote} onCancel={() => setReplyTo(null)} />
             {isGroup && mentionCandidates.length > 0 && (
               <GroupMentionPicker candidates={mentionCandidates} onPick={onPickMention} />
             )}
             <ComposerFormatBar
-              disabled={!canMessagePeer}
+              disabled={!canComposeInChat}
               onBold={() => applyComposerFormat('bold')}
               onItalic={() => applyComposerFormat('italic')}
               onBulletList={() => applyComposerFormat('bullet')}
@@ -1561,7 +1570,7 @@ export default function ChatHome() {
             <VideoRecordPreview stream={videoPreviewStream} />
             <form onSubmit={onSendText} className="chat-composer safe-bottom safe-x border-t border-[#27272A] px-2 md:px-3 py-2 flex items-end gap-2">
               <input ref={fileInputRef} type="file" accept="image/*,video/*" hidden onChange={onFileChange} data-testid="file-input" />
-              <button type="button" onClick={onPickFile} disabled={uploadBusy || !canMessagePeer} data-testid="attach-button"
+              <button type="button" onClick={onPickFile} disabled={uploadBusy || !canComposeInChat} data-testid="attach-button"
                 className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
                 title={uploadBusy ? t('uploadInProgress') : undefined}>
                 <Paperclip size={18} />
@@ -1569,7 +1578,7 @@ export default function ChatHome() {
               <button
                 type="button"
                 onClick={() => setStickerPickerOpen(true)}
-                disabled={uploadBusy || !canMessagePeer}
+                disabled={uploadBusy || !canComposeInChat}
                 data-testid="sticker-button"
                 className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
                 title={t('stickerGifPickerTitle')}
@@ -1580,7 +1589,7 @@ export default function ChatHome() {
                 <button
                   type="button"
                   onClick={() => setPollModalOpen(true)}
-                  disabled={uploadBusy || !canMessagePeer}
+                  disabled={uploadBusy || !canComposeInChat}
                   data-testid="poll-button"
                   className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
                   title={t('createPollTitle')}
@@ -1591,7 +1600,7 @@ export default function ChatHome() {
               <button
                 type="button"
                 onClick={() => setLocationConfirmOpen(true)}
-                disabled={uploadBusy || !canMessagePeer}
+                disabled={uploadBusy || !canComposeInChat}
                 data-testid="location-button"
                 className="w-11 h-11 rounded-md tac-border bg-[#121212] active:bg-[#1A1A1A] flex items-center justify-center shrink-0 disabled:opacity-40"
                 title={t('shareLocationTitle')}
@@ -1606,7 +1615,7 @@ export default function ChatHome() {
                 onPointerCancel={onVideoPointerCancel}
                 onContextMenu={(e) => e.preventDefault()}
                 data-testid="video-note-button"
-                disabled={!canMessagePeer || uploadBusy}
+                disabled={!canComposeInChat || uploadBusy}
                 title={t('videoHoldToRecord')}
                 className={`w-11 h-11 rounded-md tac-border flex items-center justify-center shrink-0 select-none touch-none ${isVideoRecording ? 'bg-[#FF3B30] text-white' : 'bg-[#121212] active:bg-[#1A1A1A]'}`}
               >
@@ -1620,7 +1629,7 @@ export default function ChatHome() {
                 onPointerCancel={onVoicePointerCancel}
                 onContextMenu={(e) => e.preventDefault()}
                 data-testid="voice-button"
-                disabled={!canMessagePeer}
+                disabled={!canComposeInChat}
                 title={t('voiceHoldToRecord')}
                 className={`w-11 h-11 rounded-md tac-border flex items-center justify-center shrink-0 select-none touch-none ${isRecording ? 'bg-[#FF3B30] text-white' : 'bg-[#121212] active:bg-[#1A1A1A]'}`}
               >
@@ -1646,13 +1655,13 @@ export default function ChatHome() {
                 className="flex-1 min-w-0 min-h-11 max-h-32 px-3 py-2.5 text-base rounded-md resize-none overflow-y-auto"
                 enterKeyHint="send"
                 autoComplete="off"
-                disabled={!canMessagePeer}
+                disabled={!canComposeInChat}
               />
               <button
                 type="submit"
                 data-testid="send-button"
                 className="h-11 min-w-[44px] px-3 md:px-4 bg-[#00E5FF] text-black rounded-md font-medium text-sm flex items-center justify-center gap-2 active:brightness-90 transition disabled:opacity-40 shrink-0"
-                disabled={!draft.trim() || !canMessagePeer}
+                disabled={!draft.trim() || !canComposeInChat}
                 aria-label={t('send')}
               >
                 <PaperPlaneTilt size={18} weight="fill" />

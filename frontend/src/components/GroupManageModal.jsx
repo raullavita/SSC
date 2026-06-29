@@ -4,6 +4,20 @@ import { X, UsersThree, MagnifyingGlass, SignOut } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useLocale } from '../context/LocaleContext';
 import { getLocalGroupLabel, setLocalGroupLabel } from '../lib/groupLabels';
+import {
+  ADD_MEMBERS_ADMINS,
+  ADD_MEMBERS_OWNER_ONLY,
+  POSTING_ADMINS_ONLY,
+  POSTING_ALL,
+  ROLE_ADMIN,
+  ROLE_MEMBER,
+  ROLE_OWNER,
+  canAddMembers,
+  canManageRoles,
+  canRemoveMember,
+  getMemberRole,
+  roleBadgeKey,
+} from '../lib/groupRoles';
 import Avatar from './Avatar';
 
 export default function GroupManageModal({
@@ -19,19 +33,26 @@ export default function GroupManageModal({
   const [groupName, setGroupName] = useState('');
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
+  const [postingPolicy, setPostingPolicy] = useState(POSTING_ALL);
+  const [addMembersPolicy, setAddMembersPolicy] = useState(ADD_MEMBERS_ADMINS);
 
-  const isAdmin = conversation?.admin_id === myUserId;
   const members = conversation?.members || [];
   const memberIds = useMemo(
     () => new Set([myUserId, ...members.map((m) => m.user_id)]),
     [members, myUserId],
   );
+  const myRole = conversation ? getMemberRole(conversation, myUserId) : ROLE_MEMBER;
+  const showAddMembers = conversation ? canAddMembers(conversation, myUserId) : false;
+  const showRoleControls = conversation ? canManageRoles(conversation, myUserId) : false;
+  const showPermissionControls = showRoleControls;
 
   useEffect(() => {
     if (!open || !conversation) return;
     setGroupName(getLocalGroupLabel(conversation.conversation_id));
     setQ('');
-  }, [open, conversation?.conversation_id]);
+    setPostingPolicy(conversation.group_permissions?.posting || POSTING_ALL);
+    setAddMembersPolicy(conversation.group_permissions?.add_members || ADD_MEMBERS_ADMINS);
+  }, [open, conversation?.conversation_id, conversation?.group_permissions]);
 
   const addable = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -49,6 +70,23 @@ export default function GroupManageModal({
     onUpdated?.();
   };
 
+  const savePermissions = async () => {
+    if (!conversation || busy) return;
+    setBusy(true);
+    try {
+      const { data } = await api.patch(`/conversations/${conversation.conversation_id}/group-permissions`, {
+        posting: postingPolicy,
+        add_members: addMembersPolicy,
+      });
+      toast.success(t('groupPermissionsSaved'));
+      onUpdated?.(data);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('groupPermissionsFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const addMember = async (username) => {
     if (!conversation || busy) return;
     setBusy(true);
@@ -60,6 +98,23 @@ export default function GroupManageModal({
       onUpdated?.(data);
     } catch (e) {
       toast.error(e?.response?.data?.detail || t('groupMemberAddFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const updateRole = async (userId, role) => {
+    if (!conversation || busy) return;
+    setBusy(true);
+    try {
+      const { data } = await api.patch(
+        `/conversations/${conversation.conversation_id}/members/${userId}/role`,
+        { role },
+      );
+      toast.success(t('groupRoleUpdated'));
+      onUpdated?.(data);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || t('groupRoleUpdateFailed'));
     } finally {
       setBusy(false);
     }
@@ -123,33 +178,87 @@ export default function GroupManageModal({
           </button>
         </div>
 
+        {showPermissionControls && (
+          <div className="mb-4 p-3 rounded-md bg-[#1A1A1A] tac-border" data-testid="group-permissions-panel">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] mb-2">{t('groupPermissionsTitle')}</p>
+            <label className="block text-[10px] font-mono text-[#71717A] mb-1">{t('groupPostingPolicyLabel')}</label>
+            <select
+              value={postingPolicy}
+              onChange={(e) => setPostingPolicy(e.target.value)}
+              className="w-full h-10 px-3 mb-2 text-sm rounded-md bg-[#121212] tac-border"
+              data-testid="group-posting-policy"
+            >
+              <option value={POSTING_ALL}>{t('groupPostingAll')}</option>
+              <option value={POSTING_ADMINS_ONLY}>{t('groupPostingAdminsOnly')}</option>
+            </select>
+            <label className="block text-[10px] font-mono text-[#71717A] mb-1">{t('groupAddMembersPolicyLabel')}</label>
+            <select
+              value={addMembersPolicy}
+              onChange={(e) => setAddMembersPolicy(e.target.value)}
+              className="w-full h-10 px-3 mb-2 text-sm rounded-md bg-[#121212] tac-border"
+              data-testid="group-add-members-policy"
+            >
+              <option value={ADD_MEMBERS_ADMINS}>{t('groupAddMembersAdmins')}</option>
+              <option value={ADD_MEMBERS_OWNER_ONLY}>{t('groupAddMembersOwnerOnly')}</option>
+            </select>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={savePermissions}
+              className="w-full py-2 text-xs font-mono tracking-wider border border-[#00E5FF]/40 text-[#00E5FF] rounded-md hover:bg-[#00E5FF]/10"
+              data-testid="group-save-permissions"
+            >
+              {t('groupPermissionsSave')}
+            </button>
+          </div>
+        )}
+
         <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] mb-2">{t('groupMembersTitle')}</p>
         <ul className="space-y-1 mb-4">
-          {members.map((m) => (
-            <li key={m.user_id} className="flex items-center justify-between gap-2 px-2 py-2 rounded-md bg-[#1A1A1A]">
-              <div className="flex items-center gap-2 min-w-0">
-                <Avatar user={m} size="sm" />
-                <span className="text-sm truncate">@{m.username}</span>
-                {conversation.admin_id === m.user_id && (
-                  <span className="text-[9px] font-mono text-[#00E5FF]">{t('groupAdminBadge')}</span>
-                )}
-              </div>
-              {(isAdmin && m.user_id !== myUserId) || m.user_id === myUserId ? (
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => removeMember(m.user_id)}
-                  className="text-[10px] font-mono text-[#FF453A] hover:underline shrink-0"
-                  data-testid={`group-remove-${m.user_id}`}
-                >
-                  {m.user_id === myUserId ? t('leaveGroup') : t('groupRemoveMember')}
-                </button>
-              ) : null}
-            </li>
-          ))}
+          {members.map((m) => {
+            const role = getMemberRole(conversation, m.user_id);
+            const badgeKey = roleBadgeKey(role);
+            const removable = canRemoveMember(conversation, myUserId, m.user_id);
+            return (
+              <li key={m.user_id} className="flex items-center justify-between gap-2 px-2 py-2 rounded-md bg-[#1A1A1A]">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Avatar user={m} size="sm" />
+                  <span className="text-sm truncate">@{m.username}</span>
+                  {badgeKey && (
+                    <span className="text-[9px] font-mono text-[#00E5FF]">{t(badgeKey)}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {showRoleControls && m.user_id !== myUserId && role !== ROLE_OWNER && (
+                    <select
+                      value={role}
+                      disabled={busy}
+                      onChange={(e) => updateRole(m.user_id, e.target.value)}
+                      className="text-[10px] font-mono bg-[#121212] tac-border rounded px-1 py-1"
+                      data-testid={`group-role-${m.user_id}`}
+                    >
+                      <option value={ROLE_ADMIN}>{t('groupAdminBadge')}</option>
+                      <option value={ROLE_MEMBER}>{t('groupMemberBadge')}</option>
+                    </select>
+                  )}
+                  {removable && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => removeMember(m.user_id)}
+                      className="text-[10px] font-mono text-[#FF453A] hover:underline"
+                      data-testid={`group-remove-${m.user_id}`}
+                    >
+                      {m.user_id === myUserId ? t('leaveGroup') : t('groupRemoveMember')}
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
 
-        {isAdmin && (
+        {showAddMembers ? (
           <>
             <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] mb-2">{t('groupAddMembersTitle')}</p>
             <div className="flex items-center gap-2 bg-[#1A1A1A] rounded-md px-3 py-2 tac-border mb-2">
@@ -181,6 +290,8 @@ export default function GroupManageModal({
               )}
             </div>
           </>
+        ) : myRole === ROLE_MEMBER && (
+          <p className="text-[10px] font-mono text-[#71717A] mb-2">{t('groupCannotAddMembers')}</p>
         )}
 
         <button

@@ -137,6 +137,15 @@ class AddGroupMembersIn(BaseModel):
     peer_usernames: List[str] = Field(min_length=1, max_length=20)
 
 
+class GroupPermissionsIn(BaseModel):
+    posting: Optional[Literal["all", "admins_only"]] = None
+    add_members: Optional[Literal["admins", "owner_only"]] = None
+
+
+class MemberRoleIn(BaseModel):
+    role: Literal["owner", "admin", "member"]
+
+
 class PushSubscribeIn(BaseModel):
     endpoint: str
     keys: Dict[str, str]

@@ -36,6 +36,7 @@ import {
   serializeLocationPayload,
 } from '../lib/locationMessage';
 import { captureCurrentLocation } from '../lib/locationShare';
+import { canPostInGroup } from '../lib/groupRoles';
 
 export function useMessagingSend({
   activeConv,
@@ -140,6 +141,10 @@ export function useMessagingSend({
     const mentionPayload = mentionedUserIds.length ? { mentioned_user_ids: mentionedUserIds } : {};
     if (!activeConv) return;
     if (!text && !attachmentId) return;
+    if (isGroup && !canPostInGroup(activeConv, user?.user_id)) {
+      toast.error(t('groupPostingRestricted'));
+      return;
+    }
     if (!isGroup && peer && isPeerBlocked(peer.user_id, myContacts)) {
       toast.error(t('cannotMessageBlocked'));
       return;

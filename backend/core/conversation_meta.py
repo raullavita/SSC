@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+from core.group_roles import roles_for_api
 from core.utils import iso
 
 GENERIC_GROUP_LABEL = "Group"
@@ -14,6 +15,9 @@ CONVERSATION_STORE_FIELDS = (
     "participants",
     "is_group",
     "admin_id",
+    "owner_id",
+    "member_roles",
+    "group_permissions",
     "created_at",
     "created_by",
     "last_activity_at",
@@ -66,7 +70,11 @@ def sanitize_conversation_for_api(conv: dict, viewer_id: str) -> dict:
         out["expires_at"] = iso(out["expires_at"])
     if conv.get("is_group"):
         out["display_label"] = group_display_label(len(out["participants"]))
-        out["admin_id"] = conv.get("admin_id")
+        role_fields = roles_for_api(conv)
+        out["admin_id"] = role_fields["admin_id"]
+        out["owner_id"] = role_fields["owner_id"]
+        out["member_roles"] = role_fields["member_roles"]
+        out["group_permissions"] = role_fields["group_permissions"]
         out["members"] = conv.get("members") or []
         out["peer"] = None
     else:

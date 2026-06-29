@@ -25,6 +25,7 @@ from core.realtime import (
 from core.retention import expires_at_from_now, message_read_expiry_fields
 from core.message_replies import validate_reply_target
 from core.message_forwards import validate_forward_source
+from core.group_roles import can_post_in_group
 from core.message_mentions import validate_mentioned_users_for_group
 from core.retention_db import bump_conversation_activity, get_effective_retention_for_conversation
 from core.privacy_settings import read_receipts_enabled
@@ -39,6 +40,9 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
     conv = await db.conversations.find_one({"conversation_id": body.conversation_id}, {"_id": 0})
     if not conv or current["user_id"] not in conv["participants"]:
         raise HTTPException(404, "Conversation not found")
+
+    if conv.get("is_group") and not can_post_in_group(conv, current["user_id"]):
+        raise HTTPException(403, "Only admins can post in this group")
 
     if not conv.get("is_group") and len(conv.get("participants", [])) == 2:
         other = [p for p in conv["participants"] if p != current["user_id"]][0]

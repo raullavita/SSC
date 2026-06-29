@@ -64,6 +64,9 @@ def test_sanitize_conversation_no_custom_name():
     assert "last_message" not in out
     assert out["display_label"] == group_display_label(3)
     assert GENERIC_GROUP_LABEL in out["display_label"]
+    assert out["owner_id"] == "u_a"
+    assert out["member_roles"]["u_a"] == "owner"
+    assert out["group_permissions"]["posting"] == "all"
     assert out["pinned"] is False
 
 

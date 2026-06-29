@@ -8,7 +8,17 @@ from core.contact_helpers import PEER_ROSTER_FIELDS, are_contacts
 from core.database import db
 from core.logging_config import logger
 from core.group_members import add_group_members, remove_group_member
-from core.models import AddGroupMembersIn, CreateConversationIn
+from core.group_roles import (
+    apply_group_permissions,
+    apply_member_role,
+    build_member_roles_for_participants,
+    can_add_members,
+    can_manage_roles,
+    can_remove_member,
+    can_update_permissions,
+    default_group_permissions,
+)
+from core.models import AddGroupMembersIn, CreateConversationIn, GroupPermissionsIn, MemberRoleIn
 from core.push_helpers import send_push_for_group_added
 from core.realtime import manager
 from core.last_seen import project_user_for_peer
@@ -83,11 +93,16 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
         participants = sorted({current["user_id"], *[p["user_id"] for p in peers]})
         created = now_utc()
         activity = await conversation_activity_fields_for_participants(participants, created)
+        owner_id = current["user_id"]
+        member_roles = build_member_roles_for_participants(participants, owner_id=owner_id)
         conv = {
             "conversation_id": f"g_{uuid.uuid4().hex[:14]}",
             "participants": participants,
             "is_group": True,
-            "admin_id": current["user_id"],
+            "owner_id": owner_id,
+            "admin_id": owner_id,
+            "member_roles": member_roles,
+            "group_permissions": default_group_permissions(),
             "created_at": iso(created),
             "created_by": current["user_id"],
             **activity,
@@ -221,8 +236,8 @@ async def add_conversation_members(
         raise HTTPException(404, "Conversation not found")
     if not conv.get("is_group"):
         raise HTTPException(400, "Not a group conversation")
-    if conv.get("admin_id") != current["user_id"]:
-        raise HTTPException(403, "Only the group creator can add members")
+    if not can_add_members(conv, current["user_id"]):
+        raise HTTPException(403, "You do not have permission to add members")
     usernames = [u.strip() for u in body.peer_usernames if u and u.strip()]
     usernames = [u for u in usernames if u != current["username"]]
     if not usernames:
@@ -259,13 +274,96 @@ async def remove_conversation_member(
     if not conv.get("is_group"):
         raise HTTPException(400, "Not a group conversation")
     is_self = user_id == current["user_id"]
-    if not is_self and conv.get("admin_id") != current["user_id"]:
-        raise HTTPException(403, "Only the group creator can remove other members")
+    if not can_remove_member(conv, current["user_id"], user_id):
+        raise HTTPException(403, "You do not have permission to remove this member")
     if user_id not in conv.get("participants", []):
         raise HTTPException(404, "Member not in this group")
     updated = await remove_group_member(conv, target_user_id=user_id, actor_id=current["user_id"])
     if updated is None:
         return {"ok": True, "left": True, "conversation_id": conversation_id}
+    me = current["user_id"]
+    peers_list = await db.users.find(
+        {"user_id": {"$in": updated["participants"]}},
+        PEER_ROSTER_FIELDS,
+    ).to_list(100)
+    peers_by_id = {p["user_id"]: p for p in peers_list}
+    members = [project_user_for_peer(peers_by_id.get(p)) for p in updated["participants"] if p != me]
+    return sanitize_conversation_for_api({**updated, "members": [m for m in members if m]}, me)
+
+
+@router.patch("/{conversation_id}/group-permissions")
+async def update_group_permissions(
+    conversation_id: str,
+    body: GroupPermissionsIn,
+    current=Depends(get_current_user),
+):
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv.get("participants", []):
+        raise HTTPException(404, "Conversation not found")
+    if not conv.get("is_group"):
+        raise HTTPException(400, "Not a group conversation")
+    if not can_update_permissions(conv, current["user_id"]):
+        raise HTTPException(403, "Only the group owner can change permissions")
+    updated = apply_group_permissions(
+        conv,
+        posting=body.posting,
+        add_members=body.add_members,
+    )
+    await db.conversations.update_one(
+        {"conversation_id": conversation_id},
+        {
+            "$set": {
+                "group_permissions": updated["group_permissions"],
+                "updated_at": iso(now_utc()),
+            }
+        },
+    )
+    from core.group_members import _broadcast_conv_update
+
+    await _broadcast_conv_update(updated)
+    me = current["user_id"]
+    peers_list = await db.users.find(
+        {"user_id": {"$in": updated["participants"]}},
+        PEER_ROSTER_FIELDS,
+    ).to_list(100)
+    peers_by_id = {p["user_id"]: p for p in peers_list}
+    members = [project_user_for_peer(peers_by_id.get(p)) for p in updated["participants"] if p != me]
+    return sanitize_conversation_for_api({**updated, "members": [m for m in members if m]}, me)
+
+
+@router.patch("/{conversation_id}/members/{user_id}/role")
+async def update_member_role(
+    conversation_id: str,
+    user_id: str,
+    body: MemberRoleIn,
+    current=Depends(get_current_user),
+):
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or current["user_id"] not in conv.get("participants", []):
+        raise HTTPException(404, "Conversation not found")
+    if not conv.get("is_group"):
+        raise HTTPException(400, "Not a group conversation")
+    if not can_manage_roles(conv, current["user_id"]):
+        raise HTTPException(403, "Only the group owner can change roles")
+    updated, member_roles = apply_member_role(
+        conv,
+        target_user_id=user_id,
+        new_role=body.role,
+    )
+    await db.conversations.update_one(
+        {"conversation_id": conversation_id},
+        {
+            "$set": {
+                "member_roles": member_roles,
+                "owner_id": updated.get("owner_id"),
+                "admin_id": updated.get("admin_id"),
+                "updated_at": iso(now_utc()),
+            }
+        },
+    )
+    from core.group_members import _broadcast_conv_update
+
+    await _broadcast_conv_update(updated)
     me = current["user_id"]
     peers_list = await db.users.find(
         {"user_id": {"$in": updated["participants"]}},

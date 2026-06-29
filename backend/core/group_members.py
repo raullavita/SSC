@@ -12,6 +12,10 @@ from core.conversation_archives import clear_archives_for_conversation
 from core.conversation_pins import clear_pins_for_conversation
 from core.push_helpers import send_push_for_group_added
 from core.realtime import manager
+from core.group_roles import (
+    roles_after_member_added,
+    roles_after_member_removed,
+)
 from core.utils import iso, now_utc
 
 
@@ -56,11 +60,18 @@ async def add_group_members(
     if not added_ids:
         return conv
     participants = sorted(set(participants))
+    member_roles = roles_after_member_added(conv, added_ids)
     await db.conversations.update_one(
         {"conversation_id": conv["conversation_id"]},
-        {"$set": {"participants": participants, "updated_at": iso(now_utc())}},
+        {
+            "$set": {
+                "participants": participants,
+                "member_roles": member_roles,
+                "updated_at": iso(now_utc()),
+            }
+        },
     )
-    conv = {**conv, "participants": participants}
+    conv = {**conv, "participants": participants, "member_roles": member_roles}
     await _broadcast_conv_update(conv)
     actor = await db.users.find_one({"user_id": actor_id}, PEER_ROSTER_FIELDS)
     for pid in added_ids:
@@ -89,11 +100,20 @@ async def remove_group_member(
                 "data": {"conversation_id": conv["conversation_id"]},
             })
         return None
+    member_roles, new_owner = roles_after_member_removed(conv, target_user_id)
+    patch = {
+        "participants": participants,
+        "member_roles": member_roles,
+        "updated_at": iso(now_utc()),
+    }
+    if new_owner:
+        patch["owner_id"] = new_owner
+        patch["admin_id"] = new_owner
     await db.conversations.update_one(
         {"conversation_id": conv["conversation_id"]},
-        {"$set": {"participants": participants, "updated_at": iso(now_utc())}},
+        {"$set": patch},
     )
-    conv = {**conv, "participants": participants}
+    conv = {**conv, **patch}
     await _broadcast_conv_update(conv)
     await manager.send_to_user(target_user_id, {
         "type": "conversation-deleted",
