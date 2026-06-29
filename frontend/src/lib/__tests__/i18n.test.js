@@ -1,16 +1,20 @@
 import {
   getStoredUiLang,
+  isSupportedUiLang,
+  loadLocalePack,
   normalizeLang,
   seedUiLangFromDeviceIfNeeded,
   setStoredUiLang,
   t,
 } from '../i18n';
+import { __resetLocalePackCacheForTests } from '../locales/loadLocalePack';
 
 describe('i18n', () => {
   const originalNavigator = global.navigator;
 
   beforeEach(() => {
     localStorage.clear();
+    __resetLocalePackCacheForTests();
     Object.defineProperty(global, 'navigator', {
       configurable: true,
       value: { language: 'en-US', languages: ['en-US'] },
@@ -28,7 +32,11 @@ describe('i18n', () => {
   it('normalizes language codes to supported UI locales', () => {
     expect(normalizeLang('EN')).toBe('en');
     expect(normalizeLang('es-ES')).toBe('es');
+    expect(normalizeLang('fr-FR')).toBe('fr');
+    expect(normalizeLang('de-DE')).toBe('de');
     expect(normalizeLang('xx')).toBe('en');
+    expect(isSupportedUiLang('fr')).toBe(true);
+    expect(isSupportedUiLang('pt')).toBe(false);
   });
 
   it('persists and reads UI language from localStorage', () => {
@@ -47,17 +55,17 @@ describe('i18n', () => {
   it('walks navigator.languages until a supported UI pack is found', () => {
     Object.defineProperty(global, 'navigator', {
       configurable: true,
-      value: { language: 'de-DE', languages: ['de-DE', 'es-MX', 'en-US'] },
+      value: { language: 'pt-PT', languages: ['pt-PT', 'de-DE', 'en-US'] },
     });
-    expect(getStoredUiLang()).toBe('es');
+    expect(getStoredUiLang()).toBe('de');
   });
 
-  it('falls back to English when device locale is unsupported', () => {
+  it('detects French device locale', () => {
     Object.defineProperty(global, 'navigator', {
       configurable: true,
       value: { language: 'fr-FR', languages: ['fr-FR'] },
     });
-    expect(getStoredUiLang()).toBe('en');
+    expect(getStoredUiLang()).toBe('fr');
   });
 
   it('stored preference overrides device locale on installed clients', () => {
@@ -92,5 +100,14 @@ describe('i18n', () => {
 
   it('interpolates variables in translated strings', () => {
     expect(t('inviteFrom', 'en', { user: 'alice' })).toBe('@alice wants to connect');
+  });
+
+  it('falls back to English until lazy pack is loaded', () => {
+    expect(t('landingLogin', 'fr')).toBe('Login');
+  });
+
+  it('uses lazy French pack after load', async () => {
+    await loadLocalePack('fr');
+    expect(t('landingLogin', 'fr')).toBe('Connexion');
   });
 });

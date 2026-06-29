@@ -1,10 +1,20 @@
-/** App UI translations — en / es / ro full; other LANGS fall back to English. */
+/** App UI translations — en / es / ro bundled; fr / de lazy-loaded JSON (Q.47). */
+
+import {
+  getCachedLocalePack,
+  isLazyLocale,
+  LAZY_LOCALE_CODES,
+} from './locales/loadLocalePack';
 
 export const LANGS = [
   { code: 'en', label: 'English' },
   { code: 'ro', label: 'Română' },
   { code: 'es', label: 'Español' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
 ];
+
+export { LAZY_LOCALE_CODES, isLazyLocale, loadLocalePack } from './locales/loadLocalePack';
 
 const UI_LANG_KEY = 'ssc_ui_lang';
 
@@ -2618,9 +2628,16 @@ const STRINGS = {
   },
 };
 
+const BUNDLED_LOCALE_CODES = Object.keys(STRINGS);
+
+export function isSupportedUiLang(code) {
+  const c = (code || '').toLowerCase().slice(0, 2);
+  return BUNDLED_LOCALE_CODES.includes(c) || LAZY_LOCALE_CODES.includes(c);
+}
+
 export function normalizeLang(code) {
   const c = (code || 'en').toLowerCase().slice(0, 2);
-  return STRINGS[c] ? c : 'en';
+  return isSupportedUiLang(c) ? c : 'en';
 }
 
 function readDeviceUiLang() {
@@ -2630,7 +2647,7 @@ function readDeviceUiLang() {
     : [navigator.language || 'en'];
   for (const tag of candidates) {
     const code = String(tag).toLowerCase().slice(0, 2);
-    if (STRINGS[code]) return code;
+    if (isSupportedUiLang(code)) return code;
   }
   return 'en';
 }
@@ -2662,9 +2679,15 @@ export function setStoredUiLang(code) {
 }
 
 /** @param {string} key @param {string} [lang] @param {Record<string,string>} [vars] */
+function resolvePack(code) {
+  if (STRINGS[code]) return STRINGS[code];
+  if (isLazyLocale(code)) return getCachedLocalePack(code);
+  return null;
+}
+
 export function t(key, lang = 'en', vars) {
   const code = normalizeLang(lang);
-  const pack = STRINGS[code] || STRINGS.en;
+  const pack = resolvePack(code) || STRINGS.en;
   let text = pack[key] ?? STRINGS.en[key] ?? key;
   if (vars) {
     Object.entries(vars).forEach(([k, v]) => {

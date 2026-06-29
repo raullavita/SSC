@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   getStoredUiLang,
+  isLazyLocale,
+  loadLocalePack,
   normalizeLang,
   seedUiLangFromDeviceIfNeeded,
   setStoredUiLang,
@@ -16,6 +18,24 @@ export function LocaleProvider({ children }) {
   const [locale, setLocaleState] = useState(() => (
     isInstalledClient() ? seedUiLangFromDeviceIfNeeded() : getStoredUiLang()
   ));
+  const [localeLoading, setLocaleLoading] = useState(() => isLazyLocale(
+    isInstalledClient() ? seedUiLangFromDeviceIfNeeded() : getStoredUiLang(),
+  ));
+
+  useEffect(() => {
+    if (!isLazyLocale(locale)) {
+      setLocaleLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setLocaleLoading(true);
+    loadLocalePack(locale)
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLocaleLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [locale]);
 
   useEffect(() => {
     if (!user?.language || isInstalledClient()) return;
@@ -32,9 +52,10 @@ export function LocaleProvider({ children }) {
 
   const value = useMemo(() => ({
     locale,
+    localeLoading,
     setLocale,
     t: (key, vars) => translate(key, locale, vars),
-  }), [locale, setLocale]);
+  }), [locale, localeLoading, setLocale]);
 
   return <LocaleCtx.Provider value={value}>{children}</LocaleCtx.Provider>;
 }
