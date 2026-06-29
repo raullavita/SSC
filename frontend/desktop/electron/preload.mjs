@@ -75,6 +75,11 @@ const updates = {
   },
 };
 
+const crashReporting = {
+  setOptIn: (enabled) => ipcRenderer.invoke('desktop-crash-reporting-set-opt-in', { enabled }),
+  record: (payload) => ipcRenderer.invoke('desktop-crash-reporting-record', payload || {}),
+};
+
 contextBridge.exposeInMainWorld('sscDesktop', {
   isDesktop: true,
   platform: process.platform,
@@ -86,4 +91,5 @@ contextBridge.exposeInMainWorld('sscDesktop', {
   window: windowApi,
   appLock,
   updates,
+  crashReporting,
 });

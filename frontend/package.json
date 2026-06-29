@@ -23,6 +23,7 @@
     "tailwindcss-animate": "1.0.7"
   },
   "optionalDependencies": {
+    "@sentry/react": "9.39.0",
     "@signalapp/libsignal-client": "0.96.4"
   },
   "scripts": {

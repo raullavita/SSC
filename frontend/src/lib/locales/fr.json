@@ -419,6 +419,8 @@
   "settingsLinkPreviewsHint": "Désactivé par défaut. Lorsqu'activé, cet appareil récupère les métadonnées d'aperçu directement depuis les liens que vous recevez. Pas d'indexation serveur.",
   "settingsGifSearch": "Recherche de GIF",
   "settingsGifSearchHint": "Désactivé par défaut. Lorsqu'activé, cet appareil recherche directement sur Tenor. Les GIF sont chiffrés avant envoi. Pas d'indexation serveur.",
+  "settingsCrashReporting": "Envoyer les rapports de plantage",
+  "settingsCrashReportingHint": "Désactivé par défaut. Lorsqu'activé, cet appareil peut envoyer des données de plantage nettoyées (trace, version, modèle) via {provider}. Jamais de messages, clés ou mots de passe.",
   "linkPreviewLoading": "Chargement de l'aperçu…",
   "stickerGifPickerTitle": "Autocollants & GIF",
   "stickerTab": "Autocollants",

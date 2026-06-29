@@ -16,6 +16,7 @@ import com.getcapacitor.BridgeActivity;
 
 import chat.ssc.secure.push.SscNotificationSounds;
 import chat.ssc.secure.plugins.SscAppLockPlugin;
+import chat.ssc.secure.plugins.SscCrashReportingPlugin;
 import chat.ssc.secure.plugins.SscDeviceSecretPlugin;
 import chat.ssc.secure.plugins.SscLibsignalPlugin;
 import chat.ssc.secure.plugins.SscMediaPermissionsPlugin;
@@ -33,6 +34,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(SscMediaPermissionsPlugin.class);
         registerPlugin(SscNotificationReplyPlugin.class);
         registerPlugin(SscNotificationChannelsPlugin.class);
+        registerPlugin(SscCrashReportingPlugin.class);
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         applySystemBarColors();

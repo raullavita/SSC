@@ -71,6 +71,11 @@ import {
   gifSearchEnabled,
   setGifSearchEnabled,
 } from '../lib/gifSearchPrefs';
+import {
+  crashReportingProviderLabel,
+  isCrashReportingOptedIn,
+  setCrashReportingOptIn,
+} from '../lib/crashReporting';
 import { normalizeDisplayNameInput } from '../lib/displayName';
 import { BIO_MAX_LEN, normalizeProfileBioInput } from '../lib/profileBio';
 import {
@@ -131,6 +136,7 @@ export default function SettingsModal({ open, onClose }) {
   const [notifSound, setNotifSound] = useState(() => getNotificationSound());
   const [linkPreviewOn, setLinkPreviewOn] = useState(() => linkPreviewsEnabled());
   const [gifSearchOn, setGifSearchOn] = useState(() => gifSearchEnabled());
+  const [crashReportingOn, setCrashReportingOn] = useState(() => isCrashReportingOptedIn());
   const [pwCurrent, setPwCurrent] = useState('');
   const [pwNew, setPwNew] = useState('');
   const [pwConfirm, setPwConfirm] = useState('');
@@ -928,6 +934,27 @@ export default function SettingsModal({ open, onClose }) {
                 />
               </label>
               <p className="text-[10px] text-[#71717A]">{t('settingsGifSearchHint')}</p>
+              {isInstalledClient() && (
+                <>
+                  <label className="flex items-center justify-between gap-3 py-2 mt-2 cursor-pointer border-t border-[#27272A]">
+                    <span className="text-xs text-[#A1A1AA]">{t('settingsCrashReporting')}</span>
+                    <input
+                      type="checkbox"
+                      checked={crashReportingOn}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        setCrashReportingOn(next);
+                        void setCrashReportingOptIn(next);
+                      }}
+                      className="accent-[#00E5FF]"
+                      data-testid="settings-crash-reporting"
+                    />
+                  </label>
+                  <p className="text-[10px] text-[#71717A]">
+                    {t('settingsCrashReportingHint', { provider: crashReportingProviderLabel() })}
+                  </p>
+                </>
+              )}
             </Section>
 
             <Section icon={UserCircle} title={t('settingsBlockedContacts')} testId="settings-blocked-section">

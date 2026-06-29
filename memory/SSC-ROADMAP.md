@@ -367,7 +367,7 @@
 | 56 | **Q.56** | **OWASP ZAP CI** + security smoke | git | [x] |
 | 57 | **Q.57** | **Public threat-model page** (user-readable) | git | [x] |
 | 58 | **Q.58** | **disclose.io** + security.txt | Founder | [x] |
-| 59 | **Q.59** | **Crash reporting opt-in** (Firebase Crashlytics or Sentry) | git | [ ] |
+| 59 | **Q.59** | **Crash reporting opt-in** (Firebase Crashlytics or Sentry) | git | [x] |
 | 60 | **Q.60** | **Status page** (health + incident notes) | Founder | [ ] |
 | 61 | **Q.61** | **Code signing** — Windows Authenticode + Mac notarize (TASK P.8) | Founder | [ ] |
 | 62 | **Q.62** | **Google Play public listing** (TASK N.8 / P.9) | Founder | [ ] |

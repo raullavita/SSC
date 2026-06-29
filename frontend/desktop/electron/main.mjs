@@ -31,6 +31,10 @@ import {
   installUpdate,
 } from './update/bridge.mjs';
 import { badgeOverlayImage, formatBadgeLabel, trayTooltipForCount } from './badge.mjs';
+import {
+  recordDesktopCrashReport,
+  setDesktopCrashReportingOptIn,
+} from './crashReporting.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DESKTOP_AUTH_SCHEME = 'chat.ssc.secure.desktop';
@@ -380,6 +384,14 @@ ipcMain.handle('desktop-update-check', async (_event, opts = {}) => checkForUpda
 ipcMain.handle('desktop-update-download', async () => downloadUpdate());
 ipcMain.handle('desktop-update-install', () => installUpdate());
 ipcMain.handle('desktop-update-status', () => getUpdateStatus());
+
+ipcMain.handle('desktop-crash-reporting-set-opt-in', (_event, { enabled } = {}) => (
+  setDesktopCrashReportingOptIn(enabled)
+));
+
+ipcMain.handle('desktop-crash-reporting-record', (_event, payload = {}) => (
+  recordDesktopCrashReport(payload)
+));
 
 ipcMain.handle('desktop-show-notification', (_event, opts = {}) => {
   if (!notificationsAllowed) return false;

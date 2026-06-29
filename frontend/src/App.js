@@ -22,6 +22,7 @@ import InstalledClientGate from './components/InstalledClientGate';
 import DeepLinkListener from './components/DeepLinkListener';
 import { getSessionToken } from './lib/sessionStore';
 import { hideNativeSplash } from './lib/capacitor-init';
+import { initCrashReportingFromStorage } from './lib/crashReporting';
 import { isElectronApp, isInstalledClient, prefersHashRouter } from './lib/platform';
 import { bootstrapSignalIdentity, userHasUnifiedIdentity } from './lib/signalIdentityBootstrap';
 import './App.css';
@@ -169,6 +170,9 @@ function AppRouter() {
 
 export default function App() {
   const Router = prefersHashRouter() ? HashRouter : BrowserRouter;
+  useEffect(() => {
+    void initCrashReportingFromStorage();
+  }, []);
   return (
     <div className="App grain">
       <Router>

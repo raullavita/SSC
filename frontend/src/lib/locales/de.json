@@ -419,6 +419,8 @@
   "settingsLinkPreviewsHint": "Standardmäßig aus. Wenn aktiviert, holt dieses Gerät Vorschau-Metadaten direkt von Links, die du erhältst. Kein Server-Indexing.",
   "settingsGifSearch": "GIF-Suche",
   "settingsGifSearchHint": "Standardmäßig aus. Wenn aktiviert, sucht dieses Gerät direkt bei Tenor. GIFs werden vor dem Senden verschlüsselt. Kein Server-Indexing.",
+  "settingsCrashReporting": "Absturzberichte senden",
+  "settingsCrashReportingHint": "Standardmäßig aus. Wenn aktiviert, kann dieses Gerät bereinigte Absturzdaten (Stacktrace, Version, Modell) über {provider} senden. Nie Nachrichten, Schlüssel oder Passwörter.",
   "linkPreviewLoading": "Vorschau wird geladen…",
   "stickerGifPickerTitle": "Sticker & GIFs",
   "stickerTab": "Sticker",
