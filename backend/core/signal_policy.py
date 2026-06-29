@@ -147,10 +147,10 @@ ENGINE8_V1_SCOPE: Tuple[str, ...] = (
     "1:1_attachments",
     "safety_numbers_v3",
     "prekey_upload",
+    "multi_device_linked",  # Q.51
 )
 
 ENGINE8_DEFERRED: Tuple[str, ...] = (
-    "multi_device_sync",
     "sealed_sender",
     "post_quantum_pqxdh",
 )

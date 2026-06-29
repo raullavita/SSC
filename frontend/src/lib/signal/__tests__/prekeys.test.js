@@ -2,6 +2,7 @@ jest.mock('../../api', () => ({
   api: {
     get: jest.fn(),
     put: jest.fn(),
+    post: jest.fn(),
   },
 }));
 
@@ -9,13 +10,20 @@ jest.mock('../nativeLibsignal', () => ({
   isNativeLibsignalAvailable: jest.fn(),
   generatePreKeyBundle: jest.fn(),
   clearAllSignalSessions: jest.fn(() => Promise.resolve({ cleared: true })),
+  setNativeLocalDeviceId: jest.fn(() => Promise.resolve({ device_id: 1 })),
+}));
+
+jest.mock('../devices', () => ({
+  registerLocalDevice: jest.fn(() => Promise.resolve({ device_id: 1 })),
 }));
 
 import { api } from '../../api';
+import { registerLocalDevice } from '../devices';
 import {
   clearAllSignalSessions,
   generatePreKeyBundle,
   isNativeLibsignalAvailable,
+  setNativeLocalDeviceId,
 } from '../nativeLibsignal';
 import { __resetPrekeysUploadStateForTests, ensurePreKeysUploaded } from '../prekeys';
 
@@ -24,6 +32,8 @@ describe('ensurePreKeysUploaded', () => {
     jest.clearAllMocks();
     __resetPrekeysUploadStateForTests();
     isNativeLibsignalAvailable.mockReturnValue(true);
+    setNativeLocalDeviceId.mockResolvedValue({ device_id: 1 });
+    registerLocalDevice.mockResolvedValue({ device_id: 1 });
     clearAllSignalSessions.mockResolvedValue({ cleared: true });
     generatePreKeyBundle.mockResolvedValue({
       identity_key_public: 'LOCAL_ID',

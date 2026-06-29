@@ -1,5 +1,5 @@
 """Pydantic request/response models."""
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -78,6 +78,7 @@ class SendMessageIn(BaseModel):
     conversation_id: str
     ciphertext: str
     protocol: str = "legacy_rsa"
+    signal_device_ciphertexts: Optional[Dict[str, Dict[str, Any]]] = None
     iv: Optional[str] = None
     encrypted_keys: Optional[Dict[str, str]] = None
     signal_message_type: Optional[int] = None
@@ -279,9 +280,27 @@ class RecoveryResetPasswordIn(BaseModel):
     pk_salt: str = Field(min_length=8, max_length=128)
 
 
+class DeviceRegisterIn(BaseModel):
+    device_id: int = Field(ge=1, le=5)
+    device_name: Optional[str] = Field(default=None, max_length=64)
+    platform: Optional[str] = Field(default=None, max_length=32)
+
+
+class DeviceLinkConsumeIn(BaseModel):
+    token: str = Field(min_length=16, max_length=128)
+    device_name: Optional[str] = Field(default=None, max_length=64)
+    platform: Optional[str] = Field(default=None, max_length=32)
+
+
+class DeviceLinkTokenOut(BaseModel):
+    token: str
+    expires_at: str
+    expires_in_sec: int
+
+
 class PrekeyBundleIn(BaseModel):
     registration_id: int = Field(ge=1, le=16380)
-    device_id: int = Field(default=1, ge=1, le=1)
+    device_id: int = Field(default=1, ge=1, le=5)
     identity_key_public: str = Field(min_length=16, max_length=512)
     signed_prekey_id: int = Field(ge=0, le=16777215)
     signed_prekey_public: str = Field(min_length=16, max_length=512)

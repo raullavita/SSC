@@ -137,6 +137,7 @@ async def send_message(body: SendMessageIn, current=Depends(get_current_user)):
         "mentioned_user_ids": mentioned_user_ids or None,
         "poll_option_count": poll_option_count,
         "topic_id": topic_id,
+        "signal_device_ciphertexts": body.signal_device_ciphertexts,
         "created_at": iso(created),
         "expires_at": expires,
     })

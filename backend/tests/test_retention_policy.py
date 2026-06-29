@@ -35,6 +35,8 @@ LIFESPAN_COLLECTIONS = {
     "conversation_mutes",
     "contact_rosters",
     "broadcast_lists",
+    "signal_devices",
+    "device_link_tokens",
 }
 
 

@@ -20,33 +20,31 @@ export function isSignalV1Message(msg) {
   return (msg?.protocol || ProtocolVersion.LEGACY_RSA) === ProtocolVersion.SIGNAL_V1;
 }
 
-export async function canUseSignalMessaging(peerUserId, ourUserId, peerHasPrekeys) {
+export async function canUseSignalMessaging(peerUserId, ourUserId, peerHasPrekeys, peerDeviceId = 1) {
   if (!peerUserId || !ourUserId || !peerHasPrekeys) return false;
   if (!isNativeLibsignalAvailable()) return false;
   try {
-    await ensureSignalSession(peerUserId, ourUserId);
-    const status = await hasSignalSession(peerUserId);
+    await ensureSignalSession(peerUserId, ourUserId, peerDeviceId);
+    const status = await hasSignalSession(peerUserId, peerDeviceId);
     return !!status?.has_session;
   } catch {
     return false;
   }
 }
 
-export async function encryptSignalText(peerUserId, ourUserId, plaintext) {
-  await ensureSignalSession(peerUserId, ourUserId);
+export async function encryptSignalText(peerUserId, ourUserId, plaintext, peerDeviceId = 1) {
+  await ensureSignalSession(peerUserId, ourUserId, peerDeviceId);
   try {
-    return await nativeEncrypt(peerUserId, ourUserId, plaintext ?? '');
+    return await nativeEncrypt(peerUserId, ourUserId, plaintext ?? '', peerDeviceId);
   } catch (err) {
     if (!isSessionNotFoundError(err)) throw err;
-    // Native store inconsistency: hasSession reported true but encryptSignalMessage
-    // couldn't find the ratchet state. Force a fresh session establishment and retry once.
-    console.warn('[SSC] encryptSignalText: session not found at encrypt time — forcing re-establish for', peerUserId);
-    await forceRefreshSignalSession(peerUserId, ourUserId);
-    return await nativeEncrypt(peerUserId, ourUserId, plaintext ?? '');
+    console.warn('[SSC] encryptSignalText: session not found at encrypt time — forcing re-establish for', peerUserId, peerDeviceId);
+    await forceRefreshSignalSession(peerUserId, ourUserId, peerDeviceId);
+    return await nativeEncrypt(peerUserId, ourUserId, plaintext ?? '', peerDeviceId);
   }
 }
 
-export async function decryptSignalText(peerUserId, ourUserId, msg) {
+export async function decryptSignalText(peerUserId, ourUserId, msg, peerDeviceId = 1) {
   if (!isSignalV1Message(msg)) {
     throw new Error('not a signal_v1 message');
   }
@@ -55,6 +53,7 @@ export async function decryptSignalText(peerUserId, ourUserId, msg) {
     ourUserId,
     msg.ciphertext,
     msg.signal_message_type,
+    peerDeviceId,
   );
   return result?.plaintext ?? '';
 }

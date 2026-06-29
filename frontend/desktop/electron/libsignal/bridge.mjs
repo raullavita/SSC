@@ -70,15 +70,25 @@ export const libsignalHandlers = {
     return { version: LIBSIGNAL_PINNED_VERSION, source: '@signalapp/libsignal-client' };
   },
 
+  async getLocalDeviceId() {
+    const s = requireStore();
+    return { device_id: s.getLocalDeviceId() };
+  },
+
+  async setLocalDeviceId({ device_id: deviceId }) {
+    const s = requireStore();
+    return { device_id: s.setLocalDeviceId(deviceId) };
+  },
+
   async generatePreKeyBundle() {
     const s = requireStore();
     return s.buildPreKeyBundleJson();
   },
 
-  async hasSession({ peer_user_id: peerUserId }) {
+  async hasSession({ peer_user_id: peerUserId, peer_device_id: peerDeviceId = 1 }) {
     const s = requireStore();
     await s.ensureLocalKeys();
-    const addr = ProtocolAddress.new(peerUserId, 1);
+    const addr = ProtocolAddress.new(peerUserId, peerDeviceId || 1);
     const session = await s.getSession(addr);
     return { has_session: !!session };
   },
@@ -86,8 +96,9 @@ export const libsignalHandlers = {
   async establishSession({ peer_user_id: peerUserId, our_user_id: ourUserId, bundle }) {
     const s = requireStore();
     await s.ensureLocalKeys();
-    const remote = ProtocolAddress.new(peerUserId, 1);
-    const local = ProtocolAddress.new(ourUserId, 1);
+    const peerDev = bundle?.device_id || 1;
+    const remote = ProtocolAddress.new(peerUserId, peerDev);
+    const local = ProtocolAddress.new(ourUserId, s.getLocalDeviceId());
     const hadSession = !!(await s.getSession(remote));
     if (!hadSession) {
       const preKeyBundle = buildPreKeyBundle(bundle);
@@ -101,11 +112,16 @@ export const libsignalHandlers = {
     };
   },
 
-  async encryptSignalMessage({ peer_user_id: peerUserId, our_user_id: ourUserId, plaintext }) {
+  async encryptSignalMessage({
+    peer_user_id: peerUserId,
+    our_user_id: ourUserId,
+    peer_device_id: peerDeviceId = 1,
+    plaintext,
+  }) {
     const s = requireStore();
     await s.ensureLocalKeys();
-    const remote = ProtocolAddress.new(peerUserId, 1);
-    const local = ProtocolAddress.new(ourUserId, 1);
+    const remote = ProtocolAddress.new(peerUserId, peerDeviceId || 1);
+    const local = ProtocolAddress.new(ourUserId, s.getLocalDeviceId());
     const encrypted = await signalEncrypt(
       new TextEncoder().encode(plaintext),
       remote,
@@ -124,13 +140,14 @@ export const libsignalHandlers = {
   async decryptSignalMessage({
     peer_user_id: peerUserId,
     our_user_id: ourUserId,
+    peer_device_id: peerDeviceId = 1,
     ciphertext,
     signal_message_type: messageType,
   }) {
     const s = requireStore();
     await s.ensureLocalKeys();
-    const remote = ProtocolAddress.new(peerUserId, 1);
-    const local = ProtocolAddress.new(ourUserId, 1);
+    const remote = ProtocolAddress.new(peerUserId, peerDeviceId || 1);
+    const local = ProtocolAddress.new(ourUserId, s.getLocalDeviceId());
     const serialized = dec(ciphertext);
     let plain;
     if (messageType === CiphertextMessageType.PreKey) {

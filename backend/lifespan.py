@@ -60,7 +60,21 @@ async def _ensure_indexes() -> None:
     migrated = await migrate_legacy_contacts()
     if migrated:
         logger.info(f"contact graph migration: {migrated} mutual pairs from legacy contacts")
-    await db.signal_prekey_bundles.create_index("user_id", unique=True)
+    await db.signal_prekey_bundles.update_many(
+        {"device_id": {"$exists": False}},
+        {"$set": {"device_id": 1}},
+    )
+    try:
+        await db.signal_prekey_bundles.drop_index("user_id_1")
+    except Exception:
+        pass
+    await db.signal_prekey_bundles.create_index(
+        [("user_id", 1), ("device_id", 1)],
+        unique=True,
+    )
+    await db.signal_devices.create_index([("user_id", 1), ("device_id", 1)], unique=True)
+    await db.device_link_tokens.create_index("token", unique=True)
+    await db.device_link_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.passkey_credentials.create_index("credential_id", unique=True)
     await db.passkey_credentials.create_index([("user_id", 1), ("created_at", 1)])
     await backfill_retention_ttl_fields()

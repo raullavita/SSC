@@ -201,13 +201,15 @@ export function useMessagingSend({
         if (attachmentId && attachmentEnc?.signal_meta) {
           enc = await encryptSignalAttachment(peer.user_id, user.user_id, attachmentEnc.signal_meta);
         } else {
-          enc = await encryptSignalText(peer.user_id, user.user_id, text || '');
+          const { encryptSignalTextForPeerDevices } = await import('../lib/signal/multiDeviceMessaging');
+          enc = await encryptSignalTextForPeerDevices(peer.user_id, user.user_id, text || '');
         }
         await api.post('/messages', {
           conversation_id: activeId,
           protocol: ProtocolVersion.SIGNAL_V1,
           ciphertext: enc.ciphertext,
           signal_message_type: enc.signal_message_type,
+          signal_device_ciphertexts: enc.signal_device_ciphertexts,
           message_type: type,
           attachment_id: attachmentId || undefined,
           attachment_content_type: attachmentEnc?.content_type,

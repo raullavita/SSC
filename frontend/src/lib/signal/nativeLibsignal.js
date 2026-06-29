@@ -36,12 +36,24 @@ export async function generatePreKeyBundle() {
   return bundle;
 }
 
-export async function hasSignalSession(peerUserId) {
+export async function getNativeLocalDeviceId() {
+  const client = getLibsignalClient();
+  if (!client?.getLocalDeviceId) return { device_id: 1 };
+  return client.getLocalDeviceId();
+}
+
+export async function setNativeLocalDeviceId(deviceId) {
+  const client = getLibsignalClient();
+  if (!client?.setLocalDeviceId) return { device_id: deviceId };
+  return client.setLocalDeviceId({ device_id: deviceId });
+}
+
+export async function hasSignalSession(peerUserId, peerDeviceId = 1) {
   const client = getLibsignalClient();
   if (!client) {
     return { has_session: false, skipped: true, reason: 'browser-dev' };
   }
-  return client.hasSession({ peer_user_id: peerUserId });
+  return client.hasSession({ peer_user_id: peerUserId, peer_device_id: peerDeviceId });
 }
 
 export async function establishSignalSession(peerUserId, bundle, ourUserId) {
@@ -56,7 +68,7 @@ export async function establishSignalSession(peerUserId, bundle, ourUserId) {
   });
 }
 
-export async function encryptSignalMessage(peerUserId, ourUserId, plaintext) {
+export async function encryptSignalMessage(peerUserId, ourUserId, plaintext, peerDeviceId = 1) {
   const client = getLibsignalClient();
   if (!client) {
     throw new Error('Signal encrypt requires an installed SSC app (Android, iOS, or desktop)');
@@ -64,11 +76,18 @@ export async function encryptSignalMessage(peerUserId, ourUserId, plaintext) {
   return client.encryptSignalMessage({
     peer_user_id: peerUserId,
     our_user_id: ourUserId,
+    peer_device_id: peerDeviceId,
     plaintext,
   });
 }
 
-export async function decryptSignalMessage(peerUserId, ourUserId, ciphertext, signalMessageType) {
+export async function decryptSignalMessage(
+  peerUserId,
+  ourUserId,
+  ciphertext,
+  signalMessageType,
+  peerDeviceId = 1,
+) {
   const client = getLibsignalClient();
   if (!client) {
     throw new Error('Signal decrypt requires an installed SSC app (Android, iOS, or desktop)');
@@ -76,6 +95,7 @@ export async function decryptSignalMessage(peerUserId, ourUserId, ciphertext, si
   return client.decryptSignalMessage({
     peer_user_id: peerUserId,
     our_user_id: ourUserId,
+    peer_device_id: peerDeviceId,
     ciphertext,
     signal_message_type: signalMessageType,
   });

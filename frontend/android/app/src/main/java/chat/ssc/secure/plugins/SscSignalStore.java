@@ -299,6 +299,15 @@ public class SscSignalStore implements SenderKeyStore {
         editor.apply();
     }
 
+    public int getLocalDeviceId() {
+        return Math.max(1, prefs.getInt("local_device_id", 1));
+    }
+
+    public void setLocalDeviceId(int deviceId) {
+        int safe = Math.max(1, Math.min(5, deviceId));
+        prefs.edit().putInt("local_device_id", safe).apply();
+    }
+
     /** Panic wipe — clear local Signal material so X3DH can rebuild cleanly. */
     public static synchronized void wipeAll(Context context) {
         context.getApplicationContext()

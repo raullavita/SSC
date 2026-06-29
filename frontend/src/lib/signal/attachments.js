@@ -80,6 +80,7 @@ export async function encryptSignalAttachment(peerUserId, ourUserId, meta) {
 }
 
 export async function decryptSignalAttachmentBody(peerUserId, ourUserId, msg) {
-  const plaintext = await decryptSignalText(peerUserId, ourUserId, msg);
+  const { decryptSignalTextForLocalDevice } = await import('./multiDeviceMessaging');
+  const plaintext = await decryptSignalTextForLocalDevice(msg, peerUserId, ourUserId);
   return parseSignalAttachmentEnvelope(plaintext);
 }

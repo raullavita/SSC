@@ -76,6 +76,7 @@ export class SscDesktopSignalStore extends SessionStore {
         identities: {},
         sender_keys: {},
         prekey_ids: [],
+        device_id: 1,
       };
     }
     return JSON.parse(fs.readFileSync(fp, 'utf8'));
@@ -303,6 +304,20 @@ export class SscDesktopSignalStore extends SessionStore {
     this.#dirty = false;
   }
 
+  getLocalDeviceId() {
+    const id = parseInt(this.#data.device_id, 10);
+    if (!Number.isFinite(id) || id < 1) return 1;
+    return Math.min(5, id);
+  }
+
+  setLocalDeviceId(deviceId) {
+    const safe = Math.max(1, Math.min(5, parseInt(deviceId, 10) || 1));
+    this.#data.device_id = safe;
+    this.#dirty = true;
+    this.#persist();
+    return safe;
+  }
+
   async buildPreKeyBundleJson() {
     await this.ensureLocalKeys();
     const identity = await this.getIdentityKeyPair();
@@ -319,7 +334,7 @@ export class SscDesktopSignalStore extends SessionStore {
     return {
       libsignal_version: PINNED_VERSION,
       registration_id: this.#data.registration_id,
-      device_id: 1,
+      device_id: this.getLocalDeviceId(),
       identity_key_public: b64(identity.publicKey.serialize()),
       signed_prekey_id: signed.id(),
       signed_prekey_public: b64(signed.publicKey().serialize()),

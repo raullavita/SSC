@@ -1,9 +1,12 @@
 import { api } from '../api';
+import { getLocalDeviceId } from './deviceStore';
+import { registerLocalDevice } from './devices';
 import { LIBSIGNAL_PINNED_VERSION } from './constants';
 import {
   clearAllSignalSessions,
   generatePreKeyBundle,
   isNativeLibsignalAvailable,
+  setNativeLocalDeviceId,
 } from './nativeLibsignal';
 
 let uploadPromise = null;
@@ -31,8 +34,8 @@ export async function uploadPreKeyBundle(bundle) {
   return data;
 }
 
-export async function fetchMyPreKeyStatus() {
-  const { data } = await api.get('/keys/prekey-bundle/me');
+export async function fetchMyPreKeyStatus(deviceId = getLocalDeviceId()) {
+  const { data } = await api.get('/keys/prekey-bundle/me', { params: { device_id: deviceId } });
   return data;
 }
 
@@ -50,8 +53,14 @@ export async function ensurePreKeysUploaded() {
 
   uploadPromise = (async () => {
     try {
-      const status = await fetchMyPreKeyStatus();
+      const deviceId = getLocalDeviceId();
+      await setNativeLocalDeviceId(deviceId).catch(() => {});
+      await registerLocalDevice().catch(() => {});
+      const status = await fetchMyPreKeyStatus(deviceId);
       const localBundle = await generatePreKeyBundle();
+      if (localBundle && !localBundle.device_id) {
+        localBundle.device_id = deviceId;
+      }
       const mismatch = identityMismatch(status, localBundle);
 
       if (status?.ready && !mismatch) {

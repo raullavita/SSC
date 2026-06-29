@@ -25,8 +25,8 @@ describe('encryptSignalText', () => {
   it('ensures a Signal session before encrypting', async () => {
     await encryptSignalText('peer-1', 'me-1', 'hello');
 
-    expect(ensureSignalSession).toHaveBeenCalledWith('peer-1', 'me-1');
-    expect(nativeEncryptSignalMessage).toHaveBeenCalledWith('peer-1', 'me-1', 'hello');
+    expect(ensureSignalSession).toHaveBeenCalledWith('peer-1', 'me-1', 1);
+    expect(nativeEncryptSignalMessage).toHaveBeenCalledWith('peer-1', 'me-1', 'hello', 1);
   });
 
   it('retries with forceRefreshSignalSession on session-not-found error', async () => {
@@ -37,7 +37,7 @@ describe('encryptSignalText', () => {
 
     const result = await encryptSignalText('peer-1', 'me-1', 'hello');
 
-    expect(forceRefreshSignalSession).toHaveBeenCalledWith('peer-1', 'me-1');
+    expect(forceRefreshSignalSession).toHaveBeenCalledWith('peer-1', 'me-1', 1);
     expect(nativeEncryptSignalMessage).toHaveBeenCalledTimes(2);
     expect(result).toEqual({ ciphertext: 'ct2', signal_message_type: 1 });
   });

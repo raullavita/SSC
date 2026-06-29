@@ -47,7 +47,8 @@ export async function decryptMessageBody(msg, { myUserId, peerUserId, privateKey
   if (isSignalV1Message(msg)) {
     const remoteId = signalRemoteUserId(msg, { myUserId, peerUserId });
     if (!remoteId || !myUserId) throw new Error('NO_KEY');
-    const plaintext = await decryptSignalText(remoteId, myUserId, msg);
+    const { decryptSignalTextForLocalDevice } = await import('./multiDeviceMessaging');
+    const plaintext = await decryptSignalTextForLocalDevice(msg, remoteId, myUserId);
     if (isSignalAttachmentEnvelope(plaintext)) {
       const meta = parseSignalAttachmentEnvelope(plaintext);
       return meta?.caption ?? '';

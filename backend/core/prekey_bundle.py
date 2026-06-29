@@ -120,8 +120,8 @@ def sanitize_bundle_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         "one_time_prekeys": validate_one_time_prekeys(one_time),
         "libsignal_version": str(payload.get("libsignal_version") or "").strip()[:32],
     }
-    if doc["device_id"] != 1:
-        raise PrekeyValidationError("only device_id=1 supported in v1")
+    if doc["device_id"] < 1 or doc["device_id"] > 5:
+        raise PrekeyValidationError("device_id out of range")
 
     missing = [k for k in PUBLIC_PREKEY_FIELDS if k not in doc and k != "one_time_prekeys"]
     if missing:

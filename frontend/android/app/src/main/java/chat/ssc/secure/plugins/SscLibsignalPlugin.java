@@ -42,6 +42,42 @@ public class SscLibsignalPlugin extends Plugin {
 
     private static final String PINNED_VERSION = "0.96.2";
 
+    private static int peerDeviceId(PluginCall call) {
+        Integer value = call.getInt("peer_device_id");
+        if (value == null || value < 1) return 1;
+        return Math.min(5, value);
+    }
+
+    @PluginMethod
+    public void getLocalDeviceId(PluginCall call) {
+        try {
+            SscSignalStore store = SscSignalStore.getInstance(getContext());
+            JSObject ret = new JSObject();
+            ret.put("device_id", store.getLocalDeviceId());
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("getLocalDeviceId failed: " + e.getMessage(), e);
+        }
+    }
+
+    @PluginMethod
+    public void setLocalDeviceId(PluginCall call) {
+        try {
+            Integer deviceId = call.getInt("device_id");
+            if (deviceId == null || deviceId < 1 || deviceId > 5) {
+                call.reject("device_id must be 1-5");
+                return;
+            }
+            SscSignalStore store = SscSignalStore.getInstance(getContext());
+            store.setLocalDeviceId(deviceId);
+            JSObject ret = new JSObject();
+            ret.put("device_id", store.getLocalDeviceId());
+            call.resolve(ret);
+        } catch (Exception e) {
+            call.reject("setLocalDeviceId failed: " + e.getMessage(), e);
+        }
+    }
+
     @PluginMethod
     public void getPinnedVersion(PluginCall call) {
         JSObject ret = new JSObject();
@@ -69,7 +105,7 @@ public class SscLibsignalPlugin extends Plugin {
             JSObject ret = new JSObject();
             ret.put("libsignal_version", PINNED_VERSION);
             ret.put("registration_id", registrationId);
-            ret.put("device_id", 1);
+            ret.put("device_id", store.getLocalDeviceId());
             ret.put("identity_key_public", b64(identityKeyPair.getPublicKey().serialize()));
             ret.put("signed_prekey_id", signedPreKeyId);
             ret.put("signed_prekey_public", b64(signedPreKey.getKeyPair().getPublicKey().serialize()));
@@ -104,7 +140,7 @@ public class SscLibsignalPlugin extends Plugin {
             }
             SscSignalStore store = SscSignalStore.getInstance(getContext());
             store.ensureLocalKeys();
-            SignalProtocolAddress address = new SignalProtocolAddress(peerUserId, 1);
+            SignalProtocolAddress address = new SignalProtocolAddress(peerUserId, peerDeviceId(call));
             boolean hasSession = store.getProtocolStore().containsSession(address);
             JSObject ret = new JSObject();
             ret.put("has_session", hasSession);
@@ -136,8 +172,10 @@ public class SscLibsignalPlugin extends Plugin {
             SscSignalStore store = SscSignalStore.getInstance(getContext());
             store.ensureLocalKeys();
             InMemorySignalProtocolStore protocolStore = store.getProtocolStore();
-            SignalProtocolAddress remoteAddress = new SignalProtocolAddress(peerUserId, 1);
-            SignalProtocolAddress localAddress = new SignalProtocolAddress(ourUserId, 1);
+            int peerDev = bundleObj.has("device_id") ? Math.max(1, bundleObj.getInteger("device_id")) : peerDeviceId(call);
+            int localDev = store.getLocalDeviceId();
+            SignalProtocolAddress remoteAddress = new SignalProtocolAddress(peerUserId, peerDev);
+            SignalProtocolAddress localAddress = new SignalProtocolAddress(ourUserId, localDev);
             boolean hadSession = protocolStore.containsSession(remoteAddress);
 
             if (!hadSession) {
@@ -183,7 +221,7 @@ public class SscLibsignalPlugin extends Plugin {
 
             SscSignalStore store = SscSignalStore.getInstance(getContext());
             store.ensureLocalKeys();
-            SessionCipher cipher = buildCipher(store, peerUserId, ourUserId);
+            SessionCipher cipher = buildCipher(store, peerUserId, ourUserId, peerDeviceId(call), store.getLocalDeviceId());
             CiphertextMessage encrypted = cipher.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
 
             store.persistSessions();
@@ -225,7 +263,7 @@ public class SscLibsignalPlugin extends Plugin {
 
             SscSignalStore store = SscSignalStore.getInstance(getContext());
             store.ensureLocalKeys();
-            SessionCipher cipher = buildCipher(store, peerUserId, ourUserId);
+            SessionCipher cipher = buildCipher(store, peerUserId, ourUserId, peerDeviceId(call), store.getLocalDeviceId());
             byte[] serialized = decode(ciphertextB64);
             byte[] plaintextBytes;
 
@@ -379,10 +417,16 @@ public class SscLibsignalPlugin extends Plugin {
         }
     }
 
-    private SessionCipher buildCipher(SscSignalStore store, String peerUserId, String ourUserId) throws Exception {
+    private SessionCipher buildCipher(
+            SscSignalStore store,
+            String peerUserId,
+            String ourUserId,
+            int peerDeviceId,
+            int localDeviceId
+    ) throws Exception {
         InMemorySignalProtocolStore protocolStore = store.getProtocolStore();
-        SignalProtocolAddress remoteAddress = new SignalProtocolAddress(peerUserId, 1);
-        SignalProtocolAddress localAddress = new SignalProtocolAddress(ourUserId, 1);
+        SignalProtocolAddress remoteAddress = new SignalProtocolAddress(peerUserId, peerDeviceId);
+        SignalProtocolAddress localAddress = new SignalProtocolAddress(ourUserId, localDeviceId);
         return new SessionCipher(protocolStore, remoteAddress, localAddress);
     }
 
