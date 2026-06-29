@@ -124,6 +124,8 @@ export async function applyDesktopUpdateFlow() {
 
 const BACKGROUND_CHECK_DELAY_MS = 45_000;
 
+export { checkDesktopUpdates, downloadDesktopUpdate, installDesktopUpdate } from './desktopUpdates';
+
 export function scheduleBackgroundUpdateCheck(onAvailable) {
   if (!isInstalledClient() || typeof window === 'undefined') return () => {};
   const timer = setTimeout(async () => {
