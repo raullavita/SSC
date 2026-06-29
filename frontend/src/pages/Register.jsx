@@ -234,27 +234,27 @@ export default function Register() {
           )}
 
           {!pendingVerification && (
-          <div className="flex items-center gap-3 my-5">
-            <div className="flex-1 h-px bg-[#27272A]" />
-            <span className="text-[10px] font-mono text-[#A1A1AA] tracking-[0.25em]">{t('or')}</span>
-            <div className="flex-1 h-px bg-[#27272A]" />
-          </div>
+            <>
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-[#27272A]" />
+                <span className="text-[10px] font-mono text-[#A1A1AA] tracking-[0.25em]">{t('or')}</span>
+                <div className="flex-1 h-px bg-[#27272A]" />
+              </div>
 
-          <button
-            onClick={loginGoogle}
-            disabled={busy || !googleEnabled}
-            data-testid="register-google-button"
-            className="w-full py-2.5 border border-[#27272A] bg-[#121212] hover:bg-[#1A1A1A] rounded-md flex items-center justify-center gap-2 text-sm transition disabled:opacity-40"
-          >
-            <GoogleLogo size={18} weight="bold" /> {googleEnabled ? t('continueGoogle') : t('googleNotConfigured')}
-          </button>
-          )}
+              <button
+                onClick={loginGoogle}
+                disabled={busy || !googleEnabled}
+                data-testid="register-google-button"
+                className="w-full py-2.5 border border-[#27272A] bg-[#121212] hover:bg-[#1A1A1A] rounded-md flex items-center justify-center gap-2 text-sm transition disabled:opacity-40"
+              >
+                <GoogleLogo size={18} weight="bold" /> {googleEnabled ? t('continueGoogle') : t('googleNotConfigured')}
+              </button>
 
-          {!pendingVerification && (
-          <p className="mt-6 text-sm text-[#A1A1AA] text-center">
-            {t('alreadyHaveAccount')}{' '}
-            <Link to="/login" data-testid="goto-login" className="text-[#00E5FF] hover:underline">{t('signIn')}</Link>
-          </p>
+              <p className="mt-6 text-sm text-[#A1A1AA] text-center">
+                {t('alreadyHaveAccount')}{' '}
+                <Link to="/login" data-testid="goto-login" className="text-[#00E5FF] hover:underline">{t('signIn')}</Link>
+              </p>
+            </>
           )}
         </div>
       </div>
