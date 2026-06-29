@@ -31,6 +31,6 @@ PyOTP==2.10.0
 pywebpush==2.3.0
 redis>=5.0.0
 certifi>=2024.2.2
-firebase-admin>=6.5.0
+firebase-admin>=6.9.0
 websockets>=12.0
 webauthn>=2.5.0,<3
