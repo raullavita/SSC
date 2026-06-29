@@ -365,7 +365,6 @@ const STRINGS = {
     couldNotUpdateContact: 'Could not update contact',
     contactRemoved: 'Contact removed',
     verifyIdentity: 'Verify identity',
-    searchMessages: 'Search messages…',
     twoFaTitle: 'Two-factor auth',
     twoFaIntro: 'Add an authenticator app like Google Authenticator, Authy, or 1Password.',
     twoFaPreparing: 'Preparing…',
