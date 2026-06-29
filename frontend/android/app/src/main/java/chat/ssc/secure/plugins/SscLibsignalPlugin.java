@@ -40,7 +40,7 @@ import java.util.UUID;
 @CapacitorPlugin(name = "SscLibsignal")
 public class SscLibsignalPlugin extends Plugin {
 
-    private static final String PINNED_VERSION = "0.96.2";
+    private static final String PINNED_VERSION = "0.96.4";
 
     private static int peerDeviceId(PluginCall call) {
         Integer value = call.getInt("peer_device_id");

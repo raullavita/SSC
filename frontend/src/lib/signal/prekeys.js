@@ -2,6 +2,7 @@ import { api } from '../api';
 import { getLocalDeviceId } from './deviceStore';
 import { registerLocalDevice } from './devices';
 import { LIBSIGNAL_PINNED_VERSION } from './constants';
+import { bundleHasKyberPrekeys } from './pqxdhPolicy';
 import {
   clearAllSignalSessions,
   generatePreKeyBundle,
@@ -17,6 +18,9 @@ export function __resetPrekeysUploadStateForTests() {
 }
 
 export async function uploadPreKeyBundle(bundle) {
+  if (!bundleHasKyberPrekeys(bundle)) {
+    throw new Error('kyber_prekeys_required');
+  }
   const payload = {
     registration_id: bundle.registration_id,
     device_id: bundle.device_id || 1,

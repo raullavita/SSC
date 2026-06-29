@@ -16,13 +16,13 @@ These libraries are **linked or bundled** in conveyed builds and require corresp
 | Field | Value |
 |-------|-------|
 | **Components** | `org.signal:libsignal-android`, `org.signal:libsignal-client`, `@signalapp/libsignal-client` |
-| **Version pinned** | **0.96.2** |
+| **Version pinned** | **0.96.4** |
 | **License** | [GNU Affero General Public License v3.0](https://www.gnu.org/licenses/agpl-3.0.html) |
 | **Upstream** | https://github.com/signalapp/libsignal |
 | **Android Maven** | https://build-artifacts.signal.org/libraries/maven/ |
 | **npm** | https://www.npmjs.com/package/@signalapp/libsignal-client |
 | **SSC usage** | Android APK: X3DH, Double Ratchet, Sender Keys via `SscLibsignalPlugin` |
-| **Corresponding source** | This repository + upstream libsignal tag `v0.96.2` |
+| **Corresponding source** | This repository + upstream libsignal tag `v0.96.4` |
 
 ### mediasoup (SFU Phase B — Q.35)
 
@@ -55,5 +55,5 @@ For full dependency trees, see `frontend/yarn.lock` and `backend/requirements.tx
 ## How to obtain source
 
 1. **SSC application source:** clone https://github.com/raullavita/SSC (branch/tag matching your installed version).
-2. **libsignal source:** https://github.com/signalapp/libsignal at tag **v0.96.2**.
+2. **libsignal source:** https://github.com/signalapp/libsignal at tag **v0.96.4**.
 3. **In-app:** Settings → Open source.

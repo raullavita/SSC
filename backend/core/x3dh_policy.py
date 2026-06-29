@@ -17,7 +17,7 @@ FORBIDDEN_SESSION_SERVER_FIELDS: FrozenSet[str] = frozenset({
     "message_keys",
 })
 
-# Kyber-1024 public material (libsignal 0.96 PQXDH hybrid)
+# Kyber-1024 public material (libsignal 0.96+ PQXDH hybrid — Q.55)
 KYBER_PUBLIC_MIN_BYTES = 100
 KYBER_PUBLIC_MAX_BYTES = 4096
 KYBER_SIGNATURE_BYTES = 64

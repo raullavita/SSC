@@ -33,7 +33,7 @@ Build a WhatsApp/Telegram-like app with:
 - **Backend:** FastAPI + MongoDB Atlas (TTL indexes for 24h auto-delete) + Redis (production rate limits + session revocation)
 - **Realtime:** WebSocket (`/api/ws`) for messages, typing, read receipts, WebRTC signaling; Redis pub-sub for multi-worker
 - **E2E encryption (installed clients):**
-  - **Android + Windows + Mac:** Signal Protocol (libsignal **0.96.2**) on 1:1, groups, stories, attachments, call signaling
+  - **Android + Windows + Mac:** Signal Protocol (libsignal **0.96.4**, PQXDH) on 1:1, groups, stories, attachments, call signaling
   - **Unified identity:** Curve25519 primary (`identity_primary: signal_v1`); RSA vault-wrap only
   - **Contact graph:** Blind seals + pepper-encrypted rosters (`CONTACT_GRAPH_PEPPER`)
   - **Browser dev shell:** Legacy RSA only — founder localhost with `REACT_APP_BROWSER_DEV=true`; not marketed

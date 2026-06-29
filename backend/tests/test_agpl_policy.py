@@ -82,4 +82,7 @@ def test_compliance_doc_exists_and_covers_play_store():
     text = (REPO / "memory/AGPL_COMPLIANCE.md").read_text(encoding="utf-8")
     assert "Play Store" in text
     assert SOURCE_REPO_URL in text
-    assert re.search(r"libsignal.*0\.96\.2|0\.96\.2.*libsignal", text)
+    assert re.search(
+        rf"libsignal.*{re.escape(LIBSIGNAL_PINNED_VERSION)}|{re.escape(LIBSIGNAL_PINNED_VERSION)}.*libsignal",
+        text,
+    )

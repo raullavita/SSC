@@ -111,7 +111,7 @@ PUBLIC_PREKEY_FIELDS: frozenset[str] = frozenset({
     "libsignal_version",
 })
 
-LIBSIGNAL_PINNED_VERSION = "0.96.2"
+LIBSIGNAL_PINNED_VERSION = "0.96.4"
 LIBSIGNAL_NPM_PACKAGE = "@signalapp/libsignal-client"
 LIBSIGNAL_MAVEN_GROUP = "org.signal"
 LIBSIGNAL_MAVEN_ARTIFACT_ANDROID = "libsignal-android"
@@ -151,11 +151,10 @@ ENGINE8_V1_SCOPE: Tuple[str, ...] = (
     "sealed_sender",  # Q.52
     "key_change_warnings",  # Q.53
     "legacy_rsa_send_retired",  # Q.54
+    "post_quantum_pqxdh",  # Q.55
 )
 
-ENGINE8_DEFERRED: Tuple[str, ...] = (
-    "post_quantum_pqxdh",
-)
+ENGINE8_DEFERRED: Tuple[str, ...] = ()
 
 # 8.10 browser WASM — retired; desktop libsignal is Engine 10 (see engine10_policy.py).
 ENGINE8_10_RETIRED = True

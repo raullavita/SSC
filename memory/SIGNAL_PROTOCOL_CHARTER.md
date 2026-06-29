@@ -201,3 +201,4 @@ Message documents gain optional field:
 | 2026-06-23 | **0.96.2** | Engine 8.6 — dual-read legacy_rsa + signal_v1; honest encryption labels |
 | 2026-06-23 | **0.96.2** | Engine 8.7 — WebRTC 1:1 signaling via signal_v1 ratchet (G6 closed) |
 | 2026-06-23 | **0.96.2** | Engine 8.8 — full gate + live integration proof; Engine 8 complete |
+| 2026-06-29 | **0.96.4** | Q.55 — PQXDH hybrid formalized; libsignal bump; Kyber prekeys enforced |

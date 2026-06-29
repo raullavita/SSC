@@ -28,6 +28,8 @@ ENGINE8_UNIT_MODULES: Tuple[str, ...] = (
     "tests/test_signal_message_policy.py",
     "tests/test_migration_policy.py",
     "tests/test_webrtc_signaling_policy.py",
+    "tests/test_pqxdh_policy.py",
+    "tests/test_legacy_rsa_policy.py",
 )
 
 ENGINE8_INTEGRATION_MODULES: Tuple[str, ...] = (
@@ -90,6 +92,11 @@ ENFORCEMENT_PATHS_812: Tuple[str, ...] = (
     "frontend/src/lib/signal/statuses.js",
 )
 
+ENFORCEMENT_PATHS_855: Tuple[str, ...] = (
+    "backend/core/pqxdh_policy.py",
+    "frontend/src/lib/signal/pqxdhPolicy.js",
+)
+
 ENFORCEMENT_PATHS_82: Tuple[str, ...] = (
     "frontend/src/lib/safetyNumber.js",
     "frontend/src/lib/identityKey.js",
@@ -111,6 +118,7 @@ ENGINE8_ALL_ENFORCEMENT_PATHS: Tuple[str, ...] = (
     *ENFORCEMENT_PATHS_89,
     *ENFORCEMENT_PATHS_811,
     *ENFORCEMENT_PATHS_812,
+    *ENFORCEMENT_PATHS_855,
 )
 
 
@@ -767,6 +775,90 @@ def run_signal_proof_step_812() -> SignalProofReport:
     return SignalProofReport(checks=checks)
 
 
+def _check_q55_pqxdh_policy() -> ProofCheck:
+    from core.pqxdh_policy import kyber_required_in_bundle, pqxdh_hybrid_enabled
+    from core.signal_policy import ENGINE8_DEFERRED, ENGINE8_V1_SCOPE, LIBSIGNAL_PINNED_VERSION
+
+    policy = (REPO_ROOT / "backend/core/pqxdh_policy.py").read_text(encoding="utf-8")
+    ok = (
+        pqxdh_hybrid_enabled()
+        and kyber_required_in_bundle()
+        and "post_quantum_pqxdh" in ENGINE8_V1_SCOPE
+        and "post_quantum_pqxdh" not in ENGINE8_DEFERRED
+        and "Kyber" in policy
+        and LIBSIGNAL_PINNED_VERSION >= "0.96.4"
+    )
+    return ProofCheck(
+        name="q55_pqxdh_policy",
+        passed=ok,
+        detail=f"Q.55 PQXDH hybrid active at libsignal {LIBSIGNAL_PINNED_VERSION}" if ok else "PQXDH policy incomplete",
+    )
+
+
+def _check_q55_kyber_in_bundle() -> ProofCheck:
+    prekeys = (REPO_ROOT / "backend/core/prekey_bundle.py").read_text(encoding="utf-8")
+    plugin = (REPO_ROOT / "frontend/android/app/src/main/java/chat/ssc/secure/plugins/SscLibsignalPlugin.java").read_text(
+        encoding="utf-8"
+    )
+    bridge = (REPO_ROOT / "frontend/desktop/electron/libsignal/bridge.mjs").read_text(encoding="utf-8")
+    ok = (
+        "validate_kyber_public" in prekeys
+        and "KyberPreKeyRecord" in plugin
+        and "KEMPublicKey" in bridge
+        and "kyber_prekey_public" in bridge
+    )
+    return ProofCheck(
+        name="q55_kyber_bundle",
+        passed=ok,
+        detail="Q.55 Kyber prekeys required in bundle + session establishment" if ok else "Kyber bundle wiring incomplete",
+    )
+
+
+def _check_q55_libsignal_bump() -> ProofCheck:
+    from core.signal_policy import LIBSIGNAL_PINNED_VERSION
+
+    gradle = (REPO_ROOT / "frontend/android/app/build.gradle").read_text(encoding="utf-8")
+    constants = (REPO_ROOT / "frontend/src/lib/signal/constants.js").read_text(encoding="utf-8")
+    desktop_pkg = (REPO_ROOT / "frontend/desktop/package.json").read_text(encoding="utf-8")
+    pinned = f"libsignal-android:{LIBSIGNAL_PINNED_VERSION}"
+    ok = (
+        pinned in gradle
+        and LIBSIGNAL_PINNED_VERSION in constants
+        and f'"@signalapp/libsignal-client": "{LIBSIGNAL_PINNED_VERSION}"' in desktop_pkg
+    )
+    return ProofCheck(
+        name="q55_libsignal_bump",
+        passed=ok,
+        detail=f"Q.55 libsignal pinned to {LIBSIGNAL_PINNED_VERSION}" if ok else "libsignal version pins out of sync",
+    )
+
+
+def _check_q55_client_policy() -> ProofCheck:
+    client = (REPO_ROOT / "frontend/src/lib/signal/pqxdhPolicy.js").read_text(encoding="utf-8")
+    prekeys = (REPO_ROOT / "frontend/src/lib/signal/prekeys.js").read_text(encoding="utf-8")
+    badge = (REPO_ROOT / "frontend/src/components/EncryptionModeBadge.jsx").read_text(encoding="utf-8")
+    ok = (
+        "PQXDH_HYBRID_ENABLED" in client
+        and "bundleHasKyberPrekeys" in prekeys
+        and "signalUsesPqxdh" in badge
+    )
+    return ProofCheck(
+        name="q55_client_policy",
+        passed=ok,
+        detail="Q.55 client PQXDH policy + upload guard + UI labels" if ok else "client PQXDH policy incomplete",
+    )
+
+
+def run_signal_proof_step_855() -> SignalProofReport:
+    checks = run_signal_proof_step_812().checks + [
+        _check_q55_pqxdh_policy(),
+        _check_q55_kyber_in_bundle(),
+        _check_q55_libsignal_bump(),
+        _check_q55_client_policy(),
+    ]
+    return SignalProofReport(checks=checks)
+
+
 def run_signal_proof() -> SignalProofReport:
-    """Full Engine 8 sign-off proof (through 8.12)."""
-    return run_signal_proof_step_812()
+    """Full Engine 8 sign-off proof (through 8.12 + Q.55 PQXDH)."""
+    return run_signal_proof_step_855()

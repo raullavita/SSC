@@ -27,9 +27,9 @@ SSC currently runs **two systems in parallel** during migration:
 | Layer | Algorithm | Used for |
 |-------|-----------|----------|
 | **Legacy RSA** | RSA-OAEP 2048 + AES-256-GCM per message | Web/PWA, groups, attachments, stories, old messages, account registration |
-| **Signal `signal_v1`** | X3DH + Double Ratchet (libsignal 0.96.2) | Android APK: 1:1 text, attachments, call signaling when both peers ready |
-| **Signal `signal_group_v1`** | Sender Keys (libsignal 0.96.2) | Android APK: group messages when all members have 1:1 sessions |
-| **Signal `signal_status_v1`** | Sender Keys (libsignal 0.96.2) | Android APK: stories to contacts when sessions ready |
+| **Signal `signal_v1`** | PQXDH (X3DH + Kyber) + Double Ratchet (libsignal 0.96.4) | Android APK: 1:1 text, attachments, call signaling when both peers ready |
+| **Signal `signal_group_v1`** | Sender Keys (libsignal 0.96.4) | Android APK: group messages when all members have 1:1 sessions |
+| **Signal `signal_status_v1`** | Sender Keys (libsignal 0.96.4) | Android APK: stories to contacts when sessions ready |
 
 UI labels: **SIG** (green) vs **RSA** (yellow) on messages and composer hints.
 
@@ -68,7 +68,7 @@ UI labels: **SIG** (green) vs **RSA** (yellow) on messages and composer hints.
 
 ## 4. Should the whole app use Signal?
 
-**Yes — on every installed client.** Android, Windows, and Mac use official libsignal **0.96.2**. Browser-tab Web/PWA is **not a product surface** (RSA legacy for founder dev only). Engine 8.10 browser WASM is **retired**; Engine 10 desktop replaces it.
+**Yes — on every installed client.** Android, Windows, and Mac use official libsignal **0.96.4** with **PQXDH** (Kyber-1024 hybrid key agreement). Browser-tab Web/PWA is **not a product surface** (RSA legacy for founder dev only). Engine 8.10 browser WASM is **retired**; Engine 10 desktop replaces it.
 
 **P1 complete:** unified identity (curve primary) · contacts graph privacy (server-blind).
 

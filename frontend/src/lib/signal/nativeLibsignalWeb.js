@@ -3,7 +3,7 @@ import { WebPlugin } from '@capacitor/core';
 /** Browser dev shell only — not a product surface (use installed SSC app). */
 export class SscLibsignalWeb extends WebPlugin {
   async getPinnedVersion() {
-    return { version: '0.96.2', source: 'browser-dev-unavailable' };
+    return { version: '0.96.4', source: 'browser-dev-unavailable' };
   }
 
   async generatePreKeyBundle() {

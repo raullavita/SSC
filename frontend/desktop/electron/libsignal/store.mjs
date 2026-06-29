@@ -19,7 +19,7 @@ import {
   SignedPreKeyRecord,
 } from '@signalapp/libsignal-client';
 
-const PINNED_VERSION = '0.96.2';
+const PINNED_VERSION = '0.96.4';
 const ONE_TIME_PREKEY_COUNT = 20;
 
 const b64 = (buf) => Buffer.from(buf).toString('base64');

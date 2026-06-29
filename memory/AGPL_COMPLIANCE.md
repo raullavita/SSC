@@ -11,7 +11,7 @@
 
 | Question | Answer |
 |----------|--------|
-| Does SSC trigger AGPL? | **Yes** for the **Android APK** — it links `org.signal:libsignal-android` / `libsignal-client` **0.96.2** (AGPL-3.0) via native `.so` in the distributed binary. |
+| Does SSC trigger AGPL? | **Yes** for the **Android APK** — it links `org.signal:libsignal-android` / `libsignal-client` **0.96.4** (AGPL-3.0) via native `.so` in the distributed binary. |
 | Does web/PWA trigger AGPL from libsignal? | **No (today)** — official libsignal is not shipped in the browser build (Engine 8.10 blocked). Web uses `legacy_rsa` only. |
 | Does the backend API trigger AGPL? | **Not as a separate conveyance** — backend does not link libsignal. If SSC later modifies AGPL server code (e.g. mediasoup SFU) and runs it as a network service users interact with, **AGPL §13** may require source offer for that service too. |
 | Blocks private beta / Firebase App Distribution? | **No** — AGPL applies whenever you **convey** copies (including testers). Compliance artifacts below satisfy conveyance obligations. |
@@ -27,7 +27,7 @@
 
 | Component | Version | License | Where |
 |-----------|---------|---------|-------|
-| **libsignal** (Rust + JNI) | **0.96.2** | AGPL-3.0 | `frontend/android/app/build.gradle`; `libsignal_jni.so` in APK |
+| **libsignal** (Rust + JNI) | **0.96.4** | AGPL-3.0 | `frontend/android/app/build.gradle`; `libsignal_jni.so` in APK |
 | SSC Capacitor plugin | — | AGPL-3.0 (combined work) | `SscLibsignalPlugin.java`, `SscSignalStore.java` |
 | SSC app UI + crypto glue | — | AGPL-3.0 (combined work) | `frontend/src/lib/signal/*`, Android WebView bundle |
 
@@ -37,7 +37,7 @@ Pinned versions must match `backend/core/signal_policy.py` (`LIBSIGNAL_PINNED_VE
 
 | Component | Version | License | Notes |
 |-----------|---------|---------|-------|
-| `@signalapp/libsignal-client` | 0.96.2 | AGPL-3.0 | `optionalDependencies` in `frontend/package.json`; Node/tests |
+| `@signalapp/libsignal-client` | 0.96.4 | AGPL-3.0 | `optionalDependencies` in `frontend/package.json`; Node/tests |
 
 ### 2.3 Planned (not deployed)
 
@@ -68,7 +68,7 @@ For each Android APK conveyance, recipients must be able to obtain **Correspondi
 | Backend (reproducible stack) | `backend/`, `docker-compose.yml` |
 | Build instructions | `README.md`, `SSC-BUILD-APK.bat`, `yarn cap:sync` |
 | Policy / charters | `memory/` |
-| Exact dependency pins | `yarn.lock`, `requirements.txt`, `build.gradle` libsignal **0.96.2** |
+| Exact dependency pins | `yarn.lock`, `requirements.txt`, `build.gradle` libsignal **0.96.4** |
 | License texts | `LICENSE`, `THIRD_PARTY_NOTICES.md` |
 
 **Source offer mechanism (chosen):** public GitHub repo — satisfies AGPL §6(d) when linked prominently in-app and on Play Store listing.
@@ -127,7 +127,7 @@ For each Android APK conveyance, recipients must be able to obtain **Correspondi
 
 | Check | Status |
 |-------|--------|
-| AGPL deps identified | ✅ libsignal 0.96.2 (Android); mediasoup planned |
+| AGPL deps identified | ✅ libsignal 0.96.4 (Android); mediasoup planned |
 | Combined work license chosen | ✅ AGPL-3.0 (`LICENSE`) |
 | Source offer path | ✅ GitHub public repo |
 | In-app legal notices | ✅ Settings UI |

@@ -46,7 +46,7 @@ describe('ensurePreKeysUploaded', () => {
       kyber_prekey_public: 'c',
       kyber_prekey_signature: 'd',
       one_time_prekeys: [{ prekey_id: 1, public: 'e' }],
-      libsignal_version: '0.96.2',
+      libsignal_version: '0.96.4',
     });
   });
 

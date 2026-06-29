@@ -29,7 +29,7 @@ React UI (frontend/build)
     ↓ file:// in Electron BrowserWindow
 preload.mjs → window.sscDesktop
     ↓ IPC
-main.mjs → libsignal bridge (Node @signalapp/libsignal-client 0.96.2)
+main.mjs → libsignal bridge (Node @signalapp/libsignal-client 0.96.4)
     ↓
 Persistent store: %APPDATA%/SSC/signal-store/ (Windows) · ~/Library/Application Support/SSC/ (Mac)
 ```
@@ -70,7 +70,7 @@ Output: `frontend/desktop/dist/SSC-*.dmg`
 
 | Feature | Android | Desktop target |
 |---------|---------|----------------|
-| libsignal 0.96.2 | ✅ | ✅ |
+| libsignal 0.96.4 (PQXDH) | ✅ | ✅ |
 | 1:1 X3DH + ratchet | ✅ | ✅ |
 | Group Sender Keys | ✅ | ✅ |
 | Stories encryption | ✅ | ✅ |

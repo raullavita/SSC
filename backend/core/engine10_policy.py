@@ -26,7 +26,7 @@ DESKTOP_CHARTER = "memory/DESKTOP_CLIENT_CHARTER.md"
 
 ENGINE10_STEPS: List[Tuple[str, str, bool]] = [
     ("10.1", "Desktop charter + policy + Electron scaffold", True),
-    ("10.2", "libsignal IPC bridge (Node native 0.96.2)", True),
+    ("10.2", "libsignal IPC bridge (Node native 0.96.4)", True),
     ("10.3", "Windows installer (electron-builder nsis)", True),
     ("10.4", "Mac build config (dmg — build on macOS)", True),
     ("10.5", "Engine 10 gate + frontend platform wiring", True),

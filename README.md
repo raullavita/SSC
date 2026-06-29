@@ -40,7 +40,7 @@ Looking for contributors — no payment expected, credit in commit history under
 |-------|------|
 | Backend | FastAPI, MongoDB, Redis, WebSockets |
 | Frontend | React 19, Capacitor (Android), Electron (desktop) |
-| E2E | Signal `signal_v1` + legacy RSA migration; libsignal **0.96.2** on installed clients |
+| E2E | Signal `signal_v1` (PQXDH) + legacy RSA migration; libsignal **0.96.4** on installed clients |
 | Calls | WebRTC + encrypted signaling |
 
 Deep dives: [SECURITY_MODEL.md](memory/SECURITY_MODEL.md) · [SSC-ROADMAP.md](memory/SSC-ROADMAP.md) · [PRD.md](memory/PRD.md)

@@ -1,5 +1,5 @@
 /** Pinned official libsignal — must match backend/core/signal_policy.py */
-export const LIBSIGNAL_PINNED_VERSION = '0.96.2';
+export const LIBSIGNAL_PINNED_VERSION = '0.96.4';
 export const LIBSIGNAL_NPM_PACKAGE = '@signalapp/libsignal-client';
 export const LIBSIGNAL_ANDROID_ARTIFACT = 'org.signal:libsignal-android';
 

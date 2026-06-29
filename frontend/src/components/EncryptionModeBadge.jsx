@@ -1,6 +1,6 @@
 import React from 'react';
 import { ShieldCheck, LockKey } from '@phosphor-icons/react';
-import { ProtocolVersion } from '../lib/signal/constants';
+import { signalUsesPqxdh } from '../lib/signal/pqxdhPolicy';
 import { useLocale } from '../context/LocaleContext';
 
 /**
@@ -8,8 +8,8 @@ import { useLocale } from '../context/LocaleContext';
  */
 export default function EncryptionModeBadge({ protocol, compact = false }) {
   const { t } = useLocale();
-  const isSignal = protocol === ProtocolVersion.SIGNAL_V1
-    || protocol === ProtocolVersion.SIGNAL_GROUP_V1;
+  const isSignal = signalUsesPqxdh(protocol);
+  const signalTitle = `${t('encryptionSignal')} (PQXDH)`;
 
   if (compact) {
     return (
@@ -17,7 +17,7 @@ export default function EncryptionModeBadge({ protocol, compact = false }) {
         className={`inline-flex items-center gap-0.5 font-mono text-[9px] tracking-wider uppercase ${
           isSignal ? 'text-[#34C759]' : 'text-[#FFD600]'
         }`}
-        title={isSignal ? t('encryptionSignal') : t('encryptionLegacy')}
+        title={isSignal ? signalTitle : t('encryptionLegacy')}
         data-testid={isSignal ? 'badge-signal' : 'badge-legacy'}
       >
         {isSignal ? <ShieldCheck size={9} weight="fill" /> : <LockKey size={9} />}

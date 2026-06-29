@@ -65,4 +65,4 @@ def test_engine8_complete():
 def test_libsignal_pinned_version():
     from core.signal_policy import LIBSIGNAL_PINNED_VERSION
 
-    assert LIBSIGNAL_PINNED_VERSION == "0.96.2"
+    assert LIBSIGNAL_PINNED_VERSION == "0.96.4"
