@@ -92,7 +92,9 @@ ENFORCEMENT_PATHS_82: Tuple[str, ...] = (
     "frontend/src/lib/safetyNumber.js",
     "frontend/src/lib/identityKey.js",
     "frontend/src/lib/verification.js",
+    "frontend/src/lib/keyChangeWarnings.js",
     "frontend/src/components/VerifyHandshakeModal.jsx",
+    "frontend/src/components/KeyChangeWarningBanner.jsx",
     "backend/core/verification_policy.py",
 )
 
@@ -212,11 +214,16 @@ def _check_step_82_files() -> ProofCheck:
 
 def _check_no_external_qr_api() -> ProofCheck:
     modal = (REPO_ROOT / "frontend/src/components/VerifyHandshakeModal.jsx").read_text(encoding="utf-8")
-    ok = "api.qrserver.com" not in modal and "QRCode.toDataURL" in modal
+    ok = (
+        "api.qrserver.com" not in modal
+        and "QRCode.toDataURL" not in modal
+        and "verify-safety-number" in modal
+        and "verify-paste-input" in modal
+    )
     return ProofCheck(
         name="local_qr_generation",
         passed=ok,
-        detail="QR generated on-device via qrcode package" if ok else "external QR API still referenced",
+        detail="text-only safety number verify (Q.53 — no QR)" if ok else "verify modal must not use external or local QR",
     )
 
 
