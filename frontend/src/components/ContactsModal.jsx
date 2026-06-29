@@ -4,6 +4,7 @@ import { X, BellSlash, Prohibit, Trash, ChatCircle, MagnifyingGlass } from '@pho
 import { formatPeerPresence } from '../lib/presence';
 import Avatar from './Avatar';
 import { formatUserLabel, userPrimaryLabel } from '../lib/displayName';
+import { bioPreviewLine, userBio } from '../lib/profileBio';
 import { api } from '../lib/api';
 import { useLocale } from '../context/LocaleContext';
 
@@ -113,6 +114,9 @@ export default function ContactsModal({
         <div className="text-sm truncate">{userPrimaryLabel(c)}</div>
         {c.display_name && (
           <div className="text-[10px] font-mono text-[#71717A] truncate">@{c.username}</div>
+        )}
+        {userBio(c) && (
+          <div className="text-[10px] text-[#71717A] truncate">{bioPreviewLine(userBio(c))}</div>
         )}
         <div className="text-[10px] font-mono text-[#A1A1AA] truncate">
           {formatPeerPresence(c)}

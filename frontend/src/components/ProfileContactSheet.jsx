@@ -4,6 +4,7 @@ import { useLocale } from '../context/LocaleContext';
 import Avatar from './Avatar';
 import { formatPeerPresence } from '../lib/presence';
 import { userHandle, userPrimaryLabel } from '../lib/displayName';
+import { userBio } from '../lib/profileBio';
 
 /**
  * Tap peer avatar/name in chat header — quick profile + mute/block (TASK M.1 / H.7).
@@ -30,6 +31,7 @@ export default function ProfileContactSheet({
 
   const muted = !!contact?.muted;
   const blocked = !!contact?.blocked;
+  const peerBio = userBio(peer);
 
   const run = (fn) => {
     onClose?.();
@@ -66,6 +68,14 @@ export default function ProfileContactSheet({
             {formatPeerPresence(peer)}
             {peer.language ? ` · ${peer.language.toUpperCase()}` : ''}
           </p>
+          {peerBio && (
+            <p
+              className="mt-4 w-full text-left text-sm text-[#D4D4D8] whitespace-pre-wrap leading-relaxed px-1"
+              data-testid="profile-sheet-bio"
+            >
+              {peerBio}
+            </p>
+          )}
         </div>
 
         {contact && (

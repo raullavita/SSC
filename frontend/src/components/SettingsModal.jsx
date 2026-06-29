@@ -62,6 +62,7 @@ import {
   setGifSearchEnabled,
 } from '../lib/gifSearchPrefs';
 import { normalizeDisplayNameInput } from '../lib/displayName';
+import { BIO_MAX_LEN, normalizeProfileBioInput } from '../lib/profileBio';
 
 const APP_VERSION = getAppVersion();
 
@@ -92,6 +93,7 @@ export default function SettingsModal({ open, onClose }) {
   const { t, setLocale } = useLocale();
   const [language, setLanguage] = useState(user?.language || 'en');
   const [displayName, setDisplayName] = useState(user?.display_name || '');
+  const [bio, setBio] = useState(user?.bio || '');
   const [busy, setBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
@@ -125,6 +127,7 @@ export default function SettingsModal({ open, onClose }) {
     if (open && user) {
       setLanguage(user.language || 'en');
       setDisplayName(user.display_name || '');
+      setBio(user.bio || '');
       setRetentionHours(normalizeRetentionHours(user.retention_hours));
       setPrivacy(privacyFromUser(user));
     }
@@ -396,6 +399,19 @@ export default function SettingsModal({ open, onClose }) {
       if (nextDisplayName !== savedDisplayName) {
         payload.display_name = nextDisplayName ?? '';
       }
+      const savedBio = (user?.bio || '').trim() || null;
+      let nextBio = savedBio;
+      try {
+        nextBio = bio.trim() ? normalizeProfileBioInput(bio) : null;
+      } catch (err) {
+        if (err?.message === 'BIO_TOO_LONG') toast.error(t('settingsBioTooLong'));
+        else if (err?.message === 'BIO_INVALID') toast.error(t('settingsBioInvalid'));
+        else toast.error(t('couldNotSave'));
+        return;
+      }
+      if (nextBio !== savedBio) {
+        payload.bio = nextBio ?? '';
+      }
       if (language !== (user?.language || 'en')) payload.language = language;
       const savedRetention = normalizeRetentionHours(user?.retention_hours);
       if (retentionHours !== savedRetention) payload.retention_hours = retentionHours;
@@ -457,8 +473,11 @@ export default function SettingsModal({ open, onClose }) {
   const messagesProtected = userHasUnifiedIdentity(user);
   const savedDisplayName = (user?.display_name || '').trim() || null;
   const draftDisplayName = displayName.replace(/\s+/g, ' ').trim() || null;
+  const savedBio = (user?.bio || '').trim() || null;
+  const draftBio = bio.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim() || null;
   const profileDirty = language !== (user?.language || 'en')
     || draftDisplayName !== savedDisplayName
+    || draftBio !== savedBio
     || retentionHours !== normalizeRetentionHours(user?.retention_hours)
     || buildPrivacyPayload(user, privacy) != null;
 
@@ -524,6 +543,20 @@ export default function SettingsModal({ open, onClose }) {
                 data-testid="settings-display-name-input"
               />
               <p className="mt-1 text-[10px] font-mono text-[#71717A]">{t('displayNameHint')}</p>
+
+              <label className="block mt-3 text-[10px] font-mono text-[#A1A1AA] uppercase tracking-wider">
+                {t('profileBio')}
+              </label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder={t('profileBioPlaceholder')}
+                maxLength={BIO_MAX_LEN}
+                rows={3}
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0] resize-y min-h-[4.5rem]"
+                data-testid="settings-bio-input"
+              />
+              <p className="mt-1 text-[10px] font-mono text-[#71717A]">{t('profileBioHint', { max: BIO_MAX_LEN })}</p>
 
               <label className="block mt-3 text-[10px] font-mono text-[#A1A1AA] uppercase tracking-wider">
                 {t('username')}

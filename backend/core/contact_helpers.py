@@ -11,6 +11,7 @@ PEER_ROSTER_FIELDS = {
     "user_id": 1,
     "username": 1,
     "display_name": 1,
+    "bio": 1,
     "language": 1,
     "public_key": 1,
     "avatar": 1,

@@ -11,6 +11,7 @@ from core.models import UpdateProfileIn
 from core.retention_db import refresh_retention_after_user_change
 from core.retention import DEFAULT_RETENTION_HOURS
 from core.user_retention import normalize_user_retention_hours, user_retention_hours_from_doc
+from core.bio_policy import normalize_bio
 from core.display_name_policy import normalize_display_name
 from core.privacy_settings import merge_privacy, normalize_privacy_patch, privacy_from_user
 from core.utils import validate_username
@@ -49,6 +50,14 @@ async def update_me(body: UpdateProfileIn, current=Depends(get_current_user)):
         current_name = (current.get("display_name") or "").strip() or None
         if new_name != current_name:
             update["display_name"] = new_name
+    if body.bio is not None:
+        try:
+            new_bio = normalize_bio(body.bio)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        current_bio = (current.get("bio") or "").strip() or None
+        if new_bio != current_bio:
+            update["bio"] = new_bio
     if body.language:
         update["language"] = body.language
     if body.retention_hours is not None:
@@ -129,6 +138,7 @@ async def search_users(q: str, current=Depends(get_current_user)):
                 "user_id": projected.get("user_id"),
                 "username": projected.get("username"),
                 "display_name": projected.get("display_name"),
+                "bio": projected.get("bio"),
                 "language": projected.get("language"),
                 "avatar": projected.get("avatar"),
                 "public_key": projected.get("public_key"),

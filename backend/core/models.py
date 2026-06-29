@@ -61,6 +61,7 @@ class PrivacySettingsIn(BaseModel):
 class UpdateProfileIn(BaseModel):
     username: Optional[str] = None
     display_name: Optional[str] = Field(default=None, max_length=64)
+    bio: Optional[str] = Field(default=None, max_length=320)
     language: Optional[str] = None
     retention_hours: Optional[int] = None
     privacy: Optional[PrivacySettingsIn] = None
