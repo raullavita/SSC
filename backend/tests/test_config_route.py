@@ -31,3 +31,13 @@ def test_public_config_exposes_broadcast_lists_limits():
 
     assert data["broadcast_lists"]["max_lists"] == 20
     assert data["broadcast_lists"]["max_recipients"] == 50
+
+
+def test_public_config_exposes_calls_turn_shape():
+    data = asyncio.run(public_config())
+
+    assert "calls" in data
+    assert "turn_configured" in data["calls"]
+    assert "relay_server_count" in data["calls"]
+    assert data["calls"]["off_lan_proof_required"] is True
+    assert isinstance(data["ice_servers"], list)

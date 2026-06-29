@@ -18,6 +18,7 @@ import {
   replaceVideoTrackFacing,
 } from '../lib/callMedia';
 import Avatar from './Avatar';
+import { icePathLabel, summarizeIceConnection } from '../lib/callIceDiagnostics';
 
 /**
  * CallModal handles WebRTC voice/video calls.
@@ -64,6 +65,7 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
   const [muted, setMuted] = useState(false);
   const [videoOff, setVideoOff] = useState(false);
   const [duration, setDuration] = useState(0);
+  const [icePath, setIcePath] = useState('');
   const [modeBusy, setModeBusy] = useState(false);
   const startedAtRef = useRef(null);
 
@@ -136,8 +138,21 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
         stream: e.streams[0],
       });
     };
+    const refreshIcePath = async () => {
+      try {
+        const summary = await summarizeIceConnection(pc);
+        setIcePath(icePathLabel(summary));
+      } catch {
+        setIcePath('');
+      }
+    };
+
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'connected') setStatus('connected');
+      if (pc.connectionState === 'connected') {
+        setStatus('connected');
+        refreshIcePath();
+        setTimeout(refreshIcePath, 2000);
+      }
       if (pc.connectionState === 'failed') {
         setEndReason('failed');
         setStatus('ended');
@@ -350,8 +365,17 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
+  const icePathLabelText = () => {
+    if (!icePath) return '';
+    const key = `callIcePath${icePath.charAt(0).toUpperCase()}${icePath.slice(1)}`;
+    return t(key) || icePath;
+  };
+
   const statusLabel = () => {
-    if (status === 'connected') return `E2E · ${fmt(duration)}`;
+    if (status === 'connected') {
+      const path = icePathLabelText();
+      return path ? `E2E · ${path} · ${fmt(duration)}` : `E2E · ${fmt(duration)}`;
+    }
     if (status === 'calling') return t('callStatusCalling');
     if (status === 'ringing') return t('callStatusRinging');
     if (endReason === 'declined') return t('callStatusDeclined');
@@ -378,7 +402,11 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
     >
       <audio ref={remoteAudioRef} autoPlay playsInline className="sr-only" data-testid="call-remote-audio" />
 
-      <div className={`${stageClass} overflow-hidden`}>
+      <div
+        className={`${stageClass} overflow-hidden`}
+        data-testid="call-modal-stage"
+        data-ice-path={status === 'connected' ? icePath || undefined : undefined}
+      >
         {activeMode === 'video' ? (
           <video
             ref={remoteVideoRef}
