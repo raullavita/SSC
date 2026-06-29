@@ -37,6 +37,23 @@ describe('resolveIncomingSignaling', () => {
     });
   });
 
+  it('rejects cleartext group signaling on web clients', async () => {
+    usesSignalOnlyMessaging.mockReturnValue(false);
+    const data = {
+      type: 'call-offer',
+      from: 'peer',
+      group: true,
+      sdp: { type: 'offer' },
+    };
+    const result = await resolveIncomingSignaling(data, { myUserId: 'me', peerUserId: 'peer' });
+    expect(result).toEqual({
+      ok: false,
+      error: SignalingInboundError.CLEARTEXT_REJECTED,
+      encrypted: false,
+    });
+    expect(unpackIncomingSignaling).not.toHaveBeenCalled();
+  });
+
   it('returns NO_SDP for non-encrypted payloads without sdp', async () => {
     isEncryptedSignaling.mockReturnValue(false);
     const result = await resolveIncomingSignaling(

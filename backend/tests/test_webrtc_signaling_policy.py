@@ -104,14 +104,14 @@ def test_signal_v1_group_rejects_1to1_message_types():
         })
 
 
-def test_group_call_allows_legacy_cleartext():
-    out = validate_signaling_relay({
-        "type": "call-offer",
-        "to": "u2",
-        "group": True,
-        "sdp": {"type": "offer", "sdp": "v=0"},
-    })
-    assert out["sdp"]["type"] == "offer"
+def test_group_call_rejects_legacy_cleartext():
+    with pytest.raises(SignalingValidationError, match="signal_v1"):
+        validate_signaling_relay({
+            "type": "call-offer",
+            "to": "u2",
+            "group": True,
+            "sdp": {"type": "offer", "sdp": "v=0"},
+        })
 
 
 def test_control_types_pass_through():

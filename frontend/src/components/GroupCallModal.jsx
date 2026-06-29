@@ -3,7 +3,8 @@ import { toast } from 'sonner';
 import { Phone, VideoCamera, MicrophoneSlash, Microphone, VideoCameraSlash, CameraRotate, HandWaving, SpeakerSlash } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 import { toastSignalingFailure } from '../chat/signalingErrors';
-import { sendSignaling, unpackIncomingSignaling } from '../lib/signal/webrtcSignaling';
+import { sendSignaling } from '../lib/signal/webrtcSignaling';
+import { resolveIncomingSignaling, SignalingInboundError } from '../chat/signalingInbound';
 import {
   acquireLocalMediaStream,
   bindLocalPreview,
@@ -249,16 +250,18 @@ export default function GroupCallModal({
     const handler = async (e) => {
       let data = e.detail;
       if (!data?.group) return;
-      try {
-        data = await unpackIncomingSignaling(data, {
-          myUserId: me?.user_id,
-          peerUserId: data.from,
-        });
-      } catch (err) {
-        console.warn('[SSC] group call signaling unpack failed:', err?.message || err);
-        toast.error(t('callSignalingDecryptFailed'));
+      const resolved = await resolveIncomingSignaling(data, {
+        myUserId: me?.user_id,
+        peerUserId: data.from,
+      });
+      if (!resolved.ok) {
+        if (resolved.encrypted || resolved.error === SignalingInboundError.CLEARTEXT_REJECTED) {
+          toast.error(t('callSignalingDecryptFailed'));
+        }
+        console.warn('[SSC] group call signaling rejected:', resolved.error);
         return;
       }
+      data = resolved.signal;
       const fromId = data.from;
       if (data.type === 'call-offer' && fromId !== me.user_id) {
         let entry = peersRef.current[fromId];

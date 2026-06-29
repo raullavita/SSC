@@ -160,6 +160,9 @@ export async function packOutgoingSignaling(msg, {
     isGroup, peer, user, members, conversationId,
   });
   if (!useSignal) {
+    if (isGroup) {
+      throw new SignalingNotReadyError(SignalingFailureReason.GROUP_NOT_READY);
+    }
     return legacySignalingPayload(msg, isGroup);
   }
 
@@ -184,6 +187,9 @@ export async function packOutgoingSignaling(msg, {
       };
       if (msg.mode != null) packed.mode = msg.mode;
       if (msg.members != null) packed.members = msg.members;
+      if (msg.renegotiate) packed.renegotiate = true;
+      if (msg.ice_restart) packed.ice_restart = true;
+      if (msg.conversation_id != null) packed.conversation_id = msg.conversation_id;
       return packed;
     }
 
@@ -199,7 +205,7 @@ export async function packOutgoingSignaling(msg, {
     return packed;
   } catch (err) {
     console.error('[SSC] signaling encrypt failed:', err?.message || err);
-    if (usesSignalOnlyMessaging()) {
+    if (isGroup || usesSignalOnlyMessaging()) {
       throw new SignalingNotReadyError(
         SignalingFailureReason.ENCRYPT_FAILED,
         err?.message || String(err),

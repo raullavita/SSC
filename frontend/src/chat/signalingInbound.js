@@ -29,6 +29,11 @@ export async function resolveIncomingSignaling(data, { myUserId, peerUserId }) {
     return { ok: false, error: SignalingInboundError.NO_SDP, encrypted: false };
   }
 
+  if (data?.group && isCleartextSignalingPayload(data)) {
+    console.warn('[SSC] rejected cleartext inbound group call signaling');
+    return { ok: false, error: SignalingInboundError.CLEARTEXT_REJECTED, encrypted: false };
+  }
+
   if (usesSignalOnlyMessaging() && isCleartextSignalingPayload(data)) {
     console.warn('[SSC] rejected cleartext inbound signaling on installed client');
     return { ok: false, error: SignalingInboundError.CLEARTEXT_REJECTED, encrypted: false };

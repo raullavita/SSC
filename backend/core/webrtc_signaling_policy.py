@@ -1,8 +1,8 @@
 """
 WebRTC signaling policy — Engine 8.7 (G6).
 
-1:1 SDP/ICE relayed as opaque signal_v1 ciphertext when clients upgrade.
-Group calls use signal_v1 ciphertext when clients have sender keys; legacy cleartext fallback remains.
+1:1 SDP/ICE relayed as opaque signal_v1 ciphertext when clients upgrade (legacy cleartext on web only).
+Group call SDP/ICE must use signal_v1 ciphertext — server rejects legacy cleartext group signaling.
 Server rejects signal_v1 envelopes that still carry cleartext sdp/candidate.
 """
 from __future__ import annotations
@@ -102,6 +102,15 @@ def validate_signaling_relay(data: Dict[str, Any]) -> Dict[str, Any]:
         if msg_type == "call-raise-hand" and not isinstance(data.get("raised"), bool):
             raise SignalingValidationError("raised boolean required for call-raise-hand")
         return data
+
+    # Q.34 / TASK O.2 — group SDP/ICE must be signal_v1 ciphertext (no cleartext fallback).
+    if data.get("group") and msg_type in SENSITIVE_SIGNALING_TYPES:
+        proto = normalize_signaling_protocol(data.get("signaling_protocol"))
+        if proto != SignalingProtocol.SIGNAL_V1.value:
+            raise SignalingValidationError(
+                "group call signaling must use signal_v1 encryption"
+            )
+        return _validate_signal_v1_payload(data)
 
     proto = normalize_signaling_protocol(data.get("signaling_protocol"))
     if proto == SignalingProtocol.SIGNAL_V1.value:
