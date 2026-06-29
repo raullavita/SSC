@@ -61,6 +61,7 @@ import {
   gifSearchEnabled,
   setGifSearchEnabled,
 } from '../lib/gifSearchPrefs';
+import { normalizeDisplayNameInput } from '../lib/displayName';
 
 const APP_VERSION = getAppVersion();
 
@@ -90,6 +91,7 @@ export default function SettingsModal({ open, onClose }) {
   const { user, refreshUser, panicWipe, logout } = useAuth();
   const { t, setLocale } = useLocale();
   const [language, setLanguage] = useState(user?.language || 'en');
+  const [displayName, setDisplayName] = useState(user?.display_name || '');
   const [busy, setBusy] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
@@ -122,6 +124,7 @@ export default function SettingsModal({ open, onClose }) {
   useEffect(() => {
     if (open && user) {
       setLanguage(user.language || 'en');
+      setDisplayName(user.display_name || '');
       setRetentionHours(normalizeRetentionHours(user.retention_hours));
       setPrivacy(privacyFromUser(user));
     }
@@ -380,6 +383,19 @@ export default function SettingsModal({ open, onClose }) {
     setBusy(true);
     try {
       const payload = {};
+      const savedDisplayName = (user?.display_name || '').trim() || null;
+      let nextDisplayName = savedDisplayName;
+      try {
+        nextDisplayName = displayName.trim() ? normalizeDisplayNameInput(displayName) : null;
+      } catch (err) {
+        if (err?.message === 'DISPLAY_NAME_TOO_LONG') toast.error(t('settingsDisplayNameTooLong'));
+        else if (err?.message === 'DISPLAY_NAME_AT') toast.error(t('settingsDisplayNameAt'));
+        else toast.error(t('couldNotSave'));
+        return;
+      }
+      if (nextDisplayName !== savedDisplayName) {
+        payload.display_name = nextDisplayName ?? '';
+      }
       if (language !== (user?.language || 'en')) payload.language = language;
       const savedRetention = normalizeRetentionHours(user?.retention_hours);
       if (retentionHours !== savedRetention) payload.retention_hours = retentionHours;
@@ -439,7 +455,10 @@ export default function SettingsModal({ open, onClose }) {
   if (!open) return null;
 
   const messagesProtected = userHasUnifiedIdentity(user);
+  const savedDisplayName = (user?.display_name || '').trim() || null;
+  const draftDisplayName = displayName.replace(/\s+/g, ' ').trim() || null;
   const profileDirty = language !== (user?.language || 'en')
+    || draftDisplayName !== savedDisplayName
     || retentionHours !== normalizeRetentionHours(user?.retention_hours)
     || buildPrivacyPayload(user, privacy) != null;
 
@@ -491,6 +510,20 @@ export default function SettingsModal({ open, onClose }) {
                   )}
                 </div>
               </div>
+
+              <label className="block mt-3 text-[10px] font-mono text-[#A1A1AA] uppercase tracking-wider">
+                {t('displayName')}
+              </label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder={t('displayNamePlaceholder')}
+                maxLength={48}
+                className="w-full mt-1 px-3 py-2.5 text-sm bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]"
+                data-testid="settings-display-name-input"
+              />
+              <p className="mt-1 text-[10px] font-mono text-[#71717A]">{t('displayNameHint')}</p>
 
               <label className="block mt-3 text-[10px] font-mono text-[#A1A1AA] uppercase tracking-wider">
                 {t('username')}
@@ -731,7 +764,7 @@ export default function SettingsModal({ open, onClose }) {
                       key={c.user_id}
                       className="flex items-center justify-between gap-2 p-2.5 bg-[#1A1A1A] rounded-md tac-border text-sm"
                     >
-                      <span className="truncate font-mono">@{c.username}</span>
+                      <span className="truncate">{c.display_name || `@${c.username}`}</span>
                       <button
                         type="button"
                         onClick={() => unblockContact(c.user_id)}

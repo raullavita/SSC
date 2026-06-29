@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   Phone, VideoCamera, MicrophoneSlash, Microphone, VideoCameraSlash,
@@ -20,6 +20,7 @@ import {
   groupCallBroadcastTargets,
   mergeRaisedHandState,
 } from '../lib/groupCallModeration';
+import { userInitials, userPrimaryLabel } from '../lib/displayName';
 
 export default function GroupCallSfuModal({
   mode, direction, members, me, conversation, conversationId, socket, signal, onClose,
@@ -241,6 +242,18 @@ export default function GroupCallSfuModal({
     }
   };
 
+  const memberById = useMemo(() => {
+    const map = new Map();
+    if (me) map.set(me.user_id, me);
+    (conversation?.members || []).forEach((m) => map.set(m.user_id, m));
+    (members || []).forEach((m) => {
+      if (!map.has(m.user_id)) map.set(m.user_id, m);
+    });
+    return map;
+  }, [me, conversation?.members, members]);
+
+  const tileLabel = (tile) => userPrimaryLabel(memberById.get(tile.user_id) || { username: tile.username });
+
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   const tiles = [
     { user_id: me.user_id, username: me.username, isLocal: true, handRaised: myHandRaised },
@@ -293,12 +306,12 @@ export default function GroupCallSfuModal({
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <div className="w-16 h-16 rounded-md bg-[#232323] flex items-center justify-center font-mono text-lg">
-                  {tile.username?.slice(0, 2).toUpperCase()}
+                  {userInitials(memberById.get(tile.user_id) || { username: tile.username })}
                 </div>
               </div>
             )}
             <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-[10px] font-mono tracking-widest">
-              @{tile.username}{tile.isLocal ? ' (YOU)' : ''}
+              {tileLabel(tile)}{tile.isLocal ? ' (YOU)' : ''}
             </div>
             {tile.handRaised && (
               <div className="absolute top-2 right-2 px-1.5 py-1 bg-[#FFD600]/90 text-black rounded flex items-center gap-1">

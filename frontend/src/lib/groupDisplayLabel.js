@@ -1,19 +1,19 @@
 /**
- * Client-side group titles — derived from member usernames (not stored on server).
+ * Client-side group titles — derived from member display names / usernames (not stored on server).
  */
+import { userPrimaryLabel } from './displayName';
 import { getLocalGroupLabel } from './groupLabels';
 
 export function formatGroupMemberLabel(members = [], { maxShown = 2 } = {}) {
-  const names = [...(members || [])]
-    .map((m) => m?.username)
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
-  if (names.length === 0) return 'Group';
-  if (names.length <= maxShown) {
-    return names.map((n) => `@${n}`).join(', ');
+  const sorted = [...(members || [])]
+    .filter((m) => m?.username || m?.display_name)
+    .sort((a, b) => userPrimaryLabel(a).localeCompare(userPrimaryLabel(b)));
+  if (sorted.length === 0) return 'Group';
+  if (sorted.length <= maxShown) {
+    return sorted.map((m) => userPrimaryLabel(m)).join(', ');
   }
-  const shown = names.slice(0, maxShown).map((n) => `@${n}`).join(', ');
-  const extra = names.length - maxShown;
+  const shown = sorted.slice(0, maxShown).map((m) => userPrimaryLabel(m)).join(', ');
+  const extra = sorted.length - maxShown;
   return `${shown} +${extra}`;
 }
 

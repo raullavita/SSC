@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.36 done** → next **Q.37** | [~] Q.37 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.37 done** → next **Q.38** | [~] Q.38 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -325,7 +325,7 @@
 | # | ID | Subtask | Owner | Status |
 |---|-----|---------|-------|--------|
 | 36 | **Q.36** | **Email verification** for password register (activation link) | git | [x] |
-| 37 | **Q.37** | **Display name** (separate from locked username) | git | [ ] |
+| 37 | **Q.37** | **Display name** (separate from locked username) | git | [x] |
 | 38 | **Q.38** | **Profile bio / about** | git | [ ] |
 | 39 | **Q.39** | **In-app FAQ / help center** (offline markdown) | git | [ ] |
 | 40 | **Q.40** | **Passkeys / WebAuthn** (optional login) | git | [ ] |

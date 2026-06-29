@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X, Bell, BellSlash, Prohibit, Trash, SignOut, UsersThree, PushPin, Archive } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
+import { userPrimaryLabel } from '../lib/displayName';
 
 /**
  * Long-press / context menu for a chat list row.
@@ -32,7 +33,7 @@ export default function ConversationActionsSheet({
   const isGroup = conversation.is_group;
   const title = isGroup
     ? (conversation.display_label || t('group'))
-    : `@${conversation.peer?.username || ''}`;
+    : userPrimaryLabel(conversation.peer);
 
   const run = (fn) => {
     onClose?.();

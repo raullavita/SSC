@@ -3,6 +3,7 @@ import { X, Bell, BellSlash, Prohibit, ShieldCheck } from '@phosphor-icons/react
 import { useLocale } from '../context/LocaleContext';
 import Avatar from './Avatar';
 import { formatPeerPresence } from '../lib/presence';
+import { userHandle, userPrimaryLabel } from '../lib/displayName';
 
 /**
  * Tap peer avatar/name in chat header — quick profile + mute/block (TASK M.1 / H.7).
@@ -53,9 +54,14 @@ export default function ProfileContactSheet({
 
         <div className="flex flex-col items-center text-center">
           <Avatar user={peer} size="xl" showOnline />
-          <h3 className="mt-4 font-mono text-lg tracking-tight" data-testid="profile-sheet-username">
-            @{peer.username}
+          <h3 className="mt-4 text-lg font-medium tracking-tight truncate max-w-full" data-testid="profile-sheet-username">
+            {userPrimaryLabel(peer)}
           </h3>
+          {peer.display_name && (
+            <p className="mt-1 text-[10px] font-mono text-[#A1A1AA] tracking-wider" data-testid="profile-sheet-handle">
+              {userHandle(peer)}
+            </p>
+          )}
           <p className="mt-1 text-[10px] font-mono text-[#A1A1AA] tracking-wider uppercase">
             {formatPeerPresence(peer)}
             {peer.language ? ` · ${peer.language.toUpperCase()}` : ''}

@@ -102,6 +102,7 @@ import {
 } from '../lib/contactFilters';
 import { groupAvatarProps, groupDescriptionLine } from '../lib/groupAvatar';
 import { formatGroupConversationLabel } from '../lib/groupDisplayLabel';
+import { formatUserLabel, userHandle, userPrimaryLabel } from '../lib/displayName';
 import { canPostInGroup } from '../lib/groupRoles';
 import { GENERAL_TOPIC_ID } from '../lib/groupTopics';
 import { clearLocalGroupLabels } from '../lib/groupLabels';
@@ -305,7 +306,7 @@ export default function ChatHome() {
   }, [setConversations, setMessages, setReads]);
   const headerTitle = isGroup
     ? (formatGroupConversationLabel(activeConv) || t('group'))
-    : (peer ? `@${peer.username}` : '');
+    : (peer ? userPrimaryLabel(peer) : '');
   const splitLayout = useSplitChatLayout();
   const isSinglePane = useMobileLayout();
   const showList = splitLayout || !activeId;
@@ -1216,7 +1217,7 @@ export default function ChatHome() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium truncate">
-              {c.is_group ? (formatGroupConversationLabel(c) || t('group')) : `@${c.peer?.username}`}
+              {c.is_group ? (formatGroupConversationLabel(c) || t('group')) : userPrimaryLabel(c.peer)}
               {peerMuted && <span className="text-[#A1A1AA] font-mono text-[10px] ml-1">· {t('muted')}</span>}
             </span>
             <span className="text-[10px] font-mono text-[#A1A1AA] flex items-center gap-1 shrink-0">
@@ -1252,7 +1253,13 @@ export default function ChatHome() {
             <Avatar user={user} size="xs" />
             <div>
               <div className="font-mono text-xs tracking-[0.25em]">SSC</div>
-              <div className="text-[10px] font-mono text-[#A1A1AA]">@{user?.username}</div>
+              <div className="text-[10px] font-mono text-[#A1A1AA] truncate max-w-[10rem]">
+                {user?.display_name ? (
+                  <span title={userHandle(user)}>{userPrimaryLabel(user)}</span>
+                ) : (
+                  userHandle(user)
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1833,8 +1840,10 @@ export default function ChatHome() {
                         >
                           <Avatar user={c} size="sm" />
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm truncate">@{c.username}</div>
-                            <div className="text-[10px] font-mono text-[#A1A1AA]">{t('tapToMessage')}</div>
+                            <div className="text-sm truncate">{userPrimaryLabel(c)}</div>
+                            <div className="text-[10px] font-mono text-[#A1A1AA]">
+                              {c.display_name ? `${userHandle(c)} · ${t('tapToMessage')}` : t('tapToMessage')}
+                            </div>
                           </div>
                         </button>
                       ))}
@@ -1852,7 +1861,7 @@ export default function ChatHome() {
                     className="w-full text-left px-3 py-2 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3">
                     <Avatar user={u} size="sm" />
                     <div className="flex-1">
-                      <div className="text-sm">@{u.username} {isContact && '✓'} {isMuted && `(${t('muted')})`}</div>
+                      <div className="text-sm">{formatUserLabel(u)} {isContact && '✓'} {isMuted && `(${t('muted')})`}</div>
                       <div className="text-[10px] font-mono text-[#A1A1AA]">
                         {isContact ? t('tapToMessage') : requestSent ? t('requestSentLabel') : t('tapToAdd')}
                       </div>
@@ -1878,7 +1887,7 @@ export default function ChatHome() {
             <div className="mx-auto mb-4">
               <Avatar user={callState.peer} size="xl" />
             </div>
-            <div className="font-mono text-lg">@{callState.peer.username}</div>
+            <div className="text-lg font-medium">{userPrimaryLabel(callState.peer)}</div>
             <div className="text-xs font-mono text-[#A1A1AA] tracking-widest mt-1">{callState.mode === 'video' ? t('incomingVideoCall') : t('incomingAudioCall')}</div>
             <div className="mt-8 flex items-center justify-center gap-4">
               <button onClick={rejectCall} data-testid="call-reject-button" className="w-14 h-14 rounded-full bg-[#FF3B30] flex items-center justify-center hover:brightness-110">

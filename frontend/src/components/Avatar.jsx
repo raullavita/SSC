@@ -1,6 +1,7 @@
 import React from 'react';
 import { UsersThree } from '@phosphor-icons/react';
 import { isPeerOnline } from '../lib/presence';
+import { userInitials } from '../lib/displayName';
 
 const SIZES = {
   xs: 'w-7 h-7 text-[10px]',
@@ -11,7 +12,7 @@ const SIZES = {
 };
 
 /**
- * Profile avatar — image URL/data URL or username initials.
+ * Profile avatar — image URL/data URL or display-name / username initials.
  */
 export default function Avatar({
   user,
@@ -22,9 +23,7 @@ export default function Avatar({
 }) {
   const dim = SIZES[size] || SIZES.sm;
   const src = user?.avatar;
-  const initials = user?.username
-    ? user.username.slice(0, 2).toUpperCase()
-    : '?';
+  const initials = userInitials(user);
   const online = showOnline && !isGroup && isPeerOnline(user);
 
   return (

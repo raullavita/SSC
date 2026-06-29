@@ -18,6 +18,7 @@ import {
   replaceVideoTrackFacing,
 } from '../lib/callMedia';
 import Avatar from './Avatar';
+import { userPrimaryLabel } from '../lib/displayName';
 import CallQualityIndicator from './CallQualityIndicator';
 import { useCallQualityMonitor } from '../chat/useCallQualityMonitor';
 import { icePathLabel, summarizeIceConnection } from '../lib/callIceDiagnostics';
@@ -554,7 +555,7 @@ export default function CallModal({ mode, direction, peer, user, socket, signal,
             <div className="mb-4">
               <Avatar user={peer} size="lg" className="!w-32 !h-32 !text-3xl !rounded-md" />
             </div>
-            <div className="font-mono text-lg">@{peer.username}</div>
+            <div className="text-lg font-medium">{userPrimaryLabel(peer)}</div>
           </div>
         )}
         {activeMode === 'video' && (

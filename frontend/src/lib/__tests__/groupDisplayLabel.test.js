@@ -21,6 +21,13 @@ describe('groupDisplayLabel', () => {
     ])).toBe('@alice, @bob +1');
   });
 
+  it('prefers display names in member labels', () => {
+    expect(formatGroupMemberLabel([
+      { username: 'bob', display_name: 'Bob' },
+      { username: 'alice', display_name: 'Alice' },
+    ])).toBe('Alice, Bob');
+  });
+
   it('prefers local label when set', () => {
     setLocalGroupLabel('g_abc', 'Weekend crew');
     expect(formatGroupConversationLabel({

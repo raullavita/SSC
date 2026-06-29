@@ -11,6 +11,7 @@ from core.models import UpdateProfileIn
 from core.retention_db import refresh_retention_after_user_change
 from core.retention import DEFAULT_RETENTION_HOURS
 from core.user_retention import normalize_user_retention_hours, user_retention_hours_from_doc
+from core.display_name_policy import normalize_display_name
 from core.privacy_settings import merge_privacy, normalize_privacy_patch, privacy_from_user
 from core.utils import validate_username
 from security import rate_limit_check
@@ -40,6 +41,14 @@ async def update_me(body: UpdateProfileIn, current=Depends(get_current_user)):
     update = {}
     if body.username and body.username.strip() != (current.get("username") or ""):
         raise HTTPException(403, "Username cannot be changed after registration")
+    if body.display_name is not None:
+        try:
+            new_name = normalize_display_name(body.display_name)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        current_name = (current.get("display_name") or "").strip() or None
+        if new_name != current_name:
+            update["display_name"] = new_name
     if body.language:
         update["language"] = body.language
     if body.retention_hours is not None:
@@ -99,8 +108,15 @@ async def search_users(q: str, current=Depends(get_current_user)):
     from core.contact_helpers import are_contacts
     from core.last_seen import project_user_for_peer
 
+    needle = re.escape(q)
     cur = db.users.find(
-        {"username": {"$regex": f"^{re.escape(q)}", "$options": "i"}, "user_id": {"$ne": current["user_id"]}},
+        {
+            "user_id": {"$ne": current["user_id"]},
+            "$or": [
+                {"username": {"$regex": f"^{needle}", "$options": "i"}},
+                {"display_name": {"$regex": needle, "$options": "i"}},
+            ],
+        },
         {"_id": 0, "password_hash": 0, "totp_secret": 0, "totp_pending_secret": 0},
     ).limit(20)
     rows = await cur.to_list(20)
@@ -112,6 +128,7 @@ async def search_users(q: str, current=Depends(get_current_user)):
             out.append({
                 "user_id": projected.get("user_id"),
                 "username": projected.get("username"),
+                "display_name": projected.get("display_name"),
                 "language": projected.get("language"),
                 "avatar": projected.get("avatar"),
                 "public_key": projected.get("public_key"),

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { X, BellSlash, Prohibit, Trash, ChatCircle, MagnifyingGlass } from '@phosphor-icons/react';
 import { formatPeerPresence } from '../lib/presence';
 import Avatar from './Avatar';
+import { formatUserLabel, userPrimaryLabel } from '../lib/displayName';
 import { api } from '../lib/api';
 import { useLocale } from '../context/LocaleContext';
 
@@ -60,11 +61,11 @@ export default function ContactsModal({
   }, [searchQ, open, tab]);
 
   const activeContacts = useMemo(
-    () => contacts.filter((c) => !c.blocked).sort((a, b) => a.username.localeCompare(b.username)),
+    () => contacts.filter((c) => !c.blocked).sort((a, b) => userPrimaryLabel(a).localeCompare(userPrimaryLabel(b))),
     [contacts],
   );
   const blockedContacts = useMemo(
-    () => contacts.filter((c) => c.blocked).sort((a, b) => a.username.localeCompare(b.username)),
+    () => contacts.filter((c) => c.blocked).sort((a, b) => userPrimaryLabel(a).localeCompare(userPrimaryLabel(b))),
     [contacts],
   );
 
@@ -109,7 +110,10 @@ export default function ContactsModal({
     <div key={c.user_id} className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-[#1A1A1A] group" data-testid={`contact-row-${c.username}`}>
       <Avatar user={c} size="sm" showOnline />
       <div className="flex-1 min-w-0">
-        <div className="text-sm truncate">@{c.username}</div>
+        <div className="text-sm truncate">{userPrimaryLabel(c)}</div>
+        {c.display_name && (
+          <div className="text-[10px] font-mono text-[#71717A] truncate">@{c.username}</div>
+        )}
         <div className="text-[10px] font-mono text-[#A1A1AA] truncate">
           {formatPeerPresence(c)}
           {c.muted && !showBlockedActions ? ` · ${t('muted')}` : ''}
@@ -144,11 +148,9 @@ export default function ContactsModal({
 
     return (
       <div key={u.user_id} className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-[#1A1A1A]" data-testid={`add-search-result-${u.username}`}>
-        <div className="w-9 h-9 rounded-md bg-[#232323] flex items-center justify-center font-mono text-xs shrink-0">
-          {u.username?.slice(0, 2).toUpperCase()}
-        </div>
+        <Avatar user={u} size="sm" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm truncate">@{u.username}</div>
+          <div className="text-sm truncate">{formatUserLabel(u)}</div>
           <div className="text-[10px] font-mono text-[#A1A1AA] truncate">
             {status === 'contact' && t('alreadyContact')}
             {status === 'incoming' && t('wantsToConnect')}
