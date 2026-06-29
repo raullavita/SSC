@@ -862,6 +862,8 @@
   "callSignalingDecryptFailed": "L'appel entrant n'a pas pu être déchiffré — demandez à l'appelant de réessayer",
   "callSignalingEncryptFailed": "L'appel n'a pas pu être chiffré — attendez la fin de la configuration du chiffrement et réessayez",
   "callSignalingRejected": "La signalisation d'appel a été rejetée — vérifiez la configuration du chiffrement et réessayez",
+  "callSignalingNotPermitted": "Vous ne pouvez pas appeler ce contact — ajoutez-le d'abord ou rejoignez un groupe partagé",
+  "callSignalingRecipientRequired": "L'appel n'a pas pu être envoyé — destinataire manquant",
   "callSdpFailed": "Impossible d'appliquer les données de connexion d'appel — essayez d'appeler à nouveau",
   "callIceFailed": "Impossible d'ajouter une route réseau d'appel — la connexion peut être instable",
   "signalIdentityRotated": "Le contact a actualisé ses clés de chiffrement — le prochain message rétablira une session sécurisée",

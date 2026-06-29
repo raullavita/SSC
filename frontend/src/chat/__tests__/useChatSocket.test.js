@@ -61,18 +61,29 @@ describe('useChatSocket - signaling-error handling', () => {
     };
   });
 
-  it('should trigger toast.error with callSignalingRejected key when signaling-error occurs', () => {
+  it('maps permission denied signaling-error to callSignalingNotPermitted', () => {
     render(<TestComponent hookArgs={mockArgs} />);
 
     expect(global.mockSocketOptions).toBeDefined();
     expect(global.mockSocketOptions.onMessage).toBeInstanceOf(Function);
 
-    const errorPayload = {
+    global.mockSocketOptions.onMessage({
       type: 'signaling-error',
-      detail: 'Testing server rejection handler',
-    };
+      detail: 'call not permitted',
+      original_type: 'call-offer',
+    });
 
-    global.mockSocketOptions.onMessage(errorPayload);
+    expect(mockT).toHaveBeenCalledWith('callSignalingNotPermitted');
+    expect(toast.error).toHaveBeenCalledWith('callSignalingNotPermitted');
+  });
+
+  it('falls back to callSignalingRejected for unknown server detail', () => {
+    render(<TestComponent hookArgs={mockArgs} />);
+
+    global.mockSocketOptions.onMessage({
+      type: 'signaling-error',
+      detail: 'unsupported signaling type: foo',
+    });
 
     expect(mockT).toHaveBeenCalledWith('callSignalingRejected');
     expect(toast.error).toHaveBeenCalledWith('callSignalingRejected');

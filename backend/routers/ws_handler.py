@@ -13,6 +13,31 @@ from core.realtime import broadcast_to_conversation, manager
 from core.webrtc_signaling_policy import SignalingValidationError, validate_signaling_relay
 from core.privacy_settings import privacy_map_for_users, typing_indicators_enabled
 
+CALL_SIGNALING_TYPES = frozenset({
+    "call-offer", "call-answer", "ice-candidate",
+    "call-end", "call-reject", "call-raise-hand", "call-mute-all",
+    "call-sfu-invite",
+})
+
+
+async def _send_signaling_error(ws, *, original_type: str, to_user: str | None, detail: str) -> None:
+    await ws.send_text(json.dumps({
+        "type": "signaling-error",
+        "original_type": original_type,
+        "to": to_user,
+        "detail": detail,
+    }))
+
+
+async def _group_members_permitted(sender_id: str, members: list) -> tuple[bool, str | None]:
+    for m in members:
+        mid = m.get("user_id") if isinstance(m, dict) else m
+        if not mid:
+            return False, "group member id required"
+        if not await has_shared_conv(sender_id, mid):
+            return False, "group member not permitted"
+    return True, None
+
 
 def register_websocket(app):
     @app.websocket("/api/ws")
@@ -63,57 +88,69 @@ def register_websocket(app):
                                     continue
                                 if pmap.get(uid, {}).get("typing_indicators", True):
                                     await manager.send_to_user(uid, payload)
-                elif t in (
-                    "call-offer", "call-answer", "ice-candidate",
-                    "call-end", "call-reject", "call-raise-hand", "call-mute-all",
-                    "call-sfu-invite",
-                ):
+                elif t in CALL_SIGNALING_TYPES:
                     to_user = data.get("to")
-                    if to_user:
-                        group = bool(data.get("group"))
-                        if group:
-                            can_call = await has_shared_conv(user_id, to_user)
-                        else:
-                            can_call = await are_contacts(user_id, to_user)
-                        if can_call:
-                            try:
-                                relay_body = validate_signaling_relay(data)
-                            except SignalingValidationError as exc:
-                                logger.warning(
-                                    f"WS signaling rejected user={user_id} type={t}: {exc}"
-                                )
-                                await ws.send_text(json.dumps({
-                                    "type": "signaling-error",
-                                    "original_type": t,
-                                    "to": to_user,
-                                    "detail": str(exc),
-                                }))
-                                continue
-                            payload = {
-                                **relay_body,
-                                "from": user_id,
-                                "from_username": user.get("username"),
-                            }
-                            await manager.send_to_user(to_user, payload)
-                            if t in ("call-offer", "call-sfu-invite"):
-                                mode = data.get("mode", "audio")
-                                conv_id = data.get("conversation_id")
-                                asyncio.create_task(send_push_for_call(to_user, user, mode, conv_id, group))
-                            elif t in ("call-end", "call-reject"):
-                                asyncio.create_task(send_push_for_call_end(to_user, user))
-                        else:
-                            logger.warning(f"WS call blocked: no permission between {user_id} and {to_user}")
-                            await ws.send_text(json.dumps({
-                                "type": "signaling-error",
-                                "original_type": t,
-                                "to": to_user,
-                                "detail": "call not permitted",
-                            }))
-                    if data.get("group") and data.get("members"):
-                        for m in data.get("members", []):
-                            mid = m.get("user_id") if isinstance(m, dict) else m
-                            if not await has_shared_conv(user_id, mid):
-                                logger.warning(f"WS group call member validation failed for {user_id} and {m}")
+                    if not to_user:
+                        logger.warning(f"WS signaling missing recipient user={user_id} type={t}")
+                        await _send_signaling_error(
+                            ws,
+                            original_type=t,
+                            to_user=None,
+                            detail="recipient required",
+                        )
+                        continue
+                    group = bool(data.get("group"))
+                    if group:
+                        can_call = await has_shared_conv(user_id, to_user)
+                    else:
+                        can_call = await are_contacts(user_id, to_user)
+                    if not can_call:
+                        logger.warning(f"WS call blocked: no permission between {user_id} and {to_user}")
+                        await _send_signaling_error(
+                            ws,
+                            original_type=t,
+                            to_user=to_user,
+                            detail="call not permitted",
+                        )
+                        continue
+                    if group and data.get("members"):
+                        ok_members, member_err = await _group_members_permitted(user_id, data.get("members", []))
+                        if not ok_members:
+                            logger.warning(
+                                f"WS group call member validation failed user={user_id}: {member_err}"
+                            )
+                            await _send_signaling_error(
+                                ws,
+                                original_type=t,
+                                to_user=to_user,
+                                detail=member_err or "group member not permitted",
+                            )
+                            continue
+                    try:
+                        relay_body = validate_signaling_relay(data)
+                    except SignalingValidationError as exc:
+                        logger.warning(
+                            f"WS signaling rejected user={user_id} type={t}: {exc}"
+                        )
+                        await _send_signaling_error(
+                            ws,
+                            original_type=t,
+                            to_user=to_user,
+                            detail=str(exc),
+                        )
+                        continue
+                    payload = {
+                        **relay_body,
+                        "from": user_id,
+                        "from_username": user.get("username"),
+                    }
+                    await manager.send_to_user(to_user, payload)
+                    if t in ("call-offer", "call-sfu-invite"):
+                        mode = data.get("mode", "audio")
+                        conv_id = data.get("conversation_id")
+                        asyncio.create_task(send_push_for_call(to_user, user, mode, conv_id, group))
+                    elif t in ("call-end", "call-reject"):
+                        asyncio.create_task(send_push_for_call_end(to_user, user))
                 elif t == "read":
                     from core.privacy_settings import read_receipts_enabled
 

@@ -407,6 +407,78 @@ async def test_websocket_call_blocked_without_contact():
             await asyncio.wait_for(c_ws.recv(), timeout=2)
 
 
+@pytest.mark.asyncio
+async def test_websocket_signaling_error_missing_recipient():
+    a_url = ws_connect_url(API, WS_BASE, state["alice_token"])
+    async with websockets.connect(a_url) as a_ws:
+        greet = await asyncio.wait_for(a_ws.recv(), timeout=5)
+        assert json.loads(greet)["type"] == "connected"
+
+        await a_ws.send(json.dumps({
+            "type": "call-offer",
+            "sdp": "fake-sdp",
+            "call_id": "no-recipient",
+        }))
+
+        err_raw = await asyncio.wait_for(a_ws.recv(), timeout=5)
+        err = json.loads(err_raw)
+        assert err["type"] == "signaling-error"
+        assert err.get("original_type") == "call-offer"
+        assert "recipient" in (err.get("detail") or "").lower()
+
+
+@pytest.mark.asyncio
+async def test_websocket_group_call_rejects_unshared_member():
+    carol = {
+        "email": f"carol2.test+{SUFFIX}@ssc.dev",
+        "password": "CarolPass2026!",
+        "username": f"cr2{SUFFIX[:3]}",
+        "public_key": "PUBKEY_CAROL2_BASE64",
+        "encrypted_private_key": "ENC_PRIV_CAROL2",
+        "pk_salt": "SALT_CAROL2",
+        "language": "en",
+        "captcha_token": "TEST-TOKEN",
+    }
+    carol_headers = {"X-Forwarded-For": f"10.0.3.{int(SUFFIX, 16) % 200 + 10}"}
+    r = requests.post(f"{API}/auth/register", json=carol, headers=carol_headers)
+    assert r.status_code == 200, r.text
+    carol_user = r.json()["user"]
+
+    a_url = ws_connect_url(API, WS_BASE, state["alice_token"])
+    b_url = ws_connect_url(API, WS_BASE, state["bob_token"])
+    async with websockets.connect(a_url) as a_ws, websockets.connect(b_url) as b_ws:
+        for ws in (a_ws, b_ws):
+            greet = await asyncio.wait_for(ws.recv(), timeout=5)
+            assert json.loads(greet)["type"] == "connected"
+
+        dist_id = str(uuid.uuid4())
+        await a_ws.send(json.dumps({
+            "type": "call-offer",
+            "to": state["bob_user"]["user_id"],
+            "group": True,
+            "mode": "audio",
+            "signaling_protocol": "signal_v1",
+            "signaling_ciphertext": "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=",
+            "signal_message_type": 7,
+            "distribution_id": dist_id,
+            "members": [
+                state["alice_user"]["user_id"],
+                state["bob_user"]["user_id"],
+                carol_user["user_id"],
+            ],
+            "call_id": "group-bad-member",
+        }))
+
+        err_raw = await asyncio.wait_for(a_ws.recv(), timeout=5)
+        err = json.loads(err_raw)
+        assert err["type"] == "signaling-error"
+        assert err.get("original_type") == "call-offer"
+        assert "not permitted" in (err.get("detail") or "").lower()
+
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(b_ws.recv(), timeout=2)
+
+
 # ─── MongoDB TTL index ──────────────────────────────────────────────────
 @pytest.mark.asyncio
 async def test_messages_ttl_index():

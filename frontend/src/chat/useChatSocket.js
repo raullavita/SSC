@@ -17,6 +17,7 @@ import { STATUS_SKDM_MESSAGE_TYPE, processIncomingStatusSkdmMessage } from '../l
 import { handlePeerIdentityRotation } from '../lib/keyChangeWarnings';
 import { deleteSignalSession } from '../lib/signal/nativeLibsignal';
 import { resolveIncomingSignaling, SignalingInboundError } from './signalingInbound';
+import { toastServerSignalingError } from './signalingErrors';
 import {
   handleIncomingCallOffer,
   handleIncomingSfuInvite,
@@ -153,8 +154,7 @@ export function useChatSocket({
             toast.warning(t('keyChangeWarningToast'));
           }
         } else if (data.type === 'signaling-error') {
-          console.warn('[SSC] signaling rejected by server:', data.detail || data.original_type);
-          toast.error(t('callSignalingRejected'));
+          toastServerSignalingError(data, t);
         } else if (isContactRealtimeEvent(data)) {
           const full = data.type === 'friend-accepted' || data.type === 'contacts-changed';
           refreshContactsRosterRef.current?.({ full });

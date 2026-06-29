@@ -862,6 +862,8 @@
   "callSignalingDecryptFailed": "Eingehender Anruf konnte nicht entschlüsselt werden — bitte den Anrufer, es erneut zu versuchen",
   "callSignalingEncryptFailed": "Anruf konnte nicht verschlüsselt werden — warte, bis die Verschlüsselung abgeschlossen ist, und versuche es erneut",
   "callSignalingRejected": "Anrufsignalisierung wurde abgelehnt — überprüfe die Verschlüsselungseinrichtung und versuche es erneut",
+  "callSignalingNotPermitted": "Du kannst diesen Kontakt nicht anrufen — füge ihn zuerst hinzu oder tritt einer gemeinsamen Gruppe bei",
+  "callSignalingRecipientRequired": "Anruf konnte nicht gesendet werden — Empfänger fehlt",
   "callSdpFailed": "Anruf-Verbindungsdaten konnten nicht angewendet werden — versuche erneut anzurufen",
   "callIceFailed": "Anruf-Netzwerkroute konnte nicht hinzugefügt werden — Verbindung könnte instabil sein",
   "signalIdentityRotated": "Kontakt hat Verschlüsselungsschlüssel aktualisiert — nächste Nachricht wird eine sichere Sitzung neu aufbauen",
