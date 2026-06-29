@@ -10,9 +10,9 @@
   "scripts": {
     "start": "electron .",
     "postinstall": "electron-builder install-app-deps",
-    "build:win": "electron-builder --win nsis",
-    "build:mac": "electron-builder --mac dmg",
-    "build:all": "electron-builder --win nsis --mac dmg"
+    "build:win": "electron-builder --config electron-builder.config.mjs --win nsis",
+    "build:mac": "electron-builder --config electron-builder.config.mjs --mac dmg",
+    "build:all": "electron-builder --config electron-builder.config.mjs --win nsis --mac dmg"
   },
   "dependencies": {
     "@signalapp/libsignal-client": "0.96.4",
@@ -20,6 +20,7 @@
     "electron-updater": "6.6.2"
   },
   "devDependencies": {
+    "@electron/notarize": "2.5.0",
     "electron": "39.8.5",
     "electron-builder": "25.1.8"
   },
@@ -55,17 +56,27 @@
         "from": "../build",
         "to": "renderer",
         "filter": ["**/*", "!**/*.map"]
+      },
+      {
+        "from": "signing.config.json",
+        "to": "signing.config.json"
       }
     ],
+    "afterSign": "electron-builder-hooks.mjs",
     "win": {
       "target": ["nsis"],
       "artifactName": "SSC-Setup-${version}.${ext}",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "signDlls": false
     },
     "mac": {
       "target": ["dmg"],
       "category": "public.app-category.social-networking",
-      "artifactName": "SSC-${version}-${arch}.${ext}"
+      "artifactName": "SSC-${version}-${arch}.${ext}",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build-resources/entitlements.mac.plist",
+      "entitlementsInherit": "build-resources/entitlements.mac.plist"
     },
     "nsis": {
       "oneClick": false,

@@ -46,8 +46,12 @@ P.7 — Email contact@supersecurechat.com (Porkbun hosted)
   Click "Fix Email Hosting DNS Records" for SPF/DKIM/DMARC
   See scripts/PORKBUN_EMAIL_SETUP.txt
 
-P.8 — Windows code signing (optional, paid)
-  SmartScreen goes away after cert + signed NSIS build
+P.8 — Desktop code signing (Q.61 — optional, paid)
+  Windows: OV/EV Authenticode cert → CSC_LINK + CSC_KEY_PASSWORD → signed NSIS
+  Mac: Apple Developer → notarize (APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID)
+  Full guide: scripts/CODE_SIGNING_SETUP.txt
+  Signed build: .\scripts\build_desktop_signed_win.ps1  or  ./scripts/build_desktop_signed_mac.sh
+  After first signed release: .\scripts\enable_code_signing.ps1 + redeploy API flags
 
 P.9 — Play Console ($25 one-time)
   When ready for wider Android testers beyond Firebase App Distribution

@@ -7,7 +7,12 @@ cd desktop
 echo "== Installing desktop dependencies =="
 yarn install
 echo "== Building Mac dmg (requires macOS) =="
-export CSC_IDENTITY_AUTO_DISCOVERY=false
+if [ -z "${CSC_LINK:-}" ] && [ -z "${CSC_NAME:-}" ]; then
+  export CSC_IDENTITY_AUTO_DISCOVERY=false
+else
+  echo "Signing enabled: CSC_LINK or CSC_NAME is set"
+  unset CSC_IDENTITY_AUTO_DISCOVERY
+fi
 yarn build:mac
 echo ""
 echo "DONE: frontend/desktop/dist/SSC-1.0.0-*.dmg"

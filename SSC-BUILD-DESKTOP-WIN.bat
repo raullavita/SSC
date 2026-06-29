@@ -12,7 +12,8 @@ echo == Installing desktop dependencies ==
 call %YARN_CMD% install
 if errorlevel 1 exit /b 1
 echo == Building Windows installer ==
-set CSC_IDENTITY_AUTO_DISCOVERY=false
+if not defined CSC_LINK set CSC_IDENTITY_AUTO_DISCOVERY=false
+if defined CSC_LINK echo Signing enabled: CSC_LINK is set
 call %YARN_CMD% build:win
 if errorlevel 1 exit /b 1
 echo.

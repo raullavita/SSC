@@ -1,0 +1,57 @@
+SSC Q.61 / TASK P.8 — Windows Authenticode + Mac notarize
+=========================================================
+
+Goal: signed Windows NSIS installer (no SmartScreen warning) and notarized Mac DMG (Gatekeeper OK).
+
+Status flags (repo): frontend/desktop/signing.config.json
+  - Set all three fields to true only when you ship signed/notarized builds.
+  - Unsigned builds keep false (current default).
+
+API flags (optional, cloud_run.env after go-live):
+  SSC_WIN_CODE_SIGNING_ENABLED=true
+  SSC_MAC_NOTARIZE_ENABLED=true
+  SSC_WIN_VERIFY_UPDATE_SIGNATURE=true
+
+--- Windows Authenticode ---
+
+1. Buy an OV or EV code-signing cert (SSL.com, DigiCert, etc.).
+2. Export as .pfx on a secure build machine (not committed to git).
+3. Set env vars before build:
+     set CSC_LINK=C:\path\to\ssc-codesign.pfx
+     set CSC_KEY_PASSWORD=your-pfx-password
+     set SSC_WIN_VERIFY_UPDATE_SIGNATURE=true
+4. Build:
+     .\SSC-BUILD-DESKTOP-WIN.bat
+   Or signed wrapper:
+     .\scripts\build_desktop_signed_win.ps1
+5. Upload SSC-Setup-<version>.exe to downloads hosting.
+6. SmartScreen reputation builds over time after first signed releases.
+
+--- Mac notarize (requires macOS + Apple Developer account) ---
+
+1. Enroll in Apple Developer Program ($99/yr).
+2. Create "Developer ID Application" cert in Keychain, or set CSC_NAME to identity name.
+3. Create app-specific password: https://appleid.apple.com
+4. Set env vars:
+     export APPLE_ID=your@email.com
+     export APPLE_APP_SPECIFIC_PASSWORD=xxxx-xxxx-xxxx-xxxx
+     export APPLE_TEAM_ID=XXXXXXXXXX
+     export CSC_NAME="Developer ID Application: Your Name (TEAMID)"
+   Or use CSC_LINK with exported .p12 + CSC_KEY_PASSWORD.
+5. Build on Mac:
+     ./SSC-BUILD-DESKTOP-MAC.sh
+   Or:
+     ./scripts/build_desktop_signed_mac.sh
+6. Upload SSC-<version>-<arch>.dmg to downloads/desktop/
+
+--- Enable shipped config (after first signed release) ---
+
+  .\scripts\enable_code_signing.ps1
+
+Then rebuild clients so signing.config.json is bundled with verify_windows_update_signature=true.
+
+--- Verify ---
+
+  python -m pytest backend/tests/test_code_signing_policy.py -q
+  Get-AuthenticodeSignature .\SSC-Setup-*.exe   (Windows, after signed build)
+  spctl -a -vv -t install .\SSC-*.dmg           (Mac, after notarized build)

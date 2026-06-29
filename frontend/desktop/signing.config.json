@@ -1,0 +1,5 @@
+{
+  "windows_authenticode": false,
+  "mac_notarized": false,
+  "verify_windows_update_signature": false
+}
