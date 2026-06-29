@@ -62,7 +62,7 @@ def _init_firebase() -> bool:
 def _flatten_data(payload: dict) -> Dict[str, str]:
     """FCM data payloads must be string key/value pairs (Engine 4 — sanitized routing only)."""
     from core.metadata_policy import GENERIC_PUSH_BODY, GENERIC_PUSH_TITLE
-    from core.push_payload import sanitize_push_data
+    from core.push_payload import ACTIVITY_MESSAGE, sanitize_push_data
 
     inner = payload.get("data") if isinstance(payload.get("data"), dict) else {}
     merged = {**inner, "type": payload.get("type") or inner.get("type")}
@@ -74,6 +74,17 @@ def _flatten_data(payload: dict) -> Dict[str, str]:
     out["tag"] = str(payload.get("tag") or "")
     out["silent"] = "1" if payload.get("silent") else "0"
     return out
+
+
+def should_send_data_only_android(payload: dict, platform: str, silent: bool) -> bool:
+    """Android message pushes must be data-only so SscMessagingService can add inline reply (Q.43)."""
+    from core.push_payload import ACTIVITY_MESSAGE
+
+    return (
+        platform == "android"
+        and not silent
+        and payload.get("type") == ACTIVITY_MESSAGE
+    )
 
 
 async def send_native_to_users(
@@ -110,9 +121,14 @@ async def send_native_to_users(
         if not fcm_token:
             continue
 
+        platform = doc.get("platform") or "android"
+
         try:
             if doc_silent:
                 msg = messaging.Message(data=data, token=fcm_token)
+            elif should_send_data_only_android(payload, platform, doc_silent):
+                android_cfg = messaging.AndroidConfig(priority="normal")
+                msg = messaging.Message(data=data, token=fcm_token, android=android_cfg)
             else:
                 android_cfg = messaging.AndroidConfig(
                     priority="high" if is_call else "normal",

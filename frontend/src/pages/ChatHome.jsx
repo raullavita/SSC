@@ -86,6 +86,13 @@ import {
   eligibleForwardTargets,
 } from '../lib/messageForward';
 import { sendForwardToConversation } from '../chat/forwardMessageSend';
+import { sendTextToConversation } from '../chat/notificationReplySend';
+import {
+  clearPendingReplyDraft,
+  drainPendingNotificationReplies,
+  peekPendingReplyDraft,
+  setNotificationReplyHandler,
+} from '../lib/notificationReply';
 import { toastMessagingGateFailure } from '../chat/messagingErrors';
 import { applyMessageReactionUpdate, canReactToMessage } from '../lib/messageReactions';
 import {
@@ -990,6 +997,47 @@ export default function ChatHome() {
     subscribePush().catch(() => {});
     subscribeNativePush().catch(() => {});
   }, [user]);
+
+  useEffect(() => {
+    if (!user?.user_id || !isNativeApp()) return undefined;
+    setNotificationReplyHandler(async ({ conversationId, text }) => {
+      try {
+        await sendTextToConversation({
+          conversationId,
+          text,
+          user,
+          privateKey,
+          refreshUser,
+        });
+        toast.success(t('notificationReplySent'));
+        return { sent: true };
+      } catch (err) {
+        if (err?.gate) {
+          toastMessagingGateFailure(err.gate, t);
+        } else if (err?.message !== 'conversation_not_found') {
+          toast.error(t('notificationReplyFailed'));
+        }
+        return { sent: false };
+      }
+    });
+    drainPendingNotificationReplies().catch(() => {});
+    return () => setNotificationReplyHandler(null);
+  }, [user, privateKey, refreshUser, t]);
+
+  useEffect(() => {
+    if (!user?.user_id || !isNativeApp()) return undefined;
+    const applyDraft = (detail) => {
+      if (!detail?.text) return;
+      if (detail.conversationId && activeId && detail.conversationId !== activeId) return;
+      setDraft(detail.text);
+      clearPendingReplyDraft();
+    };
+    const pending = peekPendingReplyDraft();
+    if (pending) applyDraft(pending);
+    const onDraft = (event) => applyDraft(event?.detail || {});
+    window.addEventListener('ssc-pending-reply-draft', onDraft);
+    return () => window.removeEventListener('ssc-pending-reply-draft', onDraft);
+  }, [user?.user_id, activeId]);
 
   useEffect(() => {
     if (!isElectronApp()) return undefined;

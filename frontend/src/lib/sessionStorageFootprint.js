@@ -1,7 +1,9 @@
 /**
  * sessionStorage footprint — Engine 3 Step 3.6.
  */
-export const SESSION_PENDING_KEYS = ['ssc_pending_call'];
+import { PENDING_REPLY_SESSION_KEY } from './notificationReply';
+
+export const SESSION_PENDING_KEYS = ['ssc_pending_call', PENDING_REPLY_SESSION_KEY];
 
 /**
  * @param {'logout'|'panic'} reason

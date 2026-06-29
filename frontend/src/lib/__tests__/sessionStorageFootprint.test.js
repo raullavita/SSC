@@ -2,7 +2,7 @@ import { clearSessionStorageFootprint, SESSION_PENDING_KEYS } from '../sessionSt
 
 describe('sessionStorageFootprint', () => {
   it('tracks pending call key only (invite links retired)', () => {
-    expect(SESSION_PENDING_KEYS).toEqual(['ssc_pending_call']);
+    expect(SESSION_PENDING_KEYS).toEqual(['ssc_pending_call', 'ssc_pending_reply']);
   });
 
   it('clears pending keys on logout', () => {

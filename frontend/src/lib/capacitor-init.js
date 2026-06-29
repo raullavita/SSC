@@ -6,6 +6,7 @@ import { initNativeBackButton } from './nativeBack';
 import { closeOAuthBrowser } from './oauthBrowser';
 import { isNativeApp } from './platform';
 import { initNativePush } from './native-push';
+import { drainPendingNotificationReplies, initNotificationReply } from './notificationReply';
 
 let splashHidden = false;
 let lastDeepLink = '';
@@ -121,12 +122,14 @@ export async function initCapacitor() {
         await bootstrapSessionFromDevice();
       } catch {}
       await consumeLaunchUrl(App);
+      await drainPendingNotificationReplies();
     });
   } catch {
     /* optional */
   }
 
   await initNativePush();
+  await initNotificationReply();
   await initNativeBackButton();
 }
 
