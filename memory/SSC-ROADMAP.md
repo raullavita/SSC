@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.32 done** → next **Q.33** | [~] Q.33 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.33 done** → next **Q.34** | [~] Q.34 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -316,7 +316,7 @@
 |---|-----|---------|-------|--------|
 | 31 | **Q.31** | **TURN off-LAN proof** — cellular ↔ Wi‑Fi matrix (TASK P.6 / J) | Founder | [ ] |
 | 32 | **Q.32** | **Call quality indicator + reconnect UX** | git | [x] |
-| 33 | **Q.33** | **Raise hand + mute all** (group calls) | git | [ ] |
+| 33 | **Q.33** | **Raise hand + mute all** (group calls) | git | [x] |
 | 34 | **Q.34** | **Group call signaling E2E** — close cleartext SDP fallback (TASK O.2 finish) | git | [ ] |
 | 35 | **Q.35** | **SFU Phase B** — group calls 9+ (mediasoup; mesh cap 8 today) | git | [ ] |
 

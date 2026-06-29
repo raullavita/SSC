@@ -20,7 +20,8 @@ from core.signal_message_policy import (
 
 SENSITIVE_SIGNALING_TYPES = frozenset({"call-offer", "call-answer", "ice-candidate"})
 CONTROL_SIGNALING_TYPES = frozenset({"call-end", "call-reject"})
-ALL_SIGNALING_TYPES = SENSITIVE_SIGNALING_TYPES | CONTROL_SIGNALING_TYPES
+GROUP_CALL_MODERATION_TYPES = frozenset({"call-raise-hand", "call-mute-all"})
+ALL_SIGNALING_TYPES = SENSITIVE_SIGNALING_TYPES | CONTROL_SIGNALING_TYPES | GROUP_CALL_MODERATION_TYPES
 
 
 class SignalingProtocol(str, Enum):
@@ -93,6 +94,13 @@ def validate_signaling_relay(data: Dict[str, Any]) -> Dict[str, Any]:
         raise SignalingValidationError(f"unsupported signaling type: {msg_type}")
 
     if msg_type in CONTROL_SIGNALING_TYPES:
+        return data
+
+    if msg_type in GROUP_CALL_MODERATION_TYPES:
+        if not data.get("group"):
+            raise SignalingValidationError(f"{msg_type} requires group=true")
+        if msg_type == "call-raise-hand" and not isinstance(data.get("raised"), bool):
+            raise SignalingValidationError("raised boolean required for call-raise-hand")
         return data
 
     proto = normalize_signaling_protocol(data.get("signaling_protocol"))

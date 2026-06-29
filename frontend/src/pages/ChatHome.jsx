@@ -2123,6 +2123,7 @@ export default function ChatHome() {
         <GroupCallModal mode={groupCallState.mode}
           direction={groupCallState.direction === 'incoming-accepted' ? 'incoming' : 'outgoing'}
           members={groupCallState.members} me={user} user={user}
+          conversation={activeConv}
           conversationId={groupCallState.conversationId || activeId} socket={socketRef.current} signal={groupCallState.signal}
           onClose={() => setGroupCallState(null)} />
       )}

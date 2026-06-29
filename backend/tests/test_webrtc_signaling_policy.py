@@ -121,6 +121,23 @@ def test_control_types_pass_through():
     assert out2["type"] == "call-reject"
 
 
+def test_group_call_raise_hand_requires_group_flag():
+    out = validate_signaling_relay({
+        "type": "call-raise-hand",
+        "to": "u2",
+        "group": True,
+        "raised": True,
+    })
+    assert out["raised"] is True
+    with pytest.raises(SignalingValidationError):
+        validate_signaling_relay({"type": "call-raise-hand", "to": "u2", "raised": True})
+
+
+def test_group_call_mute_all_passes_through():
+    out = validate_signaling_relay({"type": "call-mute-all", "to": "u2", "group": True})
+    assert out["type"] == "call-mute-all"
+
+
 def test_server_sees_plaintext_matrix():
     assert server_sees_signaling_plaintext("signal_v1", is_group=False) is False
     assert server_sees_signaling_plaintext("legacy_cleartext", is_group=False) is True

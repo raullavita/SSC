@@ -64,7 +64,10 @@ def register_websocket(app):
                                     continue
                                 if pmap.get(uid, {}).get("typing_indicators", True):
                                     await manager.send_to_user(uid, payload)
-                elif t in ("call-offer", "call-answer", "ice-candidate", "call-end", "call-reject"):
+                elif t in (
+                    "call-offer", "call-answer", "ice-candidate",
+                    "call-end", "call-reject", "call-raise-hand", "call-mute-all",
+                ):
                     to_user = data.get("to")
                     if to_user:
                         group = bool(data.get("group"))

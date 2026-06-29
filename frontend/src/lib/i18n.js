@@ -787,6 +787,12 @@ const STRINGS = {
     sendFailed: 'Could not send message — try again',
     setupInstalledEncryptionHint: 'Messages are protected automatically on this device.',
     groupCallIncoming: 'Incoming {mode} call · {count} participants',
+    groupCallRaiseHand: 'Raise hand',
+    groupCallRaiseHandFailed: 'Could not update raise hand',
+    groupCallMuteAll: 'Mute all',
+    groupCallMuteAllSent: 'Everyone was muted',
+    groupCallMuteAllFailed: 'Could not mute all participants',
+    groupCallMutedByHost: 'Muted by @{user}',
   },
   es: {
     or: 'O',
@@ -1548,6 +1554,12 @@ const STRINGS = {
     sendFailed: 'No se pudo enviar — inténtalo de nuevo',
     setupInstalledEncryptionHint: 'Los mensajes se protegen solos en este dispositivo. Sin contraseña.',
     groupCallIncoming: 'LLAMADA_{mode}_ENTRANTE · {count} PARTICIPANTES',
+    groupCallRaiseHand: 'Levantar la mano',
+    groupCallRaiseHandFailed: 'No se pudo actualizar la mano',
+    groupCallMuteAll: 'Silenciar a todos',
+    groupCallMuteAllSent: 'Todos silenciados',
+    groupCallMuteAllFailed: 'No se pudo silenciar a todos',
+    groupCallMutedByHost: 'Silenciado por @{user}',
   },
   ro: {
     or: 'SAU',
@@ -2309,6 +2321,12 @@ const STRINGS = {
     sendFailed: 'Mesajul nu s-a putut trimite — încearcă din nou',
     setupInstalledEncryptionHint: 'Mesajele sunt protejate automat pe acest dispozitiv. Fără parolă.',
     groupCallIncoming: 'APEL_{mode}_INTRARE · {count} PARTICIPANȚI',
+    groupCallRaiseHand: 'Ridică mâna',
+    groupCallRaiseHandFailed: 'Nu s-a putut actualiza ridicarea mâinii',
+    groupCallMuteAll: 'Dezactivează microfoanele tuturor',
+    groupCallMuteAllSent: 'Toți au fost dezactivați',
+    groupCallMuteAllFailed: 'Nu s-au putut dezactiva toți',
+    groupCallMutedByHost: 'Dezactivat de @{user}',
   },
 };
 

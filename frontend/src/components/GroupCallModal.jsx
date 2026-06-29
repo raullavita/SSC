@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Phone, VideoCamera, MicrophoneSlash, Microphone, VideoCameraSlash, CameraRotate } from '@phosphor-icons/react';
+import { Phone, VideoCamera, MicrophoneSlash, Microphone, VideoCameraSlash, CameraRotate, HandWaving, SpeakerSlash } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 import { toastSignalingFailure } from '../chat/signalingErrors';
 import { sendSignaling, unpackIncomingSignaling } from '../lib/signal/webrtcSignaling';
@@ -19,6 +19,12 @@ import {
   reconnectDelayMs,
   shouldAttemptReconnect,
 } from '../lib/callReconnect';
+import {
+  applyMuteAllToStream,
+  canMuteAllInGroupCall,
+  groupCallBroadcastTargets,
+  mergeRaisedHandState,
+} from '../lib/groupCallModeration';
 
 /**
  * GroupCallModal — full-mesh WebRTC for up to ~6 participants in a group.
@@ -48,7 +54,7 @@ async function getRTCConfig() {
 }
 
 export default function GroupCallModal({
-  mode, direction, members, me, user, conversationId, socket, signal, onClose,
+  mode, direction, members, me, user, conversation, conversationId, socket, signal, onClose,
 }) {
   const { t } = useLocale();
   // members: [{user_id, username}] EXCLUDING me
@@ -70,6 +76,9 @@ export default function GroupCallModal({
   const qualitySamplerRef = useRef(createQualitySampler());
   const peerReconnectAttemptsRef = useRef({});
   const [groupQuality, setGroupQuality] = useState('unknown');
+  const [raisedHands, setRaisedHands] = useState({});
+  const [myHandRaised, setMyHandRaised] = useState(false);
+  const canMuteAll = canMuteAllInGroupCall(conversation, me?.user_id);
 
   const signalingCtx = useMemo(() => ({
     ourUserId: me?.user_id,
@@ -89,6 +98,17 @@ export default function GroupCallModal({
         onClose?.();
       }
       throw err;
+    }
+  };
+
+  const broadcastGroupControl = async (payload) => {
+    const targets = groupCallBroadcastTargets(
+      members,
+      Object.keys(peersRef.current),
+      me?.user_id,
+    );
+    for (const uid of targets) {
+      await relaySignaling({ ...payload, to: uid, conversation_id: conversationId });
     }
   };
 
@@ -274,6 +294,14 @@ export default function GroupCallModal({
         const entry = peersRef.current[fromId];
         if (entry) { try { entry.pc.close(); } catch {} delete peersRef.current[fromId]; }
         setPeers((cur) => { const n = { ...cur }; delete n[fromId]; return n; });
+        setRaisedHands((cur) => mergeRaisedHandState(cur, fromId, false));
+      } else if (data.type === 'call-raise-hand' && fromId !== me.user_id) {
+        setRaisedHands((cur) => mergeRaisedHandState(cur, fromId, !!data.raised));
+      } else if (data.type === 'call-mute-all' && fromId !== me.user_id) {
+        if (applyMuteAllToStream(localStreamRef.current)) {
+          setMuted(true);
+          toast.message(t('groupCallMutedByHost', { user: data.from_username || fromId }));
+        }
       }
     };
     window.addEventListener('ssc-signal', handler);
@@ -293,8 +321,34 @@ export default function GroupCallModal({
   };
 
   const toggleMute = () => {
-    const t = localStreamRef.current?.getAudioTracks?.()[0];
-    if (t) { t.enabled = !t.enabled; setMuted(!t.enabled); }
+    const track = localStreamRef.current?.getAudioTracks?.()[0];
+    if (track) { track.enabled = !track.enabled; setMuted(!track.enabled); }
+  };
+
+  const toggleRaiseHand = async () => {
+    const next = !myHandRaised;
+    setMyHandRaised(next);
+    setRaisedHands((cur) => mergeRaisedHandState(cur, me.user_id, next));
+    try {
+      await broadcastGroupControl({ type: 'call-raise-hand', raised: next });
+    } catch {
+      setMyHandRaised(!next);
+      setRaisedHands((cur) => mergeRaisedHandState(cur, me.user_id, !next));
+      toast.error(t('groupCallRaiseHandFailed'));
+    }
+  };
+
+  const muteAllParticipants = async () => {
+    if (!canMuteAll) return;
+    if (applyMuteAllToStream(localStreamRef.current)) {
+      setMuted(true);
+    }
+    try {
+      await broadcastGroupControl({ type: 'call-mute-all' });
+      toast.success(t('groupCallMuteAllSent'));
+    } catch {
+      toast.error(t('groupCallMuteAllFailed'));
+    }
   };
   const toggleVideo = () => {
     const t = localStreamRef.current?.getVideoTracks?.()[0];
@@ -319,7 +373,15 @@ export default function GroupCallModal({
   };
 
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-  const tiles = [{ user_id: me.user_id, username: me.username, isLocal: true }, ...Object.entries(peers).map(([uid, p]) => ({ user_id: uid, username: p.username, stream: p.stream }))];
+  const tiles = [
+    { user_id: me.user_id, username: me.username, isLocal: true, handRaised: myHandRaised },
+    ...Object.entries(peers).map(([uid, p]) => ({
+      user_id: uid,
+      username: p.username,
+      stream: p.stream,
+      handRaised: !!raisedHands[uid],
+    })),
+  ];
   const cols = tiles.length <= 2 ? 1 : tiles.length <= 4 ? 2 : 3;
 
   return (
@@ -362,6 +424,14 @@ export default function GroupCallModal({
             <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 rounded text-[10px] font-mono tracking-widest">
               @{t.username}{t.isLocal ? ' (YOU)' : ''}
             </div>
+            {t.handRaised && (
+              <div
+                className="absolute top-2 right-2 px-1.5 py-1 bg-[#FFD600]/90 text-black rounded flex items-center gap-1"
+                data-testid={`group-call-hand-${t.username}`}
+              >
+                <HandWaving size={12} weight="fill" />
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -369,6 +439,24 @@ export default function GroupCallModal({
         <button onClick={toggleMute} data-testid="group-call-mute" className={`w-12 h-12 rounded-full flex items-center justify-center ${muted ? 'bg-[#FF3B30]' : 'bg-[#1A1A1A] tac-border'} hover:brightness-110`}>
           {muted ? <MicrophoneSlash size={20} /> : <Microphone size={20} />}
         </button>
+        <button
+          onClick={toggleRaiseHand}
+          title={t('groupCallRaiseHand')}
+          data-testid="group-call-raise-hand"
+          className={`w-12 h-12 rounded-full flex items-center justify-center ${myHandRaised ? 'bg-[#FFD600] text-black' : 'bg-[#1A1A1A] tac-border'} hover:brightness-110`}
+        >
+          <HandWaving size={20} weight={myHandRaised ? 'fill' : 'regular'} />
+        </button>
+        {canMuteAll && (
+          <button
+            onClick={muteAllParticipants}
+            title={t('groupCallMuteAll')}
+            data-testid="group-call-mute-all"
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-[#1A1A1A] tac-border hover:brightness-110"
+          >
+            <SpeakerSlash size={20} />
+          </button>
+        )}
         {mode === 'video' && (
           <>
             <button onClick={toggleVideo} data-testid="group-call-video" className={`w-12 h-12 rounded-full flex items-center justify-center ${videoOff ? 'bg-[#FF3B30]' : 'bg-[#1A1A1A] tac-border'} hover:brightness-110`}>
