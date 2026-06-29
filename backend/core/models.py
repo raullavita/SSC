@@ -22,6 +22,14 @@ class LoginIn(BaseModel):
     captcha_token: Optional[str] = None
 
 
+class VerifyEmailIn(BaseModel):
+    token: str = Field(min_length=16, max_length=2048)
+
+
+class ResendVerificationIn(BaseModel):
+    email: EmailStr
+
+
 class UsernameCheckIn(BaseModel):
     username: str
 

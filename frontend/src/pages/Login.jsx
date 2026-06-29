@@ -36,6 +36,8 @@ export default function Login() {
   const [needs2FA, setNeeds2FA] = useState(false);
   const [totpCode, setTotpCode] = useState('');
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [needsEmailVerify, setNeedsEmailVerify] = useState(false);
+  const [resendBusy, setResendBusy] = useState(false);
 
   useEffect(() => {
     fetchGoogleConfig().then((c) => setGoogleEnabled(!!c.enabled));
@@ -76,6 +78,15 @@ export default function Login() {
         )
       ) {
         toast.error(t('googleOnlyLoginHint'));
+      } else if (
+        err?.response?.status === 403
+        && (
+          err?.response?.headers?.['x-email-verification-required'] === '1'
+          || /not verified/i.test(detail || '')
+        )
+      ) {
+        setNeedsEmailVerify(true);
+        toast.message(t('emailVerifyRequired'));
       } else {
         toast.error(detail || t('loginFailed'));
       }
@@ -173,6 +184,27 @@ export default function Login() {
             >
               {busy ? t('authenticating').toUpperCase() : t('signIn').toUpperCase()}
             </button>
+            {needsEmailVerify && email.includes('@') && (
+              <button
+                type="button"
+                disabled={resendBusy}
+                data-testid="login-resend-verification"
+                onClick={async () => {
+                  setResendBusy(true);
+                  try {
+                    await api.post('/auth/resend-verification', { email });
+                    toast.success(t('emailVerifyResent'));
+                  } catch (err) {
+                    toast.error(err?.response?.data?.detail || t('emailVerifyResendFailed'));
+                  } finally {
+                    setResendBusy(false);
+                  }
+                }}
+                className="w-full py-2.5 border border-[#27272A] bg-[#121212] rounded-md text-sm hover:bg-[#1A1A1A] transition disabled:opacity-40"
+              >
+                {t('emailVerifyResend')}
+              </button>
+            )}
           </form>
 
           <div className="flex items-center gap-3 my-6">

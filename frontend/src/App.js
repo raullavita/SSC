@@ -5,6 +5,7 @@ import { LocaleProvider, useLocale } from './context/LocaleContext';
 import { Toaster } from 'sonner';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import SetupUsername from './pages/SetupUsername';
 
 import GoogleAuthCallback from './pages/GoogleAuthCallback';
@@ -131,6 +132,7 @@ function AppRouter() {
       <Route path="/login" element={<InstalledClientGate><Login /></InstalledClientGate>} />
       <Route path="/auth/google" element={<InstalledClientGate><GoogleAuthCallback /></InstalledClientGate>} />
       <Route path="/register" element={<InstalledClientGate><Register /></InstalledClientGate>} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/setup" element={<InstalledClientGate><SetupUsername /></InstalledClientGate>} />
       <Route path="/chat" element={<InstalledClientGate><Protected><ChatHome /></Protected></InstalledClientGate>} />
       <Route path="/chat/:conversationId" element={<InstalledClientGate><Protected><ChatHome /></Protected></InstalledClientGate>} />

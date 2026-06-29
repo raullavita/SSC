@@ -13,6 +13,7 @@ from core.turn_proof import calls_public_config
 from core.user_retention import retention_public_config
 from core.client_updates_policy import client_updates_public_config
 from core.privacy_settings import privacy_public_config
+from core.email_verification_policy import auth_public_config
 from security import get_rate_limit_backend
 
 router = APIRouter()
@@ -51,6 +52,7 @@ async def public_config():
         "broadcast_lists": broadcast_lists_public_config(),
         "client_updates": client_updates_public_config(),
         "privacy": privacy_public_config(),
+        "auth": auth_public_config(),
         "gif_search": {
             "tenor_api_key": TENOR_API_KEY,
             "provider": "tenor" if TENOR_API_KEY else "",

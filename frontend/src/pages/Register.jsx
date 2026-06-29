@@ -27,6 +27,7 @@ export default function Register() {
   const [captchaToken, setCaptchaToken] = useState(null);
   const [unameStatus, setUnameStatus] = useState({ checking: false, available: null, reason: '' });
   const [busy, setBusy] = useState(false);
+  const [pendingVerification, setPendingVerification] = useState(null);
   const debounceRef = useRef(null);
   const [googleEnabled, setGoogleEnabled] = useState(false);
 
@@ -73,6 +74,14 @@ export default function Register() {
         pk_salt: wrapped.pk_salt,
         captcha_token: captchaToken,
       });
+      if (data.verification_required) {
+        setPendingVerification({
+          email: data.email || email,
+          devUrl: data.dev_verification_url || null,
+        });
+        toast.success(t('emailVerifyCheckInbox'));
+        return;
+      }
       await loginWithToken(data.token, data.user);
       const pk = await crypto.subtle.importKey('jwk', privateKeyJwk, { name: 'RSA-OAEP', hash: 'SHA-256' }, true, ['decrypt']);
       await persistPrivateKey(pk);
@@ -119,9 +128,49 @@ export default function Register() {
             </Link>
             <LanguagePicker className="w-36" />
           </div>
-          <h1 className="font-mono text-3xl font-bold tracking-tighter">{t('registerTitle')}</h1>
-          <p className="text-[#A1A1AA] text-sm mt-2">{t('registerSubtitle')}</p>
+          <h1 className="font-mono text-3xl font-bold tracking-tighter">
+            {pendingVerification ? t('emailVerifyCheckInboxTitle') : t('registerTitle')}
+          </h1>
+          <p className="text-[#A1A1AA] text-sm mt-2">
+            {pendingVerification ? t('emailVerifyCheckInboxBody', { email: pendingVerification.email }) : t('registerSubtitle')}
+          </p>
 
+          {pendingVerification ? (
+            <div className="mt-6 space-y-4" data-testid="register-verification-pending">
+              {pendingVerification.devUrl && (
+                <p className="text-[10px] font-mono text-[#A1A1AA] break-all">
+                  {t('emailVerifyDevLink')}: {pendingVerification.devUrl}
+                </p>
+              )}
+              <button
+                type="button"
+                disabled={busy}
+                data-testid="register-resend-verification"
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const { data } = await api.post('/auth/resend-verification', {
+                      email: pendingVerification.email,
+                    });
+                    if (data?.dev_verification_url) {
+                      setPendingVerification((cur) => ({ ...cur, devUrl: data.dev_verification_url }));
+                    }
+                    toast.success(t('emailVerifyResent'));
+                  } catch (err) {
+                    toast.error(err?.response?.data?.detail || t('emailVerifyResendFailed'));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+                className="w-full py-2.5 border border-[#27272A] bg-[#121212] rounded-md text-sm hover:bg-[#1A1A1A] transition disabled:opacity-40"
+              >
+                {t('emailVerifyResend')}
+              </button>
+              <p className="text-sm text-[#A1A1AA] text-center">
+                <Link to="/login" className="text-[#00E5FF] hover:underline">{t('signIn')}</Link>
+              </p>
+            </div>
+          ) : (
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div>
               <label className="text-[10px] font-mono tracking-[0.25em] uppercase text-[#A1A1AA]">{t('username')}</label>
@@ -182,7 +231,9 @@ export default function Register() {
               {busy ? t('forgingKeys').toUpperCase() : t('createAccount').toUpperCase()}
             </button>
           </form>
+          )}
 
+          {!pendingVerification && (
           <div className="flex items-center gap-3 my-5">
             <div className="flex-1 h-px bg-[#27272A]" />
             <span className="text-[10px] font-mono text-[#A1A1AA] tracking-[0.25em]">{t('or')}</span>
@@ -197,11 +248,14 @@ export default function Register() {
           >
             <GoogleLogo size={18} weight="bold" /> {googleEnabled ? t('continueGoogle') : t('googleNotConfigured')}
           </button>
+          )}
 
+          {!pendingVerification && (
           <p className="mt-6 text-sm text-[#A1A1AA] text-center">
             {t('alreadyHaveAccount')}{' '}
             <Link to="/login" data-testid="goto-login" className="text-[#00E5FF] hover:underline">{t('signIn')}</Link>
           </p>
+          )}
         </div>
       </div>
     </div>

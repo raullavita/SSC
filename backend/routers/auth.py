@@ -31,9 +31,11 @@ from core.models import (
     GoogleSessionIn,
     LoginIn,
     RegisterIn,
+    ResendVerificationIn,
     TwoFADisableIn,
     TwoFASetupVerifyIn,
     UsernameCheckIn,
+    VerifyEmailIn,
 )
 from core.retention import DEFAULT_RETENTION_HOURS
 from core.privacy_settings import DEFAULT_PRIVACY
@@ -61,6 +63,15 @@ async def register(body: RegisterIn, request: Request, response: Response):
     if await db.users.find_one({"username": body.username}):
         raise HTTPException(409, "Username already taken")
     user_id = f"u_{uuid.uuid4().hex[:14]}"
+    from core.email_verification_policy import (
+        build_verification_url,
+        email_verification_required,
+        is_email_verified,
+    )
+    from core.email_verification_tokens import make_email_verification_token
+    from core.email_sender import EmailSendError, send_verification_email
+
+    needs_verify = email_verification_required()
     doc = {
         "user_id": user_id,
         "email": body.email.lower(),
@@ -74,12 +85,36 @@ async def register(body: RegisterIn, request: Request, response: Response):
         "pk_salt": body.pk_salt,
         "avatar": None,
         "auth_provider": "password",
+        "email_verified": not needs_verify,
         "totp_enabled": False,
         "created_at": iso(now_utc()),
     }
     await db.users.insert_one(doc)
+
+    if needs_verify:
+        token = make_email_verification_token(user_id, doc["email"])
+        verify_url = build_verification_url(token)
+        try:
+            dev_url = await send_verification_email(
+                to_email=doc["email"],
+                username=body.username,
+                verify_url=verify_url,
+            )
+        except EmailSendError:
+            await db.users.delete_one({"user_id": user_id})
+            raise HTTPException(503, "Could not send verification email — try again later")
+        out = {
+            "verification_required": True,
+            "email": doc["email"],
+            "message": "Check your email for an activation link",
+        }
+        if dev_url:
+            out["dev_verification_url"] = dev_url
+        return out
+
     token = await issue_authenticated_session(response, request, user_id)
     user = {k: v for k, v in doc.items() if k not in ("password_hash", "_id", "totp_secret")}
+    user["email_verified"] = is_email_verified(doc)
     return {"token": token, "user": user}
 
 
@@ -113,6 +148,13 @@ async def login(body: LoginIn, request: Request, response: Response):
         if not rate_limit_check(f"login_fail:{ident.lower()}", max_hits=5, window_sec=300):
             raise HTTPException(429, "Too many failed login attempts — try again in 5 minutes")
         raise HTTPException(401, "Invalid credentials")
+    from core.email_verification_policy import is_email_verified
+    if not is_email_verified(doc):
+        raise HTTPException(
+            403,
+            "Email not verified. Check your inbox for the activation link.",
+            headers={"X-Email-Verification-Required": "1"},
+        )
     if doc.get("totp_enabled"):
         if not body.totp_code:
             raise HTTPException(401, "2FA code required", headers={"X-Requires-2FA": "1"})
@@ -159,6 +201,66 @@ async def logout(
     return {"ok": True}
 
 
+@router.post("/verify-email")
+async def verify_email(body: VerifyEmailIn):
+    from core.email_verification_tokens import decode_email_verification_token
+
+    payload = decode_email_verification_token(body.token.strip())
+    if not payload:
+        raise HTTPException(400, "Invalid or expired verification link")
+    user_id = payload["sub"]
+    email = payload["email"]
+    doc = await db.users.find_one({"user_id": user_id, "email": email}, {"_id": 0})
+    if not doc:
+        raise HTTPException(400, "Invalid or expired verification link")
+    if doc.get("auth_provider") != "password":
+        raise HTTPException(400, "This account does not require email verification")
+    await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": {"email_verified": True, "email_verified_at": iso(now_utc())}},
+    )
+    return {"ok": True, "email": email}
+
+
+@router.post("/resend-verification")
+async def resend_verification(body: ResendVerificationIn, request: Request):
+    from core.email_verification_policy import (
+        RESEND_COOLDOWN_SECONDS,
+        build_verification_url,
+        email_verification_required,
+    )
+    from core.email_verification_tokens import make_email_verification_token
+    from core.email_sender import EmailSendError, send_verification_email
+
+    if not email_verification_required():
+        raise HTTPException(400, "Email verification is not required")
+    ip = client_ip(request)
+    email = body.email.lower()
+    if not rate_limit_check(f"resend_verify:{ip}", max_hits=5, window_sec=3600):
+        raise HTTPException(429, "Too many resend attempts — try again later")
+    if not rate_limit_check(f"resend_verify:{email}", max_hits=1, window_sec=RESEND_COOLDOWN_SECONDS):
+        raise HTTPException(429, "Please wait before requesting another email")
+
+    doc = await db.users.find_one({"email": email})
+    if not doc or doc.get("auth_provider") != "password" or doc.get("email_verified"):
+        return {"ok": True, "message": "If that account exists and is unverified, a new email was sent"}
+
+    token = make_email_verification_token(doc["user_id"], email)
+    verify_url = build_verification_url(token)
+    try:
+        dev_url = await send_verification_email(
+            to_email=email,
+            username=doc.get("username") or "user",
+            verify_url=verify_url,
+        )
+    except EmailSendError:
+        raise HTTPException(503, "Could not send verification email — try again later")
+    out = {"ok": True, "message": "Verification email sent"}
+    if dev_url:
+        out["dev_verification_url"] = dev_url
+    return out
+
+
 @router.post("/check-username")
 async def check_username(body: UsernameCheckIn):
     err = validate_username(body.username)
@@ -202,6 +304,7 @@ async def _google_find_or_create(claims: dict) -> tuple[dict, bool]:
             "avatar": claims.get("picture"),
             "auth_provider": "google",
             "google_sub": google_sub,
+            "email_verified": True,
             "totp_enabled": False,
             "created_at": iso(now_utc()),
         }

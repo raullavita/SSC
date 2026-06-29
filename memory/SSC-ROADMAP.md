@@ -100,7 +100,7 @@
 | **Messaging crypto** | **libsignal only** in user-facing story. Dual-read RSA stays internal until retired. |
 | **Auto Signal** | Bootstrap X3DH + ratchet **silently** on installed clients at login / first contact. No “upgrade encryption” UI. |
 | **QR / safety numbers** | Not MVP for remote users (US ↔ UK). Hide VERIFY from default chat; optional advanced Settings later. |
-| **Email** | Google → `email_verified`, no extra link. Password register → confirmation link later (non-Google). |
+| **Email** | Google → `email_verified`, no extra link. Password register → activation link when `EMAIL_VERIFICATION_REQUIRED=true` (Q.36). |
 | **Surfaces** | Installed apps only: Android APK, Windows/Mac desktop. iOS deferred. |
 
 ---
@@ -199,7 +199,7 @@
 | **N** | Landing, legal, downloads, trust | [x] N.1–N.7 done; N.8 Play Store deferred |
 | **O** | Crypto hardening (RSA retire, group signaling, keystore) | [ ] after M/N |
 | **J** QA matrix | tester-win ↔ tester-android — resumes at **Q.64** (smoke at each wave milestone) | [ ] |
-| **Q** Expansion wave | **63 subtasks** — serial order; **Q.35 done** → next **Q.36** | [~] Q.36 open |
+| **Q** Expansion wave | **63 subtasks** — serial order; **Q.36 done** → next **Q.37** | [~] Q.37 open |
 | **I** Infra remainder | Folded into Q.61–Q.63 | [ ] |
 | **K** Deferred items | SFU detail → Q.35 · iOS → Q.63 · email confirm → Q.36 | — |
 
@@ -324,7 +324,7 @@
 
 | # | ID | Subtask | Owner | Status |
 |---|-----|---------|-------|--------|
-| 36 | **Q.36** | **Email verification** for password register (activation link) | git | [ ] |
+| 36 | **Q.36** | **Email verification** for password register (activation link) | git | [x] |
 | 37 | **Q.37** | **Display name** (separate from locked username) | git | [ ] |
 | 38 | **Q.38** | **Profile bio / about** | git | [ ] |
 | 39 | **Q.39** | **In-app FAQ / help center** (offline markdown) | git | [ ] |
