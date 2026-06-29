@@ -20,6 +20,7 @@ from core.member_joined import (
     joined_at_after_member_added,
     joined_at_after_member_removed,
 )
+from core.group_limits import MAX_GROUP_PARTICIPANTS, assert_can_add_to_group
 from core.utils import iso, now_utc
 
 
@@ -27,7 +28,7 @@ async def _member_map(participant_ids: List[str]) -> Dict[str, dict]:
     users = await db.users.find(
         {"user_id": {"$in": participant_ids}},
         PEER_ROSTER_FIELDS,
-    ).to_list(100)
+    ).to_list(MAX_GROUP_PARTICIPANTS)
     return {u["user_id"]: peer_summary(u) for u in users}
 
 
@@ -52,6 +53,8 @@ async def add_group_members(
     peer_docs: List[dict],
 ) -> dict:
     participants = list(conv.get("participants", []))
+    to_add = [peer for peer in peer_docs if peer["user_id"] not in participants]
+    assert_can_add_to_group(len(participants), len(to_add))
     added_ids: List[str] = []
     for peer in peer_docs:
         uid = peer["user_id"]

@@ -18,3 +18,9 @@ def test_public_config_exposes_gif_search_shape():
     assert "gif_search" in data
     assert "tenor_api_key" in data["gif_search"]
     assert "provider" in data["gif_search"]
+
+
+def test_public_config_exposes_group_limits():
+    data = asyncio.run(public_config())
+
+    assert data["groups"]["max_participants"] == 50

@@ -11,6 +11,7 @@ from core.database import db
 from core.logging_config import logger
 from core.group_members import add_group_members, remove_group_member
 from core.member_joined import build_member_joined_at_for_participants
+from core.group_limits import MAX_GROUP_PARTICIPANTS, assert_can_add_to_group, assert_group_size_allowed
 from core.group_topics import (
     GENERAL_TOPIC_ID,
     bump_topic_activity,
@@ -109,7 +110,7 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
         peers = await db.users.find(
             {"username": {"$in": usernames}},
             {"_id": 0, "password_hash": 0, "totp_secret": 0, "totp_pending_secret": 0},
-        ).to_list(50)
+        ).to_list(MAX_GROUP_PARTICIPANTS)
         found_unames = {p["username"] for p in peers}
         missing = [u for u in usernames if u not in found_unames]
         if missing:
@@ -120,6 +121,7 @@ async def create_conversation(body: CreateConversationIn, current=Depends(get_cu
         if len(peers) < 1:
             raise HTTPException(400, "Group needs at least 1 other participant")
         participants = sorted({current["user_id"], *[p["user_id"] for p in peers]})
+        assert_group_size_allowed(len(participants))
         created = now_utc()
         activity = await conversation_activity_fields_for_participants(participants, created)
         owner_id = current["user_id"]
@@ -288,15 +290,19 @@ async def add_conversation_members(
     peers = await db.users.find(
         {"username": {"$in": usernames}},
         {"_id": 0, "password_hash": 0, "totp_secret": 0, "totp_pending_secret": 0},
-    ).to_list(50)
+    ).to_list(MAX_GROUP_PARTICIPANTS)
     found = {p["username"] for p in peers}
     missing = [u for u in usernames if u not in found]
     if missing:
         raise HTTPException(404, f"Unknown users: {', '.join(missing)}")
+    new_ids = [p["user_id"] for p in peers if p["user_id"] not in conv.get("participants", [])]
+    assert_can_add_to_group(len(conv.get("participants", [])), len(new_ids))
     try:
         conv = await add_group_members(conv, actor_id=current["user_id"], peer_docs=peers)
     except ValueError as e:
         raise HTTPException(403, str(e)) from e
+    except HTTPException:
+        raise
     me = current["user_id"]
     member_map = {current["user_id"]: peer_summary(current)}
     for p in peers:
@@ -328,7 +334,7 @@ async def remove_conversation_member(
     peers_list = await db.users.find(
         {"user_id": {"$in": updated["participants"]}},
         PEER_ROSTER_FIELDS,
-    ).to_list(100)
+    ).to_list(MAX_GROUP_PARTICIPANTS)
     peers_by_id = {p["user_id"]: p for p in peers_list}
     members = [project_user_for_peer(peers_by_id.get(p)) for p in updated["participants"] if p != me]
     return sanitize_conversation_for_api({**updated, "members": [m for m in members if m]}, me)
@@ -338,7 +344,7 @@ async def _group_conversation_payload(conv: dict, viewer_id: str) -> dict:
     peers_list = await db.users.find(
         {"user_id": {"$in": conv.get("participants", [])}},
         PEER_ROSTER_FIELDS,
-    ).to_list(100)
+    ).to_list(MAX_GROUP_PARTICIPANTS)
     peers_by_id = {p["user_id"]: p for p in peers_list}
     members = [
         project_user_for_peer(peers_by_id.get(p))
@@ -557,7 +563,7 @@ async def update_group_permissions(
     peers_list = await db.users.find(
         {"user_id": {"$in": updated["participants"]}},
         PEER_ROSTER_FIELDS,
-    ).to_list(100)
+    ).to_list(MAX_GROUP_PARTICIPANTS)
     peers_by_id = {p["user_id"]: p for p in peers_list}
     members = [project_user_for_peer(peers_by_id.get(p)) for p in updated["participants"] if p != me]
     return sanitize_conversation_for_api({**updated, "members": [m for m in members if m]}, me)
@@ -600,7 +606,7 @@ async def update_member_role(
     peers_list = await db.users.find(
         {"user_id": {"$in": updated["participants"]}},
         PEER_ROSTER_FIELDS,
-    ).to_list(100)
+    ).to_list(MAX_GROUP_PARTICIPANTS)
     peers_by_id = {p["user_id"]: p for p in peers_list}
     members = [project_user_for_peer(peers_by_id.get(p)) for p in updated["participants"] if p != me]
     return sanitize_conversation_for_api({**updated, "members": [m for m in members if m]}, me)

@@ -4,6 +4,11 @@ import { X, MagnifyingGlass, UsersThree, Check } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useLocale } from '../context/LocaleContext';
 import { setLocalGroupLabel } from '../lib/groupLabels';
+import {
+  DEFAULT_MAX_GROUP_PARTICIPANTS,
+  fetchMaxGroupParticipants,
+  maxInitialGroupPicks,
+} from '../lib/groupLimits';
 
 export default function CreateGroupModal({ open, onClose, onCreated, myUserId, contacts = [] }) {
   const { t } = useLocale();
@@ -11,6 +16,15 @@ export default function CreateGroupModal({ open, onClose, onCreated, myUserId, c
   const [groupName, setGroupName] = useState('');
   const [picked, setPicked] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [maxParticipants, setMaxParticipants] = useState(DEFAULT_MAX_GROUP_PARTICIPANTS);
+
+  useEffect(() => {
+    if (!open) return;
+    fetchMaxGroupParticipants().then(setMaxParticipants).catch(() => {});
+  }, [open]);
+
+  const maxPicks = maxInitialGroupPicks(maxParticipants);
+  const atPickLimit = picked.length >= maxPicks;
 
   const eligibleContacts = useMemo(
     () => contacts.filter((c) => !c.blocked).sort((a, b) => a.username.localeCompare(b.username)),
@@ -32,9 +46,16 @@ export default function CreateGroupModal({ open, onClose, onCreated, myUserId, c
   }, [eligibleContacts, q]);
 
   const togglePick = (u) => {
-    setPicked((cur) => cur.find((p) => p.user_id === u.user_id)
-      ? cur.filter((p) => p.user_id !== u.user_id)
-      : [...cur, u]);
+    setPicked((cur) => {
+      if (cur.find((p) => p.user_id === u.user_id)) {
+        return cur.filter((p) => p.user_id !== u.user_id);
+      }
+      if (cur.length >= maxPicks) {
+        toast.error(t('groupMemberCapReached', { max: String(maxParticipants) }));
+        return cur;
+      }
+      return [...cur, u];
+    });
   };
 
   const create = async () => {
@@ -68,8 +89,11 @@ export default function CreateGroupModal({ open, onClose, onCreated, myUserId, c
           <button onClick={onClose} className="text-[#A1A1AA] hover:text-white" data-testid="group-close"><X size={16} /></button>
         </div>
 
-        <p className="text-[10px] font-mono text-[#A1A1AA] mb-3 tracking-wide">
+        <p className="text-[10px] font-mono text-[#A1A1AA] mb-1 tracking-wide">
           {t('groupPrivacyHint')}
+        </p>
+        <p className="text-[10px] font-mono text-[#71717A] mb-3" data-testid="group-member-cap-hint">
+          {t('groupMemberCapHint', { max: String(maxParticipants), picked: String(picked.length + 1) })}
         </p>
 
         <input
@@ -107,8 +131,14 @@ export default function CreateGroupModal({ open, onClose, onCreated, myUserId, c
           {filteredContacts.map((u) => {
             const isPicked = picked.find((p) => p.user_id === u.user_id);
             return (
-              <button key={u.user_id} type="button" onClick={() => togglePick(u)} data-testid={`group-pick-${u.username}`}
-                className="w-full text-left px-3 py-2 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3">
+              <button
+                key={u.user_id}
+                type="button"
+                onClick={() => togglePick(u)}
+                disabled={!isPicked && atPickLimit}
+                data-testid={`group-pick-${u.username}`}
+                className="w-full text-left px-3 py-2 rounded-md hover:bg-[#1A1A1A] flex items-center gap-3 disabled:opacity-40"
+              >
                 <div className="w-9 h-9 rounded-md bg-[#232323] flex items-center justify-center font-mono text-xs">
                   {u.username.slice(0, 2).toUpperCase()}
                 </div>

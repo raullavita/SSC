@@ -135,7 +135,7 @@ class DeleteAccountIn(BaseModel):
 
 
 class AddGroupMembersIn(BaseModel):
-    peer_usernames: List[str] = Field(min_length=1, max_length=20)
+    peer_usernames: List[str] = Field(min_length=1, max_length=49)
 
 
 class GroupPermissionsIn(BaseModel):

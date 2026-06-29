@@ -52,4 +52,20 @@ describe('groupMembers', () => {
     expect(roleBadgeTone(ROLE_ADMIN)).toBe('admin');
     expect(roleBadgeTone('member')).toBeNull();
   });
+
+  it('sorts 50-member roster with owner first', () => {
+    const participants = Array.from({ length: 50 }, (_, i) => `u_${String(i).padStart(2, '0')}`);
+    const conv = {
+      is_group: true,
+      participants,
+      owner_id: 'u_00',
+      member_roles: Object.fromEntries(
+        participants.map((id, i) => [id, i === 0 ? ROLE_OWNER : 'member']),
+      ),
+      members: participants.slice(1).map((id) => ({ user_id: id, username: id })),
+    };
+    const rows = buildGroupMemberRows(conv, { user_id: 'u_00', username: 'owner' });
+    expect(rows).toHaveLength(50);
+    expect(rows[0].user_id).toBe('u_00');
+  });
 });

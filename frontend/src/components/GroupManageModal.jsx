@@ -27,6 +27,12 @@ import {
   roleBadgeTone,
 } from '../lib/groupMembers';
 import Avatar from './Avatar';
+import {
+  DEFAULT_MAX_GROUP_PARTICIPANTS,
+  fetchMaxGroupParticipants,
+  isGroupFull,
+  remainingGroupSlots,
+} from '../lib/groupLimits';
 
 const GROUP_DESCRIPTION_MAX = 280;
 
@@ -48,6 +54,7 @@ export default function GroupManageModal({
   const [addMembersPolicy, setAddMembersPolicy] = useState(ADD_MEMBERS_ADMINS);
   const [groupDescription, setGroupDescription] = useState('');
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [maxParticipants, setMaxParticipants] = useState(DEFAULT_MAX_GROUP_PARTICIPANTS);
   const photoInputRef = useRef(null);
 
   const memberRows = useMemo(
@@ -59,11 +66,19 @@ export default function GroupManageModal({
     [memberRows],
   );
   const myRole = conversation ? getMemberRole(conversation, myUserId) : ROLE_MEMBER;
-  const showAddMembers = conversation ? canAddMembers(conversation, myUserId) : false;
+  const participantCount = conversation?.participants?.length || 0;
+  const slotsLeft = remainingGroupSlots(participantCount, maxParticipants);
+  const groupFull = isGroupFull(participantCount, maxParticipants);
+  const showAddMembers = conversation ? canAddMembers(conversation, myUserId) && !groupFull : false;
   const showRoleControls = conversation ? canManageRoles(conversation, myUserId) : false;
   const showPermissionControls = showRoleControls;
   const canEditProfile = conversation ? canEditGroupProfile(conversation, myUserId) : false;
   const avatarProps = conversation ? groupAvatarProps(conversation) : { user: null, isGroup: true };
+
+  useEffect(() => {
+    if (!open) return;
+    fetchMaxGroupParticipants().then(setMaxParticipants).catch(() => {});
+  }, [open]);
 
   useEffect(() => {
     if (!open || !conversation) return;
@@ -465,8 +480,18 @@ export default function GroupManageModal({
               )}
             </div>
           </>
+        ) : groupFull ? (
+          <p className="text-[10px] font-mono text-[#71717A] mb-2" data-testid="group-member-cap-full">
+            {t('groupMemberCapFull', { max: String(maxParticipants) })}
+          </p>
         ) : myRole === ROLE_MEMBER && (
           <p className="text-[10px] font-mono text-[#71717A] mb-2">{t('groupCannotAddMembers')}</p>
+        )}
+
+        {showAddMembers && slotsLeft < maxParticipants && (
+          <p className="text-[10px] font-mono text-[#71717A] mb-2" data-testid="group-member-slots-left">
+            {t('groupMemberSlotsLeft', { count: String(slotsLeft), max: String(maxParticipants) })}
+          </p>
         )}
 
         <button
