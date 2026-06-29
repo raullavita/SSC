@@ -38,8 +38,8 @@ REQUIRED_SECURITY_HEADERS: Tuple[str, ...] = (
 PROTECTED_ROUTE_SAMPLES: Tuple[str, ...] = (
     "/api/contacts",
     "/api/auth/me",
-    "/api/messages",
     "/api/conversations",
+    "/api/keys/prekey-bundle/me",
 )
 
 PUBLIC_SMOKE_PATHS: Tuple[str, ...] = (
