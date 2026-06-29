@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useLocale } from '../context/LocaleContext';
 import { MESSAGE_LANGS } from '../lib/translation/translationLanguages';
+import AppLockSettingsSection from './AppLockSettingsSection';
 import { isElectronApp, isInstalledClient, isNativeApp } from '../lib/platform';
 import { userHasUnifiedIdentity } from '../lib/signalIdentityBootstrap';
 import { prepareAvatarFile } from '../lib/avatarUpload';
@@ -825,6 +826,8 @@ export default function SettingsModal({ open, onClose }) {
                 </button>
               </form>
             </Section>
+
+            <AppLockSettingsSection />
 
             <Section icon={Eye} title={t('settingsPrivacy')} testId="settings-privacy-section">
               <label className="flex items-center justify-between gap-3 py-2 cursor-pointer">

@@ -15,6 +15,7 @@ import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
 
 import chat.ssc.secure.push.SscNotificationSounds;
+import chat.ssc.secure.plugins.SscAppLockPlugin;
 import chat.ssc.secure.plugins.SscDeviceSecretPlugin;
 import chat.ssc.secure.plugins.SscLibsignalPlugin;
 import chat.ssc.secure.plugins.SscMediaPermissionsPlugin;
@@ -26,6 +27,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SscLibsignalPlugin.class);
+        registerPlugin(SscAppLockPlugin.class);
         registerPlugin(SscDeviceSecretPlugin.class);
         registerPlugin(SscTranslatePlugin.class);
         registerPlugin(SscMediaPermissionsPlugin.class);

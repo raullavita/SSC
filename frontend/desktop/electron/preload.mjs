@@ -58,6 +58,11 @@ const translate = {
   },
 };
 
+const appLock = {
+  isAvailable: () => ipcRenderer.invoke('desktop-app-lock-available'),
+  authenticate: (args) => ipcRenderer.invoke('desktop-app-lock-authenticate', args || {}),
+};
+
 const updates = {
   check: (opts) => ipcRenderer.invoke('desktop-update-check', opts || {}),
   download: () => ipcRenderer.invoke('desktop-update-download'),
@@ -79,5 +84,6 @@ contextBridge.exposeInMainWorld('sscDesktop', {
   secureStorage,
   notifications,
   window: windowApi,
+  appLock,
   updates,
 });

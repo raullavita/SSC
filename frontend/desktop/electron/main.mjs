@@ -4,6 +4,7 @@ import {
   dialog,
   ipcMain,
   safeStorage,
+  systemPreferences,
   Tray,
   Menu,
   nativeImage,
@@ -299,6 +300,24 @@ ipcMain.handle('desktop-translate', async (_event, args) => {
 });
 
 ipcMain.handle('desktop-translate-download-status', () => getTranslateDownloadStatus());
+
+ipcMain.handle('desktop-app-lock-available', () => {
+  if (process.platform !== 'darwin' || typeof systemPreferences.canPromptTouchID !== 'function') {
+    return { available: false };
+  }
+  return { available: systemPreferences.canPromptTouchID() };
+});
+
+ipcMain.handle('desktop-app-lock-authenticate', async (_event, { reason } = {}) => {
+  if (process.platform !== 'darwin' || typeof systemPreferences.promptTouchID !== 'function') {
+    throw new Error('BIOMETRIC_UNAVAILABLE');
+  }
+  if (!systemPreferences.canPromptTouchID()) {
+    throw new Error('BIOMETRIC_UNAVAILABLE');
+  }
+  await systemPreferences.promptTouchID(reason || 'Unlock SSC');
+  return { ok: true };
+});
 
 const SECURE_STORE_FILE = () => path.join(app.getPath('userData'), 'ssc-secure-store.json');
 

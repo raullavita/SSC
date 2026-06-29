@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { AppLockProvider, useAppLock } from './context/AppLockContext';
 import { LocaleProvider, useLocale } from './context/LocaleContext';
+import AppLockGate from './components/AppLockGate';
 import { Toaster } from 'sonner';
 import Login from './pages/Login';
 import RecoveryPassword from './pages/RecoveryPassword';
@@ -124,6 +126,24 @@ function Protected({ children }) {
   return children;
 }
 
+function AuthenticatedShell({ children }) {
+  const { user, loading } = useAuth();
+  const { locked, ready } = useAppLock();
+  const { t } = useLocale();
+
+  if (loading || !ready) {
+    return (
+      <div className="mobile-shell flex items-center justify-center bg-[#0A0A0A] text-[#A1A1AA] font-mono text-xs safe-top safe-bottom">
+        {t('initializing')}
+      </div>
+    );
+  }
+  if (user && locked) {
+    return <AppLockGate />;
+  }
+  return children;
+}
+
 function AppRouter() {
   return (
     <Routes>
@@ -150,10 +170,14 @@ export default function App() {
       <Router>
         <AuthProvider>
           <LocaleProvider>
-            <NativeBootGate>
-              <DeepLinkListener />
-              <AppRouter />
-            </NativeBootGate>
+            <AppLockProvider>
+              <NativeBootGate>
+                <AuthenticatedShell>
+                  <DeepLinkListener />
+                  <AppRouter />
+                </AuthenticatedShell>
+              </NativeBootGate>
+            </AppLockProvider>
           </LocaleProvider>
           <Toaster
             theme="dark"
