@@ -81,6 +81,7 @@ async def execute_account_delete(
         "$or": [{"from_user_id": user_id}, {"to_user_id": user_id}],
     })
     await db.signal_prekey_bundles.delete_many({"user_id": user_id})
+    await db.passkey_credentials.delete_many({"user_id": user_id})
     try:
         await db.contacts.delete_many({"$or": [{"user_id": user_id}, {"contact_id": user_id}]})
     except Exception:

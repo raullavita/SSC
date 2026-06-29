@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LockKey, GoogleLogo, Eye, EyeSlash, ShieldCheck } from '@phosphor-icons/react';
+import { LockKey, GoogleLogo, Eye, EyeSlash, ShieldCheck, Fingerprint } from '@phosphor-icons/react';
 import { api, API } from '../lib/api';
 import { isNativeApp } from '../lib/platform';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,11 @@ import { useLocale } from '../context/LocaleContext';
 import Turnstile from '../components/Turnstile';
 import LanguagePicker from '../components/LanguagePicker';
 import { fetchGoogleConfig, signInWithGoogle } from '../lib/google-auth';
+import {
+  fetchPasskeyConfig,
+  isPasskeySupported,
+  loginWithPasskey,
+} from '../lib/passkeyAuth';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -36,11 +41,13 @@ export default function Login() {
   const [needs2FA, setNeeds2FA] = useState(false);
   const [totpCode, setTotpCode] = useState('');
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [passkeyEnabled, setPasskeyEnabled] = useState(false);
   const [needsEmailVerify, setNeedsEmailVerify] = useState(false);
   const [resendBusy, setResendBusy] = useState(false);
 
   useEffect(() => {
     fetchGoogleConfig().then((c) => setGoogleEnabled(!!c.enabled));
+    fetchPasskeyConfig().then((c) => setPasskeyEnabled(!!c.enabled && isPasskeySupported()));
   }, []);
 
   const submit = async (e) => {
@@ -89,6 +96,38 @@ export default function Login() {
         toast.message(t('emailVerifyRequired'));
       } else {
         toast.error(detail || t('loginFailed'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const loginPasskey = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const data = await loginWithPasskey({
+        identifier: email,
+        totpCode: needs2FA ? totpCode : undefined,
+      });
+      await loginWithToken(data.token, data.user);
+      toast.success(t('welcomeBack'));
+      navigate('/chat');
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      if (err?.message === 'PASSKEY_CANCELLED') return;
+      if (err?.response?.headers?.['x-requires-2fa'] === '1' || /2fa/i.test(detail || '')) {
+        setNeeds2FA(true);
+        toast.message(t('enter2fa'));
+      } else if (err?.response?.status === 403 && /not verified/i.test(detail || '')) {
+        setNeedsEmailVerify(true);
+        toast.message(t('emailVerifyRequired'));
+      } else if (err?.response?.status === 404) {
+        toast.error(t('passkeyNotFound'));
+      } else if (!err?.response) {
+        toast.error(`${t('cannotReachServer')} (${API})`);
+      } else {
+        toast.error(detail || t('passkeyLoginFailed'));
       }
     } finally {
       setBusy(false);
@@ -212,6 +251,19 @@ export default function Login() {
             <span className="text-[10px] font-mono text-[#A1A1AA] tracking-[0.25em]">{t('or')}</span>
             <div className="flex-1 h-px bg-[#27272A]" />
           </div>
+
+          {passkeyEnabled && (
+            <button
+              type="button"
+              onClick={loginPasskey}
+              disabled={busy}
+              data-testid="login-passkey-button"
+              className="w-full py-2.5 border border-[#27272A] bg-[#121212] hover:bg-[#1A1A1A] rounded-md flex items-center justify-center gap-2 text-sm transition disabled:opacity-40 mb-3"
+            >
+              <Fingerprint size={18} weight="duotone" className="text-[#00E5FF]" />
+              {t('signInPasskey')}
+            </button>
+          )}
 
           <button
             onClick={loginGoogle}

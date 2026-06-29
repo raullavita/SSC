@@ -229,6 +229,29 @@ class OneTimePreKeyIn(BaseModel):
     public: str = Field(min_length=16, max_length=512)
 
 
+class PasskeyRegisterOptionsIn(BaseModel):
+    device_name: Optional[str] = Field(default=None, max_length=64)
+
+
+class PasskeyRegisterVerifyIn(BaseModel):
+    challenge_id: str = Field(min_length=8, max_length=128)
+    credential: dict
+
+
+class PasskeyLoginOptionsIn(BaseModel):
+    identifier: Optional[str] = Field(default=None, max_length=128)
+
+
+class PasskeyLoginVerifyIn(BaseModel):
+    challenge_id: str = Field(min_length=8, max_length=128)
+    credential: dict
+    totp_code: Optional[str] = None
+
+
+class PasskeyDeleteIn(BaseModel):
+    credential_id: str = Field(min_length=8, max_length=512)
+
+
 class PrekeyBundleIn(BaseModel):
     registration_id: int = Field(ge=1, le=16380)
     device_id: int = Field(default=1, ge=1, le=1)

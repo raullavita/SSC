@@ -55,6 +55,9 @@ def is_email_verified(user: dict) -> bool:
 
 
 def auth_public_config() -> dict:
+    from core.webauthn_policy import auth_public_passkey_config
+
     return {
         "email_verification_required": email_verification_required(),
+        **auth_public_passkey_config(),
     }

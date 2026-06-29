@@ -59,6 +59,8 @@ async def _ensure_indexes() -> None:
     if migrated:
         logger.info(f"contact graph migration: {migrated} mutual pairs from legacy contacts")
     await db.signal_prekey_bundles.create_index("user_id", unique=True)
+    await db.passkey_credentials.create_index("credential_id", unique=True)
+    await db.passkey_credentials.create_index([("user_id", 1), ("created_at", 1)])
     await backfill_retention_ttl_fields()
     logger.info(f"SSC backend ready — database: {DB_NAME}")
 

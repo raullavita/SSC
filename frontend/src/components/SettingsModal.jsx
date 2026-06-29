@@ -64,6 +64,13 @@ import {
 } from '../lib/gifSearchPrefs';
 import { normalizeDisplayNameInput } from '../lib/displayName';
 import { BIO_MAX_LEN, normalizeProfileBioInput } from '../lib/profileBio';
+import {
+  deletePasskey,
+  fetchPasskeyConfig,
+  isPasskeySupported,
+  listPasskeys,
+  registerPasskey,
+} from '../lib/passkeyAuth';
 
 const APP_VERSION = getAppVersion();
 
@@ -99,6 +106,9 @@ export default function SettingsModal({ open, onClose }) {
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [twoFAOpen, setTwoFAOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [passkeysEnabled, setPasskeysEnabled] = useState(false);
+  const [passkeys, setPasskeys] = useState([]);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [retentionHours, setRetentionHours] = useState(DEFAULT_RETENTION_HOURS);
   const [retentionOptions, setRetentionOptions] = useState(RETENTION_HOUR_OPTIONS);
   const [privacy, setPrivacy] = useState(() => ({ ...DEFAULT_PRIVACY }));
@@ -162,6 +172,25 @@ export default function SettingsModal({ open, onClose }) {
     })();
     return () => { cancelled = true; };
   }, [open, user]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      const cfg = await fetchPasskeyConfig();
+      if (cancelled) return;
+      setPasskeysEnabled(!!cfg.enabled && isPasskeySupported());
+      if (cfg.enabled && isPasskeySupported()) {
+        try {
+          const rows = await listPasskeys();
+          if (!cancelled) setPasskeys(rows);
+        } catch {
+          if (!cancelled) setPasskeys([]);
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -664,6 +693,69 @@ export default function SettingsModal({ open, onClose }) {
                   {user?.totp_enabled ? t('settingsManage2fa') : t('settingsEnable2fa')}
                 </button>
               </div>
+
+              {passkeysEnabled && (
+                <div className="mt-4" data-testid="settings-passkeys">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] mb-2">{t('settingsPasskeys')}</p>
+                  <p className="text-[10px] text-[#71717A] mb-3">{t('settingsPasskeysHint')}</p>
+                  {passkeys.length === 0 ? (
+                    <p className="text-xs text-[#71717A] mb-2">{t('settingsPasskeysEmpty')}</p>
+                  ) : (
+                    <ul className="space-y-2 mb-3">
+                      {passkeys.map((pk) => (
+                        <li
+                          key={pk.credential_id}
+                          className="flex items-center justify-between gap-2 p-2.5 bg-[#1A1A1A] rounded-md tac-border text-xs"
+                        >
+                          <span className="truncate">{pk.device_name || t('settingsPasskeyUnnamed')}</span>
+                          <button
+                            type="button"
+                            disabled={passkeyBusy}
+                            onClick={async () => {
+                              setPasskeyBusy(true);
+                              try {
+                                await deletePasskey(pk.credential_id);
+                                setPasskeys((prev) => prev.filter((row) => row.credential_id !== pk.credential_id));
+                                toast.success(t('settingsPasskeyRemoved'));
+                              } catch (e) {
+                                toast.error(e?.response?.data?.detail || t('couldNotSave'));
+                              } finally {
+                                setPasskeyBusy(false);
+                              }
+                            }}
+                            className="text-[10px] font-mono text-[#FF3B30] hover:underline shrink-0"
+                            data-testid={`settings-passkey-remove-${pk.credential_id}`}
+                          >
+                            {t('settingsPasskeyRemove')}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <button
+                    type="button"
+                    disabled={passkeyBusy}
+                    onClick={async () => {
+                      setPasskeyBusy(true);
+                      try {
+                        await registerPasskey({ deviceName: t('settingsPasskeyDefaultName') });
+                        const rows = await listPasskeys();
+                        setPasskeys(rows);
+                        toast.success(t('settingsPasskeyAdded'));
+                      } catch (e) {
+                        if (e?.message === 'PASSKEY_CANCELLED') toast.message(t('settingsPasskeyCancelled'));
+                        else toast.error(e?.response?.data?.detail || t('settingsPasskeyFailed'));
+                      } finally {
+                        setPasskeyBusy(false);
+                      }
+                    }}
+                    className="w-full py-2.5 text-xs font-mono tracking-wider border border-[#27272A] rounded-md hover:bg-[#232323] disabled:opacity-40"
+                    data-testid="settings-add-passkey"
+                  >
+                    {passkeyBusy ? t('processing') : t('settingsPasskeyAdd')}
+                  </button>
+                </div>
+              )}
 
               <div className="mt-4">
                 <p className="text-[10px] font-mono uppercase tracking-wider text-[#A1A1AA] mb-2">{t('settingsEmergency')}</p>
