@@ -15,6 +15,7 @@ import requests
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from core.disclosure_policy import security_txt_has_required_fields  # noqa: E402
 from core.security_scan_policy import (  # noqa: E402
     FORBIDDEN_SERVER_SECRET_LEAKS,
     PROTECTED_ROUTE_SAMPLES,
@@ -58,6 +59,12 @@ def check_protected_routes() -> None:
         assert is_unauthorized_status(r.status_code), f"{path} -> {r.status_code} (expected 401/403)"
 
 
+def check_security_txt() -> None:
+    r = _get("/.well-known/security.txt")
+    assert r.status_code == 200, r.status_code
+    assert security_txt_has_required_fields(r.text)
+
+
 def check_openapi_no_server_secret_leaks() -> None:
     r = _get("/openapi.json")
     if r.status_code != 200:
@@ -74,6 +81,8 @@ def main() -> int:
     print("  OK  /api/config surface")
     check_protected_routes()
     print("  OK  protected routes reject anonymous")
+    check_security_txt()
+    print("  OK  security.txt")
     check_openapi_no_server_secret_leaks()
     print("  OK  openapi.json (no server secrets)")
     print("Security smoke PASSED")

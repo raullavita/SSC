@@ -4,10 +4,13 @@
 
 If you find a security issue in SSC, please **do not** open a public GitHub issue with exploit details.
 
-1. Open a [GitHub Security Advisory](https://github.com/raullavita/SSC/security/advisories/new) (preferred), or
-2. Email **contact@supersecurechat.com** with a clear description and reproduction steps.
+1. Read the **[Vulnerability Disclosure Policy](VULNERABILITY_DISCLOSURE_POLICY.md)** (disclose.io framework) — public page: **https://www.supersecurechat.com/vdp**
+2. Open a [GitHub Security Advisory](https://github.com/raullavita/SSC/security/advisories/new) (preferred), or
+3. Email **contact@supersecurechat.com** with a clear description and reproduction steps.
 
-We will acknowledge reports as soon as we can. Please allow time for a solo-maintainer project.
+**security.txt (RFC 9116):** `https://www.supersecurechat.com/.well-known/security.txt` · API: `https://api.supersecurechat.com/.well-known/security.txt`
+
+We will acknowledge reports as soon as we can. Please allow **90 days** coordinated disclosure and time for a solo-maintainer project.
 
 ## What must never be committed
 

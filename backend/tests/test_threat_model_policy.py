@@ -47,5 +47,5 @@ def test_threat_model_page_covers_key_topics():
     page = (REPO / PUBLIC_THREAT_MODEL_COMPONENT).read_text(encoding="utf-8")
     assert "PQXDH" in page or "post-quantum" in page.lower()
     assert "server" in page.lower()
-    assert "GitHub Security Advisories" in page
+    assert "/vdp" in page or "vulnerability disclosure" in page.lower()
     assert "developer shell" in page.lower() or "not a product" in page.lower()

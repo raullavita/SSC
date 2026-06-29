@@ -113,18 +113,13 @@ export default function ThreatModel() {
 
           <h2 className="font-mono text-xs tracking-[0.2em] uppercase text-[#00E5FF] pt-4">Report a vulnerability</h2>
           <p>
-            Please do not post exploit details in public issues. Use our
+            See our
             {' '}
-            <a
-              href="https://github.com/raullavita/SSC/security/advisories/new"
-              className="text-[#00E5FF] hover:underline"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              GitHub Security Advisories
-            </a>
+            <Link to="/vdp" className="text-[#00E5FF] hover:underline">
+              vulnerability disclosure policy
+            </Link>
             {' '}
-            or email
+            (disclose.io safe harbor) or email
             {' '}
             <a href="mailto:contact@supersecurechat.com" className="text-[#00E5FF] hover:underline">
               contact@supersecurechat.com

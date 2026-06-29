@@ -1,0 +1,8 @@
+Contact: mailto:contact@supersecurechat.com
+Contact: https://github.com/raullavita/SSC/security/advisories/new
+Expires: 2027-06-29T23:59:59.000Z
+Preferred-Languages: en, es, ro
+Canonical: https://www.supersecurechat.com/.well-known/security.txt
+Policy: https://www.supersecurechat.com/vdp
+Acknowledgments: https://github.com/raullavita/SSC/security/advisories
+Hiring: https://www.supersecurechat.com/#contact

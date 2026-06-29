@@ -14,6 +14,7 @@ from core.realtime import manager  # noqa: F401 — wires push manager
 from lifespan import lifespan
 from middleware import setup_middleware
 from routers import include_routers
+from routers.well_known import router as well_known_router
 from routers.ws_handler import register_websocket
 from security import validate_environment
 
@@ -26,6 +27,7 @@ api = APIRouter(prefix="/api")
 setup_middleware(app)
 include_routers(api)
 app.include_router(api)
+app.include_router(well_known_router)
 register_websocket(app)
 
 app.add_middleware(

@@ -17,9 +17,9 @@ describe('ThreatModel', () => {
     expect(screen.getByRole('heading', { name: /threat model/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /what we protect/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /honest limits/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /GitHub Security Advisories/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /vulnerability disclosure policy/i })).toHaveAttribute(
       'href',
-      'https://github.com/raullavita/SSC/security/advisories/new',
+      '/vdp',
     );
   });
 });
