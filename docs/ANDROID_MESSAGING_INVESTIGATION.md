@@ -26,7 +26,7 @@ Windows desktop (Electron + libsignal bridge) typically works for the same accou
 4. A sends text to B → observe on Android (decrypt UI)
 5. B sends text to A → **expected fail** today on many devices
 
-**Server check:** If MongoDB shows `conversations: 0` / `messages: 0` after testing, sends never reached API or accounts are incomplete (`username: null`, `signal_prekeys_ready: false`).
+**Server check:** If MongoDB shows `conversations: 0` / `messages: 0` after testing, sends never reached API or accounts lack prekeys. A `username: null` ghost user during beta was traced to **manual maintainer DB deletion** during parallel re-signup (not an app bug — GitHub #56 closed).
 
 ## Code map (start here)
 

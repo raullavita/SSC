@@ -87,7 +87,8 @@ const STRINGS = {
     landingNavPrivacy: 'Privacy',
     landingNavTerms: 'Terms',
     landingNavThreatModel: 'Security',
-    landingNavVdp: 'Report a bug',
+    landingNavVdp: 'Disclosure',
+    landingNavMore: 'More',
     landingHeroCtaDownloads: 'Download the app',
     landingDownloadsTitle: 'Get Super Secure Chat',
     landingDownloadsSubtitle:

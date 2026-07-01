@@ -14,7 +14,7 @@ export default function LanguagePicker({ className = '' }) {
         value={locale}
         onChange={(e) => setLocale(e.target.value)}
         data-testid="ui-language-picker"
-        className="flex-1 min-w-0 px-2 py-1.5 text-xs bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]"
+        className="flex-1 min-w-0 max-w-full px-2 py-1.5 text-xs bg-[#1A1A1A] border border-[#27272A] rounded-md text-[#F0F0F0]"
         aria-label={t('appLanguage')}
       >
         {LANGS.map((l) => (

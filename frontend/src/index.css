@@ -127,6 +127,15 @@ html.native-app .App {
   min-height: 100dvh;
 }
 
+/* Android WebView often reports 0 safe-area-inset-bottom — reserve nav bar space */
+html.android-native .mobile-shell,
+html.android-native .auth-screen {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 28px);
+}
+html.android-native .safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 28px);
+}
+
 .chat-scroll {
   flex: 1 1 auto;
   min-height: 0;
@@ -249,6 +258,16 @@ html.native-app .App {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Marketing header — horizontal scroll without pushing language picker off-screen */
+.marketing-site .site-header-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+.marketing-site .site-header-nav::-webkit-scrollbar {
+  display: none;
 }
 
 /* Under construction gate */

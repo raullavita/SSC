@@ -17,7 +17,7 @@ body:
         - Cannot send outbound 1:1 text (encryption / restart toast)
         - Inbound message flashes then decrypt error (tiny red text)
         - Google sign-in "Not authenticated" after app restart
-        - Username setup did not stick / ghost account
+        - Username setup failed (server error — not maintainer DB wipe)
         - Sealed sender / session establishment failure
         - Other (describe below)
     validations:

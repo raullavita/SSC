@@ -10,8 +10,9 @@ SSC is install-only (Android APK + Windows/Mac desktop). These issues are tracke
 |----|---------|-------------|--------|
 | **AND-1** | Android **cannot send** 1:1 text; toast says *restart the app* / *encryption setup did not finish* | Often yes | See [ANDROID_MESSAGING_INVESTIGATION.md](./ANDROID_MESSAGING_INVESTIGATION.md) |
 | **AND-2** | After app restart, **Google sign-in** → *Not authenticated* | N/A | Session restore / device wrap / OAuth callback |
-| **AND-3** | Inbound messages **flash then shrink** to tiny red decrypt error | N/A | `Message.jsx` decrypt path + incomplete account setup |
-| **AND-4** | Username setup (**Dots**, etc.) may not persist on server (ghost Google account) | N/A | `SetupUsername.jsx` + `/auth/google/finish-setup` |
+| **AND-3** | Inbound messages **flash then shrink** to tiny red decrypt error | N/A | `Message.jsx` decrypt path |
+
+> **Note:** A “ghost” Google user (`username: null`) seen during beta testing was caused by **manual maintainer DB deletion** of `@Dots` while the tester re-created the account — not a reproducible app defect. GitHub issue #56 closed for that reason.
 
 ## How to help
 

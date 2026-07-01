@@ -86,7 +86,7 @@ No production credentials needed — local docker + two test users is enough.
 
 **Labels:** `help wanted`, `android`, `libsignal`, `bug`
 
-**Body:** Symptom AND-3. Peer message visible briefly then `DECRYPT_FAIL` in `Message.jsx`. Often paired with incomplete server account (`signal_prekeys_ready: false`).
+**Body:** Symptom AND-3. Peer message visible briefly then `DECRYPT_FAIL` in `Message.jsx`. Check Signal session + decrypt path on Android native store.
 
 ---
 

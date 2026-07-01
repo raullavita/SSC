@@ -118,46 +118,85 @@ function BetaTestingBanner({ t }) {
   );
 }
 
+function HeaderLegalLinks({ t }) {
+  const linkClass = 'block px-3 py-2 text-sm text-[#A1A1AA] hover:text-white hover:bg-[#18181B] rounded-md transition whitespace-nowrap';
+  return (
+    <>
+      <Link to="/privacy" className={linkClass}>{t('landingNavPrivacy')}</Link>
+      <Link to="/terms" className={linkClass}>{t('landingNavTerms')}</Link>
+      <Link to="/security" className={linkClass}>{t('landingNavThreatModel')}</Link>
+      <Link to="/vdp" className={linkClass}>{t('landingNavVdp')}</Link>
+      <Link to="/status" className={linkClass}>{t('landingNavStatus')}</Link>
+    </>
+  );
+}
+
+function HeaderMoreMenu({ t }) {
+  return (
+    <details className="relative hidden md:block xl:hidden group">
+      <summary className="btn-ghost list-none cursor-pointer [&::-webkit-details-marker]:hidden">
+        {t('landingNavMore')}
+      </summary>
+      <div
+        className="absolute right-0 top-full mt-1 min-w-[11rem] py-1 rounded-lg border border-[#27272A] bg-[#121212] shadow-xl z-50"
+        data-testid="landing-header-more-menu"
+      >
+        <HeaderLegalLinks t={t} />
+      </div>
+    </details>
+  );
+}
+
 function SiteHeader({ t, installed, publicConstruction }) {
   return (
-    <header className="relative z-20 glass-header sticky top-0">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-        <a href="#top" className="flex items-center gap-3 shrink-0" data-testid="ssc-logo">
-          <div className="w-9 h-9 rounded-lg bg-[#00E5FF] flex items-center justify-center">
+    <header className="relative z-20 glass-header sticky top-0" data-testid="landing-site-header">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 min-w-0">
+        <a href="#top" className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0" data-testid="ssc-logo">
+          <div className="w-9 h-9 rounded-lg bg-[#00E5FF] flex items-center justify-center shrink-0">
             <LockKey size={20} weight="bold" className="text-black" />
           </div>
-          <div>
-            <span className="text-sm font-semibold tracking-wide">Super Secure Chat</span>
-            <div className="text-[11px] text-[#71717A] hidden sm:block">supersecurechat.com</div>
+          <div className="min-w-0 hidden xs:block sm:block">
+            <span className="text-sm font-semibold tracking-wide block truncate">Super Secure Chat</span>
+            <div className="text-[11px] text-[#71717A] hidden sm:block truncate">supersecurechat.com</div>
           </div>
         </a>
-        <nav className="flex items-center gap-1 sm:gap-2">
+
+        <nav
+          className="site-header-nav flex flex-1 min-w-0 items-center justify-end gap-0.5 sm:gap-1 overflow-x-auto"
+          aria-label="Site"
+        >
           {!installed ? (
             <>
               <NavAnchor href="#updates">{t('publicSiteNavUpdates')}</NavAnchor>
               {!publicConstruction ? (
                 <>
                   <NavAnchor href="#downloads">{t('landingNavDownloads')}</NavAnchor>
-                  <Link to="/feedback" className="btn-ghost hidden md:inline-flex">{t('landingNavFeedback')}</Link>
+                  <Link to="/feedback" className="btn-ghost whitespace-nowrap">{t('landingNavFeedback')}</Link>
                 </>
               ) : null}
             </>
           ) : null}
           <NavAnchor href="#about">{t('landingNavAbout')}</NavAnchor>
           <NavAnchor href="#contact">{t('landingNavContact')}</NavAnchor>
-          <Link to="/privacy" className="btn-ghost hidden lg:inline-flex">{t('landingNavPrivacy')}</Link>
-          <Link to="/terms" className="btn-ghost hidden lg:inline-flex">{t('landingNavTerms')}</Link>
-          <Link to="/security" className="btn-ghost hidden lg:inline-flex">{t('landingNavThreatModel')}</Link>
-          <Link to="/vdp" className="btn-ghost hidden lg:inline-flex">{t('landingNavVdp')}</Link>
-          <Link to="/status" className="btn-ghost hidden lg:inline-flex">{t('landingNavStatus')}</Link>
-          <LanguagePicker className="w-28 hidden sm:flex" />
+          <div className="hidden xl:contents">
+            <Link to="/privacy" className="btn-ghost whitespace-nowrap">{t('landingNavPrivacy')}</Link>
+            <Link to="/terms" className="btn-ghost whitespace-nowrap">{t('landingNavTerms')}</Link>
+            <Link to="/security" className="btn-ghost whitespace-nowrap">{t('landingNavThreatModel')}</Link>
+            <Link to="/vdp" className="btn-ghost whitespace-nowrap">{t('landingNavVdp')}</Link>
+            <Link to="/status" className="btn-ghost whitespace-nowrap">{t('landingNavStatus')}</Link>
+          </div>
+          <HeaderMoreMenu t={t} />
+        </nav>
+
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <LanguagePicker className="w-[5.5rem] sm:w-28" />
           {installed ? (
             <>
-              <Link to="/login" data-testid="landing-login-link" className="btn-ghost">{t('landingLogin')}</Link>
-              <Link to="/register" data-testid="landing-register-link" className="btn-primary">{t('landingRegister')}</Link>
+              <Link to="/login" data-testid="landing-login-link" className="btn-ghost whitespace-nowrap">{t('landingLogin')}</Link>
+              <Link to="/register" data-testid="landing-register-link" className="btn-primary whitespace-nowrap">{t('landingRegister')}</Link>
             </>
           ) : null}
-        </nav>
+        </div>
       </div>
     </header>
   );
