@@ -1,5 +1,15 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Download public beta (APK v1.0.17)
+    url: https://www.supersecurechat.com/#downloads
+  - name: Android messaging bug (help wanted)
+    url: https://github.com/raullavita/SSC/issues/new?template=android_messaging_bug.yml
+  - name: Known issues doc
+    url: https://github.com/raullavita/SSC/blob/main/docs/KNOWN_ISSUES.md
+  - name: Anonymous beta feedback (website)
+    url: https://www.supersecurechat.com/feedback
+  - name: Request Firebase beta access
+    url: mailto:contact@supersecurechat.com?subject=Firebase%20beta%20tester%20request
   - name: Ask a question (Discussions)
     url: https://github.com/raullavita/SSC/discussions/new?category=q-a
   - name: Security vulnerability (private)

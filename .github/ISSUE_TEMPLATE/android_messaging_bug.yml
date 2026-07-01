@@ -1,0 +1,77 @@
+name: Android messaging bug (help wanted)
+description: Android cannot send, decrypt fails, or auth breaks after restart — P0 beta issue
+title: "[Android messaging]: "
+labels: ["bug", "help wanted", "android", "libsignal", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Help wanted** — see `docs/ANDROID_MESSAGING_INVESTIGATION.md` for file map and repro steps.
+        Do **not** paste JWTs, Mongo URLs, or production API keys.
+
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: Primary symptom
+      options:
+        - Cannot send outbound 1:1 text (encryption / restart toast)
+        - Inbound message flashes then decrypt error (tiny red text)
+        - Google sign-in "Not authenticated" after app restart
+        - Username setup failed (server error — not maintainer DB wipe)
+        - Sealed sender / session establishment failure
+        - Other (describe below)
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: APK version
+      placeholder: "1.0.17"
+    validations:
+      required: true
+
+  - type: input
+    attributes:
+      label: Device model + Android version
+      placeholder: "Samsung Galaxy A05, Android 14"
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Install APK from supersecurechat.com
+        2. Google sign-in → setup username ...
+        3. Open DM with @peer
+        4. Send "test" → toast ...
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Exact toast or error text
+      description: Copy the user-visible message verbatim if possible
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Does Windows/desktop peer work for same account?
+      placeholder: "Desktop @smash can send to Android; Android cannot reply"
+
+  - type: textarea
+    attributes:
+      label: Logs / diagnostics
+      description: Settings → diagnostics export, logcat snippet, or scripts/debug output (redacted)
+
+  - type: checkboxes
+    attributes:
+      label: Checklist
+      options:
+        - label: I read docs/ANDROID_MESSAGING_INVESTIGATION.md
+          required: true
+        - label: I searched open Issues for duplicates
+          required: true
+        - label: No production secrets in this report
+          required: true

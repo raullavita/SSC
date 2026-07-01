@@ -7,15 +7,33 @@
 
 **E2E-encrypted ephemeral messaging** — configurable retention (default 24h), Signal/libsignal on installed clients, WebRTC calls, groups, stories, panic wipe.
 
+## Try the public beta (Android v1.0.17 · Windows v1.0.18)
+
+SSC is in **active testing** — not the final product. Expect bugs and breaking changes between builds.
+
+| Platform | Download |
+|----------|----------|
+| **Android** | [Direct APK](https://www.supersecurechat.com/downloads/SSC-app-release.apk) (~221 MB) |
+| **Windows** | [Installer](https://www.supersecurechat.com/downloads/SSC-Setup-1.0.18.exe) (~182 MB) |
+| **All downloads** | [supersecurechat.com/#downloads](https://www.supersecurechat.com/#downloads) |
+
+**Known issues (help wanted):** [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) — especially [Android outbound messaging](docs/ANDROID_MESSAGING_INVESTIGATION.md).
+
+**Report bugs (anonymous):** [supersecurechat.com/feedback](https://www.supersecurechat.com/feedback) — device + issue only, no name required.
+
+**Prefer automatic Android updates?** Email [contact@supersecurechat.com](mailto:contact@supersecurechat.com?subject=Firebase%20beta%20tester%20request) with the address you use on Google Play — we add Firebase App Distribution testers manually. Or use the [Firebase tester link](https://appdistribution.firebase.google.com/testerapps/1:814078411789:android:84b1543debc1a7afc68144/releases/5bfrinjbkf378) if you are already invited.
+
+Browser-tab chat is **not** supported — install the app first ([`InstalledClientGate`](frontend/src/components/InstalledClientGate.jsx)).
+
 | | |
 |---|---|
-| **Product** | **Install-only** — Android APK, Windows/Mac desktop, iOS scaffold. Browser-tab chat is **not** supported ([`InstalledClientGate`](frontend/src/components/InstalledClientGate.jsx)). |
-| **Public site** | [supersecurechat.com](https://www.supersecurechat.com) — marketing, legal, status, threat model (no browser app) |
+| **Product** | **Install-only** — Android APK, Windows/Mac desktop, iOS scaffold |
+| **Public site** | [supersecurechat.com](https://www.supersecurechat.com) — downloads, feedback, legal, status |
 | **Production API** | [api.supersecurechat.com](https://api.supersecurechat.com) |
 | **License** | [AGPL-3.0](LICENSE) — libsignal in distributed builds requires source availability. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). |
-| **Status** | Active development · solo maintainer · **help welcome** |
-| **Build track** | v1.0.12 desktop · APK rebuild on demand |
-| **Roadmap** | [memory/SSC-ROADMAP.md](memory/SSC-ROADMAP.md) — single source of truth (Q.1–Q.64 code complete; founder device QA pending) |
+| **Status** | **Public beta testing** · solo maintainer · **help welcome** |
+| **Build track** | v1.0.17 APK + v1.0.18 Windows — installers live on site |
+| **Roadmap** | [memory/SSC-ROADMAP.md](memory/SSC-ROADMAP.md) — single source of truth (Q.1–Q.64 code complete; wider device QA in progress) |
 
 ---
 

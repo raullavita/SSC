@@ -13,6 +13,18 @@ export function getPublicAppVersion() {
 /** @type {SiteUpdateEntry[]} */
 export const PUBLIC_SITE_UPDATES = [
   {
+    id: '2026-06-30-builds-android-help',
+    date: '2026-06-30',
+    titleKey: 'siteUpdateBuildsAndroidHelpTitle',
+    bodyKey: 'siteUpdateBuildsAndroidHelpBody',
+  },
+  {
+    id: '2026-06-29-public-beta',
+    date: '2026-06-29',
+    titleKey: 'siteUpdatePublicBetaTitle',
+    bodyKey: 'siteUpdatePublicBetaBody',
+  },
+  {
     id: '2026-06-29-trust-ops',
     date: '2026-06-29',
     titleKey: 'siteUpdateTrustOpsTitle',
