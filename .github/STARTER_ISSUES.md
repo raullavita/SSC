@@ -63,3 +63,44 @@ Backend sends `signaling-error` on WS validation failure; frontend shows toast i
 
 No production credentials needed — local docker + two test users is enough.
 ```
+
+---
+
+### 4. [P0] Android cannot send outbound 1:1 Signal messages
+
+**Labels:** `help wanted`, `android`, `libsignal`, `bug`
+
+**Body:** Copy from `docs/ANDROID_MESSAGING_INVESTIGATION.md` — symptom AND-1. Windows peer can send; Android reply fails with encryption bootstrap toast.
+
+---
+
+### 5. [P0] Android Google session lost after restart (Not authenticated)
+
+**Labels:** `help wanted`, `android`, `bug`
+
+**Body:** Symptom AND-2. After kill/restart app, Continue with Google → *Not authenticated*. Investigate `sessionStore.js`, `deviceWrapCrypto.js`, `SscDeviceSecretPlugin.java`, `GoogleAuthCallback.jsx`.
+
+---
+
+### 6. [P0] Android inbound decrypt UI flash → tiny error
+
+**Labels:** `help wanted`, `android`, `libsignal`, `bug`
+
+**Body:** Symptom AND-3. Peer message visible briefly then `DECRYPT_FAIL` in `Message.jsx`. Often paired with incomplete server account (`signal_prekeys_ready: false`).
+
+---
+
+### 7. Add instrumentation test for messaging gate on Android path
+
+**Labels:** `help wanted`, `good first issue`, `tests`
+
+**Body:**
+
+```markdown
+## Task
+Extend `frontend/src/chat/__tests__/messagingGate.test.js` to cover bootstrap_failed and self_prekeys_not_ready paths with mocked native libsignal.
+
+## Acceptance
+- `yarn test:ci` passes
+- Documents expected gate reasons for Android send failure
+```

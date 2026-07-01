@@ -2,12 +2,31 @@
 
 SSC is **install-only** (Android APK + Windows/Mac desktop). Browser-tab chat is intentionally blocked. See `InstalledClientGate.jsx`.
 
+## Public beta testing (Android v1.0.17 · Windows v1.0.18)
+
+SSC is in **pre-release testing**, not a finished product.
+
+- **Download:** [supersecurechat.com/#downloads](https://www.supersecurechat.com/#downloads) — Android APK + Windows installer
+- **Anonymous feedback:** [supersecurechat.com/feedback](https://www.supersecurechat.com/feedback) — device + issue only
+- **Firebase App Distribution:** email [contact@supersecurechat.com](mailto:contact@supersecurechat.com?subject=Firebase%20beta%20tester%20request) to be added as an Android tester
+- **GitHub:** [beta feedback template](https://github.com/raullavita/SSC/issues/new?template=beta_feedback.yml) if you prefer Issues
+
+## Help wanted — Android messaging (P0)
+
+Outbound **Android → desktop** 1:1 text often fails while desktop → Android works. We need contributors with **Capacitor, libsignal, or Android native** experience.
+
+1. Read **[docs/ANDROID_MESSAGING_INVESTIGATION.md](docs/ANDROID_MESSAGING_INVESTIGATION.md)** (file map, repro, acceptance criteria).
+2. See **[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)** for the full open list.
+3. Open an issue with the **[Android messaging template](https://github.com/raullavita/SSC/issues/new?template=android_messaging_bug.yml)** or submit a **draft PR** with a minimal fix + QA notes.
+
+Security scanning (OWASP ZAP, CodeQL) and extra test coverage are also welcome.
+
 ## How to help (no payment expected — thank you)
 
 1. Read this file and [SECURITY.md](SECURITY.md).
 2. Pick a task or open **[Help wanted](https://github.com/raullavita/SSC/issues/new?template=help_wanted.yml)** if you are unsure where to start.
 3. **Fork** → branch → **Pull Request** (use the PR template).
-4. For bugs use the [bug report template](https://github.com/raullavita/SSC/issues/new?template=bug_report.yml).
+4. For bugs use the [bug report template](https://github.com/raullavita/SSC/issues/new?template=bug_report.yml) or [Android messaging template](https://github.com/raullavita/SSC/issues/new?template=android_messaging_bug.yml).
 5. Questions → [Discussions](https://github.com/raullavita/SSC/discussions) (not Issues).
 
 Architecture: `memory/SECURITY_MODEL.md` · `memory/SSC-ROADMAP.md`

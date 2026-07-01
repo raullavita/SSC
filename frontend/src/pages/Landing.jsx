@@ -16,6 +16,9 @@ import {
   HardHat,
   TrafficCone,
   Newspaper,
+  Flask,
+  ChatCircleDots,
+  Warning,
 } from '@phosphor-icons/react';
 import { useLocale } from '../context/LocaleContext';
 import LanguagePicker from '../components/LanguagePicker';
@@ -26,15 +29,18 @@ import { isInstalledClient } from '../lib/platform';
 import { isSitePublicConstructionMode } from '../lib/siteGate';
 import { getPublicAppVersion } from '../lib/siteStage';
 
+const SITE_ORIGIN = 'https://www.supersecurechat.com';
+const CONTACT_EMAIL = 'contact@supersecurechat.com';
 const APP_VERSION = getPublicAppVersion();
-const DOWNLOAD_APK_URL = process.env.REACT_APP_DOWNLOAD_APK_URL || '';
-const DOWNLOAD_WIN_URL = process.env.REACT_APP_DOWNLOAD_WIN_URL || '';
+const DESKTOP_VERSION = process.env.REACT_APP_DESKTOP_VERSION || APP_VERSION;
+const DOWNLOAD_APK_URL = process.env.REACT_APP_DOWNLOAD_APK_URL
+  || `${SITE_ORIGIN}/downloads/SSC-app-release.apk`;
+const DOWNLOAD_WIN_URL = process.env.REACT_APP_DOWNLOAD_WIN_URL
+  || `${SITE_ORIGIN}/downloads/SSC-Setup-${DESKTOP_VERSION}.exe`;
 const DOWNLOAD_ANDROID_BETA_URL = process.env.REACT_APP_DOWNLOAD_ANDROID_BETA_URL || '';
 const DOWNLOAD_PLAY_STORE_URL = process.env.REACT_APP_GOOGLE_PLAY_STORE_URL || '';
 const DOWNLOAD_IOS_APP_STORE_URL = process.env.REACT_APP_IOS_APP_STORE_URL || '';
 const DOWNLOAD_IOS_TESTFLIGHT_URL = process.env.REACT_APP_IOS_TESTFLIGHT_URL || '';
-const CONTACT_EMAIL = 'contact@supersecurechat.com';
-const SITE_ORIGIN = 'https://www.supersecurechat.com';
 
 function ActionLink({ href, label, testId, variant = 'primary', external, icon: Icon }) {
   if (!href) return null;
@@ -81,6 +87,37 @@ function NavAnchor({ href, children }) {
   );
 }
 
+function BetaTestingBanner({ t }) {
+  return (
+    <section
+      className="border-b border-[#27272A]/80 bg-[#121212]/80"
+      data-testid="landing-beta-banner"
+    >
+      <div className="max-w-6xl mx-auto px-6 py-5 md:py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex items-start gap-3 max-w-3xl">
+          <div className="w-10 h-10 rounded-lg bg-[#FFD600]/10 flex items-center justify-center shrink-0">
+            <Flask size={22} className="text-[#FFD600]" weight="duotone" />
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-widest text-[#FFD600]">{t('landingBetaBadge', { version: APP_VERSION })}</p>
+            <p className="mt-1 text-sm text-[#E4E4E7] leading-relaxed">{t('landingBetaDisclaimer')}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3 shrink-0">
+          <a href="#downloads" className="btn-primary" data-testid="landing-beta-download-cta">
+            <DownloadSimple size={18} weight="bold" />
+            {t('landingHeroCtaDownloads')}
+          </a>
+          <Link to="/feedback" className="btn-secondary" data-testid="landing-beta-feedback-cta">
+            <ChatCircleDots size={18} />
+            {t('landingBetaFeedbackCta')}
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SiteHeader({ t, installed, publicConstruction }) {
   return (
     <header className="relative z-20 glass-header sticky top-0">
@@ -99,7 +136,10 @@ function SiteHeader({ t, installed, publicConstruction }) {
             <>
               <NavAnchor href="#updates">{t('publicSiteNavUpdates')}</NavAnchor>
               {!publicConstruction ? (
-                <NavAnchor href="#downloads">{t('landingNavDownloads')}</NavAnchor>
+                <>
+                  <NavAnchor href="#downloads">{t('landingNavDownloads')}</NavAnchor>
+                  <Link to="/feedback" className="btn-ghost hidden md:inline-flex">{t('landingNavFeedback')}</Link>
+                </>
               ) : null}
             </>
           ) : null}
@@ -146,6 +186,9 @@ function SiteFooter({ t }) {
           </Link>
           <Link to="/status" className="text-[#A1A1AA] hover:text-white transition" data-testid="landing-status-link">
             {t('landingNavStatus')}
+          </Link>
+          <Link to="/feedback" className="text-[#A1A1AA] hover:text-white transition" data-testid="landing-feedback-link">
+            {t('landingNavFeedback')}
           </Link>
           <a href={`mailto:${CONTACT_EMAIL}`} className="text-[#A1A1AA] hover:text-white transition">
             {CONTACT_EMAIL}
@@ -327,12 +370,14 @@ export default function Landing() {
           <PublicConstructionLanding t={t} />
         ) : (
           <>
+            {!installed ? <BetaTestingBanner t={t} /> : null}
+
             <section id="top" className="max-w-6xl mx-auto px-6 pt-16 pb-20 md:pt-24 md:pb-28">
               <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
                 <div className="lg:col-span-7 fade-up">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#27272A] bg-[#121212]/80 text-xs text-[#A1A1AA] mb-6">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#34C759]" />
-                    {t('landingBadge')}
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FFD600]/30 bg-[#FFD600]/10 text-xs text-[#FFD600] mb-6">
+                    <Flask size={14} weight="duotone" />
+                    {t('landingBetaBadge', { version: APP_VERSION })}
                   </div>
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.08]">
                     {t('landingTitle1')}{' '}
@@ -357,10 +402,10 @@ export default function Landing() {
                         <DownloadSimple size={18} weight="bold" />
                         {t('landingHeroCtaDownloads')}
                       </a>
-                      <a href="#contact" className="btn-secondary">
-                        <EnvelopeSimple size={18} />
-                        {t('landingNavContact')}
-                      </a>
+                      <Link to="/feedback" className="btn-secondary" data-testid="landing-hero-feedback-cta">
+                        <ChatCircleDots size={18} />
+                        {t('landingBetaFeedbackCta')}
+                      </Link>
                     </div>
                   )}
 
@@ -423,6 +468,11 @@ export default function Landing() {
                     body={t('landingDownloadsSubtitle')}
                   />
 
+                  <div className="mt-8 rounded-xl border border-[#27272A] bg-[#121212] px-5 py-4 flex gap-3 text-sm text-[#A1A1AA]">
+                    <Warning size={20} className="text-[#FFD600] shrink-0 mt-0.5" weight="duotone" />
+                    <p>{t('landingDownloadsBetaNote')}</p>
+                  </div>
+
                   <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <article className="rounded-xl border border-[#27272A] bg-[#121212] p-6 flex flex-col">
                       <div className="flex items-start gap-4">
@@ -462,6 +512,15 @@ export default function Landing() {
                           />
                         ) : null}
                       </div>
+                      <p className="mt-4 text-xs text-[#71717A] leading-relaxed">
+                        {t('landingFirebaseBetaHint')}{' '}
+                        <a
+                          href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Firebase beta tester request')}`}
+                          className="text-[#00E5FF] hover:brightness-110 transition"
+                        >
+                          {CONTACT_EMAIL}
+                        </a>
+                      </p>
                     </article>
 
                     <article className="rounded-xl border border-[#27272A] bg-[#121212] p-6 flex flex-col">
@@ -477,7 +536,7 @@ export default function Landing() {
                       <div className="mt-6">
                         <ActionLink
                           href={DOWNLOAD_WIN_URL}
-                          label={t('landingDownloadWin', { version: APP_VERSION })}
+                          label={t('landingDownloadWin', { version: DESKTOP_VERSION })}
                           testId="landing-download-win"
                           icon={DownloadSimple}
                         />
@@ -529,6 +588,12 @@ export default function Landing() {
                     <ArrowDown size={16} />
                     {t('landingDownloadBody')}
                   </p>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <Link to="/feedback" className="btn-secondary" data-testid="landing-download-feedback-cta">
+                      <ChatCircleDots size={18} />
+                      {t('landingBetaFeedbackCta')}
+                    </Link>
+                  </div>
                 </div>
               </section>
             ) : null}
@@ -587,9 +652,14 @@ export default function Landing() {
                     </div>
                     <h2 className="text-2xl md:text-3xl font-semibold tracking-tight">{t('landingContactTitle')}</h2>
                     <p className="mt-3 text-[#A1A1AA] leading-relaxed">{t('landingContactBody')}</p>
+                    <p className="mt-3 text-sm text-[#71717A]">{t('landingContactFeedbackHint')}</p>
                   </div>
-                  <div className="mt-8 md:mt-0 shrink-0">
-                    <p className="text-xs uppercase tracking-widest text-[#71717A] mb-2">{t('landingContactEmailLabel')}</p>
+                  <div className="mt-8 md:mt-0 shrink-0 flex flex-col gap-4">
+                    <Link to="/feedback" className="btn-primary" data-testid="landing-contact-feedback-cta">
+                      <ChatCircleDots size={18} />
+                      {t('landingBetaFeedbackCta')}
+                    </Link>
+                    <p className="text-xs uppercase tracking-widest text-[#71717A] mb-0">{t('landingContactEmailLabel')}</p>
                     <a
                       href={`mailto:${CONTACT_EMAIL}`}
                       className="text-xl md:text-2xl font-semibold text-[#00E5FF] hover:brightness-110 transition break-all"
