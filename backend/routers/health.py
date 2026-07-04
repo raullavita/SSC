@@ -5,6 +5,8 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from config import get_settings
+from core.firebase_init import firebase_ready
+from core.sfu_policy import SFU_ENABLED, SFU_WS_URL
 from db import probe_mongo, probe_redis
 
 router = APIRouter(tags=["health"])
@@ -23,6 +25,16 @@ async def health() -> dict:
         "redis": redis,
         "rate_limit_backend": "redis" if settings.redis_url else "memory",
         "ws_fanout": "redis" if settings.redis_url else "memory",
+        "push": {
+            "provider": "fcm",
+            "ready": firebase_ready(),
+            "generic_only": True,
+        },
+        "sfu": {
+            "provider": "mediasoup",
+            "enabled": SFU_ENABLED,
+            "ws_url": SFU_WS_URL if SFU_ENABLED else None,
+        },
         "version": "0.1.0-phase0",
     }
 
