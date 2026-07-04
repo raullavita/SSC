@@ -40,4 +40,36 @@ contextBridge.exposeInMainWorld('sscCrypto', {
   async wipeLocalData() {
     return ipcRenderer.invoke('ssc-crypto:wipeLocalData');
   },
+
+  async configureGroupKeys(opts) {
+    return ipcRenderer.invoke('ssc-group-keys:configure', opts);
+  },
+
+  async getGroupDistributionState(groupId) {
+    return ipcRenderer.invoke('ssc-group-keys:getDistributionState', { groupId });
+  },
+
+  async createGroupDistribution(groupId) {
+    return ipcRenderer.invoke('ssc-group-keys:createDistribution', { groupId });
+  },
+
+  async markGroupDistributionSent(groupId) {
+    return ipcRenderer.invoke('ssc-group-keys:markDistributionSent', { groupId });
+  },
+
+  async processGroupDistribution({ senderId, deviceId, ciphertext }) {
+    return ipcRenderer.invoke('ssc-group-keys:processDistribution', {
+      senderId,
+      deviceId,
+      ciphertext,
+    });
+  },
+
+  async encryptGroupMessage(groupId, plaintext) {
+    return ipcRenderer.invoke('ssc-group-keys:encrypt', { groupId, plaintext });
+  },
+
+  async decryptGroupMessage(senderId, deviceId, ciphertext) {
+    return ipcRenderer.invoke('ssc-group-keys:decrypt', { senderId, deviceId, ciphertext });
+  },
 });

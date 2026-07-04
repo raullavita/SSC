@@ -1,103 +1,152 @@
 /**
- * Group E2EE — Signal Sender Keys with local distribution.
- * Each member has a sender key per group; keys are exchanged via 1:1 E2EE.
+ * Group E2EE — libsignal sender keys (Step 2) with dev fallback for CRA tests.
  */
 
-import { encryptMessage, decryptMessage } from './signalBridge';
+import { api } from '../lib/api';
 import {
-  SENDER_KEY_DIST_PREFIX,
-  ensureOwnSenderKey,
-  getSenderKey,
+  GROUP_SENDER_KEY_DIST_PROTOCOL,
+  GROUP_SENDER_KEY_PROTOCOL,
+  LEGACY_SENDER_KEY_DIST_PREFIX,
+  configureGroupKeys,
+  createDistributionMessage,
+  decryptGroupCiphertext,
+  encryptGroupPlaintext,
+  getDistributionState,
+  isLibsignalGroupAvailable,
+  markDistributionSent,
+  processDistribution,
+} from './groupSenderKeyBridge';
+import {
+  devDecryptGroupMessage,
+  devEncryptGroupMessage,
+} from './groupSenderKeysDev';
+import {
   packSenderKeyDistribution,
   rememberSenderKey,
   unpackSenderKeyDistribution,
 } from './senderKeyStore';
 
-async function xorCombine(plaintext, keyMaterial) {
-  const enc = new TextEncoder();
-  const data = enc.encode(plaintext);
-  const keyBytes = Uint8Array.from(atob(keyMaterial), (c) => c.charCodeAt(0));
-  const out = new Uint8Array(data.length);
-  for (let i = 0; i < data.length; i += 1) {
-    out[i] = data[i] ^ keyBytes[i % keyBytes.length];
-  }
-  let binary = '';
-  out.forEach((b) => {
-    binary += String.fromCharCode(b);
-  });
-  return btoa(binary);
+export {
+  GROUP_SENDER_KEY_DIST_PROTOCOL,
+  GROUP_SENDER_KEY_PROTOCOL,
+  LEGACY_SENDER_KEY_DIST_PREFIX,
+};
+
+export function isSenderKeyDistributionMessage(message) {
+  if (!message) return false;
+  if (message.protocol === GROUP_SENDER_KEY_DIST_PROTOCOL) return true;
+  return Boolean(message.ciphertext?.startsWith(LEGACY_SENDER_KEY_DIST_PREFIX));
 }
 
-async function xorUncombine(ciphertext, keyMaterial) {
-  const data = Uint8Array.from(atob(ciphertext), (c) => c.charCodeAt(0));
-  const keyBytes = Uint8Array.from(atob(keyMaterial), (c) => c.charCodeAt(0));
-  const out = new Uint8Array(data.length);
-  for (let i = 0; i < data.length; i += 1) {
-    out[i] = data[i] ^ keyBytes[i % keyBytes.length];
-  }
-  return new TextDecoder().decode(out);
-}
-
-export async function distributeSenderKeyToMember({
-  groupId,
-  senderId,
-  memberId,
-  keyMaterial,
-}) {
-  const payload = packSenderKeyDistribution({ groupId, senderId, keyMaterial });
-  const wrapped = await encryptMessage(payload, { peerId: memberId });
-  return wrapped.ciphertext || wrapped;
-}
-
-export async function ingestSenderKeyDistribution(ciphertext, { peerId } = {}) {
-  const plain = await decryptMessage(ciphertext, { peerId });
-  const dist = unpackSenderKeyDistribution(plain);
-  if (!dist?.groupId || !dist?.senderId || !dist?.keyMaterial) return false;
-  rememberSenderKey(dist.groupId, dist.senderId, dist.keyMaterial);
-  return true;
-}
-
+/** @deprecated use isSenderKeyDistributionMessage */
 export function isSenderKeyDistribution(ciphertext) {
-  return Boolean(ciphertext && ciphertext.startsWith(SENDER_KEY_DIST_PREFIX));
+  return Boolean(ciphertext && ciphertext.startsWith(LEGACY_SENDER_KEY_DIST_PREFIX));
 }
 
-export async function encryptGroupMessage(plaintext, { groupId, userId, memberIds = [] } = {}) {
+async function postDistributionMessage(conversationId, ciphertext) {
+  if (!conversationId || !ciphertext) return;
+  await api.post(`/api/conversations/${conversationId}/messages`, {
+    ciphertext,
+    protocol: GROUP_SENDER_KEY_DIST_PROTOCOL,
+  });
+}
+
+export async function ingestSenderKeyDistribution(
+  ciphertext,
+  { peerId, deviceId = '1', protocol } = {}
+) {
+  if (protocol === GROUP_SENDER_KEY_DIST_PROTOCOL) {
+    if (!isLibsignalGroupAvailable()) return false;
+    await processDistribution({ senderId: peerId, deviceId, ciphertext });
+    return true;
+  }
+
+  if (ciphertext?.startsWith(LEGACY_SENDER_KEY_DIST_PREFIX)) {
+    const { decryptMessage } = await import('./signalBridge');
+    const plain = await decryptMessage(ciphertext, { peerId });
+    const dist = unpackSenderKeyDistribution(plain);
+    if (!dist?.groupId || !dist?.senderId || !dist?.keyMaterial) return false;
+    rememberSenderKey(dist.groupId, dist.senderId, dist.keyMaterial);
+    return true;
+  }
+
+  return false;
+}
+
+export async function encryptGroupMessage(
+  plaintext,
+  { groupId, userId, conversationId, deviceId = '1' } = {}
+) {
   if (!groupId || !userId) {
     throw new Error('group_id_and_user_required');
   }
-  const keyMaterial = ensureOwnSenderKey(groupId, userId);
-  if (memberIds.length) {
-    await Promise.all(
-      memberIds
-        .filter((id) => id && id !== userId)
-        .map((memberId) =>
-          distributeSenderKeyToMember({ groupId, senderId: userId, memberId, keyMaterial })
-        )
-    );
+
+  if (isLibsignalGroupAvailable()) {
+    await configureGroupKeys({ localUserId: userId, deviceId });
+    const state = await getDistributionState(groupId);
+    if (!state.distributed) {
+      const dist = await createDistributionMessage(groupId);
+      if (dist?.ciphertext) {
+        await postDistributionMessage(conversationId, dist.ciphertext);
+        await markDistributionSent(groupId);
+      }
+    }
+    const ciphertext = await encryptGroupPlaintext(groupId, plaintext);
+    return { ciphertext, protocol: GROUP_SENDER_KEY_PROTOCOL };
   }
-  const ciphertext = await xorCombine(plaintext, keyMaterial);
-  return { ciphertext, protocol: 'group_sender_key_v1' };
+
+  return devEncryptGroupMessage(plaintext, { groupId, userId });
 }
 
-export async function decryptGroupMessage(ciphertext, { groupId, senderId } = {}) {
+export async function decryptGroupMessage(
+  ciphertext,
+  { groupId, senderId, protocol, deviceId = '1' } = {}
+) {
+  if (protocol === GROUP_SENDER_KEY_DIST_PROTOCOL) {
+    return '[sender key]';
+  }
   if (isSenderKeyDistribution(ciphertext)) {
     return '[sender key]';
   }
-  const keyMaterial = getSenderKey(groupId, senderId);
-  if (!keyMaterial) {
-    return await decryptMessage(ciphertext, { peerId: senderId });
+
+  if (protocol === GROUP_SENDER_KEY_PROTOCOL && isLibsignalGroupAvailable()) {
+    try {
+      return await decryptGroupCiphertext(senderId, ciphertext, { deviceId });
+    } catch {
+      return '[encrypted group message]';
+    }
   }
-  try {
-    return await xorUncombine(ciphertext, keyMaterial);
-  } catch {
-    return '[encrypted group message]';
+
+  if (protocol === GROUP_SENDER_KEY_PROTOCOL || !protocol) {
+    if (isLibsignalGroupAvailable()) {
+      try {
+        return await decryptGroupCiphertext(senderId, ciphertext, { deviceId });
+      } catch {
+        /* try dev/legacy below */
+      }
+    }
   }
+
+  return devDecryptGroupMessage(ciphertext, { groupId, senderId });
 }
 
 export function groupE2EStatus() {
+  if (isLibsignalGroupAvailable()) {
+    return {
+      mode: GROUP_SENDER_KEY_PROTOCOL,
+      senderKeys: true,
+      libsignal: true,
+      note: 'Per-member libsignal sender keys with server-relayed distribution messages.',
+    };
+  }
   return {
-    mode: 'group_sender_key_v1',
+    mode: 'group_sender_key_dev',
     senderKeys: true,
-    note: 'Per-member sender keys stored locally and distributed via 1:1 E2EE.',
+    libsignal: false,
+    note: 'Dev XOR fallback — install Electron/Android client for real sender keys.',
   };
+}
+
+export function packLegacySenderKeyDistribution(payload) {
+  return packSenderKeyDistribution(payload);
 }

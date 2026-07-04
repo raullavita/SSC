@@ -19,6 +19,7 @@ from core.sealed_sender_policy import mark_sealed
 from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.reaction_policy import SIGNAL_PROTOCOL_REACTION
 from core.signal_policy import (
+    GROUP_SENDER_KEY_DIST_PROTOCOL,
     LEGACY_PLACEHOLDER_PROTOCOL,
     SIGNAL_PROTOCOL_V1,
     validate_signal_ciphertext,
@@ -101,6 +102,8 @@ async def send_message(
         message_kind = "reaction"
     elif protocol == SIGNAL_PROTOCOL_ATTACHMENT:
         message_kind = "attachment"
+    elif protocol == GROUP_SENDER_KEY_DIST_PROTOCOL:
+        message_kind = "sender_key_distribution"
     else:
         message_kind = "message"
     if body.reply_to:

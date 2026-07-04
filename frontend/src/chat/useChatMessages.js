@@ -5,10 +5,11 @@ import { parseReactionText, sendReaction as postReaction } from './reactions';
 import { indexMessage, indexMessages } from '../search/messageIndex';
 import { getSealedSenderEnabled } from '../lib/chatPrefs';
 import {
+  GROUP_SENDER_KEY_DIST_PROTOCOL,
   decryptGroupMessage,
   encryptGroupMessage,
   ingestSenderKeyDistribution,
-  isSenderKeyDistribution,
+  isSenderKeyDistributionMessage,
 } from '../signal/groupSenderKeys';
 import { encryptSealedMessage } from '../signal/sealedSender';
 import { decryptMessage, encryptMessage } from '../signal/signalBridge';
@@ -29,6 +30,28 @@ function parseMessageContent(text, messageKind) {
   return { text, reaction: null, attachment: null };
 }
 
+async function hydrateGroupMessage(m, { groupId }) {
+  if (isSenderKeyDistributionMessage(m)) {
+    await ingestSenderKeyDistribution(m.ciphertext, {
+      peerId: m.sender_id,
+      protocol: m.protocol,
+    });
+    return null;
+  }
+  const raw = await decryptGroupMessage(m.ciphertext, {
+    groupId,
+    senderId: m.sender_id,
+    protocol: m.protocol,
+  });
+  const parsed = parseMessageContent(raw, m.message_kind);
+  return {
+    ...m,
+    text: parsed.text,
+    reaction: parsed.reaction,
+    attachment: parsed.attachment,
+  };
+}
+
 export function useChatMessages(
   conversationId,
   enabled,
@@ -45,20 +68,22 @@ export function useChatMessages(
     setError(null);
     try {
       const data = await api.get(`/api/conversations/${conversationId}/messages`);
-      const rows = await Promise.all(
-        (data.messages || []).map(async (m) => {
-          const raw = isGroup
-            ? await decryptGroupMessage(m.ciphertext, { groupId, senderId: m.sender_id })
-            : await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+      const rows = [];
+      for (const m of data.messages || []) {
+        if (isGroup) {
+          const row = await hydrateGroupMessage(m, { groupId });
+          if (row) rows.push(row);
+        } else {
+          const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
           const parsed = parseMessageContent(raw, m.message_kind);
-          return {
+          rows.push({
             ...m,
             text: parsed.text,
             reaction: parsed.reaction,
             attachment: parsed.attachment,
-          };
-        })
-      );
+          });
+        }
+      }
       setMessages(rows);
       indexMessages(
         conversationId,
@@ -69,7 +94,7 @@ export function useChatMessages(
     } finally {
       setLoading(false);
     }
-  }, [conversationId, enabled, isGroup, groupId]);
+  }, [conversationId, enabled, isGroup, groupId, peerId]);
 
   useEffect(() => {
     reload();
@@ -85,13 +110,34 @@ export function useChatMessages(
       if (payload?.type === 'read_receipt') return;
       if (payload?.type === 'message' && payload.message) {
         const m = payload.message;
-        if (isGroup && isSenderKeyDistribution(m.ciphertext)) {
-          await ingestSenderKeyDistribution(m.ciphertext, { peerId: m.sender_id });
+        if (isGroup) {
+          if (isSenderKeyDistributionMessage(m)) {
+            await ingestSenderKeyDistribution(m.ciphertext, {
+              peerId: m.sender_id,
+              protocol: m.protocol,
+            });
+            return;
+          }
+          const raw = await decryptGroupMessage(m.ciphertext, {
+            groupId,
+            senderId: m.sender_id,
+            protocol: m.protocol,
+          });
+          const parsed = parseMessageContent(raw, m.message_kind);
+          const row = {
+            ...m,
+            text: parsed.text,
+            reaction: parsed.reaction,
+            attachment: parsed.attachment,
+          };
+          setMessages((prev) => {
+            if (prev.some((x) => x.id === m.id)) return prev;
+            return [...prev, row];
+          });
+          if (row.text) indexMessage(conversationId, row);
           return;
         }
-        const raw = isGroup
-          ? await decryptGroupMessage(m.ciphertext, { groupId, senderId: m.sender_id })
-          : await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+        const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
         const parsed = parseMessageContent(raw, m.message_kind);
         const row = {
           ...m,
@@ -120,7 +166,7 @@ export function useChatMessages(
   }, [messages]);
 
   const displayMessages = useMemo(
-    () => messages.filter((m) => !m.reaction),
+    () => messages.filter((m) => !m.reaction && m.message_kind !== 'sender_key_distribution'),
     [messages]
   );
 
@@ -134,6 +180,7 @@ export function useChatMessages(
         ({ ciphertext, protocol } = await encryptGroupMessage(text.trim(), {
           groupId,
           userId,
+          conversationId,
           memberIds,
         }));
       } else if (getSealedSenderEnabled()) {

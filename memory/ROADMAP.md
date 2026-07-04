@@ -31,7 +31,7 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
-## Step 2 — Real libsignal group sender keys (issue #15)
+## Step 2 — Real libsignal group sender keys (issue #15) ✅
 
 **Goal:** Replace XOR placeholder in `frontend/src/signal/groupSenderKeys.js` with real sender-key distribution.
 
@@ -42,6 +42,8 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 | [signalapp/libsignal-protocol-javascript](https://github.com/signalapp/libsignal-protocol-javascript) | Legacy JS reference (deprecated but useful for API shape) |
 
 **Deliverables:** `GroupSenderKeyStore`, server relay for sender-key distribution messages, remove XOR path in production.
+
+**Shipped (2026-07-04):** `electron/groupSenderKeySession.js` (file-backed `SenderKeyStore`), IPC via `ssc-group-keys:*`, protocols `group_sender_key_v2` + `group_sender_key_dist_v1`, distribution posted to group conversation. Dev XOR isolated in `groupSenderKeysDev.js` for CRA tests only.
 
 ---
 
