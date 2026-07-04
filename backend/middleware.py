@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import hashlib
+import os
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -27,14 +30,21 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+def _privacy_rate_key(raw_ip: str) -> str:
+    """Hash client IP for in-memory rate keys — never store or log raw IPs."""
+    salt = os.getenv("SSC_IP_HASH_SALT", "ssc-ip-privacy-v1")
+    digest = hashlib.sha256(f"{salt}:{raw_ip}".encode()).hexdigest()
+    return digest[:24]
+
+
 class AbuseRateLimitMiddleware(BaseHTTPMiddleware):
-    """Rate-limit auth endpoints per client IP — Engine 8."""
+    """Rate-limit auth endpoints per hashed client IP — Engine 8."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
         path = request.url.path
         if path.endswith("/auth/login") or path.endswith("/auth/register"):
             client_ip = request.client.host if request.client else "unknown"
-            if not auth_rate_limiter.allow(f"auth:{client_ip}"):
+            if not auth_rate_limiter.allow(f"auth:{_privacy_rate_key(client_ip)}"):
                 return JSONResponse(status_code=429, content={"detail": "auth_rate_limited"})
         return await call_next(request)
 
