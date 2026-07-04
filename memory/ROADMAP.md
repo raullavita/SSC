@@ -76,16 +76,16 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
-## Step 5 — Android libsignal native bridge (issue #18)
+## Step 5 — Android libsignal native bridge (issue #18) ✅
 
 **Goal:** Wire Android WebView to real libsignal-android, not dev envelope.
 
 | OSS | Use |
 |-----|-----|
-| [signalapp/libsignal](https://github.com/signalapp/libsignal) | `libsignal-android` artifacts |
+| [signalapp/libsignal](https://github.com/signalapp/libsignal) | `libsignal-android` 0.96.4 from Signal Maven |
 | [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android) | Integration patterns |
 
-**Deliverables:** JNI bridge, `X-SSC-Client` + crypto IPC, update `android/README.md`.
+**Shipped (2026-07-04):** `SscNativeBridge` + `ssc_crypto_bridge.js` expose `window.sscCrypto` (Electron preload parity), file-backed stores under `filesDir/ssc-signal/`, group sender keys, Signal Maven repo + Kotlin 2.2.20, `cryptoPolicy.js` requires real `sscCrypto` on Android.
 
 ---
 

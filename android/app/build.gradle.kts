@@ -40,10 +40,21 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "libsignal_jni*.dylib",
+                "signal_jni*.dll",
+                "libsignal_jni_testing.so",
+            )
+        }
+    }
 }
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-    implementation("org.signal:libsignal-android:0.46.0")
+    implementation("org.signal:libsignal-android:0.96.4")
+    implementation("org.signal:libsignal-client:0.96.4")
     implementation("androidx.core:core-ktx:1.15.0")
 }

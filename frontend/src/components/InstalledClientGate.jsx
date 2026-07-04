@@ -6,7 +6,6 @@ import { isLibsignalRuntimeAvailable, requiresProductionCrypto } from '../lib/cr
  * Step 4: production crypto builds also require libsignal runtime (Electron/Android bridge).
  */
 function isInstalledRuntime() {
-  if (typeof window !== 'undefined' && window.__SSC_ANDROID_CLIENT) return true;
   if (isLibsignalRuntimeAvailable()) return true;
   if (requiresProductionCrypto()) return false;
   const platform = process.env.REACT_APP_SSC_PLATFORM || 'electron';

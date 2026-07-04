@@ -10,6 +10,7 @@ import android.webkit.WebView
  */
 class MainActivity : Activity() {
     private lateinit var webView: WebView
+    private lateinit var nativeBridge: SscNativeBridge
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,8 +23,11 @@ class MainActivity : Activity() {
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         }
 
+        nativeBridge = SscNativeBridge(this, webView, filesDir)
+        webView.addJavascriptInterface(nativeBridge, "__sscBridge")
+
         val entryUrl = BuildConfig.SSC_WEB_URL
-        webView.webViewClient = ApiClient.webViewClient(entryUrl)
+        webView.webViewClient = ApiClient.webViewClient(this, entryUrl, webView)
         webView.loadUrl(entryUrl)
     }
 
