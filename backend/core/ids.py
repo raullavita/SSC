@@ -25,6 +25,14 @@ def new_call_id() -> str:
     return f"call_{secrets.token_hex(8)}"
 
 
+def new_group_id() -> str:
+    return f"g_{secrets.token_hex(8)}"
+
+
+def new_link_token_id() -> str:
+    return f"link_{secrets.token_hex(10)}"
+
+
 def direct_conversation_key(user_a: str, user_b: str) -> str:
     a, b = sorted([user_a, user_b])
     return f"direct:{a}:{b}"

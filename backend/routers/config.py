@@ -20,7 +20,11 @@ async def public_config() -> dict:
         "metadata_policy_version": "engine4-v1",
         "push_generic_only": True,
         "last_seen_default": "hidden",
-        "engine": "8",
+        "engine": "9",
+        "sealed_sender": True,
+        "multi_device": True,
+        "group_chat": True,
+        "sfu_provider": "mediasoup",
     }
 
 

@@ -13,6 +13,7 @@ from core.call_policy import (
     public_call_session,
     validate_signaling_envelope,
 )
+from core.sfu_policy import should_use_sfu
 from core.ids import new_call_id
 from core.retention_policy import default_expires_at
 from core.signal_policy import SIGNAL_PROTOCOL_V1
@@ -25,8 +26,9 @@ router = APIRouter(prefix="/calls", tags=["calls"])
 
 class StartCallBody(BaseModel):
     conversation_id: str = Field(min_length=3)
-    callee_id: str = Field(min_length=3)
+    callee_id: str | None = Field(default=None, min_length=3)
     video: bool = False
+    group_call: bool = False
 
 
 class SignalBody(BaseModel):
@@ -52,9 +54,16 @@ async def start_call(
     db = get_database()
     conv = await _require_participant(db, body.conversation_id, user_id)
     participants = conv.get("participants", [])
-    if len(participants) > MESH_MAX_PARTICIPANTS:
-        raise HTTPException(status_code=400, detail="mesh_participant_cap_exceeded")
-    if body.callee_id not in participants:
+    use_sfu = should_use_sfu(len(participants)) or (
+        body.group_call and len(participants) > MESH_MAX_PARTICIPANTS
+    )
+    if not use_sfu and len(participants) > MESH_MAX_PARTICIPANTS:
+        raise HTTPException(status_code=400, detail="mesh_participant_cap_exceeded_use_sfu")
+
+    callee_id = body.callee_id
+    if conv.get("type") == "group" or body.group_call:
+        callee_id = callee_id or next((p for p in participants if p != user_id), None)
+    if not callee_id or callee_id not in participants:
         raise HTTPException(status_code=400, detail="callee_not_in_conversation")
 
     now = datetime.now(timezone.utc)
@@ -63,20 +72,27 @@ async def start_call(
         "_id": call_id,
         "conversation_id": body.conversation_id,
         "caller_id": user_id,
-        "callee_id": body.callee_id,
+        "callee_id": callee_id,
         "call_type": "video" if body.video else "audio",
         "video": body.video,
         "status": "ringing",
+        "mode": "sfu" if use_sfu else "mesh",
+        "participant_count": len(participants),
         "created_at": now,
         "expires_at": default_expires_at(),
     }
     await db.call_sessions.insert_one(doc)
 
-    await ws_hub.publish(
-        f"user:{body.callee_id}",
-        {"type": "incoming_call", "call": public_call_session(doc)},
-    )
-    return {"call": public_call_session(doc)}
+    payload = {"type": "incoming_call", "call": public_call_session(doc)}
+    if use_sfu:
+        payload["sfu_required"] = True
+        for pid in participants:
+            if pid != user_id:
+                await ws_hub.publish(f"user:{pid}", payload)
+    else:
+        await ws_hub.publish(f"user:{callee_id}", payload)
+
+    return {"call": public_call_session(doc), "mode": doc["mode"], "sfu_required": use_sfu}
 
 
 @router.post("/signal")

@@ -49,6 +49,13 @@ COLLECTIONS: dict[str, CollectionPolicy] = {
         mode="until_panic",
         panic_field="user_id",
     ),
+    "device_link_tokens": CollectionPolicy(
+        name="device_link_tokens",
+        purpose="Short-lived multi-device link tokens",
+        mode="ttl_expires_at",
+        ttl_field="expires_at",
+        panic_field="user_id",
+    ),
     "prekeys": CollectionPolicy(
         name="prekeys",
         purpose="Public prekey bundles (no private keys)",

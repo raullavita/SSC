@@ -57,7 +57,16 @@ def public_conversation(
     return scrub_payload(out)
 
 
-def public_message(doc: dict[str, Any]) -> dict[str, Any]:
+def public_message(doc: dict[str, Any], viewer_id: str | None = None) -> dict[str, Any]:
+    from core.sealed_sender_policy import (  # noqa: PLC0415
+        SEALED_ENVELOPE_FLAG,
+        is_sealed_protocol,
+        public_message_sealed,
+    )
+
+    if doc.get(SEALED_ENVELOPE_FLAG) or is_sealed_protocol(doc.get("protocol", "")):
+        return scrub_payload(public_message_sealed(doc, viewer_id))
+
     created = doc.get("created_at")
     if hasattr(created, "isoformat"):
         created = created.isoformat()

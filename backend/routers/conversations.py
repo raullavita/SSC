@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from core.conversation_meta import get_meta_map, upsert_meta
 from core.ids import direct_conversation_key, new_conversation_id
+from core.group_policy import public_group_conversation
 from core.metadata_policy import public_conversation
 from core.retention_policy import default_expires_at
 from db import get_database
@@ -35,10 +36,13 @@ async def list_conversations(
     cursor = db.conversations.find({"participants": user_id}).sort("updated_at", -1)
     docs = [doc async for doc in cursor]
     meta_map = await get_meta_map(db, user_id, [d["_id"] for d in docs])
-    items = [
-        public_conversation(doc, user_id, meta_map.get(doc["_id"]))
-        for doc in docs
-    ]
+    items = []
+    for doc in docs:
+        meta = meta_map.get(doc["_id"])
+        if doc.get("type") == "group":
+            items.append(public_group_conversation(doc, user_id, meta))
+        else:
+            items.append(public_conversation(doc, user_id, meta))
     return {"conversations": items}
 
 

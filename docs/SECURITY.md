@@ -27,3 +27,13 @@ See `memory/METADATA_MINIMIZATION_CHARTER.md`.
 - Encrypted file transfer, WebRTC call signaling, LibreTranslate proxy, abuse rate limits.
 
 See `memory/SIGNAL_CHARTER.md`.
+
+## Advanced messaging (Engine 9)
+
+- **Multi-device:** link tokens (`/api/devices/link`), up to 5 devices per user.
+- **Sealed sender:** `signal_v1_sealed` — server strips sender from recipient views.
+- **Group chat:** `/api/groups` with metadata-minimized responses.
+- **Group calls:** mesh ≤8 participants; mediasoup SFU for larger groups.
+- **CI:** OWASP ZAP baseline scan skeleton.
+
+See `memory/ENGINE9_CHARTER.md`.

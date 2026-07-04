@@ -26,6 +26,7 @@ Document every server-side MongoDB collection, its purpose, and maximum lifetime
 |------------|---------|-----------|
 | `users` | Account identity and profile | Until panic wipe |
 | `devices` | Linked device registry | Until panic wipe |
+| `device_link_tokens` | Short-lived multi-device link tokens | 10m `expires_at` TTL |
 | `prekeys` | Public prekey bundles (no private keys) | Until panic wipe |
 | `messages` | Encrypted ciphertext relay | 24h `expires_at` + panic wipe |
 | `files` | Encrypted attachment metadata | 24h `expires_at` + panic wipe |
