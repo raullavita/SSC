@@ -41,7 +41,7 @@ jobs:
   # OWASP ZAP baseline — runs when backend is reachable (Engine 9 skeleton).
   zap-baseline:
     runs-on: ubuntu-latest
-    needs: backend
+    needs: [backend, frontend]
     if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
@@ -55,13 +55,21 @@ jobs:
         working-directory: backend
         run: |
           uvicorn server:app --host 127.0.0.1 --port 8090 &
-          sleep 3
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8090/api/health >/dev/null; then
+              echo "API ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "API failed to start"
+          exit 1
         env:
           JWT_SECRET: ci-zap-secret
           SSC_ENFORCE_INSTALLED_CLIENT: "false"
+          SSC_SFU_WS_URL: wss://sfu.supersecurechat.com
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.12.0
         with:
           target: "http://127.0.0.1:8090/api/health"
           cmd_options: "-a -d -T 15"
-        continue-on-error: true

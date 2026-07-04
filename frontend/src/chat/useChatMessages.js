@@ -4,7 +4,12 @@ import { parseAttachmentText } from './attachments';
 import { parseReactionText, sendReaction as postReaction } from './reactions';
 import { indexMessage, indexMessages } from '../search/messageIndex';
 import { getSealedSenderEnabled } from '../lib/chatPrefs';
-import { encryptGroupMessage, decryptGroupMessage } from '../signal/groupSenderKeys';
+import {
+  decryptGroupMessage,
+  encryptGroupMessage,
+  ingestSenderKeyDistribution,
+  isSenderKeyDistribution,
+} from '../signal/groupSenderKeys';
 import { encryptSealedMessage } from '../signal/sealedSender';
 import { decryptMessage, encryptMessage } from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
@@ -28,7 +33,7 @@ export function useChatMessages(
   conversationId,
   enabled,
   peerId,
-  { onSocketEvent, wsToken, isGroup, groupId } = {}
+  { onSocketEvent, wsToken, isGroup, groupId, userId, memberIds = [] } = {}
 ) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -80,6 +85,10 @@ export function useChatMessages(
       if (payload?.type === 'read_receipt') return;
       if (payload?.type === 'message' && payload.message) {
         const m = payload.message;
+        if (isGroup && isSenderKeyDistribution(m.ciphertext)) {
+          await ingestSenderKeyDistribution(m.ciphertext, { peerId: m.sender_id });
+          return;
+        }
         const raw = isGroup
           ? await decryptGroupMessage(m.ciphertext, { groupId, senderId: m.sender_id })
           : await decryptMessage(m.ciphertext, { peerId: m.sender_id });
@@ -124,7 +133,8 @@ export function useChatMessages(
       if (isGroup) {
         ({ ciphertext, protocol } = await encryptGroupMessage(text.trim(), {
           groupId,
-          peerId,
+          userId,
+          memberIds,
         }));
       } else if (getSealedSenderEnabled()) {
         ({ ciphertext, protocol, sealed } = await encryptSealedMessage(text.trim(), { peerId }));
@@ -144,7 +154,7 @@ export function useChatMessages(
       });
       indexMessage(conversationId, row);
     },
-    [conversationId, peerId, isGroup, groupId]
+    [conversationId, peerId, isGroup, groupId, userId, memberIds]
   );
 
   const sendReaction = useCallback(

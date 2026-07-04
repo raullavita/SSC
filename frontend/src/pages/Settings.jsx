@@ -17,6 +17,7 @@ import { executePanicWipe } from '../lib/panicWipe';
 import { fetchLanguages } from '../lib/translation';
 import { updatePrivacySettings } from '../lib/presence';
 import { api } from '../lib/api';
+import { useMultiDevice } from '../devices/useMultiDevice';
 import styles from './Settings.module.css';
 
 export default function Settings() {
@@ -32,6 +33,16 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [panicConfirm, setPanicConfirm] = useState('');
+  const {
+    devices,
+    linkToken,
+    createLink,
+    loadDevices,
+    revokeDevice,
+    loading: deviceLoading,
+    error: deviceError,
+  } = useMultiDevice();
+  const [linkLabel, setLinkLabel] = useState('New device');
 
   useEffect(() => {
     if (!user) return;
@@ -47,7 +58,8 @@ export default function Settings() {
     fetchLanguages()
       .then(setLanguages)
       .catch(() => {});
-  }, [user]);
+    loadDevices();
+  }, [user, loadDevices]);
 
   if (!loading && !user) return <Navigate to="/login" replace />;
   if (loading) return <div className={styles.page}>Loading…</div>;
@@ -198,6 +210,42 @@ export default function Settings() {
           Point to a self-hosted LibreTranslate instance so translation never leaves your network.
           Leave empty to use the SSC proxy.
         </p>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Linked devices</h2>
+        <p className={styles.hint}>Link Android or another desktop. Max 5 devices per account.</p>
+        <label className={styles.rowStack}>
+          <span>New device label</span>
+          <input
+            className={styles.textInput}
+            value={linkLabel}
+            onChange={(e) => setLinkLabel(e.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          className={styles.logout}
+          disabled={deviceLoading}
+          onClick={() => createLink(linkLabel)}
+        >
+          Generate link
+        </button>
+        {linkToken && (
+          <p className={styles.hint}>
+            Open on the new device:{' '}
+            <code>{`${window.location.origin}/link-device?token=${linkToken}`}</code>
+          </p>
+        )}
+        {devices.map((d) => (
+          <p key={d.id} className={styles.account}>
+            {d.name} ({d.platform}) — <code>{d.id}</code>{' '}
+            <button type="button" onClick={() => revokeDevice(d.id)} disabled={deviceLoading}>
+              Revoke
+            </button>
+          </p>
+        ))}
+        {deviceError && <p className={styles.hint}>{deviceError}</p>}
       </section>
 
       <section className={styles.section}>
