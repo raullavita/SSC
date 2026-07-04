@@ -7,6 +7,9 @@ import re
 from typing import Any
 
 SIGNAL_PROTOCOL_V1 = "signal_v1"
+GROUP_SENDER_KEY_PROTOCOL = "group_sender_key_v2"
+GROUP_SENDER_KEY_DIST_PROTOCOL = "group_sender_key_dist_v1"
+GROUP_SENDER_KEY_DEV_PROTOCOL = "group_sender_key_dev"
 LEGACY_PLACEHOLDER_PROTOCOL = "placeholder"
 
 # Minimum ciphertext size for signal_v1 (encrypted envelope, not plaintext).
@@ -60,6 +63,9 @@ def validate_signal_ciphertext(ciphertext: str, protocol: str) -> tuple[bool, st
         "signal_v1_sealed",
         "signal_v1_reaction",
         "signal_v1_attachment",
+        GROUP_SENDER_KEY_PROTOCOL,
+        GROUP_SENDER_KEY_DIST_PROTOCOL,
+        GROUP_SENDER_KEY_DEV_PROTOCOL,
     }
     if protocol not in allowed:
         return False, "unsupported_protocol"

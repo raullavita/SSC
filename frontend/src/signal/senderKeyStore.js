@@ -1,6 +1,6 @@
 /**
- * Per-group sender key material — local encrypted store (Engine 9/8).
- * Keys are distributed to members via 1:1 E2EE envelopes (ssc-skd prefix).
+ * Legacy/dev sender key material — localStorage (Engine 9).
+ * Installed clients use libsignal SenderKeyStore in Electron (`groupSenderKeySession.js`).
  */
 
 const STORE_KEY = 'ssc_sender_keys_v1';

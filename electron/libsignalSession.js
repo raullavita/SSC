@@ -447,10 +447,12 @@ function getSession(userDataPath) {
 }
 
 function wipeLocalData(userDataPath) {
+  const { wipeGroupSenderKeyData } = require('./groupSenderKeySession');
   const root = path.join(userDataPath, 'ssc-signal');
   if (fs.existsSync(root)) {
     fs.rmSync(root, { recursive: true, force: true });
   }
+  wipeGroupSenderKeyData(userDataPath);
   session = null;
   return { ok: true };
 }
