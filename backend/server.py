@@ -32,7 +32,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=lifespan,
     )
-    app.state.enforce_installed_client = False
+    app.state.enforce_installed_client = settings.enforce_installed_client
 
     app.add_middleware(
         CORSMiddleware,

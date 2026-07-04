@@ -1,0 +1,88 @@
+"""Installed-client enforcement tests — Engine 2."""
+
+from __future__ import annotations
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+
+from core.installed_client_policy import (
+    parse_client_header,
+    validate_request,
+)
+from server import create_app
+
+VALID_HEADER = "android/0.1.0/1"
+
+
+def test_parse_valid_header():
+    identity = parse_client_header("windows/1.0.27/80")
+    assert identity is not None
+    assert identity.platform == "windows"
+    assert identity.version == "1.0.27"
+    assert identity.build == "80"
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["", "browser/1.0.0", "android/1.0", "invalid", "web/0.1.0/1"],
+)
+def test_parse_rejects_invalid_header(value: str):
+    assert parse_client_header(value) is None
+
+
+def test_health_path_exempt():
+    ok, _ = validate_request("/api/health", None)
+    assert ok is True
+
+
+def test_config_requires_header():
+    ok, detail = validate_request("/api/config", None)
+    assert ok is False
+    assert "installed_client_required" in detail
+
+
+@pytest.fixture
+async def enforced_client():
+    app = create_app()
+    app.state.enforce_installed_client = True
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+
+
+@pytest.mark.asyncio
+async def test_health_works_without_header(enforced_client):
+    response = await enforced_client.get("/api/health")
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_config_blocked_without_header(enforced_client):
+    response = await enforced_client.get("/api/config")
+    assert response.status_code == 403
+    assert "installed_client_required" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_config_allowed_with_header(enforced_client):
+    response = await enforced_client.get(
+        "/api/config",
+        headers={"X-SSC-Client": VALID_HEADER},
+    )
+    assert response.status_code == 200
+    assert response.json()["installed_client_required"] is True
+
+
+@pytest.mark.asyncio
+async def test_root_api_blocked_without_header(enforced_client):
+    response = await enforced_client.get("/api/")
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_panic_wipe_blocked_without_client_header(enforced_client):
+    response = await enforced_client.post(
+        "/api/panic/wipe",
+        headers={"X-SSC-User-Id": "user-1"},
+    )
+    assert response.status_code == 403

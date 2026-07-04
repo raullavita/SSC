@@ -1,4 +1,4 @@
-"""HTTP middleware: security headers and installed-client gate (Engine 2 stub)."""
+"""HTTP middleware: security headers and installed-client gate (Engine 2)."""
 
 from __future__ import annotations
 
@@ -6,8 +6,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-INSTALLED_CLIENT_HEADER = "X-SSC-Client"
-HEALTH_PATHS = {"/api/health", "/api/health/"}
+from core.installed_client_policy import (
+    INSTALLED_CLIENT_HEADER,
+    validate_request,
+)
 
 
 def add_security_headers(response: Response) -> None:
@@ -25,25 +27,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class InstalledClientMiddleware(BaseHTTPMiddleware):
-    """Blocks API access without installed-client header (Engine 2 — enabled in Phase 1)."""
+    """Blocks API access without valid installed-client header."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        path = request.url.path.rstrip("/") or "/"
-        if not path.startswith("/api"):
-            return await call_next(request)
-        if path in HEALTH_PATHS or path == "/api/health":
+        enforce = getattr(request.app.state, "enforce_installed_client", False)
+        if not enforce:
             return await call_next(request)
 
-        # Phase 0: enforcement disabled until Engine 2; header check wired for tests.
-        enforce = request.app.state.enforce_installed_client
-        if enforce and not request.headers.get(INSTALLED_CLIENT_HEADER):
-            return JSONResponse(
-                status_code=403,
-                content={
-                    "detail": (
-                        "installed_client_required: SSC works only in the "
-                        "installed Android, iOS, Windows, or Mac app"
-                    )
-                },
-            )
+        path = request.url.path
+        header_value = request.headers.get(INSTALLED_CLIENT_HEADER)
+        ok, detail = validate_request(path, header_value)
+        if not ok:
+            return JSONResponse(status_code=403, content={"detail": detail})
         return await call_next(request)

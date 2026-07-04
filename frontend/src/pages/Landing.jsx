@@ -1,21 +1,16 @@
 import { useEffect, useState } from 'react';
+import { api } from '../lib/api';
 import styles from './Landing.module.css';
-
-const API_BASE = process.env.REACT_APP_API_URL || '';
 
 export default function Landing() {
   const [health, setHealth] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const url = `${API_BASE}/api/health`;
-    fetch(url)
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
+    api
+      .get('/api/health')
       .then(setHealth)
-      .catch((e) => setError(e.message));
+      .catch((e) => setError(e.message || `HTTP ${e.status}`));
   }, []);
 
   return (

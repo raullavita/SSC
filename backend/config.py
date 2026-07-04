@@ -10,6 +10,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
 class Settings:
     env: str = os.getenv("SSC_ENV", "development")
     mongo_url: str = os.getenv("MONGO_URL", "mongodb://localhost:27017")
@@ -26,6 +33,12 @@ class Settings:
     @property
     def is_production(self) -> bool:
         return self.env == "production"
+
+    @property
+    def enforce_installed_client(self) -> bool:
+        """Production defaults to enforced; development defaults to relaxed."""
+        default = self.is_production
+        return _env_bool("SSC_ENFORCE_INSTALLED_CLIENT", default)
 
 
 @lru_cache
