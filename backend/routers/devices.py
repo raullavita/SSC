@@ -66,7 +66,6 @@ async def list_devices(
             "id": d.get("device_id"),
             "name": d.get("name"),
             "platform": d.get("platform"),
-            "last_active": d.get("last_active").isoformat() if d.get("last_active") else None,
         }
         async for d in cursor
     ]

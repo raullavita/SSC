@@ -32,6 +32,30 @@ def test_public_conversation_omits_participants_list():
     )
 
 
+def test_scrub_recursive_nested_forbidden():
+    raw = {
+        "message": {"participants": ["u_a", "u_b"], "id": "m1"},
+        "last_active": "2026-01-01T00:00:00Z",
+    }
+    out = scrub_payload(raw)
+    assert "last_active" not in out
+    assert "participants" not in out["message"]
+
+
+def test_auth_user_payload_shape():
+    from routers.auth import _user_payload  # noqa: PLC0415
+
+    out = _user_payload(
+        {
+            "_id": "u_test",
+            "email": "secret@test.com",
+            "display_name": "Test User",
+        }
+    )
+    assert out == {"id": "u_test", "display_name": "Test User"}
+    assert "email" not in out
+
+
 def test_public_message_has_no_preview_fields():
     doc = {
         "_id": "m_1",

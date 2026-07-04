@@ -107,7 +107,11 @@ async def get_conversation(
     if not doc:
         raise HTTPException(status_code=404, detail="conversation_not_found")
     meta = await get_meta_map(db, user_id, [conversation_id])
-    return {"conversation": public_conversation(doc, user_id, meta.get(conversation_id))}
+    if doc.get("type") == "group":
+        conv = public_group_conversation(doc, user_id, meta.get(conversation_id))
+    else:
+        conv = public_conversation(doc, user_id, meta.get(conversation_id))
+    return {"conversation": conv}
 
 
 @router.post("/{conversation_id}/read")
@@ -144,4 +148,8 @@ async def patch_conversation_meta(
         muted=body.muted,
     )
     meta = await get_meta_map(db, user_id, [conversation_id])
-    return {"conversation": public_conversation(doc, user_id, meta.get(conversation_id))}
+    if doc.get("type") == "group":
+        conv = public_group_conversation(doc, user_id, meta.get(conversation_id))
+    else:
+        conv = public_conversation(doc, user_id, meta.get(conversation_id))
+    return {"conversation": conv}

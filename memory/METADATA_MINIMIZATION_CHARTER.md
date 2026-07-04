@@ -9,7 +9,10 @@
 1. **Push notifications** contain no message content, sender name, or email — only generic `"New message"`.
 2. **Last-seen** is opt-in (`privacy_settings.last_seen_visible`, default `false`) and coarse-grained (`online` / `recently` / `away` / `hidden`).
 3. **Conversation list API** returns `peer_id` only — never full `participants` arrays or peer emails.
-4. **Service worker** (`frontend/public/sw.js`) validates `event.origin` before showing notifications.
+4. **Auth `/me` and session responses** return `id` + `display_name` only — never `email`.
+5. **WebSocket fanout** uses scrubbed payloads — no `participants` arrays on conversation topics.
+6. **Sealed sender** is on by default (client opt-out via Settings).
+7. **Service worker** (`frontend/public/sw.js`) validates `event.origin` before showing notifications.
 
 ## Modules
 

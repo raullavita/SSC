@@ -31,6 +31,7 @@ async def public_config() -> dict:
         "production_api": "api.supersecurechat.com",
         "production_web": "www.supersecurechat.com",
         "sealed_sender": True,
+        "sealed_sender_default": True,
         "multi_device": True,
         "group_chat": True,
         "sfu_provider": "mediasoup",
