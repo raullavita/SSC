@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { fetchIceServers } from './iceServers';
 import { connectSfuRoom, createSfuRoom, fetchSfuConfig } from './sfuClient';
 
 const MESH_MAX = 8;
@@ -65,6 +66,7 @@ export function useGroupCall({ conversationId, participantCount, userId }) {
           if (!cfg.enabled) {
             throw new Error('SFU not enabled on server');
           }
+          await fetchIceServers();
           const room = await createSfuRoom(conversationId, participantCount);
           setSfuRoom(room);
           setMode('sfu');
@@ -121,6 +123,7 @@ export function useGroupCall({ conversationId, participantCount, userId }) {
       setError(null);
       setStatus('joining');
       try {
+        await fetchIceServers();
         let stream = null;
         if (navigator.mediaDevices?.getUserMedia) {
           try {

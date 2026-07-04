@@ -47,7 +47,7 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
-## Step 3 — TURN for calls (issue #17)
+## Step 3 — TURN for calls (issue #17) ✅
 
 **Goal:** Reliable group/1:1 calls behind NAT; SFU for large groups.
 
@@ -57,6 +57,8 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 | [versatica/mediasoup](https://github.com/versatica/mediasoup) | Already scaffolded in `sfu-server/` |
 
 **Deliverables:** TURN credentials API, `iceServers` in `useCall` / `useGroupCall`, deploy coturn alongside SFU.
+
+**Shipped (2026-07-04):** `GET /api/calls/ice-servers`, `core/turn_policy.py`, `calls/iceServers.js`, wired in `useCall` + `sfuSession` + `useGroupCall`, coturn deploy via `scripts/deploy_turn_gce.ps1`.
 
 ---
 

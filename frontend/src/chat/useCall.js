@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { fetchIceServers } from '../calls/iceServers';
 import { decryptMessage, encryptMessage } from '../signal/signalBridge';
 import { useUserSocket } from '../hooks/useUserSocket';
 
@@ -14,6 +15,7 @@ export function useCall({ conversationId, peerId, userId, enabled, wsToken }) {
   const callIdRef = useRef(null);
   const pendingOfferRef = useRef(null);
   const isCalleeRef = useRef(false);
+  const iceServersRef = useRef(null);
 
   const cleanup = useCallback(() => {
     if (pcRef.current) {
@@ -51,10 +53,13 @@ export function useCall({ conversationId, peerId, userId, enabled, wsToken }) {
     [peerId]
   );
 
-  const ensurePeerConnection = useCallback(() => {
+  const ensurePeerConnection = useCallback(async () => {
     if (pcRef.current) return pcRef.current;
+    if (!iceServersRef.current) {
+      iceServersRef.current = await fetchIceServers();
+    }
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      iceServers: iceServersRef.current,
     });
     pc.onicecandidate = (event) => {
       if (!event.candidate || !callIdRef.current) return;
@@ -83,7 +88,7 @@ export function useCall({ conversationId, peerId, userId, enabled, wsToken }) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video });
       localStreamRef.current = stream;
       setLocalStream(stream);
-      const pc = ensurePeerConnection();
+      const pc = await ensurePeerConnection();
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
       return pc;
     },
@@ -94,7 +99,7 @@ export function useCall({ conversationId, peerId, userId, enabled, wsToken }) {
     async (callId, signalType, ciphertext, fromPeerId) => {
       const plaintext = await decryptMessage(ciphertext, { peerId: fromPeerId });
       const payload = JSON.parse(plaintext);
-      const pc = ensurePeerConnection();
+      const pc = await ensurePeerConnection();
       callIdRef.current = callId;
 
       if (signalType === 'offer') {

@@ -1,0 +1,13 @@
+# Run coturn on the GCE SFU host (host networking for UDP).
+#   cd /opt/ssc-turn && docker compose up -d
+#
+# DNS: turn.supersecurechat.com A -> GCE public IP
+
+services:
+  coturn:
+    image: coturn/coturn:4.6.2
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    command: ["-c", "/etc/coturn/turnserver.conf"]
