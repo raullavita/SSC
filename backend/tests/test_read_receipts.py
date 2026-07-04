@@ -24,13 +24,22 @@ class _FakeCollection:
             doc.update(update["$setOnInsert"])
         self.docs[key] = doc
 
-    async def find_one(self, query):
+    async def find_one(self, query, projection=None):
         key = (query.get("user_id"), query.get("conversation_id"))
+        doc = None
         if key in self.docs:
-            return {"user_id": key[0], "conversation_id": key[1], **self.docs[key]}
-        if query.get("_id"):
-            return self.docs.get(query["_id"])
-        return None
+            doc = {"user_id": key[0], "conversation_id": key[1], **self.docs[key]}
+        elif query.get("_id"):
+            doc = self.docs.get(query["_id"])
+        if doc is None:
+            return None
+        if projection:
+            projected = {}
+            for field, include in projection.items():
+                if include and field in doc:
+                    projected[field] = doc[field]
+            return projected if projected else doc
+        return doc
 
     async def insert_one(self, doc):
         if "_id" in doc:
