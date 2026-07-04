@@ -97,7 +97,7 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
-## Step 7 — Stories / polls / disappearing messages (issue #21)
+## Step 7 — Stories / polls / disappearing messages (issue #21) ✅
 
 **Goal:** Implement charter schemas already in retention policy.
 
@@ -105,7 +105,7 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 |-----|-----|
 | Existing SSC retention + smart policy | `backend/core/smart_policy.py` |
 
-**Deliverables:** API routes, client UI, TTL alignment.
+**Shipped (2026-07-05):** `stories` + `polls` API routes, `StoriesBar` + `PollBubble` UI, disappearing message expiry filter + live countdown, `step7_proof.py`.
 
 ---
 

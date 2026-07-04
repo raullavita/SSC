@@ -59,7 +59,17 @@ async def list_messages(
 ) -> dict:
     db = get_database()
     await _require_participant(db, conversation_id, user_id)
-    cursor = db.messages.find({"conversation_id": conversation_id}).sort("created_at", 1)
+    now = datetime.now(timezone.utc)
+    cursor = db.messages.find(
+        {
+            "conversation_id": conversation_id,
+            "$or": [
+                {"expires_at": {"$gt": now}},
+                {"expires_at": None},
+                {"expires_at": {"$exists": False}},
+            ],
+        }
+    ).sort("created_at", 1)
     items = [public_message(doc, viewer_id=user_id) async for doc in cursor]
     return {"messages": items}
 

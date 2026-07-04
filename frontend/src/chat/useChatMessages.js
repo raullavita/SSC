@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { parseAttachmentText } from './attachments';
+import { castPollVote, createPoll, fetchPoll, parsePollText } from './polls';
 import { parseReactionText, sendReaction as postReaction } from './reactions';
+import { useDisappearingMessages } from './useDisappearingMessages';
 import { indexMessage, indexMessages } from '../search/messageIndex';
 import { getSealedSenderEnabled } from '../lib/chatPrefs';
 import {
@@ -16,18 +18,22 @@ import { decryptMessage, encryptMessage } from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
 
 function parseMessageContent(text, messageKind) {
+  if (messageKind === 'poll') {
+    const poll = parsePollText(text);
+    return { text: null, reaction: null, attachment: null, poll };
+  }
   if (messageKind === 'reaction') {
     const reaction = parseReactionText(text);
-    return { text: null, reaction, attachment: null };
+    return { text: null, reaction, attachment: null, poll: null };
   }
   const attachment = parseAttachmentText(text);
   if (attachment) {
-    return { text: null, reaction: null, attachment };
+    return { text: null, reaction: null, attachment, poll: null };
   }
   if (messageKind === 'attachment') {
-    return { text: null, reaction: null, attachment: null };
+    return { text: null, reaction: null, attachment: null, poll: null };
   }
-  return { text, reaction: null, attachment: null };
+  return { text, reaction: null, attachment: null, poll: null };
 }
 
 async function hydrateGroupMessage(m, { groupId }) {
@@ -49,6 +55,7 @@ async function hydrateGroupMessage(m, { groupId }) {
     text: parsed.text,
     reaction: parsed.reaction,
     attachment: parsed.attachment,
+    poll: parsed.poll,
   };
 }
 
@@ -59,8 +66,11 @@ export function useChatMessages(
   { onSocketEvent, wsToken, isGroup, groupId, userId, memberIds = [] } = {}
 ) {
   const [messages, setMessages] = useState([]);
+  const [pollMeta, setPollMeta] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const { remainingById } = useDisappearingMessages(messages, setMessages);
 
   const reload = useCallback(async () => {
     if (!conversationId || !enabled) return;
@@ -81,10 +91,27 @@ export function useChatMessages(
             text: parsed.text,
             reaction: parsed.reaction,
             attachment: parsed.attachment,
+            poll: parsed.poll,
           });
         }
       }
       setMessages(rows);
+      const pollRows = rows.filter((m) => m.poll_id);
+      const meta = {};
+      await Promise.all(
+        pollRows.map(async (m) => {
+          try {
+            const data = await fetchPoll(conversationId, m.poll_id);
+            meta[m.poll_id] = {
+              tallies: data.tallies || {},
+              viewerVote: data.viewer_vote ?? null,
+            };
+          } catch {
+            meta[m.poll_id] = { tallies: {}, viewerVote: null };
+          }
+        })
+      );
+      setPollMeta(meta);
       indexMessages(
         conversationId,
         rows.filter((m) => m.text)
@@ -129,12 +156,19 @@ export function useChatMessages(
             text: parsed.text,
             reaction: parsed.reaction,
             attachment: parsed.attachment,
+            poll: parsed.poll,
           };
           setMessages((prev) => {
             if (prev.some((x) => x.id === m.id)) return prev;
             return [...prev, row];
           });
           if (row.text) indexMessage(conversationId, row);
+          if (m.poll_id) {
+            setPollMeta((prev) => ({
+              ...prev,
+              [m.poll_id]: prev[m.poll_id] || { tallies: {}, viewerVote: null },
+            }));
+          }
           return;
         }
         const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
@@ -144,12 +178,19 @@ export function useChatMessages(
           text: parsed.text,
           reaction: parsed.reaction,
           attachment: parsed.attachment,
+          poll: parsed.poll,
         };
         setMessages((prev) => {
           if (prev.some((x) => x.id === m.id)) return prev;
           return [...prev, row];
         });
         if (row.text) indexMessage(conversationId, row);
+        if (m.poll_id) {
+          setPollMeta((prev) => ({
+            ...prev,
+            [m.poll_id]: prev[m.poll_id] || { tallies: {}, viewerVote: null },
+          }));
+        }
       }
     },
   });
@@ -204,6 +245,54 @@ export function useChatMessages(
     [conversationId, peerId, isGroup, groupId, userId, memberIds]
   );
 
+  const sendPoll = useCallback(
+    async (question, options) => {
+      if (!conversationId || !question?.trim() || !peerId) return;
+      const data = await createPoll(conversationId, {
+        question: question.trim(),
+        options,
+        peerId,
+      });
+      const m = data.message;
+      const poll = parsePollText(
+        JSON.stringify({
+          question: question.trim(),
+          options: options.map((o) => o.trim()).filter(Boolean),
+        })
+      );
+      const row = { ...m, poll, text: null, reaction: null, attachment: null };
+      setMessages((prev) => {
+        if (prev.some((x) => x.id === m.id)) return prev;
+        return [...prev, row];
+      });
+      if (data.poll?.id) {
+        setPollMeta((prev) => ({
+          ...prev,
+          [data.poll.id]: { tallies: {}, viewerVote: null },
+        }));
+      }
+    },
+    [conversationId, peerId]
+  );
+
+  const votePoll = useCallback(
+    async (pollId, optionIndex) => {
+      if (!conversationId || !peerId || pollId == null) return;
+      const data = await castPollVote(conversationId, pollId, {
+        optionIndex,
+        peerId,
+      });
+      setPollMeta((prev) => ({
+        ...prev,
+        [pollId]: {
+          tallies: data.tallies || {},
+          viewerVote: data.viewer_vote ?? optionIndex,
+        },
+      }));
+    },
+    [conversationId, peerId]
+  );
+
   const sendReaction = useCallback(
     async (emoji, targetMessageId) => {
       if (!conversationId || !targetMessageId) return;
@@ -225,10 +314,14 @@ export function useChatMessages(
   return {
     messages: displayMessages,
     reactionsByTarget,
+    pollMeta,
+    remainingById,
     loading,
     error,
     reload,
     sendMessage,
+    sendPoll,
+    votePoll,
     sendReaction,
   };
 }

@@ -29,6 +29,8 @@ async def smart_config(
         "auto_translate": True,
         "voice_messages": True,
         "disappearing_messages": True,
+        "stories": True,
+        "polls": True,
         "typing_indicators": True,
         "smart_replies": False,
         "disappearing_range": {

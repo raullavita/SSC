@@ -1,0 +1,44 @@
+.poll {
+  margin: 0.25rem 0;
+}
+
+.question {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.option:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.optionSelected {
+  border-color: rgba(100, 180, 255, 0.55);
+  background: rgba(100, 180, 255, 0.12);
+}
+
+.count {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}

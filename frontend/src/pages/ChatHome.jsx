@@ -4,11 +4,13 @@ import CallModal from '../components/chat/CallModal';
 import Composer from '../components/chat/Composer';
 import GroupPanel from '../components/chat/GroupPanel';
 import MessageBubble from '../components/chat/MessageBubble';
+import StoriesBar from '../components/chat/StoriesBar';
 import SafetyVerifyModal from '../components/chat/SafetyVerifyModal';
 import UserLookup from '../components/chat/UserLookup';
 import { useCall } from '../chat/useCall';
 import { useGroupCall } from '../calls/useGroupCall';
 import { useChatMessages } from '../chat/useChatMessages';
+import { useStories } from '../chat/useStories';
 import { useConversationMeta } from '../chat/useConversationMeta';
 import { useReadReceipts } from '../chat/useReadReceipts';
 import { useFileTransfer } from '../chat/useFileTransfer';
@@ -44,6 +46,9 @@ export default function ChatHome() {
   const [safetyNumber, setSafetyNumber] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const [showSafetyVerify, setShowSafetyVerify] = useState(false);
+  const [showPollForm, setShowPollForm] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState('');
+  const [pollOptions, setPollOptions] = useState(['', '']);
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
 
@@ -67,10 +72,19 @@ export default function ChatHome() {
     [handleSocketPayload]
   );
 
+  const storyPeerId = active?.peer_id || peerIds[0] || null;
+  const { byUser: storiesByUser, loading: storiesLoading, postStory, removeStory } = useStories(
+    user?.id
+  );
+
   const {
     messages,
     reactionsByTarget,
+    pollMeta,
+    remainingById,
     sendMessage,
+    sendPoll,
+    votePoll,
     sendReaction,
     loading: messagesLoading,
   } = useChatMessages(activeId, Boolean(user), active?.peer_id, {
@@ -343,6 +357,15 @@ export default function ChatHome() {
           </div>
         </header>
 
+        <StoriesBar
+          byUser={storiesByUser}
+          userId={user?.id}
+          peerIds={peerIds}
+          loading={storiesLoading}
+          onPost={(text) => postStory(text, { peerId: storyPeerId })}
+          onDelete={removeStory}
+        />
+
         <UserLookup onStartChat={startChat} />
         <GroupPanel onGroupCreated={onGroupCreated} />
 
@@ -497,6 +520,15 @@ export default function ChatHome() {
                     onTranslate={onTranslateMessage}
                     downloadFile={downloadFile}
                     readAt={readByMessage[m.id]}
+                    poll={m.poll}
+                    pollTallies={m.poll_id ? pollMeta[m.poll_id]?.tallies : undefined}
+                    pollViewerVote={m.poll_id ? pollMeta[m.poll_id]?.viewerVote : null}
+                    onPollVote={
+                      m.poll_id
+                        ? (index) => votePoll(m.poll_id, index)
+                        : undefined
+                    }
+                    disappearingRemaining={remainingById[m.id]}
                   />
                 </div>
               ))}
@@ -511,6 +543,44 @@ export default function ChatHome() {
                 </span>
                 <button type="button" onClick={() => setReplyTo(null)}>
                   ✕
+                </button>
+              </div>
+            )}
+
+            {showPollForm && !isGroup && (
+              <div className={styles.replyBar}>
+                <input
+                  placeholder="Poll question"
+                  value={pollQuestion}
+                  onChange={(e) => setPollQuestion(e.target.value)}
+                />
+                {pollOptions.map((opt, idx) => (
+                  <input
+                    key={`poll-opt-${idx}`}
+                    placeholder={`Option ${idx + 1}`}
+                    value={opt}
+                    onChange={(e) => {
+                      const next = [...pollOptions];
+                      next[idx] = e.target.value;
+                      setPollOptions(next);
+                    }}
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const options = pollOptions.map((o) => o.trim()).filter(Boolean);
+                    if (!pollQuestion.trim() || options.length < 2) return;
+                    await sendPoll(pollQuestion, options);
+                    setPollQuestion('');
+                    setPollOptions(['', '']);
+                    setShowPollForm(false);
+                  }}
+                >
+                  Post poll
+                </button>
+                <button type="button" onClick={() => setShowPollForm(false)}>
+                  Cancel
                 </button>
               </div>
             )}
@@ -542,6 +612,7 @@ export default function ChatHome() {
               onVoiceToggle={() => (recording ? stopRecording() : startRecording())}
               uploading={uploading}
               onFileSelected={onFileSelected}
+              onCreatePoll={!isGroup && active?.peer_id ? () => setShowPollForm(true) : undefined}
             />
           </>
         )}

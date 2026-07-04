@@ -17,7 +17,9 @@ from routers.groups import router as groups_router
 from routers.health import router as health_router
 from routers.messages import router as messages_router
 from routers.panic import router as panic_router
+from routers.polls import router as polls_router
 from routers.prekeys import router as prekeys_router
+from routers.stories import router as stories_router
 from routers.presence import router as presence_router
 from routers.privacy import router as privacy_router
 from routers.push_router import router as push_router
@@ -41,6 +43,8 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(groups_router, prefix=prefix)
     app.include_router(conversations_router, prefix=prefix)
     app.include_router(messages_router, prefix=prefix)
+    app.include_router(polls_router, prefix=prefix)
+    app.include_router(stories_router, prefix=prefix)
     app.include_router(files_router, prefix=prefix)
     app.include_router(calls_router, prefix=prefix)
     app.include_router(sfu_router, prefix=prefix)
