@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -13,6 +13,7 @@ from core.ids import new_message_id
 from core.message_fanout import fanout_message
 from core.metadata_policy import public_message
 from core.retention_policy import default_expires_at
+from core.smart_policy import validate_disappearing_seconds
 from core.sealed_sender_policy import mark_sealed
 from core.signal_policy import (
     LEGACY_PLACEHOLDER_PROTOCOL,
@@ -30,6 +31,7 @@ class SendMessageBody(BaseModel):
     ciphertext: str = Field(min_length=1)
     protocol: str = Field(default=SIGNAL_PROTOCOL_V1)
     sealed: bool = False
+    disappearing_seconds: int | None = Field(default=None, ge=60, le=86_400)
 
 
 async def _require_participant(db, conversation_id: str, user_id: str) -> dict:
@@ -78,10 +80,19 @@ async def send_message(
     if not ok:
         raise HTTPException(status_code=400, detail=detail)
 
+    ttl_ok, ttl_detail = validate_disappearing_seconds(body.disappearing_seconds)
+    if not ttl_ok:
+        raise HTTPException(status_code=400, detail=ttl_detail)
+
     db = get_database()
     conv = await _require_participant(db, conversation_id, user_id)
 
     now = datetime.now(timezone.utc)
+    if body.disappearing_seconds:
+        expires_at = now + timedelta(seconds=body.disappearing_seconds)
+    else:
+        expires_at = default_expires_at()
+
     doc = mark_sealed(
         {
             "_id": new_message_id(),
@@ -90,7 +101,8 @@ async def send_message(
             "ciphertext": body.ciphertext,
             "protocol": protocol,
             "created_at": now,
-            "expires_at": default_expires_at(),
+            "expires_at": expires_at,
+            "disappearing_seconds": body.disappearing_seconds,
         },
         sealed=body.sealed or protocol == "signal_v1_sealed",
     )

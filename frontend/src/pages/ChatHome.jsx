@@ -1,13 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useCall } from '../chat/useCall';
 import { useChatMessages } from '../chat/useChatMessages';
 import { useFileTransfer } from '../chat/useFileTransfer';
+import { useTypingIndicator } from '../chat/useTypingIndicator';
+import { useVoiceMessage } from '../chat/useVoiceMessage';
 import { useAuth } from '../context/AuthContext';
+import { usePresenceMap } from '../hooks/usePresenceMap';
 import { api } from '../lib/api';
 import { fetchLanguages, translateText } from '../lib/translation';
+import { searchMessages } from '../search/messageIndex';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
+import { shouldAutoTranslate } from '../smart/languageDetect';
+import { useSmartReplies } from '../smart/useSmartReplies';
 import styles from './ChatHome.module.css';
+
+const DISAPPEAR_OPTIONS = [
+  { label: 'Off', value: 0 },
+  { label: '1m', value: 60 },
+  { label: '1h', value: 3600 },
+  { label: '24h', value: 86400 },
+];
 
 export default function ChatHome() {
   const { user, loading, logout } = useAuth();
@@ -16,26 +29,54 @@ export default function ChatHome() {
   const [peerId, setPeerId] = useState('');
   const [draft, setDraft] = useState('');
   const [listError, setListError] = useState(null);
-  const [translateTarget, setTranslateTarget] = useState('es');
+  const [translateTarget, setTranslateTarget] = useState('en');
+  const [userLang, setUserLang] = useState('en');
   const [languages, setLanguages] = useState(['en', 'es', 'fr', 'de']);
   const [translatedPreview, setTranslatedPreview] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [disappearingSeconds, setDisappearingSeconds] = useState(0);
+  const [inlineTranslations, setInlineTranslations] = useState({});
   const fileInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   const active = conversations.find((c) => c.id === activeId);
+  const peerIds = useMemo(() => conversations.map((c) => c.peer_id).filter(Boolean), [conversations]);
+  const presenceMap = usePresenceMap(peerIds);
+
+  const { peerTyping, onDraftChange, handleSocketPayload } = useTypingIndicator({
+    conversationId: activeId,
+    userId: user?.id,
+  });
+
+  const handleSocketEvent = useCallback(
+    (data) => {
+      handleSocketPayload(data);
+    },
+    [handleSocketPayload]
+  );
 
   const { messages, sendMessage, loading: messagesLoading } = useChatMessages(
     activeId,
     Boolean(user),
-    active?.peer_id
+    active?.peer_id,
+    { onSocketEvent: handleSocketEvent }
   );
 
   const { uploadFile, uploading, error: fileError } = useFileTransfer(activeId);
+  const { recording, startRecording, stopRecording } = useVoiceMessage(activeId);
+  const { suggestions, loading: smartLoading, refresh: refreshSmart, clear: clearSmart } = useSmartReplies();
+
   const { startCall, status: callStatus, cleanup: endCall } = useCall({
     conversationId: activeId,
     peerId: active?.peer_id,
     userId: user?.id,
     enabled: Boolean(user && active),
   });
+
+  const searchHits = useMemo(() => {
+    if (!activeId || !searchQuery.trim()) return [];
+    return searchMessages(activeId, searchQuery);
+  }, [activeId, searchQuery, messages]);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -58,8 +99,50 @@ export default function ChatHome() {
       fetchLanguages()
         .then(setLanguages)
         .catch(() => {});
+      api.get('/api/smart/config')
+        .then((cfg) => {
+          if (cfg?.ollama_url_hint) {
+            /* client uses REACT_APP_OLLAMA_URL; hint for settings UI later */
+          }
+        })
+        .catch(() => {});
     }
   }, [user, loadConversations]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    if (active && messages.length) {
+      refreshSmart({ messages, peerName: active.peer_id, userId: user?.id });
+    } else {
+      clearSmart();
+    }
+  }, [active, messages, user?.id, refreshSmart, clearSmart]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function autoTranslate() {
+      const pending = messages.filter(
+        (m) => m.sender_id !== user?.id && m.text && !inlineTranslations[m.id] && shouldAutoTranslate(m.text, userLang)
+      );
+      for (const m of pending.slice(-3)) {
+        try {
+          const translated = await translateText(m.text, { target: userLang });
+          if (!cancelled) {
+            setInlineTranslations((prev) => ({ ...prev, [m.id]: translated }));
+          }
+        } catch {
+          /* offline */
+        }
+      }
+    }
+    if (user && messages.length) autoTranslate();
+    return () => {
+      cancelled = true;
+    };
+  }, [messages, user, userLang, inlineTranslations]);
 
   if (!loading && !user) return <Navigate to="/login" replace />;
   if (loading) return <div className={styles.page}>Loading…</div>;
@@ -86,8 +169,11 @@ export default function ChatHome() {
     if (!draft.trim()) return;
     const text = draft;
     setDraft('');
+    onDraftChange('');
     try {
-      await sendMessage(text);
+      await sendMessage(text, {
+        disappearingSeconds: disappearingSeconds || undefined,
+      });
     } catch (err) {
       setDraft(text);
       setListError(err.message);
@@ -108,10 +194,13 @@ export default function ChatHome() {
     const file = e.target.files?.[0];
     if (!file) return;
     const uploaded = await uploadFile(file);
-    if (uploaded) {
-      setListError(null);
-    }
+    if (uploaded) setListError(null);
     e.target.value = '';
+  }
+
+  function onDraftInput(value) {
+    setDraft(value);
+    onDraftChange(value);
   }
 
   return (
@@ -145,9 +234,20 @@ export default function ChatHome() {
               <button
                 type="button"
                 className={c.id === activeId ? styles.active : ''}
-                onClick={() => setActiveId(c.id)}
+                onClick={() => {
+                  setActiveId(c.id);
+                  setSearchQuery('');
+                  setInlineTranslations({});
+                }}
               >
-                {c.peer_id || c.id}
+                <span className={styles.convRow}>
+                  <span>{c.peer_id || c.id}</span>
+                  {presenceMap[c.peer_id] && (
+                    <span className={styles.presenceDot} title={presenceMap[c.peer_id]}>
+                      {presenceMap[c.peer_id] === 'Online' ? '●' : ''}
+                    </span>
+                  )}
+                </span>
               </button>
             </li>
           ))}
@@ -163,9 +263,15 @@ export default function ChatHome() {
         ) : (
           <>
             <header className={styles.threadHeader}>
-              <span>
-                Chat with <code>{active.peer_id}</code>
-              </span>
+              <div className={styles.threadTitle}>
+                <span>
+                  Chat with <code>{active.peer_id}</code>
+                </span>
+                {presenceMap[active.peer_id] && (
+                  <span className={styles.presenceLabel}>{presenceMap[active.peer_id]}</span>
+                )}
+                {peerTyping && <span className={styles.typing}>typing…</span>}
+              </div>
               <div className={styles.callBar}>
                 <button type="button" onClick={() => startCall(false)}>
                   Call
@@ -180,6 +286,22 @@ export default function ChatHome() {
                 )}
               </div>
             </header>
+
+            <div className={styles.searchBar}>
+              <input
+                placeholder="Search messages (local, encrypted index)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchHits.length > 0 && (
+                <ul className={styles.searchHits}>
+                  {searchHits.map((hit) => (
+                    <li key={hit.id}>{hit.text}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
             <div className={styles.messages}>
               {messagesLoading && <p className={styles.muted}>Loading messages…</p>}
               {messages.map((m) => (
@@ -188,15 +310,63 @@ export default function ChatHome() {
                   className={m.sender_id === user.id ? styles.outgoing : styles.incoming}
                 >
                   <span>{m.text}</span>
+                  {inlineTranslations[m.id] && (
+                    <p className={styles.translation}>{inlineTranslations[m.id]}</p>
+                  )}
+                  {m.disappearing_seconds && (
+                    <span className={styles.timer}>⏱ {m.disappearing_seconds}s</span>
+                  )}
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
+
+            {suggestions.length > 0 && (
+              <div className={styles.smartBar}>
+                {smartLoading && <span className={styles.muted}>Smart replies…</span>}
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={styles.smartChip}
+                    onClick={() => onDraftInput(s)}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <form className={styles.composer} onSubmit={onSend}>
               <input
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                onChange={(e) => onDraftInput(e.target.value)}
                 placeholder="Message (Signal E2EE)"
               />
+              <select
+                value={disappearingSeconds}
+                onChange={(e) => setDisappearingSeconds(Number(e.target.value))}
+                aria-label="Disappearing timer"
+                title="Disappearing messages"
+              >
+                {DISAPPEAR_OPTIONS.map((o) => (
+                  <option key={o.label} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={userLang}
+                onChange={(e) => setUserLang(e.target.value)}
+                aria-label="Your language"
+                title="Auto-translate to"
+              >
+                {languages.map((lang) => (
+                  <option key={`ul-${lang}`} value={lang}>
+                    {lang}
+                  </option>
+                ))}
+              </select>
               <select
                 value={translateTarget}
                 onChange={(e) => setTranslateTarget(e.target.value)}
@@ -211,15 +381,17 @@ export default function ChatHome() {
               <button type="button" onClick={onTranslateDraft}>
                 Translate
               </button>
-              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? 'Uploading…' : 'File'}
+              <button
+                type="button"
+                onClick={() => (recording ? stopRecording() : startRecording())}
+                className={recording ? styles.recording : ''}
+              >
+                {recording ? 'Stop' : 'Voice'}
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                hidden
-                onChange={onFileSelected}
-              />
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                {uploading ? '…' : 'File'}
+              </button>
+              <input ref={fileInputRef} type="file" hidden onChange={onFileSelected} />
               <button type="submit">Send</button>
             </form>
             {translatedPreview && (

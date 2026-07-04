@@ -182,6 +182,105 @@
   font-size: 0.875rem;
 }
 
+.convRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.presenceDot {
+  color: #00a884;
+  font-size: 0.65rem;
+}
+
+.presenceLabel {
+  font-size: 0.75rem;
+  color: #00a884;
+  margin-left: 0.5rem;
+}
+
+.typing {
+  font-size: 0.75rem;
+  color: #8696a0;
+  font-style: italic;
+  margin-left: 0.5rem;
+}
+
+.threadTitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.searchBar {
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid #2a3942;
+}
+
+.searchBar input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #2a3942;
+  background: #111b21;
+  color: #e9edef;
+}
+
+.searchHits {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  font-size: 0.8rem;
+  color: #8696a0;
+}
+
+.searchHits li {
+  padding: 0.25rem 0;
+}
+
+.smartBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-top: 1px solid #2a3942;
+}
+
+.smartChip {
+  background: #202c33;
+  border: 1px solid #2a3942;
+  color: #e9edef;
+  border-radius: 16px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.smartChip:hover {
+  background: #2a3942;
+}
+
+.translation {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #8696a0;
+  font-style: italic;
+}
+
+.timer {
+  display: block;
+  font-size: 0.65rem;
+  color: #8696a0;
+  margin-top: 0.25rem;
+}
+
+.recording {
+  background: #ea4335 !important;
+  color: #fff !important;
+}
+
 .page {
   padding: 2rem;
 }

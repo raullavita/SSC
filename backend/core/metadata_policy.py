@@ -70,16 +70,20 @@ def public_message(doc: dict[str, Any], viewer_id: str | None = None) -> dict[st
     created = doc.get("created_at")
     if hasattr(created, "isoformat"):
         created = created.isoformat()
-    return scrub_payload(
-        {
-            "id": doc["_id"],
-            "conversation_id": doc["conversation_id"],
-            "sender_id": doc["sender_id"],
-            "ciphertext": doc["ciphertext"],
-            "protocol": doc.get("protocol", "signal_v1"),
-            "created_at": created,
-        }
-    )
+    out = {
+        "id": doc["_id"],
+        "conversation_id": doc["conversation_id"],
+        "sender_id": doc["sender_id"],
+        "ciphertext": doc["ciphertext"],
+        "protocol": doc.get("protocol", "signal_v1"),
+        "created_at": created,
+    }
+    if doc.get("disappearing_seconds"):
+        out["disappearing_seconds"] = int(doc["disappearing_seconds"])
+        exp = doc.get("expires_at")
+        if hasattr(exp, "isoformat"):
+            out["expires_at"] = exp.isoformat()
+    return scrub_payload(out)
 
 
 def engine4_metadata_policy_ready() -> bool:

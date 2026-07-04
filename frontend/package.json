@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@signalapp/libsignal-client": "0.96.4",
+    "franc-min": "^6.2.0",
     "mediasoup-client": "3.6.98",
+    "minisearch": "^7.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
@@ -38,7 +40,7 @@
   },
   "jest": {
     "transformIgnorePatterns": [
-      "node_modules/(?!(react-router|react-router-dom)/)"
+      "node_modules/(?!(react-router|react-router-dom|franc-min|trigram-utils|n-gram|collapse-white-space|minisearch)/)"
     ]
   }
 }

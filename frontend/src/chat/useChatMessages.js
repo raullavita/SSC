@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { indexMessage, indexMessages } from '../search/messageIndex';
 import { decryptMessage, encryptMessage } from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
 
-export function useChatMessages(conversationId, enabled, peerId) {
+export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent } = {}) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,12 +22,13 @@ export function useChatMessages(conversationId, enabled, peerId) {
         }))
       );
       setMessages(rows);
+      indexMessages(conversationId, rows);
     } catch (e) {
       setError(e.message || 'Failed to load messages');
     } finally {
       setLoading(false);
     }
-  }, [conversationId, enabled]);
+  }, [conversationId, enabled, peerId]);
 
   useEffect(() => {
     reload();
@@ -36,30 +38,35 @@ export function useChatMessages(conversationId, enabled, peerId) {
     enabled: Boolean(conversationId && enabled),
     topic: conversationId ? `conversation:${conversationId}` : null,
     onEvent: async (data) => {
-      if (data?.type === 'message' && data.message) {
-        const m = data.message;
+      onSocketEvent?.(data);
+      const payload = data?.payload || data;
+      if (payload?.type === 'message' && payload.message) {
+        const m = payload.message;
         const text = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+        const row = { ...m, text };
         setMessages((prev) => {
           if (prev.some((x) => x.id === m.id)) return prev;
-          return [...prev, { ...m, text }];
+          return [...prev, row];
         });
+        indexMessage(conversationId, row);
       }
     },
   });
 
   const sendMessage = useCallback(
-    async (text) => {
+    async (text, { disappearingSeconds } = {}) => {
       if (!conversationId || !text.trim()) return;
       const { ciphertext, protocol } = await encryptMessage(text.trim(), { peerId });
-      const data = await api.post(`/api/conversations/${conversationId}/messages`, {
-        ciphertext,
-        protocol,
-      });
+      const body = { ciphertext, protocol };
+      if (disappearingSeconds) body.disappearing_seconds = disappearingSeconds;
+      const data = await api.post(`/api/conversations/${conversationId}/messages`, body);
       const m = data.message;
+      const row = { ...m, text: text.trim() };
       setMessages((prev) => {
         if (prev.some((x) => x.id === m.id)) return prev;
-        return [...prev, { ...m, text: text.trim() }];
+        return [...prev, row];
       });
+      indexMessage(conversationId, row);
     },
     [conversationId, peerId]
   );
