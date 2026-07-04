@@ -35,6 +35,9 @@ latest.yml
 .DS_Store
 Thumbs.db
 
+# Firebase local cache
+.firebase/
+
 # Logs & temp
 *.log
 npm-debug.log*
