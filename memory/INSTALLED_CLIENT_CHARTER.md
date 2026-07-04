@@ -28,6 +28,7 @@ All other `/api/*` routes return **403** without a valid header.
 
 - `frontend/src/lib/installedClient.js` — builds header from build-time env vars
 - `frontend/src/lib/api.js` — attaches header on every API request
+- `REACT_APP_SSC_REQUIRE_LIBCRYPTO=true` — production builds hard-require `window.sscCrypto` (Step 4)
 
 ## Gate
 

@@ -1,34 +1,49 @@
 import styles from './InstalledClientGate.module.css';
-
-const ALLOWED = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
+import { isLibsignalRuntimeAvailable, requiresProductionCrypto } from '../lib/cryptoPolicy';
 
 /**
  * Blocks browser-tab chat in production client builds.
- * Dev (`yarn start`) and landing-only site skip this gate.
+ * Step 4: production crypto builds also require libsignal runtime (Electron/Android bridge).
  */
-function isInstalledRuntime(platform) {
+function isInstalledRuntime() {
   if (typeof window !== 'undefined' && window.__SSC_ANDROID_CLIENT) return true;
-  if (typeof window !== 'undefined' && window.sscCrypto) return true;
-  return ALLOWED.has(platform);
+  if (isLibsignalRuntimeAvailable()) return true;
+  if (requiresProductionCrypto()) return false;
+  const platform = process.env.REACT_APP_SSC_PLATFORM || 'electron';
+  const allowed = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
+  return allowed.has(platform);
 }
 
 export default function InstalledClientGate({ children }) {
-  const platform = process.env.REACT_APP_SSC_PLATFORM || 'electron';
   const landingOnly = process.env.REACT_APP_SSC_LANDING_ONLY === 'true';
 
   if (
     landingOnly ||
     process.env.NODE_ENV === 'development' ||
-    isInstalledRuntime(platform)
+    isInstalledRuntime()
   ) {
     return children;
   }
 
+  const needsLibsignal = requiresProductionCrypto();
+
   return (
     <div className={styles.screen}>
       <h1>SSC</h1>
-      <p>Super Secure Chat runs in the installed Android or Windows app — not in a browser tab.</p>
-      <p className={styles.muted}>Download from https://www.supersecurechat.com</p>
+      {needsLibsignal ? (
+        <>
+          <p>Secure messaging requires the installed SSC app with libsignal enabled.</p>
+          <p className={styles.muted}>
+            Open the Windows Electron build or Android app — browser tabs cannot access local
+            encryption keys.
+          </p>
+        </>
+      ) : (
+        <>
+          <p>Super Secure Chat runs in the installed Android or Windows app — not in a browser tab.</p>
+          <p className={styles.muted}>Download from https://www.supersecurechat.com</p>
+        </>
+      )}
     </div>
   );
 }
