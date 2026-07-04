@@ -21,6 +21,15 @@ if (Test-Path $CredsFile) {
         if ($name -and $value) { Set-Item -Path "env:$name" -Value $value }
     }
 }
+if ($env:ATLAS_CLIENT_ID -and $env:ATLAS_CLIENT_SECRET) {
+    $env:MONGODB_ATLAS_CLIENT_ID = $env:ATLAS_CLIENT_ID
+    $env:MONGODB_ATLAS_CLIENT_SECRET = $env:ATLAS_CLIENT_SECRET
+}
+if ($env:ATLAS_PUBLIC_KEY -and $env:ATLAS_PRIVATE_KEY) {
+    $env:MONGODB_ATLAS_PUBLIC_API_KEY = $env:ATLAS_PUBLIC_KEY
+    $env:MONGODB_ATLAS_PRIVATE_API_KEY = $env:ATLAS_PRIVATE_KEY
+}
+if ($env:ATLAS_GROUP_ID) { $env:MONGODB_ATLAS_PROJECT_ID = $env:ATLAS_GROUP_ID }
 
 $projectFlag = @()
 if ($env:ATLAS_GROUP_ID) {
