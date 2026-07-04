@@ -1,25 +1,28 @@
-"""JWT helpers for Engine 3 auth (session cookies ship in Engine 5)."""
+"""JWT helpers — TTL from session_ttl module (Engine 5)."""
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+import secrets
+from datetime import datetime, timezone
 from typing import Any
 
 import jwt
 
 from config import get_settings
+from core.session_policy import SESSION_JWT_TYPE
+from core.session_ttl import session_expires_at
 
-TOKEN_TTL_HOURS = 24 * 7
 
-
-def issue_access_token(user_id: str) -> str:
+def issue_access_token(user_id: str, jti: str | None = None) -> str:
     settings = get_settings()
     now = datetime.now(timezone.utc)
+    session_jti = jti or secrets.token_hex(16)
     payload = {
         "sub": user_id,
+        "jti": session_jti,
         "iat": now,
-        "exp": now + timedelta(hours=TOKEN_TTL_HOURS),
-        "type": "access",
+        "exp": session_expires_at(now),
+        "type": SESSION_JWT_TYPE,
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
 

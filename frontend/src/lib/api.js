@@ -1,9 +1,8 @@
 /**
- * SSC API client — installed-client header + bearer token (Engine 3).
+ * SSC API client — installed-client header + httpOnly session cookies (Engine 5).
  */
 
 import { getInstalledClientHeaders } from './installedClient';
-import { getAccessToken } from './sessionStore';
 
 const API_BASE = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
 
@@ -16,10 +15,7 @@ function buildUrl(path) {
 }
 
 function authHeaders(extra = {}) {
-  const headers = getInstalledClientHeaders(extra);
-  const token = getAccessToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
+  return getInstalledClientHeaders(extra);
 }
 
 export async function apiFetch(path, options = {}) {
@@ -66,7 +62,6 @@ export const api = {
 
 export function wsUrl() {
   const base = API_BASE || `${window.location.protocol}//${window.location.host}`;
-  const token = getAccessToken();
   const wsBase = base.replace(/^http/, 'ws');
-  return `${wsBase}/api/ws?token=${encodeURIComponent(token)}`;
+  return `${wsBase}/api/ws`;
 }

@@ -1,12 +1,18 @@
-"""Panic wipe service tests — Engine 1."""
+"""Panic wipe service tests — Engine 1 + Engine 5 session auth."""
 
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 
 from core.panic_wipe import panic_wipe_user
+from core.session_policy import SESSION_COOKIE_NAME
+from server import create_app
+from tests.fake_mongo import FakeDatabase
+
+CLIENT = {"X-SSC-Client": "electron/0.1.0/1"}
 
 
 def _mock_collection(delete_count: int = 1):
@@ -79,21 +85,46 @@ async def test_panic_wipe_clears_conversation_messages():
 
 
 @pytest.mark.asyncio
-async def test_panic_wipe_api_route(client, monkeypatch):
+async def test_panic_wipe_api_route_requires_session(monkeypatch):
+    fake_db = FakeDatabase()
+    async def _no_redis():
+        return None
+
+    monkeypatch.setattr("db.get_database", lambda: fake_db)
+    monkeypatch.setattr("db.get_redis", _no_redis)
+    monkeypatch.setattr("routers.auth.get_database", lambda: fake_db)
+    monkeypatch.setattr("routers.panic.get_database", lambda: fake_db)
+    monkeypatch.setattr("deps.get_database", lambda: fake_db)
+    monkeypatch.setattr("core.token_revocation.get_database", lambda: fake_db)
+    monkeypatch.setattr("core.token_revocation.get_redis", _no_redis)
+
     async def fake_report(db, user_id):
         return {"user_id": user_id, "deleted": {"users": 1}, "total": 1}
 
     monkeypatch.setattr("routers.panic.panic_wipe_user_and_report", fake_report)
+    monkeypatch.setattr("routers.panic.revoke_all_user_sessions", AsyncMock(return_value=1))
 
-    response = await client.post("/api/panic/wipe")
-    assert response.status_code == 401
+    app = create_app()
+    app.state.enforce_installed_client = False
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/api/panic/wipe")
+        assert response.status_code == 401
 
-    response = await client.post(
-        "/api/panic/wipe",
-        headers={"X-SSC-User-Id": "test-user-1"},
-    )
-    assert response.status_code == 200
-    body = response.json()
-    assert body["ok"] is True
-    assert body["user_id"] == "test-user-1"
-    assert body["total"] == 1
+        reg = await client.post(
+            "/api/auth/register",
+            json={
+                "email": "panic-route@example.com",
+                "password": "password123",
+                "display_name": "Panic Route",
+            },
+            headers=CLIENT,
+        )
+        assert reg.status_code == 200
+        assert SESSION_COOKIE_NAME in reg.cookies
+
+        response = await client.post("/api/panic/wipe", headers=CLIENT)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["ok"] is True
+        assert body["total"] == 1

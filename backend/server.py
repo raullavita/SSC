@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
 from core.lifespan import bootstrap_database
+from core.session_production import validate_production_redis
 from core.ws_hub import ws_hub
 from db import close_connections, get_database
 from middleware import InstalledClientMiddleware, SecurityHeadersMiddleware
@@ -17,6 +18,8 @@ from routers import include_routers
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings = get_settings()
+    await validate_production_redis(settings)
     db = get_database()
     try:
         await bootstrap_database(db)

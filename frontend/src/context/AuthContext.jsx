@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
-import { clearAccessToken, getAccessToken, setAccessToken } from '../lib/sessionStore';
 
 const AuthContext = createContext(null);
 
@@ -10,19 +9,12 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    const token = getAccessToken();
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return null;
-    }
     try {
       const me = await api.get('/api/auth/me');
       setUser(me);
       startPresenceHeartbeat();
       return me;
     } catch {
-      clearAccessToken();
       setUser(null);
       stopPresenceHeartbeat();
       return null;
@@ -37,7 +29,6 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const data = await api.post('/api/auth/login', { email, password });
-    setAccessToken(data.token);
     setUser(data.user);
     startPresenceHeartbeat();
     return data.user;
@@ -49,7 +40,6 @@ export function AuthProvider({ children }) {
       password,
       display_name: displayName,
     });
-    setAccessToken(data.token);
     setUser(data.user);
     startPresenceHeartbeat();
     return data.user;
@@ -61,7 +51,6 @@ export function AuthProvider({ children }) {
     } catch {
       /* ignore */
     }
-    clearAccessToken();
     setUser(null);
     stopPresenceHeartbeat();
   }, []);
