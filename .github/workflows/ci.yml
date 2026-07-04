@@ -45,7 +45,6 @@ jobs:
     if: github.event_name == 'push'
     permissions:
       contents: read
-      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -74,10 +73,16 @@ jobs:
           SSC_ENFORCE_INSTALLED_CLIENT: "false"
           SSC_SFU_WS_URL: wss://sfu.supersecurechat.com
       - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.12.0
-        with:
-          target: "http://127.0.0.1:8090/api/health"
-          cmd_options: "-a -d -T 15"
-          allow_issue_writing: false
-          fail_action: true
-          rules_file_name: ".zap/rules.tsv"
+        run: |
+          docker run --rm --network=host \
+            -v "${{ github.workspace }}:/zap/wrk/:rw" \
+            -t ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py -t http://127.0.0.1:8090/api/health \
+            -J zap-report.json -w zap-report.md -r zap-report.html \
+            -a -d -T 15 -c .zap/rules.tsv
+          code=$?
+          echo "ZAP exit code: $code"
+          if [ "$code" -eq 1 ] || [ "$code" -eq 3 ]; then
+            echo "ZAP baseline failed — FAIL-level alerts present"
+            exit 1
+          fi
