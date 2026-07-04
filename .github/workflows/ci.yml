@@ -43,6 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backend, frontend]
     if: github.event_name == 'push'
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -75,3 +77,6 @@ jobs:
         with:
           target: "http://127.0.0.1:8090/api/health"
           cmd_options: "-a -d -T 15"
+          allow_issue_writing: false
+          fail_action: true
+          rules_file_name: ".zap/rules.tsv"
