@@ -13,6 +13,7 @@ __pycache__/
 !.env.example
 atlas-credentials.env
 cloud_run.env
+backend/cloudrun-env.yaml
 *-service-account*.json
 ssc-firebase-key.json
 google-services.json
