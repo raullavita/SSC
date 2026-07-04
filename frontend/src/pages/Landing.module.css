@@ -84,9 +84,55 @@
   margin: 0;
 }
 
+.lead {
+  margin: 0 0 1.25rem;
+  color: #aebac1;
+  line-height: 1.5;
+}
+
+.platforms {
+  display: grid;
+  gap: 1rem;
+}
+
+.platform {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid #2a3942;
+  border-radius: 8px;
+  background: #0b141a;
+}
+
+.platform strong {
+  color: #e9edef;
+  font-size: 1rem;
+}
+
+.featureList {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #aebac1;
+  line-height: 1.6;
+}
+
+.featureList li + li {
+  margin-top: 0.5rem;
+}
+
 .footer {
   margin-top: 2rem;
   text-align: center;
   color: #667781;
   font-size: 0.875rem;
+}
+
+.footer a {
+  color: #00a884;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
 }
