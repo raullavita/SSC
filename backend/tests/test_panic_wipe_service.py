@@ -21,6 +21,7 @@ def _mock_collection(delete_count: int = 1):
     result.deleted_count = delete_count
     coll.delete_many = AsyncMock(return_value=result)
     coll.find = MagicMock(return_value=_async_iter([]))
+    coll.update_many = AsyncMock(return_value=MagicMock(modified_count=0))
     return coll
 
 
@@ -48,6 +49,8 @@ async def test_panic_wipe_deletes_user_row():
             "devices": devices,
             "conversations": conversations,
             "messages": messages,
+            "call_sessions": _mock_collection(0),
+            "groups": _mock_collection(0),
         }.get(name, default_coll)
 
     db.__getitem__.side_effect = getitem
@@ -56,17 +59,23 @@ async def test_panic_wipe_deletes_user_row():
     assert counts["users"] == 1
     assert counts["devices"] == 2
     users.delete_many.assert_awaited()
+    messages.delete_many.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_panic_wipe_clears_conversation_messages():
+async def test_panic_wipe_detaches_from_conversations_not_bulk_messages():
     db = MagicMock()
     conv_id = "conv-1"
-    conversations = _mock_collection(1)
-    conversations.find = MagicMock(
-        return_value=_async_iter([{"_id": conv_id}])
-    )
+    conversations = _mock_collection(0)
+    conversations.find = MagicMock(return_value=_async_iter([]))
+    conversations.update_many = AsyncMock(return_value=MagicMock(modified_count=1))
+    conversations.delete_many = AsyncMock(return_value=MagicMock(deleted_count=0))
     messages = _mock_collection(5)
+    groups = _mock_collection(0)
+    groups.find = MagicMock(return_value=_async_iter([]))
+    call_sessions = _mock_collection(0)
+    call_sessions.update_many = AsyncMock(return_value=MagicMock(modified_count=0))
+    call_sessions.delete_many = AsyncMock(return_value=MagicMock(deleted_count=0))
 
     default_coll = _mock_collection(0)
 
@@ -75,13 +84,21 @@ async def test_panic_wipe_clears_conversation_messages():
             return conversations
         if name == "messages":
             return messages
+        if name == "groups":
+            return groups
+        if name == "call_sessions":
+            return call_sessions
         return default_coll
 
     db.__getitem__.side_effect = getitem
 
     counts = await panic_wipe_user(db, "user-bob")
-    assert counts["messages"] == 5
-    messages.delete_many.assert_awaited_with({"conversation_id": {"$in": [conv_id]}})
+    assert counts["conversations_detached"] == 1
+    conversations.update_many.assert_awaited_with(
+        {"participants": "user-bob"},
+        {"$pull": {"participants": "user-bob"}},
+    )
+    messages.delete_many.assert_not_awaited()
 
 
 @pytest.mark.asyncio

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 RetentionMode = Literal["until_panic", "ttl_expires_at", "session_ttl"]
+PanicScope = Literal["user_delete", "shared_detach", "skip_shared"]
 
 DEFAULT_TTL_HOURS = 24
 SESSION_TTL_HOURS = 24 * 7
@@ -21,6 +22,7 @@ class CollectionPolicy:
     ttl_field: str | None = None
     panic_field: str | None = None
     panic_match: Literal["eq", "contains", "object_id"] = "eq"
+    panic_scope: PanicScope = "user_delete"
 
     @property
     def has_ttl_index(self) -> bool:
@@ -68,6 +70,7 @@ COLLECTIONS: dict[str, CollectionPolicy] = {
         mode="ttl_expires_at",
         ttl_field="expires_at",
         panic_field="sender_id",
+        panic_scope="skip_shared",
     ),
     "files": CollectionPolicy(
         name="files",
@@ -83,6 +86,7 @@ COLLECTIONS: dict[str, CollectionPolicy] = {
         ttl_field="expires_at",
         panic_field="participants",
         panic_match="contains",
+        panic_scope="shared_detach",
     ),
     "conversation_meta": CollectionPolicy(
         name="conversation_meta",
@@ -101,6 +105,7 @@ COLLECTIONS: dict[str, CollectionPolicy] = {
         purpose="Group chat metadata",
         mode="until_panic",
         panic_field="owner_id",
+        panic_scope="shared_detach",
     ),
     "group_members": CollectionPolicy(
         name="group_members",
@@ -147,6 +152,7 @@ COLLECTIONS: dict[str, CollectionPolicy] = {
         mode="ttl_expires_at",
         ttl_field="expires_at",
         panic_field="creator_id",
+        panic_scope="skip_shared",
     ),
     "message_poll_votes": CollectionPolicy(
         name="message_poll_votes",
@@ -176,6 +182,7 @@ COLLECTIONS: dict[str, CollectionPolicy] = {
         ttl_field="expires_at",
         panic_field="participants",
         panic_match="contains",
+        panic_scope="shared_detach",
     ),
     "friend_requests": CollectionPolicy(
         name="friend_requests",

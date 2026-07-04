@@ -1,0 +1,118 @@
+# SSC Product Roadmap
+
+**Version:** 1.0  
+**Effective:** 2026-07-04  
+**Principle:** One step at a time — each step is 100% complete before the next begins.
+
+SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **better on privacy, security, and clarity**. This roadmap prioritizes user-owned data, minimal server metadata, and honest E2EE — not feature parity for its own sake.
+
+## Open PRs / overlap check
+
+| PR # | Status | Topic | Roadmap overlap |
+|------|--------|-------|-----------------|
+| #7–#14 | Merged/closed | CI, ZAP, critical path | None — infra only |
+
+**No open PRs** conflict with roadmap steps below. Future work is tracked as GitHub issues (see repo Issues).
+
+---
+
+## Step 1 — Panic wipe scope + conversations bug ✅ (this sprint)
+
+**Goal:** Panic wipe clears **this user + this device** only. Other participants keep their chats.
+
+| Area | Behavior |
+|------|----------|
+| Server | Delete account, devices, sessions, prekeys, push tokens, per-user meta |
+| Server (shared) | Detach user from conversations/groups/calls — **do not** bulk-delete messages |
+| Client | Clear `ssc_*` localStorage, sessionStorage, in-memory search index, Electron `ssc-signal/` store |
+| Bugfix | `conversations.py` missing `_require_participant` on mark-read route |
+
+**OSS:** N/A (in-house policy fix).
+
+---
+
+## Step 2 — Real libsignal group sender keys (issue #15)
+
+**Goal:** Replace XOR placeholder in `frontend/src/signal/groupSenderKeys.js` with real sender-key distribution.
+
+| OSS | Use |
+|-----|-----|
+| [@signalapp/libsignal-client](https://www.npmjs.com/package/@signalapp/libsignal-client) | Already used in Electron; extend for group sender keys |
+| [signalapp/libsignal](https://github.com/signalapp/libsignal) | Reference implementation (Rust core) |
+| [signalapp/libsignal-protocol-javascript](https://github.com/signalapp/libsignal-protocol-javascript) | Legacy JS reference (deprecated but useful for API shape) |
+
+**Deliverables:** `GroupSenderKeyStore`, server relay for sender-key distribution messages, remove XOR path in production.
+
+---
+
+## Step 3 — TURN for calls (issue #17)
+
+**Goal:** Reliable group/1:1 calls behind NAT; SFU for large groups.
+
+| OSS | Use |
+|-----|-----|
+| [coturn/coturn](https://github.com/coturn/coturn) | TURN/STUN server |
+| [versatica/mediasoup](https://github.com/versatica/mediasoup) | Already scaffolded in `sfu-server/` |
+
+**Deliverables:** TURN credentials API, `iceServers` in `useCall` / `useGroupCall`, deploy coturn alongside SFU.
+
+---
+
+## Step 4 — Strip dev crypto from production builds (issue #16)
+
+**Goal:** No `buildDevSignalEnvelope` / placeholder protocol in production clients.
+
+| OSS | Use |
+|-----|-----|
+| `@signalapp/libsignal-client` | Required in Electron + Android native bridge |
+
+**Deliverables:** Build-time flag, `InstalledClientGate` hard-fail without libsignal, remove `LEGACY_PLACEHOLDER_PROTOCOL` from prod API acceptance.
+
+---
+
+## Step 5 — Android libsignal native bridge (issue #18)
+
+**Goal:** Wire Android WebView to real libsignal-android, not dev envelope.
+
+| OSS | Use |
+|-----|-----|
+| [signalapp/libsignal](https://github.com/signalapp/libsignal) | `libsignal-android` artifacts |
+| [signalapp/Signal-Android](https://github.com/signalapp/Signal-Android) | Integration patterns |
+
+**Deliverables:** JNI bridge, `X-SSC-Client` + crypto IPC, update `android/README.md`.
+
+---
+
+## Step 6 — Metadata hardening pass (issue #19)
+
+**Goal:** Audit every API response against `METADATA_MINIMIZATION_CHARTER.md`.
+
+**Deliverables:** Redact remaining leaks, sealed-sender default-on review, push payload audit.
+
+---
+
+## Step 7 — Stories / polls / disappearing messages (issue #21)
+
+**Goal:** Implement charter schemas already in retention policy.
+
+| OSS | Use |
+|-----|-----|
+| Existing SSC retention + smart policy | `backend/core/smart_policy.py` |
+
+**Deliverables:** API routes, client UI, TTL alignment.
+
+---
+
+## Step 8 — Release v0.2.0 (issue #20)
+
+**Goal:** Signed Electron + Android APK, changelog, production deploy checklist.
+
+See `memory/PLATFORM_RELEASE_CHARTER.md`.
+
+---
+
+## Community contribution
+
+Steps 2–8 have GitHub issues (#15–#21) with `help wanted` label. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
+
+*Machine-readable gates: `backend/scripts/run_engine*_gate.py`*

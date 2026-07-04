@@ -18,7 +18,15 @@ Document every server-side MongoDB collection, its purpose, and maximum lifetime
 
 ## Panic wipe
 
-`POST /api/panic/wipe` immediately deletes **all** rows for the authenticated user across every collection below. Panic wipe is stronger than TTL: nothing survives.
+`POST /api/panic/wipe` deletes **user-scoped** server data for the authenticated account and revokes all sessions. It does **not** bulk-delete shared chat relay — other participants keep their messages until TTL expiry.
+
+| Scope | Collections / behavior |
+|-------|------------------------|
+| **User delete** | `users`, `devices`, `prekeys`, `sessions`, `push_tokens`, per-user meta, etc. |
+| **Shared detach** | `conversations`, `groups`, `call_sessions` — remove user from participants/members; dissolve only if empty |
+| **Skip (TTL only)** | `messages`, `polls` — shared ciphertext; wiping one user must not erase others' chats |
+
+Client panic wipe also clears local `ssc_*` storage, search indexes, and Electron `ssc-signal/` crypto files on the device.
 
 ## Collections
 
@@ -28,9 +36,9 @@ Document every server-side MongoDB collection, its purpose, and maximum lifetime
 | `devices` | Linked device registry | Until panic wipe |
 | `device_link_tokens` | Short-lived multi-device link tokens | 10m `expires_at` TTL |
 | `prekeys` | Public prekey bundles (no private keys) | Until panic wipe |
-| `messages` | Encrypted ciphertext relay | 24h `expires_at` + panic wipe |
+| `messages` | Encrypted ciphertext relay | 24h `expires_at` (panic wipe skips — shared relay) |
 | `files` | Encrypted attachment metadata | 24h `expires_at` + panic wipe |
-| `conversations` | Thread metadata and participants | 24h `expires_at` + panic wipe |
+| `conversations` | Thread metadata and participants | 24h `expires_at` + panic detach (not bulk delete) |
 | `conversation_meta` | Pin/archive state per user | Until panic wipe |
 | `conversation_mutes` | Per-conversation mute flags | Until panic wipe |
 | `groups` | Group chat metadata | Until panic wipe |
@@ -40,7 +48,7 @@ Document every server-side MongoDB collection, its purpose, and maximum lifetime
 | `refresh_tokens` | Rotating refresh tokens | Session TTL + panic wipe |
 | `push_tokens` | FCM device push tokens | Until panic wipe |
 | `stories` | Encrypted status/stories relay | 24h `expires_at` + panic wipe |
-| `polls` | Poll message definitions | 24h `expires_at` + panic wipe |
+| `polls` | Poll message definitions | 24h `expires_at` (panic wipe skips — shared relay) |
 | `message_poll_votes` | Individual poll votes | 24h `expires_at` + panic wipe |
 | `message_reads` | Read receipt pointers | 24h `expires_at` + panic wipe |
 | `message_reactions` | Message reaction rows | 24h `expires_at` + panic wipe |

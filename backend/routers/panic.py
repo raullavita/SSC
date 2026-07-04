@@ -14,7 +14,7 @@ router = APIRouter(prefix="/panic", tags=["panic"])
 
 @router.post("/wipe")
 async def panic_wipe(user_id: str = Depends(get_current_user_id)) -> dict:
-    """Delete all server-side data for the authenticated user and revoke sessions."""
+    """Delete user-scoped server data, detach from shared chats, revoke sessions."""
     await revoke_all_user_sessions(user_id)
     db = get_database()
     report = await panic_wipe_user_and_report(db, user_id)

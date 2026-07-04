@@ -66,3 +66,7 @@ export function searchMessages(conversationId, query, { limit = 20 } = {}) {
 export function clearIndex(conversationId) {
   indexes.delete(conversationId);
 }
+
+export function clearAllIndexes() {
+  indexes.clear();
+}
