@@ -37,11 +37,13 @@ if (-not $exists) {
         --boot-disk-size=20GB
 } else {
     Write-Host "Updating container on $Instance..."
+    $ip = gcloud compute instances describe $Instance --zone=$Zone --project=$Project `
+        --format="get(networkInterfaces[0].accessConfigs[0].natIP)"
     gcloud compute instances update-container $Instance `
         --zone=$Zone `
         --project=$Project `
         --container-image=$Image `
-        --container-env="SFU_PORT=4443,SFU_INTERNAL_SECRET=$Secret"
+        --container-env="SFU_PORT=4443,SFU_INTERNAL_SECRET=$Secret,SFU_ANNOUNCED_IP=$ip"
 }
 
 Write-Host "Ensuring firewall rules..."
