@@ -1,0 +1,5 @@
+# ZAP baseline rules for SSC API-only CI scan (health + OpenAPI root).
+# Ignore low-priority warnings that do not apply to a JSON API behind auth.
+10049	IGNORE	*	# Non-Storable Content
+90004	IGNORE	*	# Cross-Origin-Resource-Policy (API uses CORS middleware)
+90005	IGNORE	*	# Sec-Fetch-Dest (browser-only header)
