@@ -1,18 +1,17 @@
-# Run on GCE alongside SFU container for WSS.
-# docker compose -f docker-compose.tls.yml up -d
+# Run on GCE host (Container-Optimized OS) alongside the SFU container.
+# SFU listens on host :4443; Caddy terminates TLS on :443.
+#
+#   sudo docker compose -f docker-compose.tls.yml up -d
 
 services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
-    ports:
-      - "443:443"
-      - "80:80"
+    network_mode: host
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    network_mode: host
 
 volumes:
   caddy_data:
