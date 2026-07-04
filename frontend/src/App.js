@@ -5,6 +5,7 @@ import ChatHome from './pages/ChatHome';
 import GoogleAuthCallback from './pages/GoogleAuthCallback';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
+import DeviceLink from './pages/DeviceLink';
 import Settings from './pages/Settings';
 
 const LANDING_ONLY = process.env.REACT_APP_SSC_LANDING_ONLY === 'true';
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/auth/google" element={<GoogleAuthCallback />} />
           <Route path="/chat" element={<ChatHome />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/link-device" element={<DeviceLink />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </InstalledClientGate>

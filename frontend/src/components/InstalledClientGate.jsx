@@ -6,11 +6,21 @@ const ALLOWED = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
  * Blocks browser-tab chat in production client builds.
  * Dev (`yarn start`) and landing-only site skip this gate.
  */
+function isInstalledRuntime(platform) {
+  if (typeof window !== 'undefined' && window.__SSC_ANDROID_CLIENT) return true;
+  if (typeof window !== 'undefined' && window.sscCrypto) return true;
+  return ALLOWED.has(platform);
+}
+
 export default function InstalledClientGate({ children }) {
   const platform = process.env.REACT_APP_SSC_PLATFORM || 'electron';
   const landingOnly = process.env.REACT_APP_SSC_LANDING_ONLY === 'true';
 
-  if (landingOnly || process.env.NODE_ENV === 'development' || ALLOWED.has(platform)) {
+  if (
+    landingOnly ||
+    process.env.NODE_ENV === 'development' ||
+    isInstalledRuntime(platform)
+  ) {
     return children;
   }
 

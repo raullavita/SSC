@@ -17,13 +17,26 @@ export async function createSfuRoom(conversationId, expectedParticipants) {
   });
 }
 
-export async function connectSfuRoom({ wsUrl, roomId, joinToken, peerId, localStream }) {
+export async function connectSfuRoom({
+  wsUrl,
+  roomId,
+  joinToken,
+  peerId,
+  localStream,
+  onRemoteTrack,
+}) {
   if (!wsUrl || !roomId || !joinToken) {
     return { connected: false, reason: 'sfu_disabled' };
   }
 
   try {
-    const session = await connectSfuSession({ wsUrl, roomId, joinToken, peerId });
+    const session = await connectSfuSession({
+      wsUrl,
+      roomId,
+      joinToken,
+      peerId,
+      onRemoteTrack,
+    });
     let producers = [];
     if (localStream) {
       producers = await session.publishLocalStream(localStream);

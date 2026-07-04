@@ -1,7 +1,12 @@
 SSC_ENV: production
-SSC_ENFORCE_INSTALLED_CLIENT: "false"
+SSC_ENFORCE_INSTALLED_CLIENT: "true"
 CORS_ORIGINS: "https://www.supersecurechat.com,https://supersecurechat.com"
-JWT_SECRET: "ssc-prod-deploy-rotate-me-2026"
-MONGO_URL: "mongodb://placeholder-update-me"
+JWT_SECRET: "hMkVRB3juJVLANm8cB6fA1m3DUxCY3tSHoRX12Nm2-aDpgtByHpay4ggyJEmFoYV"
+MONGO_URL: "mongodb+srv://raullavita1988_db_user:iKSZ6jEpjLjvzgQA@ssc.acq665o.mongodb.net/ssc?retryWrites=true&w=majority&appName=SSC"
 MONGO_DB: ssc
-REDIS_URL: "redis://placeholder-update-me:6379/0"
+REDIS_URL: "rediss://default:gQAAAAAAAb9OAAIgcDJhYmRhNDAzNTkyODY0NzljYjUzMjk2MDY5YjBhZTQ3ZA@merry-mole-114510.upstash.io:6379"
+SSC_SFU_ENABLED: "true"
+SSC_SFU_WS_URL: "wss://sfu.supersecurechat.com"
+SSC_SFU_INTERNAL_URL: "http://35.195.213.249:4443"
+SSC_SFU_INTERNAL_SECRET: "WCtZhFBhiuldyHV8p+P20Qjacsdvc/2kxaO2LdmFIpk="
+GOOGLE_APPLICATION_CREDENTIALS: "/secrets/firebase/key"

@@ -42,12 +42,12 @@ object ApiClient {
             }
         }
 
-        override fun onPageFinished(view: WebView?, url: String?) {
+        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
             view?.evaluateJavascript(
                 "window.__SSC_ANDROID_CLIENT='$CLIENT_VALUE';",
                 null
             )
-            super.onPageFinished(view, url)
+            super.onPageStarted(view, url, favicon)
         }
     }
 }

@@ -13,7 +13,8 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
-        buildConfigField("String", "SSC_WEB_URL", "\"https://www.supersecurechat.com\"")
+        buildConfigField("String", "SSC_WEB_URL", "\"https://www.supersecurechat.com/login\"")
+        buildConfigField("String", "SSC_API_URL", "\"https://api.supersecurechat.com\"")
     }
 
     buildFeatures {
