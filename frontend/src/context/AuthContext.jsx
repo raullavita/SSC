@@ -1,0 +1,75 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { api } from '../lib/api';
+import { clearAccessToken, getAccessToken, setAccessToken } from '../lib/sessionStore';
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const refreshUser = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return null;
+    }
+    try {
+      const me = await api.get('/api/auth/me');
+      setUser(me);
+      return me;
+    } catch {
+      clearAccessToken();
+      setUser(null);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
+
+  const login = useCallback(async (email, password) => {
+    const data = await api.post('/api/auth/login', { email, password });
+    setAccessToken(data.token);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const register = useCallback(async (email, password, displayName) => {
+    const data = await api.post('/api/auth/register', {
+      email,
+      password,
+      display_name: displayName,
+    });
+    setAccessToken(data.token);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/api/auth/logout', {});
+    } catch {
+      /* ignore */
+    }
+    clearAccessToken();
+    setUser(null);
+  }, []);
+
+  const value = useMemo(
+    () => ({ user, loading, login, register, logout, refreshUser }),
+    [user, loading, login, register, logout, refreshUser]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}

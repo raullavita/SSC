@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import styles from './Landing.module.css';
 
@@ -51,7 +52,10 @@ export default function Landing() {
       </section>
 
       <footer className={styles.footer}>
-        <p>Install the Android or Windows app to chat. Browser access is not supported.</p>
+        <p>
+          <Link to="/login">Sign in</Link> to try the Engine 3 chat scaffold (dev).
+        </p>
+        <p>Production requires the installed Android or Windows app.</p>
       </footer>
     </div>
   );

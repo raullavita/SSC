@@ -23,6 +23,8 @@ EXEMPT_API_PATHS: frozenset[str] = frozenset(
     {
         "/api/health",
         "/api/health/",
+        "/api/ws",
+        "/api/ws/",
     }
 )
 

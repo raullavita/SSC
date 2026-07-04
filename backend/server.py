@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
 from core.lifespan import bootstrap_database
+from core.ws_hub import ws_hub
 from db import close_connections, get_database
 from middleware import InstalledClientMiddleware, SecurityHeadersMiddleware
 from routers import include_routers
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI):
     db = get_database()
     try:
         await bootstrap_database(db)
+        await ws_hub.start_redis_listener()
     except Exception:
         pass  # dev without Mongo — health endpoint reports degraded
     yield

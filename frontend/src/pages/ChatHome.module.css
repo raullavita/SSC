@@ -1,0 +1,177 @@
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: #111b21;
+  border-right: 1px solid #2a3942;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  gap: 1rem;
+}
+
+.sideHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.uid {
+  margin: 0.25rem 0 0;
+  font-size: 0.7rem;
+  color: #667781;
+  word-break: break-all;
+}
+
+.logout {
+  background: transparent;
+  border: 1px solid #2a3942;
+  color: #aebac1;
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+}
+
+.newChat {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.newChat input {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #2a3942;
+  background: #0b141a;
+  color: #e9edef;
+}
+
+.newChat button {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: #00a884;
+  color: #0b141a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.convList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow: auto;
+}
+
+.convList button {
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: #e9edef;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: monospace;
+  font-size: 0.8rem;
+}
+
+.convList button.active,
+.convList button:hover {
+  background: #2a3942;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  background: #0b141a;
+}
+
+.threadHeader {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #2a3942;
+  color: #aebac1;
+}
+
+.messages {
+  flex: 1;
+  overflow: auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.outgoing {
+  align-self: flex-end;
+  background: #005c4b;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  max-width: 70%;
+}
+
+.incoming {
+  align-self: flex-start;
+  background: #202c33;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  max-width: 70%;
+}
+
+.composer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid #2a3942;
+}
+
+.composer input {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #2a3942;
+  background: #111b21;
+  color: #e9edef;
+}
+
+.composer button {
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  background: #00a884;
+  color: #0b141a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.empty,
+.muted {
+  color: #667781;
+  padding: 2rem;
+}
+
+.error {
+  color: #ea4335;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.homeLink {
+  color: #667781;
+  font-size: 0.875rem;
+}
+
+.page {
+  padding: 2rem;
+}
+
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
