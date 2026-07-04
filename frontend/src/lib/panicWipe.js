@@ -3,6 +3,7 @@
  */
 
 import { api } from './api';
+import { clearIceServerCache } from '../calls/iceServers';
 import { clearAllIndexes } from '../search/messageIndex';
 
 const SSC_LOCAL_PREFIXES = ['ssc_', 'SSC_'];
@@ -27,6 +28,11 @@ export function clearLocalClientData() {
   }
   try {
     clearAllIndexes();
+  } catch {
+    /* ignore */
+  }
+  try {
+    clearIceServerCache();
   } catch {
     /* ignore */
   }

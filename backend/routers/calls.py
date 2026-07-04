@@ -13,6 +13,7 @@ from core.call_policy import (
     public_call_session,
     validate_signaling_envelope,
 )
+from core.turn_policy import build_ice_servers
 from core.sfu_policy import should_use_sfu
 from core.ids import new_call_id
 from core.retention_policy import default_expires_at
@@ -36,6 +37,15 @@ class SignalBody(BaseModel):
     signal_type: str = Field(min_length=3)
     ciphertext: str = Field(min_length=1)
     protocol: str = Field(default=SIGNAL_PROTOCOL_V1)
+
+
+@router.get("/ice-servers")
+async def get_ice_servers(
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    """Time-limited TURN credentials + STUN for WebRTC (1:1 mesh and SFU client transports)."""
+    return build_ice_servers(user_id)
 
 
 async def _require_participant(db, conversation_id: str, user_id: str) -> dict:

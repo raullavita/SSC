@@ -14,8 +14,15 @@
 ## API
 
 - `GET /api/sfu/config` — SFU availability + mediasoup ws URL
+- `GET /api/calls/ice-servers` — STUN + ephemeral TURN credentials (Step 3)
 - `POST /api/sfu/rooms` — create room for group conversation
 - `POST /api/calls` with `group_call=true` — auto-selects mesh vs SFU
+
+## TURN / NAT (Step 3)
+
+- **coturn** on the SFU GCE host (`turn/` + `scripts/deploy_turn_gce.ps1`)
+- API issues time-limited credentials via `SSC_TURN_SECRET` (coturn `use-auth-secret`)
+- Clients: `useCall` (mesh) and `sfuSession` (mediasoup transports) fetch `iceServers` from API
 
 ## Engine 11 wiring
 

@@ -4,6 +4,7 @@
  */
 
 import * as mediasoupClient from 'mediasoup-client';
+import { fetchIceServers } from './iceServers';
 
 function waitForMessage(ws, predicate, timeoutMs = 10000) {
   return new Promise((resolve, reject) => {
@@ -95,20 +96,19 @@ export class SfuSession {
       (m) => m.action === 'webRtcTransportCreated' && m.direction === direction
     );
 
+    const iceServers = await fetchIceServers();
+    const transportOptions = {
+      id: created.id,
+      iceParameters: created.iceParameters,
+      iceCandidates: created.iceCandidates,
+      dtlsParameters: created.dtlsParameters,
+      iceServers,
+    };
+
     const transport =
       direction === 'send'
-        ? this.device.createSendTransport({
-            id: created.id,
-            iceParameters: created.iceParameters,
-            iceCandidates: created.iceCandidates,
-            dtlsParameters: created.dtlsParameters,
-          })
-        : this.device.createRecvTransport({
-            id: created.id,
-            iceParameters: created.iceParameters,
-            iceCandidates: created.iceCandidates,
-            dtlsParameters: created.dtlsParameters,
-          });
+        ? this.device.createSendTransport(transportOptions)
+        : this.device.createRecvTransport(transportOptions);
 
     transport.on('connect', ({ dtlsParameters }, callback, errback) => {
       send(this.ws, {
