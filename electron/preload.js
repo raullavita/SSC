@@ -36,4 +36,8 @@ contextBridge.exposeInMainWorld('sscCrypto', {
   async computeSafetyNumber(peerId, peerIdentityKey) {
     return ipcRenderer.invoke('ssc-crypto:computeSafetyNumber', { peerId, peerIdentityKey });
   },
+
+  async wipeLocalData() {
+    return ipcRenderer.invoke('ssc-crypto:wipeLocalData');
+  },
 });

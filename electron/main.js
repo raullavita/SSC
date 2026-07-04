@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const { getSession } = require('./libsignalSession');
+const { getSession, wipeLocalData } = require('./libsignalSession');
 
 let libsignalAvailable = false;
 try {
@@ -47,6 +47,10 @@ function registerCryptoIpc() {
   ipcMain.handle('ssc-crypto:computeSafetyNumber', async (_evt, { peerId, peerIdentityKey }) => {
     const s = getSession(app.getPath('userData'));
     return s.computeSafetyNumber(peerId, peerIdentityKey);
+  });
+
+  ipcMain.handle('ssc-crypto:wipeLocalData', async () => {
+    return wipeLocalData(app.getPath('userData'));
   });
 }
 

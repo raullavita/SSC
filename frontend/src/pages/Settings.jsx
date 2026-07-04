@@ -259,8 +259,8 @@ export default function Settings() {
       <section className={`${styles.section} ${styles.danger}`}>
         <h2>Panic wipe</h2>
         <p className={styles.hint}>
-          Immediately deletes all server-side data for your account and clears local client storage.
-          This cannot be undone.
+          Deletes your account, devices, keys, and local storage on this device. Removes you from
+          shared chats without deleting other people&apos;s messages. This cannot be undone.
         </p>
         <label className={styles.rowStack}>
           <span>Type DELETE to confirm</span>

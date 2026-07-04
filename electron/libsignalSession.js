@@ -446,4 +446,13 @@ function getSession(userDataPath) {
   return session;
 }
 
-module.exports = { LibsignalSession, getSession };
+function wipeLocalData(userDataPath) {
+  const root = path.join(userDataPath, 'ssc-signal');
+  if (fs.existsSync(root)) {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+  session = null;
+  return { ok: true };
+}
+
+module.exports = { LibsignalSession, getSession, wipeLocalData };

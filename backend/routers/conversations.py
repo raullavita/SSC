@@ -19,6 +19,13 @@ from deps import get_client_header, get_current_user_id
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
 
+async def _require_participant(db, conversation_id: str, user_id: str) -> dict:
+    doc = await db.conversations.find_one({"_id": conversation_id, "participants": user_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="conversation_not_found")
+    return doc
+
+
 class CreateConversationBody(BaseModel):
     participant_id: str = Field(min_length=3)
 

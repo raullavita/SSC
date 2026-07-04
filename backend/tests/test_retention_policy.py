@@ -57,6 +57,13 @@ def test_all_policies_have_purpose():
         assert policy.panic_field, f"{name} missing panic_field for wipe path"
 
 
+def test_shared_collections_use_scoped_panic():
+    assert COLLECTIONS["messages"].panic_scope == "skip_shared"
+    assert COLLECTIONS["conversations"].panic_scope == "shared_detach"
+    assert COLLECTIONS["groups"].panic_scope == "shared_detach"
+    assert COLLECTIONS["call_sessions"].panic_scope == "shared_detach"
+
+
 @pytest.mark.parametrize("name", all_collection_names())
 def test_collection_registered(name: str):
     assert name in COLLECTIONS

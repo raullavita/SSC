@@ -1,8 +1,10 @@
 /**
- * Panic wipe — server + local footprint clear.
+ * Panic wipe — server (user-scoped) + local device footprint clear.
  */
 
 import { api } from './api';
+import { clearAllIndexes } from '../search/messageIndex';
+
 const SSC_LOCAL_PREFIXES = ['ssc_', 'SSC_'];
 
 export function clearLocalClientData() {
@@ -23,10 +25,26 @@ export function clearLocalClientData() {
   } catch {
     /* ignore */
   }
+  try {
+    clearAllIndexes();
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function clearNativeCryptoStore() {
+  try {
+    if (typeof window !== 'undefined' && window.sscCrypto?.wipeLocalData) {
+      await window.sscCrypto.wipeLocalData();
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function executePanicWipe() {
   const result = await api.post('/api/panic/wipe', {});
+  await clearNativeCryptoStore();
   clearLocalClientData();
   return result;
 }
