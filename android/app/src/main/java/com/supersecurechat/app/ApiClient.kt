@@ -1,5 +1,6 @@
 package com.supersecurechat.app
 
+import android.content.Context
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -8,7 +9,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Injects X-SSC-Client on API requests from the WebView shell (Engine 11).
+ * Injects X-SSC-Client on API requests and loads the native crypto bridge (Engine 11 / Step 5).
  */
 object ApiClient {
     const val CLIENT_HEADER = "X-SSC-Client"
@@ -18,36 +19,66 @@ object ApiClient {
         conn.setRequestProperty(CLIENT_HEADER, CLIENT_VALUE)
     }
 
-    fun webViewClient(baseUrl: String): WebViewClient = object : WebViewClient() {
-        override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
-            val url = request?.url?.toString() ?: return super.shouldInterceptRequest(view, request)
-            if (!url.contains("/api/")) {
-                return super.shouldInterceptRequest(view, request)
-            }
-            return try {
-                val conn = (URL(url).openConnection() as HttpURLConnection).apply {
-                    requestMethod = request.method
-                    attachInstalledClientHeaders(this)
-                    request.requestHeaders.forEach { (k, v) ->
-                        if (!k.equals(CLIENT_HEADER, ignoreCase = true)) {
-                            setRequestProperty(k, v)
+    fun webViewClient(context: Context, baseUrl: String, webView: WebView): WebViewClient =
+        object : WebViewClient() {
+            private var bridgeInjected = false
+
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                request: WebResourceRequest?,
+            ): WebResourceResponse? {
+                val url = request?.url?.toString() ?: return super.shouldInterceptRequest(view, request)
+                if (!url.contains("/api/")) {
+                    return super.shouldInterceptRequest(view, request)
+                }
+                return try {
+                    val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                        requestMethod = request.method
+                        attachInstalledClientHeaders(this)
+                        request.requestHeaders.forEach { (k, v) ->
+                            if (!k.equals(CLIENT_HEADER, ignoreCase = true)) {
+                                setRequestProperty(k, v)
+                            }
                         }
                     }
+                    val stream = conn.inputStream
+                    val mime = conn.contentType ?: "application/json"
+                    WebResourceResponse(mime, conn.contentEncoding, stream)
+                } catch (_: Exception) {
+                    super.shouldInterceptRequest(view, request)
                 }
-                val stream = conn.inputStream
-                val mime = conn.contentType ?: "application/json"
-                WebResourceResponse(mime, conn.contentEncoding, stream)
-            } catch (_: Exception) {
-                super.shouldInterceptRequest(view, request)
+            }
+
+            override fun onPageStarted(
+                view: WebView?,
+                url: String?,
+                favicon: android.graphics.Bitmap?,
+            ) {
+                view?.evaluateJavascript(
+                    "window.__SSC_ANDROID_CLIENT='$CLIENT_VALUE';",
+                    null,
+                )
+                super.onPageStarted(view, url, favicon)
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                if (!bridgeInjected) {
+                    bridgeInjected = true
+                    injectBridgeScript(context, view)
+                }
+                super.onPageFinished(view, url)
             }
         }
 
-        override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-            view?.evaluateJavascript(
-                "window.__SSC_ANDROID_CLIENT='$CLIENT_VALUE';",
-                null
-            )
-            super.onPageStarted(view, url, favicon)
+    private fun injectBridgeScript(context: Context, view: WebView?) {
+        if (view == null) return
+        try {
+            val script = context.assets.open("ssc_crypto_bridge.js")
+                .bufferedReader()
+                .use { it.readText() }
+            view.evaluateJavascript(script, null)
+        } catch (_: Exception) {
+            // Bridge asset missing — WebView still loads; cryptoPolicy will hard-fail in production.
         }
     }
 }

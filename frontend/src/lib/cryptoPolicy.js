@@ -9,7 +9,6 @@ export function requiresProductionCrypto() {
 
 export function isLibsignalRuntimeAvailable() {
   if (typeof window === 'undefined') return false;
-  if (window.__SSC_ANDROID_CLIENT) return true;
   return Boolean(
     window.sscCrypto?.encryptMessage && window.sscCrypto?.decryptMessage
   );
