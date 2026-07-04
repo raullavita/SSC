@@ -10,6 +10,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _default_cors_origins() -> str:
+    if os.getenv("SSC_ENV", "development") == "production":
+        return "https://www.supersecurechat.com,https://supersecurechat.com"
+    return "http://localhost:3000"
+
+
 def _env_bool(name: str, default: bool) -> bool:
     raw = os.getenv(name)
     if raw is None:
@@ -27,7 +33,7 @@ class Settings:
     api_prefix: str = "/api"
     cors_origins: list[str] = [
         o.strip()
-        for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
+        for o in os.getenv("CORS_ORIGINS", _default_cors_origins()).split(",")
         if o.strip()
     ]
 

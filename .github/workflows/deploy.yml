@@ -1,0 +1,38 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deploy target"
+        required: true
+        default: "validate"
+        type: choice
+        options:
+          - validate
+          - docker-build
+
+jobs:
+  validate-production-ready:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.target == 'validate'
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python scripts/deploy_proof.py
+      - run: python scripts/run_engine10_gate.py
+
+  docker-build:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.target == 'docker-build'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        working-directory: backend
+        run: docker build -t ssc-api:ci .

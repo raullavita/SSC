@@ -37,3 +37,11 @@ See `memory/SIGNAL_CHARTER.md`.
 - **CI:** OWASP ZAP baseline scan skeleton.
 
 See `memory/ENGINE9_CHARTER.md`.
+
+## Production deploy (Engine 10)
+
+- API on Cloud Run (`backend/Dockerfile`), web on Firebase Hosting (`firebase.json`).
+- Production requires Redis, rotated `JWT_SECRET`, installed-client enforcement.
+- mediasoup SFU scaffold (`sfu-server/`), Android Gradle scaffold (`android/`).
+
+See `memory/DEPLOY_CHARTER.md`.
