@@ -43,9 +43,11 @@ export function setPreferredLanguage(lang) {
 
 export function getSealedSenderEnabled() {
   try {
-    return localStorage.getItem(SEALED_SENDER_KEY) === 'true';
+    const stored = localStorage.getItem(SEALED_SENDER_KEY);
+    if (stored === null) return true;
+    return stored === 'true';
   } catch {
-    return false;
+    return true;
   }
 }
 

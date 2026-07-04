@@ -25,7 +25,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const [privacy, setPrivacy] = useState({ last_seen_visible: false, read_receipts: false });
   const [autoTranslate, setAutoTranslate] = useState(true);
-  const [sealedSender, setSealedSender] = useState(false);
+  const [sealedSender, setSealedSender] = useState(true);
   const [linkPreviews, setLinkPreviews] = useState(false);
   const [localTranslateUrl, setLocalTranslateUrlState] = useState('');
   const [userLang, setUserLang] = useState('en');
@@ -161,7 +161,7 @@ export default function Settings() {
             checked={sealedSender}
             onChange={(e) => handleSealedSenderChange(e.target.checked)}
           />
-          <span>Sealed sender (hide your ID from recipients)</span>
+          <span>Sealed sender (on by default — hides your ID from recipients)</span>
         </label>
         <label className={styles.row}>
           <input
@@ -251,7 +251,7 @@ export default function Settings() {
       <section className={styles.section}>
         <h2>Account</h2>
         <p className={styles.account}>
-          <strong>{user.display_name || user.email}</strong>
+          <strong>{user.display_name || user.id}</strong>
           <code>{user.id}</code>
         </p>
       </section>

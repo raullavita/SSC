@@ -89,11 +89,11 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
-## Step 6 — Metadata hardening pass (issue #19)
+## Step 6 — Metadata hardening pass (issue #19) ✅
 
 **Goal:** Audit every API response against `METADATA_MINIMIZATION_CHARTER.md`.
 
-**Deliverables:** Redact remaining leaks, sealed-sender default-on review, push payload audit.
+**Shipped (2026-07-05):** Auth omits `email`; WS fanout strips `participants`; devices omit `last_active`; recursive `scrub_payload`; sealed sender default-on; expanded `metadata_proof.py` + fanout tests; group conversation DTO fix on get/patch.
 
 ---
 

@@ -16,6 +16,8 @@ FORBIDDEN_RESPONSE_FIELDS: frozenset[str] = frozenset(
         "peer_display_name",
         "ciphertext_preview",
         "message_preview",
+        "participants",
+        "last_active",
     }
 )
 
@@ -28,9 +30,17 @@ MESSAGE_PUBLIC_FIELDS: frozenset[str] = frozenset(
 )
 
 
-def scrub_payload(payload: dict[str, Any]) -> dict[str, Any]:
-    """Remove forbidden keys recursively from a dict (shallow)."""
-    return {k: v for k, v in payload.items() if k not in FORBIDDEN_RESPONSE_FIELDS}
+def scrub_payload(payload: Any) -> Any:
+    """Remove forbidden keys recursively from dict/list payloads."""
+    if isinstance(payload, dict):
+        return {
+            k: scrub_payload(v)
+            for k, v in payload.items()
+            if k not in FORBIDDEN_RESPONSE_FIELDS
+        }
+    if isinstance(payload, list):
+        return [scrub_payload(item) for item in payload]
+    return payload
 
 
 def public_conversation(

@@ -330,7 +330,7 @@ export default function ChatHome() {
       <aside className={styles.sidebar}>
         <header className={styles.sideHeader}>
           <div>
-            <strong>{user.display_name || user.email}</strong>
+            <strong>{user.display_name || user.id}</strong>
             <p className={styles.uid}>{user.id}</p>
           </div>
           <div className={styles.sideActions}>

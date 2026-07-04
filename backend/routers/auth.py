@@ -50,9 +50,9 @@ class GoogleIdTokenBody(BaseModel):
 
 
 def _user_payload(user: dict) -> dict:
+    """Metadata-minimized own-profile payload — never expose email."""
     return {
         "id": user["_id"],
-        "email": user["email"],
         "display_name": user.get("display_name", ""),
     }
 
