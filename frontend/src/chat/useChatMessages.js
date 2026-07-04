@@ -5,7 +5,7 @@ import { indexMessage, indexMessages } from '../search/messageIndex';
 import { decryptMessage, encryptMessage } from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
 
-export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent } = {}) {
+export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent, wsToken } = {}) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -46,6 +46,7 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
   useChatSocket({
     enabled: Boolean(conversationId && enabled),
     topic: conversationId ? `conversation:${conversationId}` : null,
+    wsToken,
     onEvent: async (data) => {
       onSocketEvent?.(data);
       const payload = data?.payload || data;

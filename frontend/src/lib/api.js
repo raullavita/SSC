@@ -60,8 +60,12 @@ export const api = {
     }),
 };
 
-export function wsUrl() {
+export function wsUrl(wsToken) {
   const base = API_BASE || `${window.location.protocol}//${window.location.host}`;
   const wsBase = base.replace(/^http/, 'ws');
-  return `${wsBase}/api/ws`;
+  const url = `${wsBase}/api/ws`;
+  if (wsToken) {
+    return `${url}?token=${encodeURIComponent(wsToken)}`;
+  }
+  return url;
 }

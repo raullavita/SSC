@@ -25,6 +25,8 @@ EXEMPT_API_PATHS: frozenset[str] = frozenset(
         "/api/health/",
         "/api/ws",
         "/api/ws/",
+        "/api/auth/google/callback",
+        "/api/auth/google/start",
     }
 )
 
@@ -58,6 +60,8 @@ def parse_client_header(value: str | None) -> ClientIdentity | None:
 def is_exempt_path(path: str) -> bool:
     normalized = path.rstrip("/") or "/"
     if normalized in EXEMPT_API_PATHS:
+        return True
+    if normalized.startswith("/api/auth/google/"):
         return True
     return normalized == "/api/health"
 
