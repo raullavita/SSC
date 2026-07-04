@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { useFileTransfer } from './useFileTransfer';
 
-export function useVoiceMessage(conversationId) {
-  const { uploadFile, uploading } = useFileTransfer(conversationId);
+export function useVoiceMessage(conversationId, peerId) {
+  const { uploadFile, uploading } = useFileTransfer(conversationId, peerId);
   const [recording, setRecording] = useState(false);
   const mediaRef = useRef(null);
   const chunksRef = useRef([]);

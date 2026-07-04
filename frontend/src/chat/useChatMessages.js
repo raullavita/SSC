@@ -1,9 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
+import { parseAttachmentText } from './attachments';
 import { parseReactionText, sendReaction as postReaction } from './reactions';
 import { indexMessage, indexMessages } from '../search/messageIndex';
 import { decryptMessage, encryptMessage } from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
+
+function parseMessageContent(text, messageKind) {
+  if (messageKind === 'reaction') {
+    const reaction = parseReactionText(text);
+    return { text: null, reaction, attachment: null };
+  }
+  const attachment = parseAttachmentText(text);
+  if (attachment) {
+    return { text: null, reaction: null, attachment };
+  }
+  if (messageKind === 'attachment') {
+    return { text: null, reaction: null, attachment: null };
+  }
+  return { text, reaction: null, attachment: null };
+}
 
 export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent, wsToken } = {}) {
   const [messages, setMessages] = useState([]);
@@ -18,12 +34,13 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
       const data = await api.get(`/api/conversations/${conversationId}/messages`);
       const rows = await Promise.all(
         (data.messages || []).map(async (m) => {
-          const text = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
-          const reaction = m.message_kind === 'reaction' ? parseReactionText(text) : null;
+          const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+          const parsed = parseMessageContent(raw, m.message_kind);
           return {
             ...m,
-            text: reaction ? null : text,
-            reaction,
+            text: parsed.text,
+            reaction: parsed.reaction,
+            attachment: parsed.attachment,
           };
         })
       );
@@ -37,7 +54,7 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
     } finally {
       setLoading(false);
     }
-  }, [conversationId, enabled, peerId]);
+  }, [conversationId, enabled]);
 
   useEffect(() => {
     reload();
@@ -52,9 +69,14 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
       const payload = data?.payload || data;
       if (payload?.type === 'message' && payload.message) {
         const m = payload.message;
-        const text = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
-        const reaction = m.message_kind === 'reaction' ? parseReactionText(text) : null;
-        const row = { ...m, text: reaction ? null : text, reaction };
+        const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+        const parsed = parseMessageContent(raw, m.message_kind);
+        const row = {
+          ...m,
+          text: parsed.text,
+          reaction: parsed.reaction,
+          attachment: parsed.attachment,
+        };
         setMessages((prev) => {
           if (prev.some((x) => x.id === m.id)) return prev;
           return [...prev, row];
@@ -75,6 +97,11 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
     return map;
   }, [messages]);
 
+  const displayMessages = useMemo(
+    () => messages.filter((m) => !m.reaction),
+    [messages]
+  );
+
   const sendMessage = useCallback(
     async (text, { disappearingSeconds, replyTo } = {}) => {
       if (!conversationId || !text.trim()) return;
@@ -84,7 +111,7 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
       if (replyTo) body.reply_to = replyTo;
       const data = await api.post(`/api/conversations/${conversationId}/messages`, body);
       const m = data.message;
-      const row = { ...m, text: text.trim() };
+      const row = { ...m, text: text.trim(), reaction: null, attachment: null };
       setMessages((prev) => {
         if (prev.some((x) => x.id === m.id)) return prev;
         return [...prev, row];
@@ -103,7 +130,7 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
         peerId,
       });
       const m = data.message;
-      const row = { ...m, reaction: { emoji, target: targetMessageId }, text: null };
+      const row = { ...m, reaction: { emoji, target: targetMessageId }, text: null, attachment: null };
       setMessages((prev) => {
         if (prev.some((x) => x.id === m.id)) return prev;
         return [...prev, row];
@@ -113,7 +140,7 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
   );
 
   return {
-    messages,
+    messages: displayMessages,
     reactionsByTarget,
     loading,
     error,

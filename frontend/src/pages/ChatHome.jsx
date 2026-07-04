@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import CallModal from '../components/chat/CallModal';
+import Composer from '../components/chat/Composer';
+import GroupPanel from '../components/chat/GroupPanel';
+import MessageBubble from '../components/chat/MessageBubble';
+import UserLookup from '../components/chat/UserLookup';
 import { useCall } from '../chat/useCall';
 import { useChatMessages } from '../chat/useChatMessages';
 import { useFileTransfer } from '../chat/useFileTransfer';
@@ -8,43 +13,41 @@ import { useVoiceMessage } from '../chat/useVoiceMessage';
 import { useAuth } from '../context/AuthContext';
 import { usePresenceMap } from '../hooks/usePresenceMap';
 import { api } from '../lib/api';
+import { getAutoTranslateEnabled, getPreferredLanguage } from '../lib/chatPrefs';
 import { fetchLanguages, translateText } from '../lib/translation';
+import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 import { searchMessages } from '../search/messageIndex';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import { computeSafetyNumber } from '../signal/safetyNumber';
 import { shouldAutoTranslate } from '../smart/languageDetect';
 import styles from './ChatHome.module.css';
 
-const DISAPPEAR_OPTIONS = [
-  { label: 'Off', value: 0 },
-  { label: '1m', value: 60 },
-  { label: '1h', value: 3600 },
-  { label: '24h', value: 86400 },
-];
-
-const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
-
 export default function ChatHome() {
   const { user, wsToken, loading, logout } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
-  const [peerId, setPeerId] = useState('');
   const [draft, setDraft] = useState('');
   const [listError, setListError] = useState(null);
   const [translateTarget, setTranslateTarget] = useState('en');
-  const [userLang, setUserLang] = useState('en');
+  const [userLang, setUserLang] = useState(() => getPreferredLanguage());
+
   const [languages, setLanguages] = useState(['en', 'es', 'fr', 'de']);
   const [translatedPreview, setTranslatedPreview] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [highlightedId, setHighlightedId] = useState(null);
   const [disappearingSeconds, setDisappearingSeconds] = useState(0);
   const [inlineTranslations, setInlineTranslations] = useState({});
   const [safetyNumber, setSafetyNumber] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
-  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const messageRefs = useRef({});
 
   const active = conversations.find((c) => c.id === activeId);
-  const peerIds = useMemo(() => conversations.map((c) => c.peer_id).filter(Boolean), [conversations]);
+  const isGroup = active?.type === 'group';
+  const peerIds = useMemo(
+    () => conversations.map((c) => c.peer_id).filter(Boolean),
+    [conversations]
+  );
   const presenceMap = usePresenceMap(peerIds);
 
   const { peerTyping, onDraftChange, handleSocketPayload } = useTypingIndicator({
@@ -70,15 +73,31 @@ export default function ChatHome() {
     wsToken,
   });
 
-  const { uploadFile, uploading, error: fileError } = useFileTransfer(activeId);
-  const { recording, startRecording, stopRecording } = useVoiceMessage(activeId);
+  const { uploadFile, downloadFile, uploading, error: fileError } = useFileTransfer(
+    activeId,
+    active?.peer_id
+  );
+  const { recording, startRecording, stopRecording } = useVoiceMessage(
+    activeId,
+    active?.peer_id
+  );
 
-  const { startCall, answerCall, status: callStatus, cleanup: endCall } = useCall({
+  const {
+    activeCall,
+    status: callStatus,
+    localStream,
+    remoteStream,
+    callOpen,
+    startCall,
+    answerCall,
+    declineCall,
+    cleanup: endCall,
+  } = useCall({
     conversationId: activeId,
     peerId: active?.peer_id,
     userId: user?.id,
     wsToken,
-    enabled: Boolean(user && active),
+    enabled: Boolean(user && active && !isGroup),
   });
 
   const searchHits = useMemo(() => {
@@ -89,7 +108,7 @@ export default function ChatHome() {
   const messageById = useMemo(() => {
     const map = {};
     for (const m of messages) {
-      if (m.text) map[m.id] = m;
+      map[m.id] = m;
     }
     return map;
   }, [messages]);
@@ -107,6 +126,7 @@ export default function ChatHome() {
   useEffect(() => {
     if (user) {
       loadConversations();
+      startPresenceHeartbeat();
       registerDeviceAndPrekeys({
         deviceId: '1',
         deviceName: 'SSC Client',
@@ -115,7 +135,9 @@ export default function ChatHome() {
       fetchLanguages()
         .then(setLanguages)
         .catch(() => {});
+      setUserLang(getPreferredLanguage());
     }
+    return () => stopPresenceHeartbeat();
   }, [user, loadConversations]);
 
   useEffect(() => {
@@ -134,7 +156,8 @@ export default function ChatHome() {
 
   useEffect(() => {
     let cancelled = false;
-    async function autoTranslate() {
+    async function autoTranslateMessages() {
+      if (!getAutoTranslateEnabled()) return;
       const pending = messages.filter(
         (m) =>
           m.text &&
@@ -142,7 +165,7 @@ export default function ChatHome() {
           !inlineTranslations[m.id] &&
           shouldAutoTranslate(m.text, userLang)
       );
-      for (const m of pending.slice(-3)) {
+      for (const m of pending.slice(-5)) {
         try {
           const translated = await translateText(m.text, { target: userLang });
           if (!cancelled) {
@@ -153,30 +176,45 @@ export default function ChatHome() {
         }
       }
     }
-    if (user && messages.length) autoTranslate();
+    if (user && messages.length) autoTranslateMessages();
     return () => {
       cancelled = true;
     };
   }, [messages, user, userLang, inlineTranslations]);
 
+  function scrollToMessage(id) {
+    const el = messageRefs.current[id];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedId(id);
+      setTimeout(() => setHighlightedId(null), 2000);
+    }
+  }
+
   if (!loading && !user) return <Navigate to="/login" replace />;
   if (loading) return <div className={styles.page}>Loading…</div>;
 
-  async function startChat(e) {
-    e.preventDefault();
-    if (!peerId.trim()) return;
+  async function startChat(participantId) {
+    if (!participantId?.trim()) return;
     try {
-      const data = await api.post('/api/conversations', { participant_id: peerId.trim() });
+      const data = await api.post('/api/conversations', {
+        participant_id: participantId.trim(),
+      });
       const conv = data.conversation;
       setConversations((prev) => {
         if (prev.some((c) => c.id === conv.id)) return prev;
         return [conv, ...prev];
       });
       setActiveId(conv.id);
-      setPeerId('');
+      setListError(null);
     } catch (err) {
       setListError(err.body?.detail || err.message);
     }
+  }
+
+  async function onGroupCreated(conversationId) {
+    await loadConversations();
+    setActiveId(conversationId);
   }
 
   async function onSend(e) {
@@ -185,6 +223,7 @@ export default function ChatHome() {
     const text = draft;
     setDraft('');
     onDraftChange('');
+    setTranslatedPreview('');
     try {
       await sendMessage(text, {
         disappearingSeconds: disappearingSeconds || undefined,
@@ -207,6 +246,16 @@ export default function ChatHome() {
     }
   }
 
+  async function onTranslateMessage(message) {
+    if (!message?.text) return;
+    try {
+      const out = await translateText(message.text, { target: userLang });
+      setInlineTranslations((prev) => ({ ...prev, [message.id]: out }));
+    } catch (err) {
+      setListError(err.message);
+    }
+  }
+
   async function onFileSelected(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -215,9 +264,16 @@ export default function ChatHome() {
     e.target.value = '';
   }
 
-  function onDraftInput(value) {
-    setDraft(value);
-    onDraftChange(value);
+  function getReplyPreview(message) {
+    if (!message?.reply_to) return null;
+    const parent = messageById[message.reply_to];
+    if (!parent) return null;
+    return parent.text?.slice(0, 80) || parent.attachment?.name || 'Attachment';
+  }
+
+  function getThreadTitle() {
+    if (isGroup) return `Group ${active.group_id || active.id}`;
+    return active.peer_id;
   }
 
   return (
@@ -228,19 +284,18 @@ export default function ChatHome() {
             <strong>{user.display_name || user.email}</strong>
             <p className={styles.uid}>{user.id}</p>
           </div>
-          <button type="button" onClick={logout} className={styles.logout}>
-            Log out
-          </button>
+          <div className={styles.sideActions}>
+            <Link to="/settings" className={styles.settingsLink} title="Settings">
+              ⚙
+            </Link>
+            <button type="button" onClick={logout} className={styles.logout}>
+              Log out
+            </button>
+          </div>
         </header>
 
-        <form className={styles.newChat} onSubmit={startChat}>
-          <input
-            placeholder="Peer user id (u_…)"
-            value={peerId}
-            onChange={(e) => setPeerId(e.target.value)}
-          />
-          <button type="submit">New chat</button>
-        </form>
+        <UserLookup onStartChat={startChat} />
+        <GroupPanel onGroupCreated={onGroupCreated} />
 
         {listError && <p className={styles.error}>{String(listError)}</p>}
         {fileError && <p className={styles.error}>{String(fileError)}</p>}
@@ -259,7 +314,9 @@ export default function ChatHome() {
                 }}
               >
                 <span className={styles.convRow}>
-                  <span>{c.peer_id || c.id}</span>
+                  <span>
+                    {c.type === 'group' ? `👥 ${c.group_id}` : c.peer_id || c.id}
+                  </span>
                   {presenceMap[c.peer_id] && (
                     <span className={styles.presenceDot} title={presenceMap[c.peer_id]}>
                       {presenceMap[c.peer_id] === 'Online' ? '●' : ''}
@@ -283,7 +340,7 @@ export default function ChatHome() {
             <header className={styles.threadHeader}>
               <div className={styles.threadTitle}>
                 <span>
-                  Chat with <code>{active.peer_id}</code>
+                  Chat with <code>{getThreadTitle()}</code>
                 </span>
                 {presenceMap[active.peer_id] && (
                   <span className={styles.presenceLabel}>{presenceMap[active.peer_id]}</span>
@@ -295,24 +352,16 @@ export default function ChatHome() {
                   Safety number: <code>{safetyNumber.displayable}</code>
                 </p>
               )}
-              <div className={styles.callBar}>
-                <button type="button" onClick={() => startCall(false)}>
-                  Call
-                </button>
-                <button type="button" onClick={() => startCall(true)}>
-                  Video
-                </button>
-                {callStatus === 'ringing' && (
-                  <button type="button" onClick={answerCall}>
-                    Answer
+              {!isGroup && (
+                <div className={styles.callBar}>
+                  <button type="button" onClick={() => startCall(false)}>
+                    📞 Call
                   </button>
-                )}
-                {callStatus !== 'idle' && (
-                  <button type="button" onClick={endCall}>
-                    End ({callStatus})
+                  <button type="button" onClick={() => startCall(true)}>
+                    📹 Video
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </header>
 
             <div className={styles.searchBar}>
@@ -324,7 +373,11 @@ export default function ChatHome() {
               {searchHits.length > 0 && (
                 <ul className={styles.searchHits}>
                   {searchHits.map((hit) => (
-                    <li key={hit.id}>{hit.text}</li>
+                    <li key={hit.id}>
+                      <button type="button" onClick={() => scrollToMessage(hit.id)}>
+                        {hit.text}
+                      </button>
+                    </li>
                   ))}
                 </ul>
               )}
@@ -332,128 +385,86 @@ export default function ChatHome() {
 
             <div className={styles.messages}>
               {messagesLoading && <p className={styles.muted}>Loading messages…</p>}
-              {messages
-                .filter((m) => m.text)
-                .map((m) => (
-                  <div
-                    key={m.id}
-                    className={m.sender_id === user.id ? styles.outgoing : styles.incoming}
-                  >
-                    {m.reply_to && messageById[m.reply_to] && (
-                      <p className={styles.replyPreview}>
-                        ↩ {messageById[m.reply_to].text?.slice(0, 80)}
-                      </p>
-                    )}
-                    <span>{m.text}</span>
-                    {inlineTranslations[m.id] && (
-                      <p className={styles.translation}>{inlineTranslations[m.id]}</p>
-                    )}
-                    {m.disappearing_seconds && (
-                      <span className={styles.timer}>⏱ {m.disappearing_seconds}s</span>
-                    )}
-                    <div className={styles.messageActions}>
-                      <button type="button" className={styles.actionBtn} onClick={() => setReplyTo(m)}>
-                        Reply
-                      </button>
-                      {REACTION_EMOJIS.map((emoji) => (
-                        <button
-                          key={`${m.id}-${emoji}`}
-                          type="button"
-                          className={styles.reactionBtn}
-                          onClick={() => sendReaction(emoji, m.id)}
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                    {reactionsByTarget[m.id]?.length > 0 && (
-                      <div className={styles.reactionRow}>
-                        {reactionsByTarget[m.id].map((r) => (
-                          <span key={r.id} className={styles.reactionChip}>
-                            {r.emoji}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  ref={(el) => {
+                    messageRefs.current[m.id] = el;
+                  }}
+                >
+                  <MessageBubble
+                    message={m}
+                    isOutgoing={m.sender_id === user.id}
+                    userId={user.id}
+                    inlineTranslation={inlineTranslations[m.id]}
+                    reactions={reactionsByTarget[m.id] || []}
+                    replyPreview={getReplyPreview(m)}
+                    highlighted={highlightedId === m.id}
+                    onReply={setReplyTo}
+                    onReaction={sendReaction}
+                    onTranslate={onTranslateMessage}
+                    downloadFile={downloadFile}
+                  />
+                </div>
+              ))}
               <div ref={messagesEndRef} />
             </div>
 
             {replyTo && (
               <div className={styles.replyBar}>
-                <span>Replying to: {replyTo.text?.slice(0, 60)}</span>
+                <span>
+                  Replying to:{' '}
+                  {replyTo.text?.slice(0, 60) || replyTo.attachment?.name || 'Message'}
+                </span>
                 <button type="button" onClick={() => setReplyTo(null)}>
                   ✕
                 </button>
               </div>
             )}
 
-            <form className={styles.composer} onSubmit={onSend}>
-              <input
-                value={draft}
-                onChange={(e) => onDraftInput(e.target.value)}
-                placeholder="Message (Signal E2EE)"
-              />
-              <select
-                value={disappearingSeconds}
-                onChange={(e) => setDisappearingSeconds(Number(e.target.value))}
-                aria-label="Disappearing timer"
-                title="Disappearing messages"
-              >
-                {DISAPPEAR_OPTIONS.map((o) => (
-                  <option key={o.label} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={userLang}
-                onChange={(e) => setUserLang(e.target.value)}
-                aria-label="Your language"
-                title="Auto-translate to"
-              >
-                {languages.map((lang) => (
-                  <option key={`ul-${lang}`} value={lang}>
-                    {lang}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={translateTarget}
-                onChange={(e) => setTranslateTarget(e.target.value)}
-                aria-label="Translation target"
-              >
-                {languages.map((lang) => (
-                  <option key={lang} value={lang}>
-                    {lang}
-                  </option>
-                ))}
-              </select>
-              <button type="button" onClick={onTranslateDraft}>
-                Translate
-              </button>
-              <button
-                type="button"
-                onClick={() => (recording ? stopRecording() : startRecording())}
-                className={recording ? styles.recording : ''}
-              >
-                {recording ? 'Stop' : 'Voice'}
-              </button>
-              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-                {uploading ? '…' : 'File'}
-              </button>
-              <input ref={fileInputRef} type="file" hidden onChange={onFileSelected} />
-              <button type="submit">Send</button>
-            </form>
-            {translatedPreview && (
-              <p className={styles.muted}>
-                Translation ({translateTarget}): {translatedPreview}
-              </p>
-            )}
+            <Composer
+              draft={draft}
+              onDraftChange={(value) => {
+                setDraft(value);
+                onDraftChange(value);
+              }}
+              onSend={onSend}
+              onTranslate={onTranslateDraft}
+              translatedPreview={translatedPreview}
+              onUseTranslation={() => {
+                if (translatedPreview) {
+                  setDraft(translatedPreview);
+                  setTranslatedPreview('');
+                }
+              }}
+              onDismissTranslation={() => setTranslatedPreview('')}
+              translateTarget={translateTarget}
+              onTranslateTargetChange={setTranslateTarget}
+              userLang={userLang}
+              onUserLangChange={setUserLang}
+              languages={languages}
+              disappearingSeconds={disappearingSeconds}
+              onDisappearingChange={setDisappearingSeconds}
+              recording={recording}
+              onVoiceToggle={() => (recording ? stopRecording() : startRecording())}
+              uploading={uploading}
+              onFileSelected={onFileSelected}
+            />
           </>
         )}
       </main>
+
+      <CallModal
+        open={callOpen}
+        status={callStatus}
+        peerLabel={active?.peer_id}
+        isVideo={Boolean(activeCall?.video)}
+        localStream={localStream}
+        remoteStream={remoteStream}
+        onAnswer={answerCall}
+        onDecline={declineCall}
+        onEnd={endCall}
+      />
     </div>
   );
 }

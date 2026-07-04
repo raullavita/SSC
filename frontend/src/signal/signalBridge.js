@@ -93,6 +93,37 @@ export async function decryptMessage(ciphertext, { peerId } = {}) {
   }
 }
 
+export async function decryptFileBytes(ciphertext) {
+  const lib = await loadLibsignal();
+  if (lib?.decryptBytes) {
+    const result = await lib.decryptBytes(ciphertext);
+    return result?.buffer ?? result;
+  }
+  try {
+    const payload = JSON.parse(atob(ciphertext));
+    if (payload?.type === 'dev_file' && payload?.data) {
+      const binary = atob(payload.data);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes.buffer;
+    }
+  } catch {
+    /* fall through */
+  }
+  try {
+    const binary = atob(ciphertext);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  } catch {
+    return null;
+  }
+}
+
 export async function encryptFileBytes(arrayBuffer) {
   const lib = await loadLibsignal();
   if (lib?.encryptBytes) {

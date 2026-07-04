@@ -25,6 +25,7 @@ from routers.sfu import router as sfu_router
 from routers.smart import router as smart_router
 from routers.translation import router as translation_router
 from routers.typing import router as typing_router
+from routers.users import router as users_router
 from routers.ws import router as ws_router
 
 
@@ -49,6 +50,7 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(abuse_router, prefix=prefix)
     app.include_router(presence_router, prefix=prefix)
     app.include_router(privacy_router, prefix=prefix)
+    app.include_router(users_router, prefix=prefix)
     app.include_router(push_router, prefix=prefix)
     app.include_router(panic_router, prefix=prefix)
     app.include_router(ws_router, prefix=prefix)

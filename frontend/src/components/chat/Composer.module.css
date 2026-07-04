@@ -1,0 +1,116 @@
+.composer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #2a3942;
+  background: #111b21;
+  align-items: center;
+}
+
+.inputRow {
+  display: flex;
+  flex: 1 1 100%;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 24px;
+  border: 1px solid #2a3942;
+  background: #2a3942;
+  color: #e9edef;
+  font-size: 0.95rem;
+  min-width: 0;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #00a884;
+}
+
+.sendBtn {
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 24px;
+  background: #00a884;
+  color: #0b141a;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sendBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  flex: 1 1 100%;
+}
+
+.toolBtn {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #2a3942;
+  border-radius: 20px;
+  background: #202c33;
+  color: #aebac1;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.toolBtn:hover {
+  background: #2a3942;
+}
+
+.toolBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.recording {
+  background: #ea4335 !important;
+  color: #fff !important;
+  border-color: #ea4335 !important;
+}
+
+.select {
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #2a3942;
+  background: #202c33;
+  color: #aebac1;
+  font-size: 0.75rem;
+}
+
+.preview {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: #202c33;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #8696a0;
+}
+
+.previewActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.previewActions button {
+  padding: 0.25rem 0.6rem;
+  border: none;
+  border-radius: 4px;
+  background: #00a884;
+  color: #0b141a;
+  font-size: 0.75rem;
+  cursor: pointer;
+}

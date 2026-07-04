@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
 import { api } from '../lib/api';
 import { encryptFileBytes } from '../signal/signalBridge';
+import { sendAttachmentMessage } from './attachments';
 
-export function useFileTransfer(conversationId) {
+export function useFileTransfer(conversationId, peerId) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -20,7 +21,15 @@ export function useFileTransfer(conversationId) {
           protocol,
           mime_hint: file.type || 'application/octet-stream',
         });
-        return data.file;
+        const fileDoc = data.file;
+        await sendAttachmentMessage(conversationId, {
+          fileId: fileDoc.id,
+          mime: file.type || 'application/octet-stream',
+          name: file.name,
+          size: file.size,
+          peerId,
+        });
+        return fileDoc;
       } catch (e) {
         setError(e.message || 'Upload failed');
         return null;
@@ -28,7 +37,7 @@ export function useFileTransfer(conversationId) {
         setUploading(false);
       }
     },
-    [conversationId]
+    [conversationId, peerId]
   );
 
   const downloadFile = useCallback(async (fileId) => {

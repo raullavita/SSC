@@ -20,6 +20,23 @@
   gap: 0.5rem;
 }
 
+.sideActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settingsLink {
+  color: #8696a0;
+  text-decoration: none;
+  font-size: 1.1rem;
+  padding: 0.2rem 0.4rem;
+}
+
+.settingsLink:hover {
+  color: #00a884;
+}
+
 .uid {
   margin: 0.25rem 0 0;
   font-size: 0.7rem;
@@ -120,49 +137,7 @@
   padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.outgoing {
-  align-self: flex-end;
-  background: #005c4b;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  max-width: 70%;
-}
-
-.incoming {
-  align-self: flex-start;
-  background: #202c33;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  max-width: 70%;
-}
-
-.composer {
-  display: flex;
-  gap: 0.5rem;
-  padding: 1rem;
-  border-top: 1px solid #2a3942;
-}
-
-.composer input {
-  flex: 1;
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #2a3942;
-  background: #111b21;
-  color: #e9edef;
-}
-
-.composer button {
-  padding: 0.75rem 1.25rem;
-  border: none;
-  border-radius: 8px;
-  background: #00a884;
-  color: #0b141a;
-  font-weight: 600;
-  cursor: pointer;
+  gap: 0.35rem;
 }
 
 .empty,
@@ -238,6 +213,21 @@
 
 .searchHits li {
   padding: 0.25rem 0;
+}
+
+.searchHits button {
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  padding: 0.25rem 0;
+  font-size: inherit;
+}
+
+.searchHits button:hover {
+  color: #00a884;
 }
 
 .smartBar {
