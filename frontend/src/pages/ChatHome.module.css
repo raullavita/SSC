@@ -92,6 +92,22 @@
   background: #0b141a;
 }
 
+.callBar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.callBar button {
+  background: #00a884;
+  border: none;
+  color: #111b21;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
 .threadHeader {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #2a3942;

@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import { useCall } from '../chat/useCall';
 import { useChatMessages } from '../chat/useChatMessages';
+import { useFileTransfer } from '../chat/useFileTransfer';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { fetchLanguages, translateText } from '../lib/translation';
+import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import styles from './ChatHome.module.css';
 
 export default function ChatHome() {
@@ -12,11 +16,26 @@ export default function ChatHome() {
   const [peerId, setPeerId] = useState('');
   const [draft, setDraft] = useState('');
   const [listError, setListError] = useState(null);
+  const [translateTarget, setTranslateTarget] = useState('es');
+  const [languages, setLanguages] = useState(['en', 'es', 'fr', 'de']);
+  const [translatedPreview, setTranslatedPreview] = useState('');
+  const fileInputRef = useRef(null);
+
+  const active = conversations.find((c) => c.id === activeId);
 
   const { messages, sendMessage, loading: messagesLoading } = useChatMessages(
     activeId,
-    Boolean(user)
+    Boolean(user),
+    active?.peer_id
   );
+
+  const { uploadFile, uploading, error: fileError } = useFileTransfer(activeId);
+  const { startCall, status: callStatus, cleanup: endCall } = useCall({
+    conversationId: activeId,
+    peerId: active?.peer_id,
+    userId: user?.id,
+    enabled: Boolean(user && active),
+  });
 
   const loadConversations = useCallback(async () => {
     try {
@@ -29,7 +48,17 @@ export default function ChatHome() {
   }, []);
 
   useEffect(() => {
-    if (user) loadConversations();
+    if (user) {
+      loadConversations();
+      registerDeviceAndPrekeys({
+        deviceId: '1',
+        deviceName: 'SSC Client',
+        platform: 'electron',
+      }).catch(() => {});
+      fetchLanguages()
+        .then(setLanguages)
+        .catch(() => {});
+    }
   }, [user, loadConversations]);
 
   if (!loading && !user) return <Navigate to="/login" replace />;
@@ -65,7 +94,25 @@ export default function ChatHome() {
     }
   }
 
-  const active = conversations.find((c) => c.id === activeId);
+  async function onTranslateDraft() {
+    if (!draft.trim()) return;
+    try {
+      const out = await translateText(draft, { target: translateTarget });
+      setTranslatedPreview(out);
+    } catch (err) {
+      setListError(err.message);
+    }
+  }
+
+  async function onFileSelected(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const uploaded = await uploadFile(file);
+    if (uploaded) {
+      setListError(null);
+    }
+    e.target.value = '';
+  }
 
   return (
     <div className={styles.layout}>
@@ -90,6 +137,7 @@ export default function ChatHome() {
         </form>
 
         {listError && <p className={styles.error}>{String(listError)}</p>}
+        {fileError && <p className={styles.error}>{String(fileError)}</p>}
 
         <ul className={styles.convList}>
           {conversations.map((c) => (
@@ -115,7 +163,22 @@ export default function ChatHome() {
         ) : (
           <>
             <header className={styles.threadHeader}>
-              Chat with <code>{active.peer_id}</code>
+              <span>
+                Chat with <code>{active.peer_id}</code>
+              </span>
+              <div className={styles.callBar}>
+                <button type="button" onClick={() => startCall(false)}>
+                  Call
+                </button>
+                <button type="button" onClick={() => startCall(true)}>
+                  Video
+                </button>
+                {callStatus !== 'idle' && (
+                  <button type="button" onClick={endCall}>
+                    End ({callStatus})
+                  </button>
+                )}
+              </div>
             </header>
             <div className={styles.messages}>
               {messagesLoading && <p className={styles.muted}>Loading messages…</p>}
@@ -132,10 +195,38 @@ export default function ChatHome() {
               <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                placeholder="Message (placeholder encryption)"
+                placeholder="Message (Signal E2EE)"
+              />
+              <select
+                value={translateTarget}
+                onChange={(e) => setTranslateTarget(e.target.value)}
+                aria-label="Translation target"
+              >
+                {languages.map((lang) => (
+                  <option key={lang} value={lang}>
+                    {lang}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={onTranslateDraft}>
+                Translate
+              </button>
+              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+                {uploading ? 'Uploading…' : 'File'}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                hidden
+                onChange={onFileSelected}
               />
               <button type="submit">Send</button>
             </form>
+            {translatedPreview && (
+              <p className={styles.muted}>
+                Translation ({translateTarget}): {translatedPreview}
+              </p>
+            )}
           </>
         )}
       </main>

@@ -67,7 +67,7 @@ def public_message(doc: dict[str, Any]) -> dict[str, Any]:
             "conversation_id": doc["conversation_id"],
             "sender_id": doc["sender_id"],
             "ciphertext": doc["ciphertext"],
-            "protocol": doc.get("protocol", "placeholder"),
+            "protocol": doc.get("protocol", "signal_v1"),
             "created_at": created,
         }
     )

@@ -1,16 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { decryptMessage, encryptMessage } from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
 
-function decodePlaceholder(ciphertext) {
-  try {
-    return atob(ciphertext);
-  } catch {
-    return '[encrypted]';
-  }
-}
-
-export function useChatMessages(conversationId, enabled) {
+export function useChatMessages(conversationId, enabled, peerId) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,12 +14,13 @@ export function useChatMessages(conversationId, enabled) {
     setError(null);
     try {
       const data = await api.get(`/api/conversations/${conversationId}/messages`);
-      setMessages(
-        (data.messages || []).map((m) => ({
+      const rows = await Promise.all(
+        (data.messages || []).map(async (m) => ({
           ...m,
-          text: decodePlaceholder(m.ciphertext),
+          text: await decryptMessage(m.ciphertext, { peerId: m.sender_id }),
         }))
       );
+      setMessages(rows);
     } catch (e) {
       setError(e.message || 'Failed to load messages');
     } finally {
@@ -41,12 +35,13 @@ export function useChatMessages(conversationId, enabled) {
   useChatSocket({
     enabled: Boolean(conversationId && enabled),
     topic: conversationId ? `conversation:${conversationId}` : null,
-    onEvent: (data) => {
+    onEvent: async (data) => {
       if (data?.type === 'message' && data.message) {
         const m = data.message;
+        const text = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
         setMessages((prev) => {
           if (prev.some((x) => x.id === m.id)) return prev;
-          return [...prev, { ...m, text: decodePlaceholder(m.ciphertext) }];
+          return [...prev, { ...m, text }];
         });
       }
     },
@@ -55,18 +50,18 @@ export function useChatMessages(conversationId, enabled) {
   const sendMessage = useCallback(
     async (text) => {
       if (!conversationId || !text.trim()) return;
-      const ciphertext = btoa(text);
+      const { ciphertext, protocol } = await encryptMessage(text.trim(), { peerId });
       const data = await api.post(`/api/conversations/${conversationId}/messages`, {
         ciphertext,
-        protocol: 'placeholder',
+        protocol,
       });
       const m = data.message;
       setMessages((prev) => {
         if (prev.some((x) => x.id === m.id)) return prev;
-        return [...prev, { ...m, text }];
+        return [...prev, { ...m, text: text.trim() }];
       });
     },
-    [conversationId]
+    [conversationId, peerId]
   );
 
   return { messages, loading, error, reload, sendMessage };

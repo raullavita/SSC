@@ -19,3 +19,11 @@ See `memory/RETENTION_CHARTER.md` for the full collection registry.
 - Conversation APIs omit peer email and participant lists.
 
 See `memory/METADATA_MINIMIZATION_CHARTER.md`.
+
+## Signal Protocol (Engine 8)
+
+- E2EE via `@signalapp/libsignal-client` in installed clients (Electron/Android).
+- Server stores public prekey bundles only; relays `signal_v1` ciphertext.
+- Encrypted file transfer, WebRTC call signaling, LibreTranslate proxy, abuse rate limits.
+
+See `memory/SIGNAL_CHARTER.md`.

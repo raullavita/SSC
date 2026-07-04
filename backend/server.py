@@ -12,7 +12,7 @@ from core.lifespan import bootstrap_database
 from core.session_production import validate_production_redis
 from core.ws_hub import ws_hub
 from db import close_connections, get_database
-from middleware import InstalledClientMiddleware, SecurityHeadersMiddleware
+from middleware import AbuseRateLimitMiddleware, InstalledClientMiddleware, SecurityHeadersMiddleware
 from routers import include_routers
 
 
@@ -47,6 +47,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(AbuseRateLimitMiddleware)
     app.add_middleware(InstalledClientMiddleware)
 
     include_routers(app)

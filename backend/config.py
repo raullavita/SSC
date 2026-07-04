@@ -23,6 +23,7 @@ class Settings:
     mongo_db: str = os.getenv("MONGO_DB", "ssc")
     redis_url: str | None = os.getenv("REDIS_URL")
     jwt_secret: str = os.getenv("JWT_SECRET", "dev-only-change-me")
+    libretranslate_api_key: str | None = os.getenv("LIBRETRANSLATE_API_KEY")
     api_prefix: str = "/api"
     cors_origins: list[str] = [
         o.strip()

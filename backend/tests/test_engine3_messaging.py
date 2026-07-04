@@ -86,7 +86,7 @@ async def test_create_conversation_and_send_message(messaging_env):
 
         send = await alice_ac.post(
             f"/api/conversations/{conv_id}/messages",
-            json={"ciphertext": VALID_B64},
+            json={"ciphertext": VALID_B64, "protocol": "placeholder"},
             headers=CLIENT,
         )
         assert send.status_code == 200

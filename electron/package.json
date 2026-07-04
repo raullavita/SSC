@@ -1,0 +1,13 @@
+{
+  "name": "ssc-electron",
+  "version": "0.1.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@signalapp/libsignal-client": "0.96.4",
+    "electron": "^33.2.0"
+  }
+}

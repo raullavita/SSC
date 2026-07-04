@@ -1,4 +1,4 @@
-"""HTTP middleware: security headers and installed-client gate (Engine 2)."""
+"""HTTP middleware: security headers, installed-client gate, abuse limits."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from core.abuse_policy import auth_rate_limiter
 from core.installed_client_policy import (
     INSTALLED_CLIENT_HEADER,
     validate_request,
@@ -24,6 +25,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         add_security_headers(response)
         return response
+
+
+class AbuseRateLimitMiddleware(BaseHTTPMiddleware):
+    """Rate-limit auth endpoints per client IP — Engine 8."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        path = request.url.path
+        if path.endswith("/auth/login") or path.endswith("/auth/register"):
+            client_ip = request.client.host if request.client else "unknown"
+            if not auth_rate_limiter.allow(f"auth:{client_ip}"):
+                return JSONResponse(status_code=429, content={"detail": "auth_rate_limited"})
+        return await call_next(request)
 
 
 class InstalledClientMiddleware(BaseHTTPMiddleware):

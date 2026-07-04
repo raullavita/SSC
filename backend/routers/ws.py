@@ -50,7 +50,9 @@ async def websocket_endpoint(
 
             if data.get("type") == "subscribe":
                 topic = data.get("topic")
-                if isinstance(topic, str) and topic.startswith("conversation:"):
+                if isinstance(topic, str) and (
+                    topic.startswith("conversation:") or topic == f"user:{user_id}"
+                ):
                     await ws_hub.subscribe(websocket, topic)
                     await websocket.send_text(json.dumps({"type": "subscribed", "topic": topic}))
                 else:
