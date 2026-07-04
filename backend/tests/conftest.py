@@ -10,6 +10,28 @@ from server import create_app
 CLIENT_HEADERS = {"X-SSC-Client": "electron/0.1.0/1"}
 
 
+async def _stub_mongo_probe():
+    return {"status": "skipped", "detail": "test stub"}
+
+
+async def _stub_redis_probe():
+    return {"status": "skipped", "detail": "test stub"}
+
+
+async def _no_redis():
+    return None
+
+
+@pytest.fixture(autouse=True)
+def isolate_external_services(monkeypatch):
+    """Avoid hanging on localhost Mongo/Redis when services are not running."""
+    monkeypatch.setattr("db.probe_mongo", _stub_mongo_probe)
+    monkeypatch.setattr("db.probe_redis", _stub_redis_probe)
+    monkeypatch.setattr("db.get_redis", _no_redis)
+    monkeypatch.setattr("routers.health.probe_mongo", _stub_mongo_probe)
+    monkeypatch.setattr("routers.health.probe_redis", _stub_redis_probe)
+
+
 @pytest.fixture
 def app():
     app = create_app()
