@@ -8,7 +8,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-if (-not $Project) { $Project = "supersecurechat" }
+if (-not $Project) { $Project = "super-chat-b0992" }
 
 $Frontend = Join-Path $ProjectRoot "frontend"
 $EnvProd = Join-Path $Frontend ".env.production"

@@ -1,0 +1,7 @@
+SSC_ENV: production
+SSC_ENFORCE_INSTALLED_CLIENT: "false"
+CORS_ORIGINS: "https://www.supersecurechat.com,https://supersecurechat.com"
+JWT_SECRET: "ssc-prod-deploy-rotate-me-2026"
+MONGO_URL: "mongodb://placeholder-update-me"
+MONGO_DB: ssc
+REDIS_URL: "redis://placeholder-update-me:6379/0"

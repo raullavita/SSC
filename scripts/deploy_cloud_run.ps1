@@ -10,7 +10,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-if (-not $Project) { $Project = "supersecurechat" }
+if (-not $Project) { $Project = "super-chat-b0992" }
 if (-not $Region) { $Region = "us-central1" }
 if (-not $Service) { $Service = "ssc-api" }
 

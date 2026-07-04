@@ -14,6 +14,7 @@ __pycache__/
 atlas-credentials.env
 cloud_run.env
 *-service-account*.json
+ssc-firebase-key.json
 google-services.json
 
 # Build outputs
