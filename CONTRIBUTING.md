@@ -8,6 +8,13 @@ Thank you for helping build Super Secure Chat. SSC is **AGPL-3.0** — contribut
 2. Never commit secrets (`.env`, `cloudrun-env.yaml`, Firebase keys, Atlas creds).
 3. SSC is **install-only** — chat runs in Android/Windows apps, not the public website.
 
+## Help-wanted issues
+
+- Contributions are **voluntary** (AGPL-3.0). We do not pay for issues, hire freelancers, or accept payment links (Stripe, crypto, AgentWork bots).
+- **Commenting does not reserve an issue** — we do not assign from comments.
+- Open **one focused PR** against `main`; we review all external code before merge.
+- Spam or automated sales comments may be removed by maintainers.
+
 ## Development setup
 
 ### Backend
