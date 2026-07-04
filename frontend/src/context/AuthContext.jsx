@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
+import { registerPushTokenIfAvailable } from '../lib/pushRegister';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 
 const AuthContext = createContext(null);
@@ -13,6 +14,7 @@ export function AuthProvider({ children }) {
       const me = await api.get('/api/auth/me');
       setUser(me);
       startPresenceHeartbeat();
+      registerPushTokenIfAvailable().catch(() => {});
       return me;
     } catch {
       setUser(null);
@@ -31,6 +33,7 @@ export function AuthProvider({ children }) {
     const data = await api.post('/api/auth/login', { email, password });
     setUser(data.user);
     startPresenceHeartbeat();
+    registerPushTokenIfAvailable().catch(() => {});
     return data.user;
   }, []);
 
@@ -42,6 +45,7 @@ export function AuthProvider({ children }) {
     });
     setUser(data.user);
     startPresenceHeartbeat();
+    registerPushTokenIfAvailable().catch(() => {});
     return data.user;
   }, []);
 

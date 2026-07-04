@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
+from core.firebase_init import ensure_firebase
 from core.lifespan import bootstrap_database
 from core.session_production import validate_production_redis
 from core.ws_hub import ws_hub
@@ -20,6 +21,7 @@ from routers import include_routers
 async def lifespan(app: FastAPI):
     settings = get_settings()
     await validate_production_redis(settings)
+    ensure_firebase()
     db = get_database()
     try:
         await bootstrap_database(db)

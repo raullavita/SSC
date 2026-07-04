@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from core.firebase_init import ensure_firebase
 from core.push_payload import build_generic_push
 from db import get_database
 
@@ -76,14 +77,11 @@ async def db_conversation_muted(user_id: str, conversation_id: str) -> bool:
 
 
 async def _dispatch_fcm(token: str, payload: dict[str, Any]) -> bool:
-    try:
-        import firebase_admin  # noqa: F401
-        from firebase_admin import messaging  # noqa: PLC0415
-    except ImportError:
-        logger.debug("firebase-admin not installed; push skipped")
+    if not ensure_firebase():
         return False
 
     try:
+        from firebase_admin import messaging  # noqa: PLC0415
         message = messaging.Message(
             token=token,
             notification=messaging.Notification(
