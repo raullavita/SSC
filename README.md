@@ -32,12 +32,12 @@ We do **not** run inside AI on your messages. Translation is optional and user-c
 | Component | State |
 |-----------|--------|
 | Engines 1–13 | Complete (retention, Signal, messaging, no inside AI) |
-| Engine 14 | FCM push + mediasoup SFU deploy |
+| Engine 14 | FCM push + mediasoup SFU live (gate) |
 | Auth | Email/password + Google OAuth |
 | Chat | E2EE messages, reactions, files, voice notes |
 | Calls | WebRTC mesh + SFU scaffold |
 | Production API | Live |
-| Website downloads | Coming — build clients locally for now |
+| Website downloads | [GitHub Releases v0.1.0](https://github.com/raullavita/SSC/releases/tag/v0.1.0) |
 
 ## Quick start (local dev)
 

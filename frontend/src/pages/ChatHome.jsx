@@ -7,6 +7,7 @@ import MessageBubble from '../components/chat/MessageBubble';
 import SafetyVerifyModal from '../components/chat/SafetyVerifyModal';
 import UserLookup from '../components/chat/UserLookup';
 import { useCall } from '../chat/useCall';
+import { useGroupCall } from '../calls/useGroupCall';
 import { useChatMessages } from '../chat/useChatMessages';
 import { useConversationMeta } from '../chat/useConversationMeta';
 import { useReadReceipts } from '../chat/useReadReceipts';
@@ -77,6 +78,8 @@ export default function ChatHome() {
     wsToken,
     isGroup,
     groupId: active?.group_id,
+    userId: user?.id,
+    memberIds: active?.participants || [],
   });
 
   const { readByMessage } = useReadReceipts(activeId, messages, {
@@ -128,6 +131,22 @@ export default function ChatHome() {
     userId: user?.id,
     wsToken,
     enabled: Boolean(user && active && !isGroup),
+  });
+
+  const groupParticipantCount = active?.participants?.length || 2;
+  const {
+    localStream: groupLocalStream,
+    remoteStreams: groupRemoteStreams,
+    status: groupCallStatus,
+    callOpen: groupCallOpen,
+    startGroupCall,
+    endGroupCall,
+    error: groupCallError,
+    mode: groupCallMode,
+  } = useGroupCall({
+    conversationId: activeId,
+    participantCount: groupParticipantCount,
+    userId: user?.id,
   });
 
   const searchHits = useMemo(() => {
@@ -412,7 +431,7 @@ export default function ChatHome() {
                   </button>
                 </p>
               )}
-              {!isGroup && (
+              {!isGroup ? (
                 <div className={styles.callBar}>
                   <button type="button" onClick={() => startCall(false)}>
                     📞 Call
@@ -420,6 +439,19 @@ export default function ChatHome() {
                   <button type="button" onClick={() => startCall(true)}>
                     📹 Video
                   </button>
+                </div>
+              ) : (
+                <div className={styles.callBar}>
+                  <button type="button" onClick={() => startGroupCall(false)}>
+                    📞 Group call
+                  </button>
+                  <button type="button" onClick={() => startGroupCall(true)}>
+                    📹 Group video
+                  </button>
+                  {groupCallError && <span className={styles.muted}>{groupCallError}</span>}
+                  {groupCallMode === 'sfu' && (
+                    <span className={styles.muted}>SFU ({groupParticipantCount} participants)</span>
+                  )}
                 </div>
               )}
             </header>
@@ -522,15 +554,15 @@ export default function ChatHome() {
       />
 
       <CallModal
-        open={callOpen}
-        status={callStatus}
-        peerLabel={active?.peer_id}
-        isVideo={Boolean(activeCall?.video)}
-        localStream={localStream}
-        remoteStream={remoteStream}
+        open={callOpen || groupCallOpen}
+        status={groupCallOpen ? groupCallStatus : callStatus}
+        peerLabel={isGroup ? getThreadTitle() : active?.peer_id}
+        isVideo={Boolean(activeCall?.video) || groupRemoteStreams.length > 0}
+        localStream={groupCallOpen ? groupLocalStream : localStream}
+        remoteStream={groupCallOpen ? groupRemoteStreams[0] || null : remoteStream}
         onAnswer={answerCall}
         onDecline={declineCall}
-        onEnd={endCall}
+        onEnd={groupCallOpen ? endGroupCall : endCall}
       />
     </div>
   );

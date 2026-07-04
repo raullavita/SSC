@@ -34,17 +34,19 @@ function send(ws, payload) {
 }
 
 export class SfuSession {
-  constructor({ wsUrl, roomId, joinToken, peerId }) {
+  constructor({ wsUrl, roomId, joinToken, peerId, onRemoteTrack } = {}) {
     this.wsUrl = wsUrl;
     this.roomId = roomId;
     this.joinToken = joinToken;
     this.peerId = peerId || `ssc-${Math.random().toString(36).slice(2, 10)}`;
+    this.onRemoteTrack = onRemoteTrack;
     this.ws = null;
     this.device = null;
     this.sendTransport = null;
     this.recvTransport = null;
     this.rtpCapabilities = null;
     this.connected = false;
+    this.remoteConsumers = new Map();
   }
 
   async connect() {
@@ -174,6 +176,15 @@ export class SfuSession {
       this.ws,
       (m) => m.action === 'consumerResumed' && m.consumerId === consumer.id
     );
+    this.remoteConsumers.set(consumer.id, consumer);
+    if (this.onRemoteTrack && consumer.track) {
+      this.onRemoteTrack({
+        producerId,
+        kind: consumed.kind,
+        track: consumer.track,
+        consumerId: consumer.id,
+      });
+    }
     return consumer;
   }
 
@@ -185,7 +196,7 @@ export class SfuSession {
   }
 }
 
-export async function connectSfuSession(opts) {
+export async function connectSfuSession(opts = {}) {
   const session = new SfuSession(opts);
   await session.connect();
   return session;

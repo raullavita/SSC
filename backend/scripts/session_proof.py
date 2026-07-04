@@ -20,19 +20,20 @@ def main() -> int:
 
     checks = []
 
-    auth_source = inspect.getsource(auth_module.register)
+    register_source = inspect.getsource(auth_module.register)
+    issue_source = inspect.getsource(auth_module._issue_auth_response)
     checks.append(
         {
             "name": "register_no_token_in_body",
-            "passed": '"token"' not in auth_source.split("return")[1],
+            "passed": '"token"' not in register_source.split("return")[-1],
             "detail": "register response omits JWT",
         }
     )
     checks.append(
         {
             "name": "register_uses_issue_user_session",
-            "passed": "issue_user_session" in auth_source,
-            "detail": "register issues httpOnly cookie session",
+            "passed": "issue_user_session" in issue_source and "_issue_auth_response" in register_source,
+            "detail": "register issues httpOnly cookie session via _issue_auth_response",
         }
     )
 
@@ -40,7 +41,7 @@ def main() -> int:
     checks.append(
         {
             "name": "cookie_httponly",
-            "passed": "httponly=True" in cookie_source,
+            "passed": '"httponly": True' in cookie_source or "httponly=True" in cookie_source,
             "detail": "session cookie is httpOnly",
         }
     )

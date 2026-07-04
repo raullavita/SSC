@@ -1,14 +1,30 @@
 /**
- * Multi-device linking hook — Engine 9 (scaffold, no app packaging).
+ * Multi-device linking — create link, confirm, list, revoke.
  */
 
 import { useCallback, useState } from 'react';
-import { api } from '../lib/api';
+import { api, apiFetch } from '../lib/api';
 
 export function useMultiDevice() {
   const [linkToken, setLinkToken] = useState(null);
+  const [devices, setDevices] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const loadDevices = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.get('/api/devices');
+      setDevices(data.devices || []);
+      return data.devices || [];
+    } catch (e) {
+      setError(e.message || 'Failed to load devices');
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const createLink = useCallback(async (deviceName = 'New device') => {
     setLoading(true);
@@ -43,5 +59,36 @@ export function useMultiDevice() {
     }
   }, []);
 
-  return { linkToken, createLink, confirmLink, loading, error };
+  const revokeDevice = useCallback(
+    async (deviceId) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await apiFetch(`/api/devices/${encodeURIComponent(deviceId)}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        setDevices((prev) => prev.filter((d) => d.id !== deviceId));
+        return true;
+      } catch (e) {
+        setError(e.message || 'Failed to revoke device');
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  return {
+    linkToken,
+    devices,
+    createLink,
+    confirmLink,
+    loadDevices,
+    revokeDevice,
+    loading,
+    error,
+  };
 }
+
