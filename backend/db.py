@@ -17,7 +17,12 @@ def get_mongo_client() -> AsyncIOMotorClient:
     global _mongo_client
     if _mongo_client is None:
         settings = get_settings()
-        _mongo_client = AsyncIOMotorClient(settings.mongo_url)
+        timeout_ms = settings.mongo_server_selection_timeout_ms
+        _mongo_client = AsyncIOMotorClient(
+            settings.mongo_url,
+            serverSelectionTimeoutMS=timeout_ms,
+            connectTimeoutMS=timeout_ms,
+        )
     return _mongo_client
 
 
