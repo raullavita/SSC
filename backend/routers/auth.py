@@ -10,7 +10,7 @@ from pydantic import BaseModel, EmailStr, Field
 from core.auth_tokens import issue_access_token
 from core.ids import new_user_id
 from core.passwords import hash_password, verify_password
-from core.retention_policy import default_expires_at
+from core.last_seen import default_privacy_settings
 from db import get_database
 from deps import get_client_header, get_current_user_id
 
@@ -44,6 +44,7 @@ async def register(
         "email": body.email.lower(),
         "display_name": body.display_name.strip(),
         "password_hash": hash_password(body.password),
+        "privacy_settings": default_privacy_settings(),
         "created_at": datetime.now(timezone.utc),
     }
     await db.users.insert_one(doc)

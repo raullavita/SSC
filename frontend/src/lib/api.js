@@ -55,6 +55,13 @@ export const api = {
       headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
       body: JSON.stringify(body),
     }),
+  patch: (path, body, options) =>
+    apiJson(path, {
+      ...options,
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
+      body: JSON.stringify(body),
+    }),
 };
 
 export function wsUrl() {

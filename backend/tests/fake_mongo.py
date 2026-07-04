@@ -35,24 +35,29 @@ class FakeCollection:
     def __init__(self) -> None:
         self.docs: list[dict] = []
 
-    async def find_one(self, query: dict) -> dict | None:
+    async def find_one(self, query: dict, projection: dict | None = None) -> dict | None:
+        _ = projection
         for doc in self.docs:
             if _matches(doc, query):
                 return deepcopy(doc)
         return None
 
-    def find(self, query: dict) -> FakeCursor:
+    def find(self, query: dict, projection: dict | None = None) -> FakeCursor:
+        _ = projection
         return FakeCursor([deepcopy(d) for d in self.docs if _matches(d, query)])
 
     async def insert_one(self, doc: dict) -> None:
         self.docs.append(deepcopy(doc))
 
-    async def update_one(self, query: dict, update: dict) -> None:
+    async def update_one(self, query: dict, update: dict, upsert: bool = False) -> None:
         for i, doc in enumerate(self.docs):
             if _matches(doc, query):
                 if "$set" in update:
                     self.docs[i] = {**doc, **update["$set"]}
                 return
+        if upsert and "$set" in update:
+            new_doc = {**query, **update["$set"]}
+            self.docs.append(new_doc)
 
     async def delete_many(self, query: dict) -> Any:
         before = len(self.docs)
@@ -80,12 +85,15 @@ class FakeDatabase:
 def _matches(doc: dict, query: dict) -> bool:
     for key, expected in query.items():
         value = doc.get(key)
-        if isinstance(expected, dict) and "$in" in expected:
-            if value not in expected["$in"]:
-                return False
-        elif key == "participants" and isinstance(expected, str):
+        if isinstance(expected, dict):
+            if "$in" in expected:
+                if value not in expected["$in"]:
+                    return False
+                continue
+        if key == "participants" and isinstance(expected, str):
             if expected not in (value or []):
                 return False
-        elif value != expected:
+            continue
+        if value != expected:
             return False
     return True

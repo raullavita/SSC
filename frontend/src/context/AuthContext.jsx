@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
+import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 import { clearAccessToken, getAccessToken, setAccessToken } from '../lib/sessionStore';
 
 const AuthContext = createContext(null);
@@ -18,10 +19,12 @@ export function AuthProvider({ children }) {
     try {
       const me = await api.get('/api/auth/me');
       setUser(me);
+      startPresenceHeartbeat();
       return me;
     } catch {
       clearAccessToken();
       setUser(null);
+      stopPresenceHeartbeat();
       return null;
     } finally {
       setLoading(false);
@@ -36,6 +39,7 @@ export function AuthProvider({ children }) {
     const data = await api.post('/api/auth/login', { email, password });
     setAccessToken(data.token);
     setUser(data.user);
+    startPresenceHeartbeat();
     return data.user;
   }, []);
 
@@ -47,6 +51,7 @@ export function AuthProvider({ children }) {
     });
     setAccessToken(data.token);
     setUser(data.user);
+    startPresenceHeartbeat();
     return data.user;
   }, []);
 
@@ -58,6 +63,7 @@ export function AuthProvider({ children }) {
     }
     clearAccessToken();
     setUser(null);
+    stopPresenceHeartbeat();
   }, []);
 
   const value = useMemo(

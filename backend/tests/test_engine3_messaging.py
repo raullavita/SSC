@@ -20,7 +20,6 @@ async def messaging_client(monkeypatch):
     monkeypatch.setattr("routers.auth.get_database", lambda: fake_db)
     monkeypatch.setattr("routers.conversations.get_database", lambda: fake_db)
     monkeypatch.setattr("routers.messages.get_database", lambda: fake_db)
-    monkeypatch.setattr("routers.messages.ws_hub.publish", lambda *a, **k: None)
     monkeypatch.setattr("deps.get_database", lambda: fake_db)
 
     app = create_app()

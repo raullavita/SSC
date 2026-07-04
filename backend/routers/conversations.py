@@ -1,4 +1,4 @@
-"""Conversation routes — Engine 3."""
+"""Conversation routes — Engine 3/4 metadata-minimized responses."""
 
 from __future__ import annotations
 
@@ -7,7 +7,9 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from core.conversation_meta import get_meta_map, upsert_meta
 from core.ids import direct_conversation_key, new_conversation_id
+from core.metadata_policy import public_conversation
 from core.retention_policy import default_expires_at
 from db import get_database
 from deps import get_client_header, get_current_user_id
@@ -19,17 +21,9 @@ class CreateConversationBody(BaseModel):
     participant_id: str = Field(min_length=3)
 
 
-def _public_conversation(doc: dict, viewer_id: str) -> dict:
-    participants = doc.get("participants", [])
-    peer = next((p for p in participants if p != viewer_id), None)
-    return {
-        "id": doc["_id"],
-        "type": doc.get("type", "direct"),
-        "participants": participants,
-        "peer_id": peer,
-        "updated_at": doc.get("updated_at"),
-        "created_at": doc.get("created_at"),
-    }
+class ConversationMetaPatch(BaseModel):
+    pinned: bool | None = None
+    muted: bool | None = None
 
 
 @router.get("")
@@ -39,9 +33,12 @@ async def list_conversations(
 ) -> dict:
     db = get_database()
     cursor = db.conversations.find({"participants": user_id}).sort("updated_at", -1)
-    items = []
-    async for doc in cursor:
-        items.append(_public_conversation(doc, user_id))
+    docs = [doc async for doc in cursor]
+    meta_map = await get_meta_map(db, user_id, [d["_id"] for d in docs])
+    items = [
+        public_conversation(doc, user_id, meta_map.get(doc["_id"]))
+        for doc in docs
+    ]
     return {"conversations": items}
 
 
@@ -62,7 +59,12 @@ async def create_conversation(
     key = direct_conversation_key(user_id, body.participant_id)
     existing = await db.conversations.find_one({"direct_key": key})
     if existing:
-        return {"conversation": _public_conversation(existing, user_id)}
+        meta = await get_meta_map(db, user_id, [existing["_id"]])
+        return {
+            "conversation": public_conversation(
+                existing, user_id, meta.get(existing["_id"])
+            )
+        }
 
     now = datetime.now(timezone.utc)
     doc = {
@@ -75,7 +77,7 @@ async def create_conversation(
         "expires_at": default_expires_at(),
     }
     await db.conversations.insert_one(doc)
-    return {"conversation": _public_conversation(doc, user_id)}
+    return {"conversation": public_conversation(doc, user_id)}
 
 
 @router.get("/{conversation_id}")
@@ -88,4 +90,27 @@ async def get_conversation(
     doc = await db.conversations.find_one({"_id": conversation_id, "participants": user_id})
     if not doc:
         raise HTTPException(status_code=404, detail="conversation_not_found")
-    return {"conversation": _public_conversation(doc, user_id)}
+    meta = await get_meta_map(db, user_id, [conversation_id])
+    return {"conversation": public_conversation(doc, user_id, meta.get(conversation_id))}
+
+
+@router.patch("/{conversation_id}/meta")
+async def patch_conversation_meta(
+    conversation_id: str,
+    body: ConversationMetaPatch,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    db = get_database()
+    doc = await db.conversations.find_one({"_id": conversation_id, "participants": user_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="conversation_not_found")
+    await upsert_meta(
+        db,
+        user_id,
+        conversation_id,
+        pinned=body.pinned,
+        muted=body.muted,
+    )
+    meta = await get_meta_map(db, user_id, [conversation_id])
+    return {"conversation": public_conversation(doc, user_id, meta.get(conversation_id))}

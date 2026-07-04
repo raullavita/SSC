@@ -11,3 +11,11 @@ Security charters live in `memory/`. Engine gates enforce implementation order.
 - **Panic wipe:** `POST /api/panic/wipe` immediately deletes all user data across every collection in the retention charter. Stronger than TTL — nothing survives.
 
 See `memory/RETENTION_CHARTER.md` for the full collection registry.
+
+## Metadata minimization (Engine 4)
+
+- Push payloads are generic only (`SSC` / `New message`).
+- Last-seen defaults to hidden; users opt in via privacy settings.
+- Conversation APIs omit peer email and participant lists.
+
+See `memory/METADATA_MINIMIZATION_CHARTER.md`.
