@@ -99,6 +99,8 @@ def validate_signal_ciphertext(ciphertext: str, protocol: str) -> tuple[bool, st
         "signal_v1_sealed",
         "signal_v1_reaction",
         "signal_v1_attachment",
+        "signal_v1_poll",
+        "signal_v1_story",
         GROUP_SENDER_KEY_PROTOCOL,
         GROUP_SENDER_KEY_DIST_PROTOCOL,
     }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { isImageAttachment, isVoiceAttachment } from '../../chat/attachments';
 import { decryptFileBytes } from '../../signal/signalBridge';
+import PollBubble from './PollBubble';
 import styles from './MessageBubble.module.css';
 
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
@@ -94,6 +95,11 @@ export default function MessageBubble({
   onTranslate,
   downloadFile,
   readAt,
+  poll,
+  pollTallies,
+  pollViewerVote,
+  onPollVote,
+  disappearingRemaining,
 }) {
   const { text, attachment, created_at: createdAt, disappearing_seconds: disappearing } = message;
   const bubbleClass = [
@@ -110,6 +116,15 @@ export default function MessageBubble({
 
       {text && <span className={styles.text}>{text}</span>}
 
+      {poll && (
+        <PollBubble
+          poll={poll}
+          tallies={pollTallies}
+          viewerVote={pollViewerVote}
+          onVote={onPollVote}
+        />
+      )}
+
       {attachment && (
         <div className={styles.attachment}>
           <AttachmentContent attachment={attachment} downloadFile={downloadFile} />
@@ -119,7 +134,11 @@ export default function MessageBubble({
       {inlineTranslation && <p className={styles.translation}>{inlineTranslation}</p>}
 
       <div className={styles.meta}>
-        {disappearing ? <span className={styles.timer}>⏱ {disappearing}s</span> : null}
+        {disappearingRemaining != null && disappearingRemaining > 0 ? (
+          <span className={styles.timer}>⏱ {disappearingRemaining}s</span>
+        ) : disappearing ? (
+          <span className={styles.timer}>⏱ {disappearing}s</span>
+        ) : null}
         <span className={styles.timestamp}>{formatTime(createdAt)}</span>
         {isOutgoing && (
           <span

@@ -28,6 +28,7 @@ export default function Composer({
   uploading,
   onFileClick,
   onFileSelected,
+  onCreatePoll,
   disabled = false,
 }) {
   const fileInputRef = useRef(null);
@@ -121,6 +122,17 @@ export default function Composer({
             </option>
           ))}
         </select>
+        {onCreatePoll && (
+          <button
+            type="button"
+            className={styles.toolBtn}
+            onClick={onCreatePoll}
+            disabled={disabled}
+            title="Create poll"
+          >
+            📊 Poll
+          </button>
+        )}
       </div>
 
       {translatedPreview && (

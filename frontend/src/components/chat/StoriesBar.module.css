@@ -1,0 +1,75 @@
+.bar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  overflow-x: auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chip {
+  flex: 0 0 auto;
+  min-width: 4.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: center;
+}
+
+.chipOwn {
+  border-color: rgba(100, 180, 255, 0.5);
+}
+
+.chipActive {
+  background: rgba(100, 180, 255, 0.15);
+}
+
+.panel {
+  padding: 0.5rem 0.75rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.text {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actions button {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+
+.muted {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  opacity: 0.65;
+}
+
+.form {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0 0.75rem 0.5rem;
+}
+
+.form input {
+  flex: 1;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.form button {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+}

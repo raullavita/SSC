@@ -66,6 +66,17 @@ class FakeCollection:
         result = type("R", (), {"deleted_count": deleted})()
         return result
 
+    async def count_documents(self, query: dict) -> int:
+        return len([d for d in self.docs if _matches(d, query)])
+
+    async def replace_one(self, query: dict, doc: dict, upsert: bool = False) -> None:
+        for i, existing in enumerate(self.docs):
+            if _matches(existing, query):
+                self.docs[i] = deepcopy(doc)
+                return
+        if upsert:
+            self.docs.append(deepcopy(doc))
+
 
 class FakeDatabase:
     def __init__(self) -> None:
@@ -84,10 +95,23 @@ class FakeDatabase:
 
 def _matches(doc: dict, query: dict) -> bool:
     for key, expected in query.items():
+        if key == "$or":
+            if not any(_matches(doc, clause) for clause in expected):
+                return False
+            continue
         value = doc.get(key)
         if isinstance(expected, dict):
             if "$in" in expected:
                 if value not in expected["$in"]:
+                    return False
+                continue
+            if "$gt" in expected:
+                if value is None or not (value > expected["$gt"]):
+                    return False
+                continue
+            if "$exists" in expected:
+                exists = key in doc and doc.get(key) is not None
+                if bool(expected["$exists"]) != exists:
                     return False
                 continue
         if key == "participants" and isinstance(expected, str):

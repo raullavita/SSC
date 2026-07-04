@@ -97,6 +97,8 @@ def public_message(doc: dict[str, Any], viewer_id: str | None = None) -> dict[st
         out["reply_to"] = doc["reply_to"]
     if doc.get("message_kind"):
         out["message_kind"] = doc["message_kind"]
+    if doc.get("poll_id"):
+        out["poll_id"] = doc["poll_id"]
     return scrub_payload(out)
 
 

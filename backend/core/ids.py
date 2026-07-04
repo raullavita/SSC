@@ -33,6 +33,14 @@ def new_link_token_id() -> str:
     return f"link_{secrets.token_hex(10)}"
 
 
+def new_story_id() -> str:
+    return f"story_{secrets.token_hex(8)}"
+
+
+def new_poll_id() -> str:
+    return f"poll_{secrets.token_hex(8)}"
+
+
 def direct_conversation_key(user_a: str, user_b: str) -> str:
     a, b = sorted([user_a, user_b])
     return f"direct:{a}:{b}"
