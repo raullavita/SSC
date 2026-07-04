@@ -31,6 +31,7 @@ const {
   CiphertextMessageType,
   PreKeySignalMessage,
   SignalMessage,
+  Fingerprint,
 } = require('@signalapp/libsignal-client');
 
 function b64encode(buf) {
@@ -402,6 +403,20 @@ class LibsignalSession {
       );
     }
     return Buffer.from(plaintext).toString('utf8');
+  }
+
+  async computeSafetyNumber(peerId, peerIdentityKeyB64) {
+    const pair = await this.identityStore.getIdentityKeyPair();
+    const remoteKey = PublicKey.deserialize(b64decode(peerIdentityKeyB64));
+    const localUser = this.meta.localUserId || 'ssc-local';
+    const localId = new TextEncoder().encode(localUser);
+    const remoteId = new TextEncoder().encode(peerId);
+    const fp = Fingerprint.new(5200, 2, localId, pair.publicKey, remoteId, remoteKey);
+    return {
+      displayable: fp.displayableFingerprint().toString(),
+      localUser,
+      peerId,
+    };
   }
 
   async encryptBytes(arrayBuffer) {

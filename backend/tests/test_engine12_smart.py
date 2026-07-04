@@ -28,6 +28,12 @@ def test_engine12_smart_ready():
     assert engine12_smart_ready() is True
 
 
+def test_no_inside_ai():
+    from core.smart_policy import NO_INSIDE_AI
+
+    assert NO_INSIDE_AI is True
+
+
 def test_engine12_complete():
     assert len(ENGINE12_STEPS) == 12
     assert engine12_complete() is True

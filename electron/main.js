@@ -43,6 +43,11 @@ function registerCryptoIpc() {
     const s = getSession(app.getPath('userData'));
     return s.encryptBytes(buffer);
   });
+
+  ipcMain.handle('ssc-crypto:computeSafetyNumber', async (_evt, { peerId, peerIdentityKey }) => {
+    const s = getSession(app.getPath('userData'));
+    return s.computeSafetyNumber(peerId, peerIdentityKey);
+  });
 }
 
 function createWindow() {

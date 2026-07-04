@@ -1,36 +1,38 @@
 # SSC Intelligence Charter
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Effective:** 2026-07-04  
-**Engine:** 12 — Smart features + premium UX
+**Engine:** 12 + 13 — Premium UX, **no inside AI**
 
-## Privacy principle
+## No inside AI (hard rule)
 
-All intelligence runs **on the client** or on **local services the user controls**. SSC servers never decrypt messages for smart features.
+SSC does **not** ship inside AI: no Ollama, no smart replies, no on-device LLM, no server-side inference on message content.
 
-## OSS providers
+Allowed “smart” features use deterministic OSS only:
 
 | Feature | Library | Repo |
 |---------|---------|------|
 | Local search | minisearch | https://github.com/lucaong/minisearch |
 | Language detect | franc | https://github.com/wooorm/franc |
 | Translation | LibreTranslate (proxy) | https://github.com/LibreTranslate/LibreTranslate |
-| Smart replies | Ollama (optional, local) | https://github.com/ollama/ollama |
 
 ## Server features (metadata-minimal)
 
 - **Typing indicators:** ephemeral WebSocket only — no DB
 - **Disappearing messages:** per-message `disappearing_seconds` → `expires_at`
-- **Smart config:** `GET /api/smart/config` — feature flags + provider registry
+- **Smart config:** `GET /api/smart/config` — `no_inside_ai: true`
 
 ## Client features
 
 - Encrypted local message index + search
 - Auto-translate incoming messages (franc + LibreTranslate)
-- Smart reply chips (Ollama with rule-based fallback)
 - Voice messages (MediaRecorder → E2EE file upload)
 - Presence badges in conversation list
+- Safety numbers (libsignal Fingerprint)
+- Encrypted reactions (`signal_v1_reaction`)
+- Message threads (`reply_to`)
 
 ## Gate
 
-Engine 12 completes when `backend/scripts/run_engine12_gate.py` passes step **12.12**.
+Engine 12: `run_engine12_gate.py` step **12.12**  
+Engine 13: `run_engine13_gate.py` step **13.10**

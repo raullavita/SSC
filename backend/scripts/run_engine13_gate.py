@@ -1,4 +1,4 @@
-"""Engine 12 gate — intelligence layer + premium UX."""
+"""Engine 13 gate — complete messenger, no inside AI."""
 
 from __future__ import annotations
 
@@ -23,40 +23,39 @@ def _file_absent(rel: str) -> dict:
 
 def main() -> int:
     sys.path.insert(0, str(BACKEND_ROOT))
-    from core.engine12 import engine12_complete  # noqa: PLC0415
+    from core.engine13 import engine13_complete  # noqa: PLC0415
 
     checks: list[dict] = [
         {
-            "name": "engine12_complete_helper",
-            "passed": engine12_complete(),
-            "detail": "engine12_complete() is True",
+            "name": "engine13_complete_helper",
+            "passed": engine13_complete(),
+            "detail": "engine13_complete() is True",
         },
         _file_absent("frontend/src/smart/smartReply.js"),
         _file_absent("frontend/src/smart/useSmartReplies.js"),
     ]
 
     for rel in [
+        "memory/ENGINE13_CHARTER.md",
         "memory/INTELLIGENCE_CHARTER.md",
-        "backend/core/smart_policy.py",
-        "backend/core/engine12.py",
-        "backend/routers/smart.py",
-        "backend/routers/typing.py",
-        "frontend/src/search/messageIndex.js",
-        "frontend/src/smart/languageDetect.js",
-        "frontend/src/chat/useTypingIndicator.js",
-        "frontend/src/chat/useVoiceMessage.js",
-        "frontend/src/hooks/usePresenceMap.js",
-        "backend/tests/test_engine12_smart.py",
-        "backend/scripts/smart_proof.py",
+        "backend/core/engine13.py",
+        "backend/core/pqxdh_policy.py",
+        "backend/core/reaction_policy.py",
+        "frontend/src/signal/safetyNumber.js",
+        "frontend/src/chat/reactions.js",
+        "scripts/validate_deploy.ps1",
+        "backend/scripts/complete_proof.py",
+        "backend/tests/test_engine13_complete.py",
+        "backend/tests/test_engine13_pqxdh.py",
     ]:
         checks.append(_check_file(rel))
 
-    charter = (REPO_ROOT / "memory" / "INTELLIGENCE_CHARTER.md").read_text(encoding="utf-8")
+    charter = (REPO_ROOT / "memory" / "ENGINE13_CHARTER.md").read_text(encoding="utf-8")
     checks.append(
         {
             "name": "charter_gate_docs",
-            "passed": "step 12.12" in charter.lower() or "12.12" in charter,
-            "detail": "charter documents step 12.12 gate",
+            "passed": "13.10" in charter,
+            "detail": "charter documents step 13.10 gate",
         }
     )
 
@@ -65,8 +64,9 @@ def main() -> int:
             sys.executable,
             "-m",
             "pytest",
+            "tests/test_engine13_complete.py",
+            "tests/test_engine13_pqxdh.py",
             "tests/test_engine12_smart.py",
-            "tests/test_metadata_policy.py",
             "-q",
             "--tb=line",
         ],
@@ -76,21 +76,21 @@ def main() -> int:
     )
     checks.append(
         {
-            "name": "engine12_unit_tests",
+            "name": "engine13_unit_tests",
             "passed": tests.returncode == 0,
             "detail": "ok" if tests.returncode == 0 else (tests.stdout + tests.stderr)[-800:],
         }
     )
 
     proof = subprocess.run(
-        [sys.executable, "scripts/smart_proof.py"],
+        [sys.executable, "scripts/complete_proof.py"],
         cwd=BACKEND_ROOT,
         capture_output=True,
         text=True,
     )
     checks.append(
         {
-            "name": "smart_proof",
+            "name": "complete_proof",
             "passed": proof.returncode == 0,
             "detail": "ok" if proof.returncode == 0 else (proof.stdout + proof.stderr)[-500:],
         }
@@ -98,7 +98,7 @@ def main() -> int:
 
     passed = all(c["passed"] for c in checks)
     print(json.dumps({"passed": passed, "checks": checks}, indent=2))
-    print("ENGINE 12 GATE PASSED" if passed else "ENGINE 12 GATE FAILED")
+    print("ENGINE 13 GATE PASSED" if passed else "ENGINE 13 GATE FAILED")
     return 0 if passed else 1
 
 

@@ -83,6 +83,10 @@ def public_message(doc: dict[str, Any], viewer_id: str | None = None) -> dict[st
         exp = doc.get("expires_at")
         if hasattr(exp, "isoformat"):
             out["expires_at"] = exp.isoformat()
+    if doc.get("reply_to"):
+        out["reply_to"] = doc["reply_to"]
+    if doc.get("message_kind"):
+        out["message_kind"] = doc["message_kind"]
     return scrub_payload(out)
 
 

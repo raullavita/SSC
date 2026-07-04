@@ -1,4 +1,4 @@
-"""Engine 12 smart features proof — step 12.11."""
+"""Engine 12 smart features proof — no inside AI."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 def main() -> int:
     from core.engine12 import engine12_complete  # noqa: PLC0415
+    from core.smart_policy import NO_INSIDE_AI  # noqa: PLC0415
 
     repo = Path(__file__).resolve().parents[2]
     checks = []
@@ -21,7 +22,6 @@ def main() -> int:
         "backend/routers/smart.py",
         "backend/routers/typing.py",
         "frontend/src/search/messageIndex.js",
-        "frontend/src/smart/smartReply.js",
         "frontend/src/smart/languageDetect.js",
         "frontend/src/chat/useTypingIndicator.js",
         "frontend/src/chat/useVoiceMessage.js",
@@ -29,12 +29,13 @@ def main() -> int:
         path = repo / rel
         checks.append({"name": f"file:{rel}", "passed": path.is_file(), "detail": ""})
 
-    smart_reply = (repo / "frontend" / "src" / "smart" / "smartReply.js").read_text(encoding="utf-8")
+    checks.append({"name": "no_inside_ai", "passed": NO_INSIDE_AI is True, "detail": ""})
+
     checks.append(
         {
-            "name": "ollama_local_llm",
-            "passed": "ollama" in smart_reply.lower() and "localhost" in smart_reply,
-            "detail": "client-only Ollama",
+            "name": "ollama_removed",
+            "passed": not (repo / "frontend" / "src" / "smart" / "smartReply.js").is_file(),
+            "detail": "no inside AI",
         }
     )
 
@@ -50,9 +51,9 @@ def main() -> int:
     chat = (repo / "frontend" / "src" / "pages" / "ChatHome.jsx").read_text(encoding="utf-8")
     checks.append(
         {
-            "name": "chat_home_smart_ux",
-            "passed": "useSmartReplies" in chat and "searchMessages" in chat,
-            "detail": "smart chips + search",
+            "name": "chat_home_search",
+            "passed": "searchMessages" in chat and "useSmartReplies" not in chat,
+            "detail": "search without AI",
         }
     )
 

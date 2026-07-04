@@ -1,4 +1,4 @@
-"""Smart features config — OSS provider registry — Engine 12."""
+"""Smart features config — no inside AI — Engine 12/13."""
 
 from __future__ import annotations
 
@@ -7,9 +7,8 @@ from fastapi import APIRouter, Depends
 from core.smart_policy import (
     DISAPPEARING_MAX_SECONDS,
     DISAPPEARING_MIN_SECONDS,
-    OLLAMA_URL_HINT,
+    NO_INSIDE_AI,
     SMART_LANGUAGE_DETECT_PROVIDER,
-    SMART_LLM_PROVIDER,
     SMART_SEARCH_PROVIDER,
     SMART_TRANSLATION_PROVIDER,
     TYPING_TTL_SECONDS,
@@ -25,23 +24,22 @@ async def smart_config(
     _user: str = Depends(get_current_user_id),
 ) -> dict:
     return {
+        "no_inside_ai": NO_INSIDE_AI,
         "local_search": True,
-        "smart_replies": True,
         "auto_translate": True,
         "voice_messages": True,
         "disappearing_messages": True,
         "typing_indicators": True,
+        "smart_replies": False,
         "disappearing_range": {
             "min_seconds": DISAPPEARING_MIN_SECONDS,
             "max_seconds": DISAPPEARING_MAX_SECONDS,
         },
         "typing_ttl_seconds": TYPING_TTL_SECONDS,
-        "ollama_url_hint": OLLAMA_URL_HINT,
         "providers": {
             "translation": SMART_TRANSLATION_PROVIDER,
             "search": SMART_SEARCH_PROVIDER,
             "language_detect": SMART_LANGUAGE_DETECT_PROVIDER,
-            "llm": SMART_LLM_PROVIDER,
         },
-        "privacy": "All smart processing runs on-device; Ollama is optional and local-only.",
+        "privacy": "No inside AI. Search and language detect run on-device; translation uses LibreTranslate proxy.",
     }

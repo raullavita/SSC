@@ -281,6 +281,77 @@
   color: #fff !important;
 }
 
+.safetyNumber {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #8696a0;
+}
+
+.safetyNumber code {
+  font-size: 0.7rem;
+  color: #00a884;
+}
+
+.messageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.actionBtn,
+.reactionBtn {
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0.1rem 0.25rem;
+}
+
+.reactionBtn {
+  font-size: 0.9rem;
+}
+
+.reactionRow {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.reactionChip {
+  background: #2a3942;
+  border-radius: 12px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.85rem;
+}
+
+.replyPreview {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  color: #8696a0;
+  border-left: 2px solid #00a884;
+  padding-left: 0.5rem;
+}
+
+.replyBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: #202c33;
+  border-top: 1px solid #2a3942;
+  font-size: 0.8rem;
+  color: #aebac1;
+}
+
+.replyBar button {
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  cursor: pointer;
+}
+
 .page {
   padding: 2rem;
 }

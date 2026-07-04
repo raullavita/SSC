@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from config import get_settings
+from core.pqxdh_policy import validate_kyber_prekey
 from core.signal_policy import (
     FORBIDDEN_PREKEY_FIELDS,
     public_prekey_bundle,
@@ -47,6 +49,13 @@ async def upload_prekey_bundle(
     raw = body.model_dump()
     if any(field in raw for field in FORBIDDEN_PREKEY_FIELDS):
         raise HTTPException(status_code=400, detail="private_key_material_forbidden")
+
+    settings = get_settings()
+    kyber_ok, kyber_detail = validate_kyber_prekey(
+        body.kyber_prekey, production=settings.is_production
+    )
+    if not kyber_ok:
+        raise HTTPException(status_code=400, detail=kyber_detail)
 
     db = get_database()
     doc_id = f"{user_id}:{body.device_id}"

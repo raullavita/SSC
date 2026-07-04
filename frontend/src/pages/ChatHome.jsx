@@ -11,8 +11,8 @@ import { api } from '../lib/api';
 import { fetchLanguages, translateText } from '../lib/translation';
 import { searchMessages } from '../search/messageIndex';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
+import { computeSafetyNumber } from '../signal/safetyNumber';
 import { shouldAutoTranslate } from '../smart/languageDetect';
-import { useSmartReplies } from '../smart/useSmartReplies';
 import styles from './ChatHome.module.css';
 
 const DISAPPEAR_OPTIONS = [
@@ -21,6 +21,8 @@ const DISAPPEAR_OPTIONS = [
   { label: '1h', value: 3600 },
   { label: '24h', value: 86400 },
 ];
+
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
 export default function ChatHome() {
   const { user, loading, logout } = useAuth();
@@ -36,6 +38,8 @@ export default function ChatHome() {
   const [searchQuery, setSearchQuery] = useState('');
   const [disappearingSeconds, setDisappearingSeconds] = useState(0);
   const [inlineTranslations, setInlineTranslations] = useState({});
+  const [safetyNumber, setSafetyNumber] = useState(null);
+  const [replyTo, setReplyTo] = useState(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -55,16 +59,18 @@ export default function ChatHome() {
     [handleSocketPayload]
   );
 
-  const { messages, sendMessage, loading: messagesLoading } = useChatMessages(
-    activeId,
-    Boolean(user),
-    active?.peer_id,
-    { onSocketEvent: handleSocketEvent }
-  );
+  const {
+    messages,
+    reactionsByTarget,
+    sendMessage,
+    sendReaction,
+    loading: messagesLoading,
+  } = useChatMessages(activeId, Boolean(user), active?.peer_id, {
+    onSocketEvent: handleSocketEvent,
+  });
 
   const { uploadFile, uploading, error: fileError } = useFileTransfer(activeId);
   const { recording, startRecording, stopRecording } = useVoiceMessage(activeId);
-  const { suggestions, loading: smartLoading, refresh: refreshSmart, clear: clearSmart } = useSmartReplies();
 
   const { startCall, status: callStatus, cleanup: endCall } = useCall({
     conversationId: activeId,
@@ -77,6 +83,14 @@ export default function ChatHome() {
     if (!activeId || !searchQuery.trim()) return [];
     return searchMessages(activeId, searchQuery);
   }, [activeId, searchQuery, messages]);
+
+  const messageById = useMemo(() => {
+    const map = {};
+    for (const m of messages) {
+      if (m.text) map[m.id] = m;
+    }
+    return map;
+  }, [messages]);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -99,33 +113,32 @@ export default function ChatHome() {
       fetchLanguages()
         .then(setLanguages)
         .catch(() => {});
-      api.get('/api/smart/config')
-        .then((cfg) => {
-          if (cfg?.ollama_url_hint) {
-            /* client uses REACT_APP_OLLAMA_URL; hint for settings UI later */
-          }
-        })
-        .catch(() => {});
     }
   }, [user, loadConversations]);
+
+  useEffect(() => {
+    if (active?.peer_id) {
+      computeSafetyNumber(active.peer_id)
+        .then(setSafetyNumber)
+        .catch(() => setSafetyNumber(null));
+    } else {
+      setSafetyNumber(null);
+    }
+  }, [active?.peer_id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
-    if (active && messages.length) {
-      refreshSmart({ messages, peerName: active.peer_id, userId: user?.id });
-    } else {
-      clearSmart();
-    }
-  }, [active, messages, user?.id, refreshSmart, clearSmart]);
-
-  useEffect(() => {
     let cancelled = false;
     async function autoTranslate() {
       const pending = messages.filter(
-        (m) => m.sender_id !== user?.id && m.text && !inlineTranslations[m.id] && shouldAutoTranslate(m.text, userLang)
+        (m) =>
+          m.text &&
+          m.sender_id !== user?.id &&
+          !inlineTranslations[m.id] &&
+          shouldAutoTranslate(m.text, userLang)
       );
       for (const m of pending.slice(-3)) {
         try {
@@ -173,7 +186,9 @@ export default function ChatHome() {
     try {
       await sendMessage(text, {
         disappearingSeconds: disappearingSeconds || undefined,
+        replyTo: replyTo?.id,
       });
+      setReplyTo(null);
     } catch (err) {
       setDraft(text);
       setListError(err.message);
@@ -238,6 +253,7 @@ export default function ChatHome() {
                   setActiveId(c.id);
                   setSearchQuery('');
                   setInlineTranslations({});
+                  setReplyTo(null);
                 }}
               >
                 <span className={styles.convRow}>
@@ -272,6 +288,11 @@ export default function ChatHome() {
                 )}
                 {peerTyping && <span className={styles.typing}>typing…</span>}
               </div>
+              {safetyNumber?.displayable && (
+                <p className={styles.safetyNumber} title="Verify with your contact in person">
+                  Safety number: <code>{safetyNumber.displayable}</code>
+                </p>
+              )}
               <div className={styles.callBar}>
                 <button type="button" onClick={() => startCall(false)}>
                   Call
@@ -304,36 +325,60 @@ export default function ChatHome() {
 
             <div className={styles.messages}>
               {messagesLoading && <p className={styles.muted}>Loading messages…</p>}
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className={m.sender_id === user.id ? styles.outgoing : styles.incoming}
-                >
-                  <span>{m.text}</span>
-                  {inlineTranslations[m.id] && (
-                    <p className={styles.translation}>{inlineTranslations[m.id]}</p>
-                  )}
-                  {m.disappearing_seconds && (
-                    <span className={styles.timer}>⏱ {m.disappearing_seconds}s</span>
-                  )}
-                </div>
-              ))}
+              {messages
+                .filter((m) => m.text)
+                .map((m) => (
+                  <div
+                    key={m.id}
+                    className={m.sender_id === user.id ? styles.outgoing : styles.incoming}
+                  >
+                    {m.reply_to && messageById[m.reply_to] && (
+                      <p className={styles.replyPreview}>
+                        ↩ {messageById[m.reply_to].text?.slice(0, 80)}
+                      </p>
+                    )}
+                    <span>{m.text}</span>
+                    {inlineTranslations[m.id] && (
+                      <p className={styles.translation}>{inlineTranslations[m.id]}</p>
+                    )}
+                    {m.disappearing_seconds && (
+                      <span className={styles.timer}>⏱ {m.disappearing_seconds}s</span>
+                    )}
+                    <div className={styles.messageActions}>
+                      <button type="button" className={styles.actionBtn} onClick={() => setReplyTo(m)}>
+                        Reply
+                      </button>
+                      {REACTION_EMOJIS.map((emoji) => (
+                        <button
+                          key={`${m.id}-${emoji}`}
+                          type="button"
+                          className={styles.reactionBtn}
+                          onClick={() => sendReaction(emoji, m.id)}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                    {reactionsByTarget[m.id]?.length > 0 && (
+                      <div className={styles.reactionRow}>
+                        {reactionsByTarget[m.id].map((r) => (
+                          <span key={r.id} className={styles.reactionChip}>
+                            {r.emoji}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               <div ref={messagesEndRef} />
             </div>
 
-            {suggestions.length > 0 && (
-              <div className={styles.smartBar}>
-                {smartLoading && <span className={styles.muted}>Smart replies…</span>}
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={styles.smartChip}
-                    onClick={() => onDraftInput(s)}
-                  >
-                    {s}
-                  </button>
-                ))}
+            {replyTo && (
+              <div className={styles.replyBar}>
+                <span>Replying to: {replyTo.text?.slice(0, 60)}</span>
+                <button type="button" onClick={() => setReplyTo(null)}>
+                  ✕
+                </button>
               </div>
             )}
 

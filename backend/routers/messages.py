@@ -15,6 +15,7 @@ from core.metadata_policy import public_message
 from core.retention_policy import default_expires_at
 from core.smart_policy import validate_disappearing_seconds
 from core.sealed_sender_policy import mark_sealed
+from core.reaction_policy import SIGNAL_PROTOCOL_REACTION
 from core.signal_policy import (
     LEGACY_PLACEHOLDER_PROTOCOL,
     SIGNAL_PROTOCOL_V1,
@@ -32,6 +33,7 @@ class SendMessageBody(BaseModel):
     protocol: str = Field(default=SIGNAL_PROTOCOL_V1)
     sealed: bool = False
     disappearing_seconds: int | None = Field(default=None, ge=60, le=86_400)
+    reply_to: str | None = Field(default=None, min_length=3, max_length=64)
 
 
 async def _require_participant(db, conversation_id: str, user_id: str) -> dict:
@@ -93,6 +95,14 @@ async def send_message(
     else:
         expires_at = default_expires_at()
 
+    message_kind = "reaction" if protocol == SIGNAL_PROTOCOL_REACTION else "message"
+    if body.reply_to:
+        parent = await db.messages.find_one(
+            {"_id": body.reply_to, "conversation_id": conversation_id}
+        )
+        if not parent:
+            raise HTTPException(status_code=400, detail="reply_to_not_found")
+
     doc = mark_sealed(
         {
             "_id": new_message_id(),
@@ -100,6 +110,8 @@ async def send_message(
             "sender_id": user_id,
             "ciphertext": body.ciphertext,
             "protocol": protocol,
+            "message_kind": message_kind,
+            "reply_to": body.reply_to,
             "created_at": now,
             "expires_at": expires_at,
             "disappearing_seconds": body.disappearing_seconds,

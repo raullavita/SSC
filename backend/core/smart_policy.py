@@ -1,20 +1,18 @@
-"""Smart features policy — client-side intelligence with privacy — Engine 12."""
+"""Smart features policy — no inside AI — Engine 12/13."""
 
 from __future__ import annotations
 
-import os
-
-# OSS providers wired in Engine 12 (client-side unless noted).
+# OSS providers (client-side or translation proxy only — no LLM/AI).
 SMART_TRANSLATION_PROVIDER = "libretranslate"  # https://github.com/LibreTranslate/LibreTranslate
 SMART_SEARCH_PROVIDER = "minisearch"  # https://github.com/lucaong/minisearch
 SMART_LANGUAGE_DETECT_PROVIDER = "franc"  # https://github.com/wooorm/franc
-SMART_LLM_PROVIDER = "ollama"  # https://github.com/ollama/ollama — local-only, never on SSC server
+
+# SSC charter: no inside AI (no Ollama, no smart replies, no on-device LLM).
+NO_INSIDE_AI = True
 
 DISAPPEARING_MIN_SECONDS = 60
 DISAPPEARING_MAX_SECONDS = 86_400
 TYPING_TTL_SECONDS = 8
-
-OLLAMA_URL_HINT = os.getenv("SSC_OLLAMA_URL_HINT", "http://localhost:11434")
 
 
 def validate_disappearing_seconds(seconds: int | None) -> tuple[bool, str]:
@@ -26,4 +24,4 @@ def validate_disappearing_seconds(seconds: int | None) -> tuple[bool, str]:
 
 
 def engine12_smart_ready() -> bool:
-    return bool(SMART_SEARCH_PROVIDER) and bool(SMART_LLM_PROVIDER)
+    return bool(SMART_SEARCH_PROVIDER) and NO_INSIDE_AI is True

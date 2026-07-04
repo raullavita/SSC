@@ -32,4 +32,8 @@ contextBridge.exposeInMainWorld('sscCrypto', {
   async encryptBytes(arrayBuffer) {
     return ipcRenderer.invoke('ssc-crypto:encryptBytes', { buffer: arrayBuffer });
   },
+
+  async computeSafetyNumber(peerId, peerIdentityKey) {
+    return ipcRenderer.invoke('ssc-crypto:computeSafetyNumber', { peerId, peerIdentityKey });
+  },
 });
