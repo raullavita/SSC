@@ -85,6 +85,59 @@
   overflow: auto;
 }
 
+.convItem {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.convActions {
+  display: flex;
+  gap: 0.1rem;
+  flex-shrink: 0;
+}
+
+.convActions button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  opacity: 0.6;
+  padding: 0.2rem;
+}
+
+.convActions button:hover {
+  opacity: 1;
+}
+
+.convMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.unreadBadge {
+  background: #00a884;
+  color: #0b141a;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 0.1rem 0.4rem;
+  min-width: 1rem;
+  text-align: center;
+}
+
+.verifyBtn {
+  margin-left: 0.5rem;
+  background: transparent;
+  border: 1px solid #00a884;
+  color: #00a884;
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
 .convList button {
   width: 100%;
   text-align: left;

@@ -1,0 +1,6 @@
+# TLS termination for mediasoup SFU WebSocket (WSS).
+# DNS: sfu.supersecurechat.com -> GCE instance IP
+
+sfu.supersecurechat.com {
+    reverse_proxy localhost:4443
+}

@@ -93,6 +93,7 @@ export default function MessageBubble({
   onReaction,
   onTranslate,
   downloadFile,
+  readAt,
 }) {
   const { text, attachment, created_at: createdAt, disappearing_seconds: disappearing } = message;
   const bubbleClass = [
@@ -120,7 +121,14 @@ export default function MessageBubble({
       <div className={styles.meta}>
         {disappearing ? <span className={styles.timer}>⏱ {disappearing}s</span> : null}
         <span className={styles.timestamp}>{formatTime(createdAt)}</span>
-        {isOutgoing && <span className={styles.status} title="Sent">✓</span>}
+        {isOutgoing && (
+          <span
+            className={`${styles.status} ${readAt ? styles.read : ''}`}
+            title={readAt ? 'Read' : 'Sent'}
+          >
+            {readAt ? '✓✓' : '✓'}
+          </span>
+        )}
       </div>
 
       <div className={styles.messageActions}>

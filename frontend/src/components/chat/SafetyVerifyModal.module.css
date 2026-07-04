@@ -1,0 +1,81 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.modal {
+  background: #111b21;
+  border: 1px solid #2a3942;
+  border-radius: 12px;
+  padding: 1.25rem;
+  width: min(90vw, 400px);
+  color: #e9edef;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.close {
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+.hint {
+  font-size: 0.85rem;
+  color: #8696a0;
+  margin: 0.75rem 0;
+}
+
+.number {
+  font-family: monospace;
+  font-size: 1.25rem;
+  text-align: center;
+  color: #00a884;
+  letter-spacing: 0.05em;
+  margin: 1rem 0;
+}
+
+.qr {
+  display: block;
+  margin: 0 auto 1rem;
+  border-radius: 8px;
+}
+
+.peer {
+  font-size: 0.75rem;
+  color: #667781;
+  text-align: center;
+}
+
+.error {
+  color: #ea4335;
+  font-size: 0.85rem;
+}
+
+.okBtn {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 8px;
+  background: #00a884;
+  color: #0b141a;
+  font-weight: 600;
+  cursor: pointer;
+}

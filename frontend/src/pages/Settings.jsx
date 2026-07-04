@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   getAutoTranslateEnabled,
+  getLinkPreviewsEnabled,
+  getLocalTranslateUrl,
   getPreferredLanguage,
+  getSealedSenderEnabled,
   setAutoTranslateEnabled,
+  setLinkPreviewsEnabled,
+  setLocalTranslateUrl,
   setPreferredLanguage,
+  setSealedSenderEnabled,
 } from '../lib/chatPrefs';
+import { executePanicWipe } from '../lib/panicWipe';
 import { fetchLanguages } from '../lib/translation';
 import { updatePrivacySettings } from '../lib/presence';
 import { api } from '../lib/api';
@@ -14,12 +21,17 @@ import styles from './Settings.module.css';
 
 export default function Settings() {
   const { user, loading, logout } = useAuth();
+  const navigate = useNavigate();
   const [privacy, setPrivacy] = useState({ last_seen_visible: false, read_receipts: false });
   const [autoTranslate, setAutoTranslate] = useState(true);
+  const [sealedSender, setSealedSender] = useState(false);
+  const [linkPreviews, setLinkPreviews] = useState(false);
+  const [localTranslateUrl, setLocalTranslateUrlState] = useState('');
   const [userLang, setUserLang] = useState('en');
   const [languages, setLanguages] = useState(['en', 'es', 'fr', 'de']);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [panicConfirm, setPanicConfirm] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -28,6 +40,9 @@ export default function Settings() {
       .then((data) => setPrivacy(data.privacy_settings || {}))
       .catch(() => {});
     setAutoTranslate(getAutoTranslateEnabled());
+    setSealedSender(getSealedSenderEnabled());
+    setLinkPreviews(getLinkPreviewsEnabled());
+    setLocalTranslateUrlState(getLocalTranslateUrl());
     setUserLang(getPreferredLanguage());
     fetchLanguages()
       .then(setLanguages)
@@ -57,10 +72,43 @@ export default function Settings() {
     setMessage('Translation preference saved locally');
   }
 
+  function handleSealedSenderChange(enabled) {
+    setSealedSender(enabled);
+    setSealedSenderEnabled(enabled);
+    setMessage('Sealed sender preference saved');
+  }
+
+  function handleLinkPreviewsChange(enabled) {
+    setLinkPreviews(enabled);
+    setLinkPreviewsEnabled(enabled);
+    setMessage(enabled ? 'Link previews enabled (client-only)' : 'Link previews disabled');
+  }
+
+  function handleLocalTranslateSave(url) {
+    setLocalTranslateUrlState(url);
+    setLocalTranslateUrl(url);
+    setMessage(url ? 'Local LibreTranslate URL saved' : 'Using SSC translation proxy');
+  }
+
   function handleLangChange(lang) {
     setUserLang(lang);
     setPreferredLanguage(lang);
     setMessage('Language preference saved locally');
+  }
+
+  async function handlePanicWipe() {
+    if (panicConfirm !== 'DELETE') return;
+    setSaving(true);
+    setMessage(null);
+    try {
+      await executePanicWipe();
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (err) {
+      setMessage(err.message || 'Panic wipe failed');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -95,8 +143,24 @@ export default function Settings() {
           />
           <span>Send read receipts</span>
         </label>
+        <label className={styles.row}>
+          <input
+            type="checkbox"
+            checked={sealedSender}
+            onChange={(e) => handleSealedSenderChange(e.target.checked)}
+          />
+          <span>Sealed sender (hide your ID from recipients)</span>
+        </label>
+        <label className={styles.row}>
+          <input
+            type="checkbox"
+            checked={linkPreviews}
+            onChange={(e) => handleLinkPreviewsChange(e.target.checked)}
+          />
+          <span>Link previews (off by default — opt in)</span>
+        </label>
         <p className={styles.hint}>
-          SSC minimizes metadata. Read receipts and last seen are opt-in only.
+          SSC minimizes metadata. Read receipts, last seen, and link previews are opt-in only.
         </p>
       </section>
 
@@ -120,8 +184,19 @@ export default function Settings() {
             ))}
           </select>
         </label>
+        <label className={styles.rowStack}>
+          <span>Local LibreTranslate URL (optional)</span>
+          <input
+            type="url"
+            className={styles.textInput}
+            placeholder="http://localhost:5000"
+            value={localTranslateUrl}
+            onChange={(e) => handleLocalTranslateSave(e.target.value)}
+          />
+        </label>
         <p className={styles.hint}>
-          Translation uses LibreTranslate via the SSC proxy. Text is sent only when you translate.
+          Point to a self-hosted LibreTranslate instance so translation never leaves your network.
+          Leave empty to use the SSC proxy.
         </p>
       </section>
 
@@ -131,6 +206,32 @@ export default function Settings() {
           <strong>{user.display_name || user.email}</strong>
           <code>{user.id}</code>
         </p>
+      </section>
+
+      <section className={`${styles.section} ${styles.danger}`}>
+        <h2>Panic wipe</h2>
+        <p className={styles.hint}>
+          Immediately deletes all server-side data for your account and clears local client storage.
+          This cannot be undone.
+        </p>
+        <label className={styles.rowStack}>
+          <span>Type DELETE to confirm</span>
+          <input
+            type="text"
+            className={styles.textInput}
+            value={panicConfirm}
+            onChange={(e) => setPanicConfirm(e.target.value)}
+            placeholder="DELETE"
+          />
+        </label>
+        <button
+          type="button"
+          className={styles.panicBtn}
+          disabled={panicConfirm !== 'DELETE' || saving}
+          onClick={handlePanicWipe}
+        >
+          Wipe all data
+        </button>
       </section>
 
       {message && <p className={styles.toast}>{message}</p>}

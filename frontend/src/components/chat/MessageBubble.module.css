@@ -57,6 +57,10 @@
 
 .status {
   font-size: 0.65rem;
+  color: #8696a0;
+}
+
+.status.read {
   color: #53bdeb;
 }
 

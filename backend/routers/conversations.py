@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.conversation_meta import get_meta_map, upsert_meta
+from core.read_receipts import mark_conversation_read
 from core.ids import direct_conversation_key, new_conversation_id
 from core.group_policy import public_group_conversation
 from core.metadata_policy import public_conversation
@@ -25,6 +26,10 @@ class CreateConversationBody(BaseModel):
 class ConversationMetaPatch(BaseModel):
     pinned: bool | None = None
     muted: bool | None = None
+
+
+class MarkReadBody(BaseModel):
+    last_message_id: str | None = Field(default=None, min_length=3, max_length=64)
 
 
 @router.get("")
@@ -96,6 +101,21 @@ async def get_conversation(
         raise HTTPException(status_code=404, detail="conversation_not_found")
     meta = await get_meta_map(db, user_id, [conversation_id])
     return {"conversation": public_conversation(doc, user_id, meta.get(conversation_id))}
+
+
+@router.post("/{conversation_id}/read")
+async def mark_conversation_read_route(
+    conversation_id: str,
+    body: MarkReadBody,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    db = get_database()
+    await _require_participant(db, conversation_id, user_id)
+    receipt = await mark_conversation_read(
+        db, user_id, conversation_id, body.last_message_id
+    )
+    return {"ok": True, "receipt_sent": receipt is not None}
 
 
 @router.patch("/{conversation_id}/meta")

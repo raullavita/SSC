@@ -11,6 +11,7 @@ from config import get_settings
 from core.abuse_policy import msg_rate_limiter
 from core.ids import new_message_id
 from core.message_fanout import fanout_message
+from core.read_receipts import increment_unread
 from core.metadata_policy import public_message
 from core.retention_policy import default_expires_at
 from core.smart_policy import validate_disappearing_seconds
@@ -132,6 +133,7 @@ async def send_message(
 
     participants = conv.get("participants", [])
     await fanout_message(conversation_id, doc, participants, user_id)
+    await increment_unread(db, conversation_id, participants, user_id)
 
     background_tasks.add_task(
         notify_conversation_participants,

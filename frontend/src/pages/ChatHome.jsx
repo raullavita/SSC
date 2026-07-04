@@ -4,9 +4,12 @@ import CallModal from '../components/chat/CallModal';
 import Composer from '../components/chat/Composer';
 import GroupPanel from '../components/chat/GroupPanel';
 import MessageBubble from '../components/chat/MessageBubble';
+import SafetyVerifyModal from '../components/chat/SafetyVerifyModal';
 import UserLookup from '../components/chat/UserLookup';
 import { useCall } from '../chat/useCall';
 import { useChatMessages } from '../chat/useChatMessages';
+import { useConversationMeta } from '../chat/useConversationMeta';
+import { useReadReceipts } from '../chat/useReadReceipts';
 import { useFileTransfer } from '../chat/useFileTransfer';
 import { useTypingIndicator } from '../chat/useTypingIndicator';
 import { useVoiceMessage } from '../chat/useVoiceMessage';
@@ -39,6 +42,7 @@ export default function ChatHome() {
   const [inlineTranslations, setInlineTranslations] = useState({});
   const [safetyNumber, setSafetyNumber] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
+  const [showSafetyVerify, setShowSafetyVerify] = useState(false);
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
 
@@ -71,7 +75,33 @@ export default function ChatHome() {
   } = useChatMessages(activeId, Boolean(user), active?.peer_id, {
     onSocketEvent: handleSocketEvent,
     wsToken,
+    isGroup,
+    groupId: active?.group_id,
   });
+
+  const { readByMessage } = useReadReceipts(activeId, messages, {
+    wsToken,
+    userId: user?.id,
+    enabled: Boolean(user && activeId),
+  });
+
+  const handleMetaUpdated = useCallback((conv) => {
+    setConversations((prev) =>
+      prev.map((c) => (c.id === conv.id ? { ...c, ...conv } : c))
+    );
+  }, []);
+  const { togglePin, toggleMute } = useConversationMeta(handleMetaUpdated);
+
+  const sortedConversations = useMemo(() => {
+    return [...conversations].sort((a, b) => {
+      if (Boolean(a.pinned) !== Boolean(b.pinned)) {
+        return a.pinned ? -1 : 1;
+      }
+      const ta = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+      const tb = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+      return tb - ta;
+    });
+  }, [conversations]);
 
   const { uploadFile, downloadFile, uploading, error: fileError } = useFileTransfer(
     activeId,
@@ -301,8 +331,8 @@ export default function ChatHome() {
         {fileError && <p className={styles.error}>{String(fileError)}</p>}
 
         <ul className={styles.convList}>
-          {conversations.map((c) => (
-            <li key={c.id}>
+          {sortedConversations.map((c) => (
+            <li key={c.id} className={styles.convItem}>
               <button
                 type="button"
                 className={c.id === activeId ? styles.active : ''}
@@ -315,15 +345,38 @@ export default function ChatHome() {
               >
                 <span className={styles.convRow}>
                   <span>
+                    {c.pinned ? '📌 ' : ''}
+                    {c.muted ? '🔇 ' : ''}
                     {c.type === 'group' ? `👥 ${c.group_id}` : c.peer_id || c.id}
                   </span>
-                  {presenceMap[c.peer_id] && (
-                    <span className={styles.presenceDot} title={presenceMap[c.peer_id]}>
-                      {presenceMap[c.peer_id] === 'Online' ? '●' : ''}
-                    </span>
-                  )}
+                  <span className={styles.convMeta}>
+                    {c.unread_count > 0 && (
+                      <span className={styles.unreadBadge}>{c.unread_count}</span>
+                    )}
+                    {presenceMap[c.peer_id] && (
+                      <span className={styles.presenceDot} title={presenceMap[c.peer_id]}>
+                        {presenceMap[c.peer_id] === 'Online' ? '●' : ''}
+                      </span>
+                    )}
+                  </span>
                 </span>
               </button>
+              <span className={styles.convActions}>
+                <button
+                  type="button"
+                  title={c.pinned ? 'Unpin' : 'Pin'}
+                  onClick={() => togglePin(c.id, !c.pinned)}
+                >
+                  {c.pinned ? '📌' : '📍'}
+                </button>
+                <button
+                  type="button"
+                  title={c.muted ? 'Unmute' : 'Mute'}
+                  onClick={() => toggleMute(c.id, !c.muted)}
+                >
+                  {c.muted ? '🔇' : '🔔'}
+                </button>
+              </span>
             </li>
           ))}
         </ul>
@@ -347,9 +400,16 @@ export default function ChatHome() {
                 )}
                 {peerTyping && <span className={styles.typing}>typing…</span>}
               </div>
-              {safetyNumber?.displayable && (
-                <p className={styles.safetyNumber} title="Verify with your contact in person">
+              {safetyNumber?.displayable && !isGroup && (
+                <p className={styles.safetyNumber}>
                   Safety number: <code>{safetyNumber.displayable}</code>
+                  <button
+                    type="button"
+                    className={styles.verifyBtn}
+                    onClick={() => setShowSafetyVerify(true)}
+                  >
+                    Verify
+                  </button>
                 </p>
               )}
               {!isGroup && (
@@ -404,6 +464,7 @@ export default function ChatHome() {
                     onReaction={sendReaction}
                     onTranslate={onTranslateMessage}
                     downloadFile={downloadFile}
+                    readAt={readByMessage[m.id]}
                   />
                 </div>
               ))}
@@ -453,6 +514,12 @@ export default function ChatHome() {
           </>
         )}
       </main>
+
+      <SafetyVerifyModal
+        open={showSafetyVerify}
+        peerId={active?.peer_id}
+        onClose={() => setShowSafetyVerify(false)}
+      />
 
       <CallModal
         open={callOpen}
