@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import base64
+import json
+import os
 import re
 from typing import Any
 
@@ -11,6 +13,15 @@ GROUP_SENDER_KEY_PROTOCOL = "group_sender_key_v2"
 GROUP_SENDER_KEY_DIST_PROTOCOL = "group_sender_key_dist_v1"
 GROUP_SENDER_KEY_DEV_PROTOCOL = "group_sender_key_dev"
 LEGACY_PLACEHOLDER_PROTOCOL = "placeholder"
+
+DEV_CRYPTO_PROTOCOLS = frozenset(
+    {
+        LEGACY_PLACEHOLDER_PROTOCOL,
+        GROUP_SENDER_KEY_DEV_PROTOCOL,
+    }
+)
+
+DEV_CIPHERTEXT_TYPES = frozenset({"dev_envelope", "dev_file"})
 
 # Minimum ciphertext size for signal_v1 (encrypted envelope, not plaintext).
 MIN_SIGNAL_CIPHERTEXT_BYTES = 16
@@ -45,6 +56,26 @@ FORBIDDEN_PREKEY_FIELDS: frozenset[str] = frozenset(
 _B64_RE = re.compile(r"^[A-Za-z0-9+/]+=*$")
 
 
+def is_production_env() -> bool:
+    return os.getenv("SSC_ENV", "development") == "production"
+
+
+def is_dev_ciphertext(ciphertext: str) -> bool:
+    """Detect client dev-envelope JSON smuggled as signal_v1 ciphertext."""
+    try:
+        raw = base64.b64decode(ciphertext, validate=True)
+        payload = json.loads(raw.decode("utf-8"))
+        return payload.get("type") in DEV_CIPHERTEXT_TYPES
+    except Exception:
+        return False
+
+
+def validate_protocol_for_env(protocol: str) -> tuple[bool, str]:
+    if is_production_env() and protocol in DEV_CRYPTO_PROTOCOLS:
+        return False, "dev_crypto_protocol_forbidden_in_production"
+    return True, ""
+
+
 def is_valid_base64(value: str) -> bool:
     if not value or not _B64_RE.match(value):
         return False
@@ -56,8 +87,13 @@ def is_valid_base64(value: str) -> bool:
 
 
 def validate_signal_ciphertext(ciphertext: str, protocol: str) -> tuple[bool, str]:
+    proto_ok, proto_detail = validate_protocol_for_env(protocol)
+    if not proto_ok:
+        return False, proto_detail
+
     if protocol == LEGACY_PLACEHOLDER_PROTOCOL:
         return True, ""
+
     allowed = {
         SIGNAL_PROTOCOL_V1,
         "signal_v1_sealed",
@@ -65,8 +101,10 @@ def validate_signal_ciphertext(ciphertext: str, protocol: str) -> tuple[bool, st
         "signal_v1_attachment",
         GROUP_SENDER_KEY_PROTOCOL,
         GROUP_SENDER_KEY_DIST_PROTOCOL,
-        GROUP_SENDER_KEY_DEV_PROTOCOL,
     }
+    if not is_production_env():
+        allowed.add(GROUP_SENDER_KEY_DEV_PROTOCOL)
+
     if protocol not in allowed:
         return False, "unsupported_protocol"
     if not is_valid_base64(ciphertext):
@@ -76,6 +114,8 @@ def validate_signal_ciphertext(ciphertext: str, protocol: str) -> tuple[bool, st
         return False, "ciphertext_too_short"
     if raw_len > MAX_SIGNAL_CIPHERTEXT_BYTES:
         return False, "ciphertext_too_large"
+    if is_production_env() and is_dev_ciphertext(ciphertext):
+        return False, "dev_crypto_ciphertext_forbidden_in_production"
     return True, ""
 
 

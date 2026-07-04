@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from config import get_settings
 from core.abuse_policy import msg_rate_limiter
 from core.ids import new_message_id
 from core.message_fanout import fanout_message
@@ -20,8 +19,8 @@ from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.reaction_policy import SIGNAL_PROTOCOL_REACTION
 from core.signal_policy import (
     GROUP_SENDER_KEY_DIST_PROTOCOL,
-    LEGACY_PLACEHOLDER_PROTOCOL,
     SIGNAL_PROTOCOL_V1,
+    validate_protocol_for_env,
     validate_signal_ciphertext,
 )
 from db import get_database
@@ -47,9 +46,9 @@ async def _require_participant(db, conversation_id: str, user_id: str) -> dict:
 
 
 def _enforce_protocol_policy(protocol: str) -> None:
-    settings = get_settings()
-    if settings.is_production and protocol == LEGACY_PLACEHOLDER_PROTOCOL:
-        raise HTTPException(status_code=400, detail="placeholder_protocol_forbidden_in_production")
+    ok, detail = validate_protocol_for_env(protocol)
+    if not ok:
+        raise HTTPException(status_code=400, detail=detail)
 
 
 @router.get("/conversations/{conversation_id}/messages")

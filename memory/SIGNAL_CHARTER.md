@@ -20,7 +20,7 @@
 ## Server policy
 
 - Server stores **public prekey bundles only** — never private keys or ratchet state.
-- Message bodies are `signal_v1` ciphertext blobs (placeholder allowed in dev only).
+- Message bodies are `signal_v1` ciphertext blobs (dev envelope allowed in development only; production rejects placeholder/dev protocols).
 - File attachments are `signal_v1` encrypted blobs with malware magic-byte blocking.
 - WebRTC signaling relay carries ratchet-encrypted envelopes (`signal_v1`).
 - LibreTranslate proxy translates client-supplied text; server does not log content.

@@ -62,7 +62,7 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
-## Step 4 — Strip dev crypto from production builds (issue #16)
+## Step 4 — Strip dev crypto from production builds (issue #16) ✅
 
 **Goal:** No `buildDevSignalEnvelope` / placeholder protocol in production clients.
 
@@ -71,6 +71,8 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 | `@signalapp/libsignal-client` | Required in Electron + Android native bridge |
 
 **Deliverables:** Build-time flag, `InstalledClientGate` hard-fail without libsignal, remove `LEGACY_PLACEHOLDER_PROTOCOL` from prod API acceptance.
+
+**Shipped (2026-07-04):** `REACT_APP_SSC_REQUIRE_LIBCRYPTO`, `cryptoPolicy.js`, strict `InstalledClientGate`, production API rejects placeholder/dev protocols and dev-envelope ciphertext.
 
 ---
 

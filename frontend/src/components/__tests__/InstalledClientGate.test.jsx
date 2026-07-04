@@ -6,10 +6,47 @@ describe('InstalledClientGate', () => {
 
   afterEach(() => {
     process.env = originalEnv;
+    delete window.sscCrypto;
+    delete window.__SSC_ANDROID_CLIENT;
   });
 
-  it('renders children for electron platform', () => {
-    process.env = { ...originalEnv, REACT_APP_SSC_PLATFORM: 'electron', NODE_ENV: 'production' };
+  it('renders children when libsignal is present in production crypto mode', () => {
+    window.sscCrypto = { encryptMessage: () => {}, decryptMessage: () => {} };
+    process.env = {
+      ...originalEnv,
+      REACT_APP_SSC_REQUIRE_LIBCRYPTO: 'true',
+      NODE_ENV: 'production',
+    };
+    render(
+      <InstalledClientGate>
+        <span>chat-ui</span>
+      </InstalledClientGate>
+    );
+    expect(screen.getByText('chat-ui')).toBeInTheDocument();
+  });
+
+  it('blocks when production crypto required but libsignal missing', () => {
+    process.env = {
+      ...originalEnv,
+      REACT_APP_SSC_REQUIRE_LIBCRYPTO: 'true',
+      REACT_APP_SSC_PLATFORM: 'electron',
+      NODE_ENV: 'production',
+    };
+    render(
+      <InstalledClientGate>
+        <span>chat-ui</span>
+      </InstalledClientGate>
+    );
+    expect(screen.queryByText('chat-ui')).not.toBeInTheDocument();
+    expect(screen.getByText(/libsignal enabled/i)).toBeInTheDocument();
+  });
+
+  it('renders children for electron platform in non-crypto-strict dev builds', () => {
+    process.env = {
+      ...originalEnv,
+      REACT_APP_SSC_PLATFORM: 'electron',
+      NODE_ENV: 'production',
+    };
     render(
       <InstalledClientGate>
         <span>chat-ui</span>
@@ -19,7 +56,11 @@ describe('InstalledClientGate', () => {
   });
 
   it('blocks plain browser in production without allowed platform', () => {
-    process.env = { ...originalEnv, REACT_APP_SSC_PLATFORM: 'browser', NODE_ENV: 'production' };
+    process.env = {
+      ...originalEnv,
+      REACT_APP_SSC_PLATFORM: 'browser',
+      NODE_ENV: 'production',
+    };
     render(
       <InstalledClientGate>
         <span>chat-ui</span>

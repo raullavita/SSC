@@ -1,9 +1,12 @@
 /**
- * Signal crypto bridge — @signalapp/libsignal-client (Electron) with dev envelope fallback.
- * Charter: official Signal libs only in production installed clients.
+ * Signal crypto bridge — @signalapp/libsignal-client (Electron) with dev fallback (dev only).
  */
 
 import { api } from '../lib/api';
+import {
+  assertLibsignalRuntime,
+  requiresProductionCrypto,
+} from '../lib/cryptoPolicy';
 import { getInstalledClientHeader } from '../lib/installedClient';
 import {
   SIGNAL_PROTOCOL_V1,
@@ -19,8 +22,10 @@ async function loadLibsignal() {
     libsignalModule = window.sscCrypto;
     return libsignalModule;
   }
+  if (requiresProductionCrypto()) {
+    return null;
+  }
   try {
-    // Electron / Node context only — not bundled for CRA browser by default.
     const mod = await import('@signalapp/libsignal-client');
     libsignalModule = mod;
     return mod;
@@ -37,7 +42,11 @@ export async function registerDeviceAndPrekeys({ deviceId, deviceName, platform 
   });
 
   const lib = await loadLibsignal();
+  assertLibsignalRuntime('register_prekeys');
   if (!lib?.generatePreKeyBundle) {
+    if (requiresProductionCrypto()) {
+      throw new Error('libsignal_required:prekeys');
+    }
     return { deviceId, prekeysUploaded: false, mode: 'dev' };
   }
 
@@ -61,7 +70,9 @@ async function ensurePeerSession(peerId, deviceId = '1') {
     const bundle = data.bundle || data;
     await lib.establishSession(peerId, deviceId, bundle);
   } catch {
-    // Peer bundle may be unavailable in dev; encrypt falls back below.
+    if (requiresProductionCrypto()) {
+      throw new Error('libsignal_session_setup_failed');
+    }
   }
 }
 
@@ -69,13 +80,10 @@ export async function encryptMessage(plaintext, { peerId, deviceId = '1' } = {})
   const lib = await loadLibsignal();
   if (lib?.encryptMessage) {
     await ensurePeerSession(peerId, deviceId);
-    try {
-      const result = await lib.encryptMessage(plaintext, peerId, deviceId);
-      return { ciphertext: result.ciphertext, protocol: SIGNAL_PROTOCOL_V1 };
-    } catch {
-      return buildDevSignalEnvelope(plaintext);
-    }
+    const result = await lib.encryptMessage(plaintext, peerId, deviceId);
+    return { ciphertext: result.ciphertext, protocol: SIGNAL_PROTOCOL_V1 };
   }
+  assertLibsignalRuntime('encrypt');
   return buildDevSignalEnvelope(plaintext);
 }
 
@@ -83,6 +91,9 @@ export async function decryptMessage(ciphertext, { peerId } = {}) {
   const lib = await loadLibsignal();
   if (lib?.decryptMessage) {
     return lib.decryptMessage(ciphertext, peerId);
+  }
+  if (requiresProductionCrypto()) {
+    throw new Error('libsignal_required:decrypt');
   }
   const dev = parseDevSignalEnvelope(ciphertext);
   if (dev !== null) return dev;
@@ -99,6 +110,9 @@ export async function decryptFileBytes(ciphertext) {
     const result = await lib.decryptBytes(ciphertext);
     return result?.buffer ?? result;
   }
+  if (requiresProductionCrypto()) {
+    throw new Error('libsignal_required:decrypt_file');
+  }
   try {
     const payload = JSON.parse(atob(ciphertext));
     if (payload?.type === 'dev_file' && payload?.data) {
@@ -112,16 +126,7 @@ export async function decryptFileBytes(ciphertext) {
   } catch {
     /* fall through */
   }
-  try {
-    const binary = atob(ciphertext);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes.buffer;
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export async function encryptFileBytes(arrayBuffer) {
@@ -130,12 +135,18 @@ export async function encryptFileBytes(arrayBuffer) {
     const result = await lib.encryptBytes(arrayBuffer);
     return { ciphertext: result.ciphertext, protocol: SIGNAL_PROTOCOL_V1 };
   }
+  assertLibsignalRuntime('encrypt_file');
   const bytes = new Uint8Array(arrayBuffer);
   let binary = '';
   bytes.forEach((b) => {
     binary += String.fromCharCode(b);
   });
-  const payload = JSON.stringify({ v: 1, type: 'dev_file', data: btoa(binary), pad: btoa('x'.repeat(24)) });
+  const payload = JSON.stringify({
+    v: 1,
+    type: 'dev_file',
+    data: btoa(binary),
+    pad: btoa('x'.repeat(24)),
+  });
   return { ciphertext: btoa(payload), protocol: SIGNAL_PROTOCOL_V1 };
 }
 

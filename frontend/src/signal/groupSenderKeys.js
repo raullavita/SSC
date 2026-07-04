@@ -4,6 +4,10 @@
 
 import { api } from '../lib/api';
 import {
+  assertGroupLibsignalRuntime,
+  requiresProductionCrypto,
+} from '../lib/cryptoPolicy';
+import {
   GROUP_SENDER_KEY_DIST_PROTOCOL,
   GROUP_SENDER_KEY_PROTOCOL,
   LEGACY_SENDER_KEY_DIST_PREFIX,
@@ -95,6 +99,7 @@ export async function encryptGroupMessage(
     return { ciphertext, protocol: GROUP_SENDER_KEY_PROTOCOL };
   }
 
+  assertGroupLibsignalRuntime('encrypt_group');
   return devEncryptGroupMessage(plaintext, { groupId, userId });
 }
 
@@ -127,6 +132,9 @@ export async function decryptGroupMessage(
     }
   }
 
+  if (requiresProductionCrypto()) {
+    throw new Error('libsignal_group_required:decrypt_group');
+  }
   return devDecryptGroupMessage(ciphertext, { groupId, senderId });
 }
 
