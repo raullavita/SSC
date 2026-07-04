@@ -1,10 +1,10 @@
 /**
- * Group call hook — mesh (≤8) or SFU (>8) — Engine 9 scaffold.
+ * Group call hook — mesh (≤8) or SFU (>8) — Engine 9/11.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
-import { createSfuRoom, fetchSfuConfig } from './sfuClient';
+import { connectSfuRoom, createSfuRoom, fetchSfuConfig } from './sfuClient';
 
 const MESH_MAX = 8;
 
@@ -12,7 +12,17 @@ export function useGroupCall({ conversationId, participantCount }) {
   const [call, setCall] = useState(null);
   const [mode, setMode] = useState(null);
   const [sfuRoom, setSfuRoom] = useState(null);
+  const [sfuSession, setSfuSession] = useState(null);
   const [error, setError] = useState(null);
+  const sessionRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (sessionRef.current?.close) {
+        sessionRef.current.close();
+      }
+    };
+  }, []);
 
   const startGroupCall = useCallback(
     async (video = false) => {
@@ -28,7 +38,31 @@ export function useGroupCall({ conversationId, participantCount }) {
           const room = await createSfuRoom(conversationId, participantCount);
           setSfuRoom(room);
           setMode('sfu');
-          return room;
+
+          let localStream = null;
+          if (navigator.mediaDevices?.getUserMedia) {
+            try {
+              localStream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video,
+              });
+            } catch {
+              localStream = null;
+            }
+          }
+
+          const conn = await connectSfuRoom({
+            wsUrl: room.ws_url,
+            roomId: room.room_id,
+            joinToken: room.join_token,
+            localStream,
+          });
+          if (!conn.connected) {
+            throw new Error(conn.reason || 'sfu_connect_failed');
+          }
+          sessionRef.current = conn.session;
+          setSfuSession(conn.session);
+          return { ...room, sfuConnected: true };
         }
 
         const data = await api.post('/api/calls', {
@@ -47,5 +81,5 @@ export function useGroupCall({ conversationId, participantCount }) {
     [conversationId, participantCount]
   );
 
-  return { call, mode, sfuRoom, startGroupCall, error };
+  return { call, mode, sfuRoom, sfuSession, startGroupCall, error };
 }

@@ -4,10 +4,16 @@
   "private": true,
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "dependencies": {
     "@signalapp/libsignal-client": "0.96.4",
     "electron": "^33.2.0"
-  }
+  },
+  "devDependencies": {
+    "electron-builder": "^25.1.8"
+  },
+  "build": "./electron-builder.yml"
 }

@@ -1,4 +1,4 @@
-"""SFU room scaffold — mediasoup OSS — Engine 9."""
+"""SFU room API — mediasoup OSS — Engine 9/11."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.retention_policy import default_expires_at
+from core.sfu_client import provision_sfu_room
 from core.sfu_policy import (
     MAX_SFU_PARTICIPANTS,
     SFU_ENABLED,
@@ -63,6 +64,10 @@ async def create_sfu_room(
     room_id = new_sfu_room_id()
     token = sfu_room_token(room_id, user_id)
     now = datetime.now(timezone.utc)
+    ok, detail = await provision_sfu_room(room_id, token)
+    if not ok:
+        raise HTTPException(status_code=503, detail=f"sfu_provision_failed:{detail}")
+
     await db.call_sessions.insert_one(
         {
             "_id": room_id,
@@ -71,6 +76,7 @@ async def create_sfu_room(
             "expected_participants": body.expected_participants,
             "call_type": "sfu",
             "status": "active",
+            "sfu_provisioned": True,
             "created_at": now,
             "expires_at": default_expires_at(),
         }
@@ -81,4 +87,5 @@ async def create_sfu_room(
         "join_token": token,
         "ws_url": SFU_WS_URL,
         "provider": "mediasoup",
+        "provisioned": True,
     }

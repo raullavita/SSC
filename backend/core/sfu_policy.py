@@ -29,3 +29,10 @@ def sfu_room_token(room_id: str, user_id: str) -> str:
 
 def engine9_sfu_ready() -> bool:
     return bool(SFU_ROOM_PREFIX) and MAX_SFU_PARTICIPANTS > MESH_MAX_PARTICIPANTS
+
+
+def engine11_sfu_signaling_ready() -> bool:
+    """Engine 11 — mediasoup server signaling + backend provisioning wired."""
+    from core.sfu_client import engine11_sfu_wired  # noqa: PLC0415
+
+    return engine11_sfu_wired()

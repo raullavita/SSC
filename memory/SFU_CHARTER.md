@@ -1,8 +1,8 @@
 # SSC Group Call SFU Charter
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Effective:** 2026-07-04  
-**Engine:** 9 — Group calls + SFU
+**Engine:** 9 + 11 — Group calls + SFU full wiring
 
 ## Policy
 
@@ -17,6 +17,13 @@
 - `POST /api/sfu/rooms` — create room for group conversation
 - `POST /api/calls` with `group_call=true` — auto-selects mesh vs SFU
 
+## Engine 11 wiring
+
+- SFU server: WebSocket join, WebRTC transport, produce/consume
+- Backend: `sfu_client.provision_sfu_room()` on `POST /api/sfu/rooms`
+- Frontend: `sfuSession.js` + `connectSfuRoom()` in group calls
+
 ## Gate
 
-Implemented in Engine 9 step **9.7–9.8**; verified by `advanced_proof.py`.
+Engine 9 scaffold: `advanced_proof.py`.  
+Engine 11 full wiring: `sfu_wiring_proof.py` + `run_engine11_gate.py` step **11.12**.

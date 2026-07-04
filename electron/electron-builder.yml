@@ -1,0 +1,29 @@
+appId: com.supersecurechat.desktop
+productName: Super Secure Chat
+directories:
+  output: dist
+files:
+  - main.js
+  - preload.js
+  - libsignalSession.js
+  - package.json
+extraResources:
+  - from: ../frontend/build
+    to: app
+    filter:
+      - "**/*"
+win:
+  target:
+    - nsis
+  artifactName: SSC-Setup-${version}.${ext}
+mac:
+  target:
+    - dmg
+  artifactName: SSC-${version}.${ext}
+linux:
+  target:
+    - AppImage
+  artifactName: SSC-${version}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

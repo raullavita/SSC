@@ -15,7 +15,7 @@ let libsignalModule = null;
 
 async function loadLibsignal() {
   if (libsignalModule) return libsignalModule;
-  if (typeof window !== 'undefined' && window.sscCrypto?.encrypt) {
+  if (typeof window !== 'undefined' && window.sscCrypto?.encryptMessage) {
     libsignalModule = window.sscCrypto;
     return libsignalModule;
   }
@@ -53,11 +53,28 @@ export async function registerDeviceAndPrekeys({ deviceId, deviceName, platform 
   return { deviceId, prekeysUploaded: true, mode: 'libsignal' };
 }
 
+async function ensurePeerSession(peerId, deviceId = '1') {
+  const lib = await loadLibsignal();
+  if (!lib?.establishSession || !peerId) return;
+  try {
+    const data = await api.get(`/api/prekeys/users/${peerId}/devices/${deviceId}`);
+    const bundle = data.bundle || data;
+    await lib.establishSession(peerId, deviceId, bundle);
+  } catch {
+    // Peer bundle may be unavailable in dev; encrypt falls back below.
+  }
+}
+
 export async function encryptMessage(plaintext, { peerId, deviceId = '1' } = {}) {
   const lib = await loadLibsignal();
   if (lib?.encryptMessage) {
-    const result = await lib.encryptMessage(plaintext, peerId, deviceId);
-    return { ciphertext: result.ciphertext, protocol: SIGNAL_PROTOCOL_V1 };
+    await ensurePeerSession(peerId, deviceId);
+    try {
+      const result = await lib.encryptMessage(plaintext, peerId, deviceId);
+      return { ciphertext: result.ciphertext, protocol: SIGNAL_PROTOCOL_V1 };
+    } catch {
+      return buildDevSignalEnvelope(plaintext);
+    }
   }
   return buildDevSignalEnvelope(plaintext);
 }

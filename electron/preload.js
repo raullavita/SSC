@@ -1,35 +1,35 @@
 /**
- * Electron preload — exposes official libsignal bridge to renderer.
- * Install in Electron shell: npm i @signalapp/libsignal-client
+ * Electron preload — IPC bridge to main-process libsignal (Engine 11).
  */
 
-const { contextBridge } = require('electron');
-
-let libsignal = null;
-try {
-  libsignal = require('@signalapp/libsignal-client');
-} catch {
-  libsignal = null;
-}
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('sscCrypto', {
-  available: Boolean(libsignal),
-  async encryptMessage(plaintext, peerId, deviceId) {
-    if (!libsignal?.encryptForPeer) {
-      throw new Error('libsignal_not_available');
-    }
-    return libsignal.encryptForPeer(plaintext, peerId, deviceId);
+  get available() {
+    return ipcRenderer.invoke('ssc-crypto:available');
   },
-  async decryptMessage(ciphertext, peerId) {
-    if (!libsignal?.decryptFromPeer) {
-      throw new Error('libsignal_not_available');
-    }
-    return libsignal.decryptFromPeer(ciphertext, peerId);
+
+  async configure(opts) {
+    return ipcRenderer.invoke('ssc-crypto:configure', opts);
   },
+
   async generatePreKeyBundle() {
-    if (!libsignal?.generatePreKeyBundle) {
-      throw new Error('libsignal_not_available');
-    }
-    return libsignal.generatePreKeyBundle();
+    return ipcRenderer.invoke('ssc-crypto:generatePreKeyBundle');
+  },
+
+  async establishSession(peerId, deviceId, bundle) {
+    return ipcRenderer.invoke('ssc-crypto:establishSession', { peerId, deviceId, bundle });
+  },
+
+  async encryptMessage(plaintext, peerId, deviceId = '1') {
+    return ipcRenderer.invoke('ssc-crypto:encryptMessage', { plaintext, peerId, deviceId });
+  },
+
+  async decryptMessage(ciphertext, peerId, deviceId = '1') {
+    return ipcRenderer.invoke('ssc-crypto:decryptMessage', { ciphertext, peerId, deviceId });
+  },
+
+  async encryptBytes(arrayBuffer) {
+    return ipcRenderer.invoke('ssc-crypto:encryptBytes', { buffer: arrayBuffer });
   },
 });

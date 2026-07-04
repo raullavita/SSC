@@ -13,6 +13,11 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "SSC_WEB_URL", "\"https://www.supersecurechat.com\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -32,7 +37,6 @@ android {
 }
 
 dependencies {
-    // Official Signal Android lib — wire in installed-client build (no APK packaging in Engine 10).
-    // implementation("org.signal:libsignal-android:0.46.0")
+    implementation("org.signal:libsignal-android:0.46.0")
     implementation("androidx.core:core-ktx:1.15.0")
 }

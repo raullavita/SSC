@@ -1,9 +1,10 @@
 /**
- * mediasoup SFU client scaffold — Engine 9.
+ * mediasoup SFU client — Engine 11
  * @see https://github.com/versatica/mediasoup
  */
 
 import { api } from '../lib/api';
+import { connectSfuSession } from './sfuSession';
 
 export async function fetchSfuConfig() {
   return api.get('/api/sfu/config');
@@ -16,10 +17,33 @@ export async function createSfuRoom(conversationId, expectedParticipants) {
   });
 }
 
-export function connectSfuRoom({ wsUrl, roomId, joinToken }) {
-  if (!wsUrl || !roomId) {
+export async function connectSfuRoom({ wsUrl, roomId, joinToken, peerId, localStream }) {
+  if (!wsUrl || !roomId || !joinToken) {
     return { connected: false, reason: 'sfu_disabled' };
   }
-  // mediasoup-client wiring lands when SFU server is deployed.
-  return { connected: false, reason: 'scaffold_only', wsUrl, roomId, joinToken };
+
+  try {
+    const session = await connectSfuSession({ wsUrl, roomId, joinToken, peerId });
+    let producers = [];
+    if (localStream) {
+      producers = await session.publishLocalStream(localStream);
+    }
+    return {
+      connected: true,
+      reason: 'ok',
+      session,
+      producers,
+      wsUrl,
+      roomId,
+      joinToken,
+    };
+  } catch (e) {
+    return {
+      connected: false,
+      reason: e.message || 'sfu_connect_failed',
+      wsUrl,
+      roomId,
+      joinToken,
+    };
+  }
 }
