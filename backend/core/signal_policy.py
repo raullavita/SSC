@@ -55,7 +55,12 @@ def is_valid_base64(value: str) -> bool:
 def validate_signal_ciphertext(ciphertext: str, protocol: str) -> tuple[bool, str]:
     if protocol == LEGACY_PLACEHOLDER_PROTOCOL:
         return True, ""
-    allowed = {SIGNAL_PROTOCOL_V1, "signal_v1_sealed", "signal_v1_reaction"}
+    allowed = {
+        SIGNAL_PROTOCOL_V1,
+        "signal_v1_sealed",
+        "signal_v1_reaction",
+        "signal_v1_attachment",
+    }
     if protocol not in allowed:
         return False, "unsupported_protocol"
     if not is_valid_base64(ciphertext):

@@ -1,0 +1,65 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #2a3942;
+  background: #0b141a;
+  color: #e9edef;
+  font-size: 0.85rem;
+}
+
+.btn {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: #2a3942;
+  color: #e9edef;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.error {
+  color: #ea4335;
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: #202c33;
+  border-radius: 6px;
+  gap: 0.5rem;
+}
+
+.id {
+  margin: 0.15rem 0 0;
+  font-size: 0.7rem;
+  color: #667781;
+  word-break: break-all;
+}
+
+.chatBtn {
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: #00a884;
+  color: #0b141a;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}

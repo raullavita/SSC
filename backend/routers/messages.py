@@ -15,6 +15,7 @@ from core.metadata_policy import public_message
 from core.retention_policy import default_expires_at
 from core.smart_policy import validate_disappearing_seconds
 from core.sealed_sender_policy import mark_sealed
+from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.reaction_policy import SIGNAL_PROTOCOL_REACTION
 from core.signal_policy import (
     LEGACY_PLACEHOLDER_PROTOCOL,
@@ -95,7 +96,12 @@ async def send_message(
     else:
         expires_at = default_expires_at()
 
-    message_kind = "reaction" if protocol == SIGNAL_PROTOCOL_REACTION else "message"
+    if protocol == SIGNAL_PROTOCOL_REACTION:
+        message_kind = "reaction"
+    elif protocol == SIGNAL_PROTOCOL_ATTACHMENT:
+        message_kind = "attachment"
+    else:
+        message_kind = "message"
     if body.reply_to:
         parent = await db.messages.find_one(
             {"_id": body.reply_to, "conversation_id": conversation_id}
