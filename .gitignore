@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+backend/venv/
+backend/.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+atlas-credentials.env
+cloud_run.env
+*-service-account*.json
+google-services.json
+
+# Build outputs
+frontend/build/
+frontend/desktop/dist/
+frontend/android/app/build/
+dist/
+*.apk
+*.aab
+*.exe
+*.dmg
+*.blockmap
+latest.yml
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+*.log
+npm-debug.log*
+yarn-error.log*
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Large artifacts (deploy via scripts only)
+frontend/public/downloads/*.apk
+frontend/public/downloads/*.exe

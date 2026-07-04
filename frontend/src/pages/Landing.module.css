@@ -1,0 +1,92 @@
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.badge {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(0, 168, 132, 0.15);
+  color: #00a884;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 3.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0.25rem 0 1rem;
+  font-size: 1.25rem;
+  color: #8696a0;
+}
+
+.tagline {
+  margin: 0;
+  color: #aebac1;
+  line-height: 1.5;
+}
+
+.card {
+  background: #111b21;
+  border: 1px solid #2a3942;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.card h2 {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #8696a0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statusList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.statusList li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #2a3942;
+}
+
+.statusList li:last-child {
+  border-bottom: none;
+}
+
+.error {
+  color: #ea4335;
+  margin: 0;
+}
+
+.muted {
+  color: #8696a0;
+  margin: 0;
+}
+
+.footer {
+  margin-top: 2rem;
+  text-align: center;
+  color: #667781;
+  font-size: 0.875rem;
+}
