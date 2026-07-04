@@ -6,20 +6,50 @@
 
 ## Purpose
 
-Document every server-side data store, its purpose, and its maximum lifetime. The machine-readable policy lives in `backend/core/retention_policy.py`.
+Document every server-side MongoDB collection, its purpose, and maximum lifetime. The machine-readable policy is `backend/core/retention_policy.py`. Startup TTL indexes are applied by `backend/core/lifespan.py`.
 
-## Collections (Phase 0 stub — Engine 1 will complete)
+## Default windows
 
-| Collection | Purpose | Default TTL |
-|------------|---------|-------------|
-| `users` | Account identity | Until panic wipe / account delete |
+| Window | Applies to |
+|--------|------------|
+| **24h TTL** (`expires_at`) | Ephemeral relay data — messages, files, calls, stories, polls, reads, reactions |
+| **Session TTL** (`expires_at`) | `sessions`, `refresh_tokens` (7 days until Engine 5 refines) |
+| **Until panic wipe** | Identity, devices, prekeys, mutes, groups, push tokens, recovery keys |
+
+## Panic wipe
+
+`POST /api/panic/wipe` immediately deletes **all** rows for the authenticated user across every collection below. Panic wipe is stronger than TTL: nothing survives.
+
+## Collections
+
+| Collection | Purpose | Retention |
+|------------|---------|-----------|
+| `users` | Account identity and profile | Until panic wipe |
 | `devices` | Linked device registry | Until panic wipe |
-| `prekeys` | Public prekey bundles (no private keys) | Rotated; stale bundles TTL 7d |
-| `messages` | Encrypted ciphertext relay | 24h |
-| `conversations` | Thread metadata | Until panic wipe |
-| `conversation_meta` | Mute/pin state | Until panic wipe |
+| `prekeys` | Public prekey bundles (no private keys) | Until panic wipe |
+| `messages` | Encrypted ciphertext relay | 24h `expires_at` + panic wipe |
+| `files` | Encrypted attachment metadata | 24h `expires_at` + panic wipe |
+| `conversations` | Thread metadata and participants | 24h `expires_at` + panic wipe |
+| `conversation_meta` | Pin/archive state per user | Until panic wipe |
 | `conversation_mutes` | Per-conversation mute flags | Until panic wipe |
-| `sessions` | Auth session hashes | Session TTL (see SESSION_HARDENING_CHARTER) |
-| `push_tokens` | FCM device tokens | Until logout / panic wipe |
+| `groups` | Group chat metadata | Until panic wipe |
+| `group_members` | Group membership rows | Until panic wipe |
+| `broadcast_lists` | Broadcast list definitions | Until panic wipe |
+| `sessions` | Auth session hashes | Session TTL + panic wipe |
+| `refresh_tokens` | Rotating refresh tokens | Session TTL + panic wipe |
+| `push_tokens` | FCM device push tokens | Until panic wipe |
+| `stories` | Encrypted status/stories relay | 24h `expires_at` + panic wipe |
+| `polls` | Poll message definitions | 24h `expires_at` + panic wipe |
+| `message_poll_votes` | Individual poll votes | 24h `expires_at` + panic wipe |
+| `message_reads` | Read receipt pointers | 24h `expires_at` + panic wipe |
+| `message_reactions` | Message reaction rows | 24h `expires_at` + panic wipe |
+| `call_sessions` | WebRTC call session metadata | 24h `expires_at` + panic wipe |
+| `friend_requests` | Pending contact requests | 24h `expires_at` + panic wipe |
+| `beta_feedback` | In-app beta feedback | Until panic wipe |
+| `recovery_keys` | Account recovery key hashes | Until panic wipe |
 
-*Engine 1 gate will require every collection in `lifespan.py` to appear here and in `retention_policy.py`.*
+## Gate
+
+Engine 1 is complete when `backend/scripts/run_engine1_gate.py` passes, including unit tests and **step 1.7** `retention_proof.py` against live Mongo.
+
+*Machine-readable: `SSC/backend/core/retention_policy.py`*

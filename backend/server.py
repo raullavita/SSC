@@ -8,13 +8,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
-from db import close_connections
+from core.lifespan import bootstrap_database
+from db import close_connections, get_database
 from middleware import InstalledClientMiddleware, SecurityHeadersMiddleware
 from routers import include_routers
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    db = get_database()
+    try:
+        await bootstrap_database(db)
+    except Exception:
+        pass  # dev without Mongo — health endpoint reports degraded
     yield
     await close_connections()
 
