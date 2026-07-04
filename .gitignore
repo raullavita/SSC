@@ -24,6 +24,9 @@ google-services.json
 frontend/build/
 frontend/desktop/dist/
 frontend/android/app/build/
+android/.gradle/
+android/app/build/
+android/local.properties
 dist/
 *.apk
 *.aab
