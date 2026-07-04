@@ -1,21 +1,18 @@
 import { useEffect, useRef } from 'react';
 import { wsUrl } from '../lib/api';
 
-export function useChatSocket({ enabled, topic, onEvent, wsToken }) {
-  const socketRef = useRef(null);
+/** Subscribe to user:{userId} for incoming calls and signals. */
+export function useUserSocket({ userId, wsToken, onEvent }) {
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
 
   useEffect(() => {
-    if (!enabled || !topic || !wsToken) return undefined;
+    if (!userId || !wsToken) return undefined;
 
     const ws = new WebSocket(wsUrl(wsToken));
-    socketRef.current = ws;
-
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: 'subscribe', topic }));
+      ws.send(JSON.stringify({ type: 'subscribe', topic: `user:${userId}` }));
     };
-
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -25,11 +22,6 @@ export function useChatSocket({ enabled, topic, onEvent, wsToken }) {
       }
     };
 
-    return () => {
-      ws.close();
-      socketRef.current = null;
-    };
-  }, [enabled, topic, wsToken]);
-
-  return socketRef;
+    return () => ws.close();
+  }, [userId, wsToken]);
 }

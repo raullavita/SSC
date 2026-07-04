@@ -1,0 +1,39 @@
+name: Bug report
+description: Something broken in SSC (installed client or API)
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not** include production secrets, API keys, or message content.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows desktop
+        - Android
+        - API / backend
+        - Website (landing only)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: What did you do before the bug appeared?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true

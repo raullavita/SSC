@@ -25,7 +25,7 @@ const DISAPPEAR_OPTIONS = [
 const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
 export default function ChatHome() {
-  const { user, loading, logout } = useAuth();
+  const { user, wsToken, loading, logout } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [peerId, setPeerId] = useState('');
@@ -67,15 +67,17 @@ export default function ChatHome() {
     loading: messagesLoading,
   } = useChatMessages(activeId, Boolean(user), active?.peer_id, {
     onSocketEvent: handleSocketEvent,
+    wsToken,
   });
 
   const { uploadFile, uploading, error: fileError } = useFileTransfer(activeId);
   const { recording, startRecording, stopRecording } = useVoiceMessage(activeId);
 
-  const { startCall, status: callStatus, cleanup: endCall } = useCall({
+  const { startCall, answerCall, status: callStatus, cleanup: endCall } = useCall({
     conversationId: activeId,
     peerId: active?.peer_id,
     userId: user?.id,
+    wsToken,
     enabled: Boolean(user && active),
   });
 
@@ -300,6 +302,11 @@ export default function ChatHome() {
                 <button type="button" onClick={() => startCall(true)}>
                   Video
                 </button>
+                {callStatus === 'ringing' && (
+                  <button type="button" onClick={answerCall}>
+                    Answer
+                  </button>
+                )}
                 {callStatus !== 'idle' && (
                   <button type="button" onClick={endCall}>
                     End ({callStatus})

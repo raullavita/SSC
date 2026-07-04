@@ -12,15 +12,20 @@ from core.session_ttl import jwt_expiry_delta
 def set_session_cookie(response: Response, token: str) -> None:
     settings = get_settings()
     max_age = int(jwt_expiry_delta().total_seconds())
-    response.set_cookie(
-        key=SESSION_COOKIE_NAME,
-        value=token,
-        httponly=True,
-        secure=settings.is_production,
-        samesite="lax",
-        max_age=max_age,
-        path="/",
-    )
+    kwargs: dict = {
+        "key": SESSION_COOKIE_NAME,
+        "value": token,
+        "httponly": True,
+        "secure": settings.is_production,
+        "max_age": max_age,
+        "path": "/",
+    }
+    if settings.is_production:
+        kwargs["samesite"] = "none"
+        kwargs["domain"] = ".supersecurechat.com"
+    else:
+        kwargs["samesite"] = "lax"
+    response.set_cookie(**kwargs)
 
 
 def clear_session_cookie(response: Response) -> None:

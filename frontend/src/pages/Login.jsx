@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { googleAuthEnabled, promptGoogleSignIn } from '../lib/googleAuth';
 import styles from './Login.module.css';
 
 export default function Login() {
-  const { user, loading, login, register } = useAuth();
+  const { user, loading, login, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
@@ -33,10 +34,32 @@ export default function Login() {
     }
   }
 
+  async function onGoogle() {
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await promptGoogleSignIn();
+      if (data) {
+        await loginWithGoogle(data);
+        navigate('/chat');
+      }
+    } catch (err) {
+      setError(err.body?.detail || err.message || 'Google sign-in failed');
+      setBusy(false);
+    }
+  }
+
   return (
     <div className={styles.page}>
       <h1>SSC</h1>
       <p className={styles.sub}>Sign in to Super Secure Chat</p>
+
+      {googleAuthEnabled() && (
+        <button type="button" className={styles.googleBtn} onClick={onGoogle} disabled={busy}>
+          Continue with Google
+        </button>
+      )}
+
       <form className={styles.form} onSubmit={onSubmit}>
         {mode === 'register' && (
           <input

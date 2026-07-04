@@ -1,0 +1,25 @@
+name: Help wanted
+description: Good first task or area where you can contribute
+labels: ["help wanted", "good first issue"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Documentation
+        - Tests
+        - Android client
+        - Windows desktop
+        - Backend API
+        - Security review
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: What would you like to do?
+      placeholder: e.g. Add test for X, improve build docs
+    validations:
+      required: true

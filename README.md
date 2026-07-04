@@ -1,19 +1,43 @@
 # SSC — Super Secure Chat
 
-End-to-end encrypted messenger for **installed clients only** (Android + Windows desktop).  
-Production site: https://www.supersecurechat.com · API: https://api.supersecurechat.com
+[![CI](https://github.com/raullavita/SSC/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/raullavita/SSC/actions/workflows/ci.yml)
+
+**Install-only E2E encrypted messenger** — Android + Windows desktop. No web chat on the public site.
+
+| | |
+|---|---|
+| **Website** | https://www.supersecurechat.com (info only) |
+| **API** | https://api.supersecurechat.com |
+| **License** | AGPL-3.0 (libsignal in clients requires source availability) |
+| **Contact** | contact@supersecurechat.com |
+
+## Open-source stack (we build on OSS — not reinvent)
+
+SSC uses maintained open-source projects for heavy lifting:
+
+| Layer | OSS project |
+|-------|-------------|
+| **E2E crypto** | [Signal libsignal](https://github.com/signalapp/libsignal) (`@signalapp/libsignal-client`, `libsignal-android`) |
+| **Group calls (SFU)** | [mediasoup](https://mediasoup.org/) |
+| **Push** | [Firebase Admin SDK](https://firebase.google.com/docs/admin/setup) (FCM) |
+| **1:1 calls** | WebRTC (browser/Electron) + encrypted signaling |
+| **API** | [FastAPI](https://fastapi.tiangolo.com/) + Motor (MongoDB) + Redis |
+| **Desktop** | [Electron](https://www.electronjs.org/) + electron-builder |
+| **Frontend** | React 18 |
+
+We do **not** run inside AI on your messages. Translation is optional and user-controlled.
 
 ## Status
 
-| Layer | State |
-|-------|--------|
-| **Engines 1–13** | Complete (retention, Signal, messaging, platform scaffolds, no inside AI) |
-| **Engine 14** | FCM push + mediasoup SFU deploy scripts |
-| **Production API** | Live on Cloud Run (Mongo Atlas, Redis, push ready) |
-| **Website** | Landing-only — no web chat |
-| **Downloads** | Not hosted yet — build locally (see below) |
-
-Verify gates: `cd backend && python scripts/run_engine13_gate.py`
+| Component | State |
+|-----------|--------|
+| Engines 1–13 | Complete (retention, Signal, messaging, no inside AI) |
+| Engine 14 | FCM push + mediasoup SFU deploy |
+| Auth | Email/password + Google OAuth |
+| Chat | E2EE messages, reactions, files, voice notes |
+| Calls | WebRTC mesh + SFU scaffold |
+| Production API | Live |
+| Website downloads | Coming — build clients locally for now |
 
 ## Quick start (local dev)
 
@@ -26,40 +50,39 @@ pip install -r requirements.txt
 copy .env.example .env
 uvicorn server:app --reload --port 8000
 
-# Frontend (separate terminal)
+# Frontend
 cd frontend
 yarn install
 copy .env.example .env
 yarn start
 ```
 
-- API: http://localhost:8000/api/health  
-- UI: http://localhost:3000
+- UI: http://localhost:3000  
+- API health: http://localhost:8000/api/health
 
-## Build installed clients (local)
-
-```powershell
-.\scripts\build_electron.ps1   # Windows installer → electron\dist\
-.\scripts\build_android.ps1    # Android APK → android\app\build\outputs\apk\release\
-```
-
-## Deploy (maintainer)
+## Build installed clients
 
 ```powershell
-.\scripts\deploy_hosting.ps1      # Firebase Hosting (landing site)
-.\scripts\deploy_cloud_run.ps1    # Cloud Run API
-.\scripts\validate_deploy.ps1     # Pre-flight checks
+.\scripts\build_electron.ps1   # → electron\dist\SSC-Setup-*.exe
+.\scripts\build_android.ps1    # → android\app\build\outputs\apk\release\
 ```
 
-Secrets stay local — see `.env.example` files. Never commit `cloudrun-env.yaml`, `ssc-firebase-key.json`, or `atlas-credentials.env`.
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Good first tasks: tests, docs, Android/Electron polish.
+
+**Do not** post production secrets, API keys, or personal emails in issues or PRs.
+
+## Security
+
+Report vulnerabilities privately: [SECURITY.md](SECURITY.md) — not via public issues with exploit details.
 
 ## Architecture
 
-Policy charters live in `memory/`. Development proceeds engine-by-engine with gate scripts under `backend/scripts/`.
-
-## Tests
+Policy charters: `memory/`. Engine gates: `backend/scripts/run_engine*_gate.py`.
 
 ```powershell
-cd backend && .\venv\Scripts\python.exe -m pytest tests/ -q
-cd frontend && yarn test:ci
+cd backend
+python scripts/run_engine13_gate.py
+python -m pytest tests/ -q
 ```
