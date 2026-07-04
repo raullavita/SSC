@@ -23,6 +23,16 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
+def _env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw.strip())
+    except ValueError:
+        return default
+
+
 class Settings:
     env: str = os.getenv("SSC_ENV", "development")
     mongo_url: str = os.getenv("MONGO_URL", "mongodb://localhost:27017")
@@ -40,6 +50,11 @@ class Settings:
     @property
     def is_production(self) -> bool:
         return self.env == "production"
+
+    @property
+    def mongo_server_selection_timeout_ms(self) -> int:
+        default = 30000 if os.getenv("SSC_ENV", self.env) == "production" else 1000
+        return _env_int("MONGO_SERVER_SELECTION_TIMEOUT_MS", default)
 
     @property
     def enforce_installed_client(self) -> bool:
