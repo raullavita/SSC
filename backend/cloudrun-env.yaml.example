@@ -1,0 +1,13 @@
+# Cloud Run env vars — copy to cloudrun-env.yaml locally (gitignored).
+# Never commit secrets. Rotate JWT_SECRET and SFU_INTERNAL_SECRET quarterly.
+SSC_ENV: production
+SSC_ENFORCE_INSTALLED_CLIENT: "true"
+CORS_ORIGINS: "https://www.supersecurechat.com,https://supersecurechat.com"
+JWT_SECRET: "REPLACE_WITH_ROTATED_SECRET"
+MONGO_URL: "mongodb+srv://USER:PASS@cluster.mongodb.net/ssc"
+REDIS_URL: "redis://HOST:6379"
+SSC_SFU_ENABLED: "true"
+SSC_SFU_WS_URL: "wss://sfu.supersecurechat.com"
+SSC_SFU_INTERNAL_URL: "http://SFU_INTERNAL_IP:4443"
+SSC_SFU_INTERNAL_SECRET: "REPLACE_WITH_ROTATED_SFU_SECRET"
+GOOGLE_APPLICATION_CREDENTIALS: "/secrets/firebase/key"

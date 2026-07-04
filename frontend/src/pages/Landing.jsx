@@ -4,6 +4,10 @@ import { api } from '../lib/api';
 import styles from './Landing.module.css';
 
 const LANDING_ONLY = process.env.REACT_APP_SSC_LANDING_ONLY === 'true';
+const RELEASE_BASE =
+  process.env.REACT_APP_SSC_RELEASE_URL ||
+  'https://github.com/raullavita/SSC/releases/latest/download';
+const VERSION = process.env.REACT_APP_SSC_VERSION || '0.1.0';
 
 export default function Landing() {
   if (LANDING_ONLY) {
@@ -34,14 +38,31 @@ function LandingPublic() {
           <div className={styles.platform}>
             <strong>Windows</strong>
             <span>Desktop installer (Electron)</span>
-            <span className={styles.muted}>Build locally with scripts/build_electron.ps1</span>
+            <a
+              className={styles.downloadBtn}
+              href={`${RELEASE_BASE}/SSC-Setup-${VERSION}.exe`}
+              download
+            >
+              Download for Windows
+            </a>
+            <span className={styles.muted}>Or build: scripts/build_electron.ps1</span>
           </div>
           <div className={styles.platform}>
             <strong>Android</strong>
             <span>Installed APK</span>
-            <span className={styles.muted}>Build locally with scripts/build_android.ps1</span>
+            <a
+              className={styles.downloadBtn}
+              href={`${RELEASE_BASE}/SSC-${VERSION}.apk`}
+              download
+            >
+              Download APK
+            </a>
+            <span className={styles.muted}>Or build: scripts/build_android.ps1</span>
           </div>
         </div>
+        <p className={styles.muted}>
+          <a href="https://github.com/raullavita/SSC/releases">All releases on GitHub</a>
+        </p>
       </section>
 
       <section className={styles.card}>
@@ -49,13 +70,25 @@ function LandingPublic() {
         <ul className={styles.featureList}>
           <li>Signal Protocol (PQXDH / Kyber) on installed clients</li>
           <li>Server stores ciphertext only — no inside AI on your messages</li>
-          <li>Safety numbers, sealed sender, and encrypted reactions</li>
+          <li>Safety numbers, sealed sender, panic wipe, encrypted reactions</li>
+          <li>Link previews off by default — metadata minimization</li>
         </ul>
+      </section>
+
+      <section className={styles.card}>
+        <h2>Contribute</h2>
+        <p className={styles.lead}>
+          Open-source on GitHub. Look for <strong>help wanted</strong> issues for tests and
+          features.
+        </p>
+        <a className={styles.downloadBtn} href="https://github.com/raullavita/SSC">
+          View on GitHub
+        </a>
       </section>
 
       <footer className={styles.footer}>
         <p>
-          <a href="https://supersecurechat.com">supersecurechat.com</a> — product site only.
+          <a href="https://www.supersecurechat.com">supersecurechat.com</a> — product site only.
           Use the installed app to connect.
         </p>
       </footer>

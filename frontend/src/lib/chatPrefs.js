@@ -1,10 +1,12 @@
 /**
- * Client-side chat preferences (translation, auto-translate).
- * Stored locally — not synced to server for privacy.
+ * Client-side chat preferences — stored locally for privacy.
  */
 
 const AUTO_TRANSLATE_KEY = 'ssc_auto_translate';
 const USER_LANG_KEY = 'ssc_user_lang';
+const SEALED_SENDER_KEY = 'ssc_sealed_sender';
+const LINK_PREVIEWS_KEY = 'ssc_link_previews';
+const LOCAL_TRANSLATE_URL_KEY = 'ssc_local_translate_url';
 
 export function getAutoTranslateEnabled() {
   try {
@@ -34,6 +36,54 @@ export function getPreferredLanguage() {
 export function setPreferredLanguage(lang) {
   try {
     localStorage.setItem(USER_LANG_KEY, lang || 'en');
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getSealedSenderEnabled() {
+  try {
+    return localStorage.getItem(SEALED_SENDER_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function setSealedSenderEnabled(enabled) {
+  try {
+    localStorage.setItem(SEALED_SENDER_KEY, enabled ? 'true' : 'false');
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getLinkPreviewsEnabled() {
+  try {
+    return localStorage.getItem(LINK_PREVIEWS_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function setLinkPreviewsEnabled(enabled) {
+  try {
+    localStorage.setItem(LINK_PREVIEWS_KEY, enabled ? 'true' : 'false');
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getLocalTranslateUrl() {
+  try {
+    return localStorage.getItem(LOCAL_TRANSLATE_URL_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+export function setLocalTranslateUrl(url) {
+  try {
+    localStorage.setItem(LOCAL_TRANSLATE_URL_KEY, (url || '').trim());
   } catch {
     /* ignore */
   }

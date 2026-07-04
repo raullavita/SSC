@@ -3,6 +3,9 @@ import { api } from '../lib/api';
 import { parseAttachmentText } from './attachments';
 import { parseReactionText, sendReaction as postReaction } from './reactions';
 import { indexMessage, indexMessages } from '../search/messageIndex';
+import { getSealedSenderEnabled } from '../lib/chatPrefs';
+import { encryptGroupMessage, decryptGroupMessage } from '../signal/groupSenderKeys';
+import { encryptSealedMessage } from '../signal/sealedSender';
 import { decryptMessage, encryptMessage } from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
 
@@ -21,7 +24,12 @@ function parseMessageContent(text, messageKind) {
   return { text, reaction: null, attachment: null };
 }
 
-export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent, wsToken } = {}) {
+export function useChatMessages(
+  conversationId,
+  enabled,
+  peerId,
+  { onSocketEvent, wsToken, isGroup, groupId } = {}
+) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -34,7 +42,9 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
       const data = await api.get(`/api/conversations/${conversationId}/messages`);
       const rows = await Promise.all(
         (data.messages || []).map(async (m) => {
-          const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+          const raw = isGroup
+            ? await decryptGroupMessage(m.ciphertext, { groupId, senderId: m.sender_id })
+            : await decryptMessage(m.ciphertext, { peerId: m.sender_id });
           const parsed = parseMessageContent(raw, m.message_kind);
           return {
             ...m,
@@ -54,7 +64,7 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
     } finally {
       setLoading(false);
     }
-  }, [conversationId, enabled]);
+  }, [conversationId, enabled, isGroup, groupId]);
 
   useEffect(() => {
     reload();
@@ -67,9 +77,12 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
     onEvent: async (data) => {
       onSocketEvent?.(data);
       const payload = data?.payload || data;
+      if (payload?.type === 'read_receipt') return;
       if (payload?.type === 'message' && payload.message) {
         const m = payload.message;
-        const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+        const raw = isGroup
+          ? await decryptGroupMessage(m.ciphertext, { groupId, senderId: m.sender_id })
+          : await decryptMessage(m.ciphertext, { peerId: m.sender_id });
         const parsed = parseMessageContent(raw, m.message_kind);
         const row = {
           ...m,
@@ -105,8 +118,21 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
   const sendMessage = useCallback(
     async (text, { disappearingSeconds, replyTo } = {}) => {
       if (!conversationId || !text.trim()) return;
-      const { ciphertext, protocol } = await encryptMessage(text.trim(), { peerId });
+      let ciphertext;
+      let protocol;
+      let sealed = false;
+      if (isGroup) {
+        ({ ciphertext, protocol } = await encryptGroupMessage(text.trim(), {
+          groupId,
+          peerId,
+        }));
+      } else if (getSealedSenderEnabled()) {
+        ({ ciphertext, protocol, sealed } = await encryptSealedMessage(text.trim(), { peerId }));
+      } else {
+        ({ ciphertext, protocol } = await encryptMessage(text.trim(), { peerId }));
+      }
       const body = { ciphertext, protocol };
+      if (sealed) body.sealed = true;
       if (disappearingSeconds) body.disappearing_seconds = disappearingSeconds;
       if (replyTo) body.reply_to = replyTo;
       const data = await api.post(`/api/conversations/${conversationId}/messages`, body);
@@ -118,7 +144,7 @@ export function useChatMessages(conversationId, enabled, peerId, { onSocketEvent
       });
       indexMessage(conversationId, row);
     },
-    [conversationId, peerId]
+    [conversationId, peerId, isGroup, groupId]
   );
 
   const sendReaction = useCallback(

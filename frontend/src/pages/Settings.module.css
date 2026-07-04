@@ -92,3 +92,44 @@
   font-size: 0.85rem;
   text-align: center;
 }
+
+.rowStack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.textInput {
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid #2a3942;
+  background: #202c33;
+  color: #e9edef;
+  font-size: 0.85rem;
+}
+
+.danger {
+  border-color: #ea4335;
+}
+
+.danger h2 {
+  color: #ea4335;
+}
+
+.panicBtn {
+  width: 100%;
+  padding: 0.65rem;
+  border: none;
+  border-radius: 8px;
+  background: #ea4335;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.panicBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

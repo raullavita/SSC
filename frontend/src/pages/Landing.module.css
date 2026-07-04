@@ -110,6 +110,22 @@
   font-size: 1rem;
 }
 
+.downloadBtn {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: #00a884;
+  color: #0b141a;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.downloadBtn:hover {
+  filter: brightness(1.05);
+}
+
 .featureList {
   margin: 0;
   padding-left: 1.25rem;
