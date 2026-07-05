@@ -4,14 +4,45 @@
   box-sizing: border-box;
 }
 
+:root {
+  --ssc-bg: #0b141a;
+  --ssc-surface: #111b21;
+  --ssc-surface-elevated: #1f2c34;
+  --ssc-border: #2a3942;
+  --ssc-text: #e9edef;
+  --ssc-text-muted: #8696a0;
+  --ssc-text-dim: #667781;
+  --ssc-accent: #00a884;
+  --ssc-accent-hover: #06cf9c;
+  --ssc-danger: #ea4335;
+  --ssc-radius: 12px;
+  --ssc-font: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', sans-serif;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  background: #0b141a;
-  color: #e9edef;
+  font-family: var(--ssc-font);
+  background: var(--ssc-bg);
+  color: var(--ssc-text);
   min-height: 100vh;
 }
 
 a {
-  color: #00a884;
+  color: var(--ssc-accent);
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+#root {
+  min-height: 100vh;
 }

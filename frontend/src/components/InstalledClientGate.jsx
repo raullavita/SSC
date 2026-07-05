@@ -7,10 +7,19 @@ import { isLibsignalRuntimeAvailable, requiresProductionCrypto } from '../lib/cr
  */
 function isInstalledRuntime() {
   if (isLibsignalRuntimeAvailable()) return true;
-  if (requiresProductionCrypto()) return false;
-  const platform = process.env.REACT_APP_SSC_PLATFORM || 'electron';
+
+  if (typeof window !== 'undefined') {
+    if (window.__SSC_ELECTRON_CLIENT || window.__SSC_ANDROID_CLIENT || window.__SSC_IOS_CLIENT) {
+      return true;
+    }
+  }
+
+  const platform = (process.env.REACT_APP_SSC_PLATFORM || '').trim().toLowerCase();
   const allowed = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
-  return allowed.has(platform);
+  if (allowed.has(platform)) return true;
+
+  if (requiresProductionCrypto()) return false;
+  return false;
 }
 
 export default function InstalledClientGate({ children }) {

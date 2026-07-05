@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
+import AuthSplash from '../components/AuthSplash';
 import CallModal from '../components/chat/CallModal';
 import Composer from '../components/chat/Composer';
 import GroupPanel from '../components/chat/GroupPanel';
@@ -32,6 +33,7 @@ import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 import { searchMessages } from '../search/messageIndex';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import { getPeerTrust, trustBadgeLabel } from '../lib/trustStore';
+import { isInstalledApp } from '../lib/appMode';
 import { shouldAutoTranslate } from '../smart/languageDetect';
 import styles from './ChatHome.module.css';
 
@@ -48,6 +50,7 @@ export default function ChatHome() {
   const [languages, setLanguages] = useState(['en', 'es', 'fr', 'de']);
   const [translatedPreview, setTranslatedPreview] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [convFilter, setConvFilter] = useState('');
   const [highlightedId, setHighlightedId] = useState(null);
   const [disappearingSeconds, setDisappearingSeconds] = useState(0);
   const [inlineTranslations, setInlineTranslations] = useState({});
@@ -175,6 +178,16 @@ export default function ChatHome() {
       return tb - ta;
     });
   }, [conversations]);
+
+  const filteredConversations = useMemo(() => {
+    const q = convFilter.trim().toLowerCase();
+    if (!q) return sortedConversations;
+    return sortedConversations.filter((c) => {
+      const label =
+        c.type === 'group' ? String(c.group_id || c.id) : String(c.peer_id || c.id);
+      return label.toLowerCase().includes(q);
+    });
+  }, [sortedConversations, convFilter]);
 
   const { uploadFile, downloadFile, uploading, error: fileError } = useFileTransfer(
     activeId,
@@ -316,8 +329,10 @@ export default function ChatHome() {
     }
   }
 
+  const installed = isInstalledApp();
+
   if (!loading && !user) return <Navigate to="/login" replace />;
-  if (loading) return <div className={styles.page}>Loading…</div>;
+  if (loading) return <AuthSplash />;
 
   async function startChat(participantId) {
     if (!participantId?.trim()) return;
@@ -439,23 +454,57 @@ export default function ChatHome() {
     return active.peer_id;
   }
 
+  function getInitials(name) {
+    const parts = String(name || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+
+  const displayName = user.display_name || user.email?.split('@')[0] || user.id;
+
   return (
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
-        <header className={styles.sideHeader}>
-          <div>
-            <strong>{user.display_name || user.id}</strong>
-            <p className={styles.uid}>{user.id}</p>
+        <header className={styles.sideTop}>
+          <div className={styles.brandRow}>
+            <div className={styles.appLogo} aria-hidden="true">
+              ssc
+            </div>
+            <h1 className={styles.sideTitle}>Chats</h1>
           </div>
           <div className={styles.sideActions}>
-            <Link to="/settings" className={styles.settingsLink} title="Settings">
+            <Link to="/settings" className={styles.iconBtn} title="Settings" aria-label="Settings">
               ⚙
             </Link>
-            <button type="button" onClick={logout} className={styles.logout}>
-              Log out
-            </button>
           </div>
         </header>
+
+        <div className={styles.profileRow}>
+          <div className={styles.avatar} aria-hidden="true">
+            {getInitials(displayName)}
+          </div>
+          <div className={styles.profileMeta}>
+            <strong className={styles.profileName}>{displayName}</strong>
+            <span className={styles.profileStatus}>End-to-end encrypted</span>
+          </div>
+          <button type="button" onClick={logout} className={styles.logout} title="Sign out">
+            Sign out
+          </button>
+        </div>
+
+        <label className={styles.convSearchWrap}>
+          <span className={styles.srOnly}>Search conversations</span>
+          <input
+            className={styles.convSearch}
+            placeholder="Search chats"
+            value={convFilter}
+            onChange={(e) => setConvFilter(e.target.value)}
+          />
+        </label>
 
         <StoriesBar
           byUser={storiesByUser}
@@ -479,7 +528,10 @@ export default function ChatHome() {
         {fileError && <p className={styles.error}>{String(fileError)}</p>}
 
         <ul className={styles.convList}>
-          {sortedConversations.map((c) => (
+          {filteredConversations.length === 0 && convFilter.trim() && (
+            <li className={styles.convEmpty}>No chats match your search.</li>
+          )}
+          {filteredConversations.map((c) => (
             <li key={c.id} className={styles.convItem}>
               <button
                 type="button"
@@ -537,14 +589,25 @@ export default function ChatHome() {
         <Link to="/settings" className={styles.syncLink}>
           Linked devices &amp; sync
         </Link>
-        <Link to="/" className={styles.homeLink}>
-          ← Home
-        </Link>
+        {!installed && (
+          <Link to="/" className={styles.homeLink}>
+            ← Website
+          </Link>
+        )}
       </aside>
 
       <main className={styles.thread}>
         {!active ? (
-          <p className={styles.empty}>Select a chat or start a new one.</p>
+          <div className={styles.emptyState}>
+            <div className={styles.emptyLogo} aria-hidden="true">
+              ssc
+            </div>
+            <h2 className={styles.emptyTitle}>Super Secure Chat</h2>
+            <p className={styles.emptySub}>
+              Select a conversation on the left, or start a new encrypted chat above.
+            </p>
+            <p className={styles.emptyHint}>Messages are encrypted on your device before they leave.</p>
+          </div>
         ) : (
           <>
             <header className={styles.threadHeader}>

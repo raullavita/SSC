@@ -22,6 +22,7 @@ if (-not $SkipBuild) {
     Push-Location $Frontend
     try {
         $env:REACT_APP_SSC_PLATFORM = "web"
+        $env:REACT_APP_SSC_LANDING_ONLY = "true"
         $env:REACT_APP_SSC_VERSION = "0.3.0"
         $env:REACT_APP_SSC_BUILD = "0"
         $env:REACT_APP_SSC_REQUIRE_LIBCRYPTO = "false"
