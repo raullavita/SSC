@@ -12,7 +12,7 @@ from core.platform_release_policy import (
 
 def test_platform_lib_versions():
     assert ELECTRON_LIB_VERSION == "0.96.4"
-    assert ANDROID_LIB_VERSION == "0.46.0"
+    assert ANDROID_LIB_VERSION == "0.96.4"
     assert engine11_platform_release_ready() is True
 
 

@@ -6,10 +6,22 @@
 
 | | |
 |---|---|
-| **Website** | https://www.supersecurechat.com (info only) |
+| **Website** | https://www.supersecurechat.com (info + downloads) |
 | **API** | https://api.supersecurechat.com |
-| **License** | AGPL-3.0 (libsignal in clients requires source availability) |
+| **Source** | https://github.com/raullavita/SSC |
+| **License** | [AGPL-3.0](LICENSE) — source must remain available to network users |
 | **Contact** | contact@supersecurechat.com |
+
+## Open source & AGPL compliance
+
+SSC is **open source** under the [GNU Affero General Public License v3.0](LICENSE). Anyone interacting with a modified SSC service over a network may request the corresponding source code.
+
+We use **[Signal libsignal](https://github.com/signalapp/libsignal)** (`@signalapp/libsignal-client` on desktop, `libsignal-android` on Android) for end-to-end encryption. libsignal is **AGPL-3.0** — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full attribution and dependency licenses.
+
+- **Repository:** https://github.com/raullavita/SSC  
+- **License:** [LICENSE](LICENSE)  
+- **Third-party notices:** [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)  
+- **libsignal upstream:** https://github.com/signalapp/libsignal  
 
 ## Open-source stack (we build on OSS — not reinvent)
 
@@ -37,7 +49,8 @@ We do **not** run inside AI on your messages. Translation is optional and user-c
 | Chat | E2EE messages, reactions, files, voice notes |
 | Calls | WebRTC mesh + SFU scaffold |
 | Production API | Live |
-| Website downloads | [GitHub Releases v0.1.0](https://github.com/raullavita/SSC/releases/tag/v0.1.0) |
+| Website | Professional landing + OSS compliance at [supersecurechat.com](https://www.supersecurechat.com) |
+| Latest release | [v0.2.0](https://github.com/raullavita/SSC/releases/tag/v0.2.0) |
 
 ## Quick start (local dev)
 

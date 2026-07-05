@@ -5,7 +5,7 @@ Installed Android client — WebView shell with native `libsignal-android` crypt
 ## Stack
 
 - **WebView** loads `https://www.supersecurechat.com` (configurable via `SSC_WEB_URL` in `app/build.gradle.kts`)
-- **`X-SSC-Client: android/0.1.0/1`** injected on all `/api/` requests from the WebView
+- **`X-SSC-Client: android/0.2.0/2`** injected on all `/api/` requests from the WebView
 - **`window.sscCrypto`** exposed via `SscNativeBridge` + `assets/ssc_crypto_bridge.js` — API matches Electron `preload.js`
 - **libsignal-android 0.96.4** — file-backed stores under `filesDir/ssc-signal/` (sessions, prekeys, sender keys)
 
