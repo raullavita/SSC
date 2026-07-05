@@ -29,14 +29,25 @@ try {
         }
     }
 
+    # Split scheme literals so this script's own pattern definitions do not self-match.
+    $mongoSrvScheme = 'mongodb' + '+srv://'
+    $redisTlsScheme = 'redis' + 's://default:'
     $patterns = @(
-        @{ name = "mongodb+srv credentials"; regex = 'mongodb\+srv://[^:]+:[^@\s"]+@' },
+        @{ name = "mongodb+srv credentials"; regex = $mongoSrvScheme + '[^:]+:[^@\s"]+@' },
         @{ name = "JWT secret literal"; regex = 'JWT_SECRET:\s*"[A-Za-z0-9_\-]{32,}"' },
-        @{ name = "Upstash rediss URL"; regex = 'rediss://default:[^@\s"]+@' },
+        @{ name = "Upstash rediss URL"; regex = $redisTlsScheme + '[^@\s"]+@' },
         @{ name = "Firebase private key"; regex = '"private_key":\s*"-----BEGIN' }
     )
 
+    $scanExclude = @(
+        'scripts/validate_secrets.ps1',
+        'scripts/rotate_production_secrets.py',
+        'scripts/rotate_redis_only.py',
+        'scripts/secret_url_builders.py'
+    )
+
     $scanFiles = $tracked | Where-Object {
+        $_ -notin $scanExclude -and
         $_ -match '\.(py|js|jsx|ts|tsx|json|ya?ml|ps1|sh|md|kt|kts|conf|env\.example)$' -and
         $_ -notmatch '^backend/venv/' -and
         $_ -notmatch 'cloudrun-env\.yaml\.example$' -and

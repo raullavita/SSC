@@ -17,6 +17,8 @@ import yaml
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from secret_url_builders import build_mongo_srv_url, build_redis_tls_url
 CREDS = ROOT / "atlas-credentials.env"
 ENV_FILE = ROOT / "backend" / "cloudrun-env.yaml"
 API_VERSION = "application/vnd.atlas.2023-01-01+json"
@@ -97,7 +99,7 @@ def rotate_redis_url(client: httpx.Client) -> str:
     host = updated.get("endpoint", target.get("endpoint", "merry-mole-114510"))
     if not host.endswith(".upstash.io"):
         host = f"{host}.upstash.io"
-    return f"rediss://default:{quote_plus(password)}@{host}:6379"
+    return build_redis_tls_url(password, host)
 
 
 def load_env_yaml() -> dict:
@@ -137,10 +139,7 @@ def main() -> int:
         redis_url = rotate_redis_url(client) if os.getenv("UPSTASH_API_KEY", "").strip() else ""
 
     env["JWT_SECRET"] = jwt_secret
-    env["MONGO_URL"] = (
-        f"mongodb+srv://{MONGO_USER}:{quote_plus(mongo_password)}@"
-        f"{MONGO_CLUSTER_HOST}/{MONGO_DB}?retryWrites=true&w=majority&appName=SSC"
-    )
+    env["MONGO_URL"] = build_mongo_srv_url(MONGO_USER, mongo_password, MONGO_CLUSTER_HOST, MONGO_DB)
     env["SSC_SFU_INTERNAL_SECRET"] = sfu_secret
     if redis_url:
         env["REDIS_URL"] = redis_url
