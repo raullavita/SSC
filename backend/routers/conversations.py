@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from core.conversation_meta import get_meta_map, upsert_meta
+from core.conversation_meta import get_meta_map, upsert_meta, upsert_privacy_meta
+from core.conversation_privacy_policy import validate_disappearing_default
 from core.read_receipts import list_read_receipts_for_sender, mark_conversation_read
 from core.ids import direct_conversation_key, new_conversation_id
 from core.group_policy import public_group_conversation
@@ -33,6 +34,13 @@ class CreateConversationBody(BaseModel):
 class ConversationMetaPatch(BaseModel):
     pinned: bool | None = None
     muted: bool | None = None
+
+
+class ConversationPrivacyPatch(BaseModel):
+    read_receipts: bool | None = None
+    typing_visible: bool | None = None
+    last_seen_visible: bool | None = None
+    disappearing_seconds_default: int | None = Field(default=None, ge=0, le=86_400)
 
 
 class MarkReadBody(BaseModel):
@@ -159,6 +167,37 @@ async def patch_conversation_meta(
         pinned=body.pinned,
         muted=body.muted,
     )
+    meta = await get_meta_map(db, user_id, [conversation_id])
+    if doc.get("type") == "group":
+        conv = public_group_conversation(doc, user_id, meta.get(conversation_id))
+    else:
+        conv = public_conversation(doc, user_id, meta.get(conversation_id))
+    return {"conversation": conv}
+
+
+@router.patch("/{conversation_id}/privacy")
+async def patch_conversation_privacy(
+    conversation_id: str,
+    body: ConversationPrivacyPatch,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    db = get_database()
+    doc = await db.conversations.find_one({"_id": conversation_id, "participants": user_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="conversation_not_found")
+
+    patch = body.model_dump(exclude_unset=True)
+    if "disappearing_seconds_default" in patch:
+        ttl = patch["disappearing_seconds_default"]
+        if ttl == 0:
+            patch["disappearing_seconds_default"] = None
+        else:
+            ok, detail = validate_disappearing_default(ttl)
+            if not ok:
+                raise HTTPException(status_code=400, detail=detail)
+
+    await upsert_privacy_meta(db, user_id, conversation_id, patch)
     meta = await get_meta_map(db, user_id, [conversation_id])
     if doc.get("type") == "group":
         conv = public_group_conversation(doc, user_id, meta.get(conversation_id))

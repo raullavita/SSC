@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchPresence, formatPresenceBucket } from '../lib/presence';
 
-export function usePresenceMap(peerIds = []) {
+export function usePresenceMap(peerIds = [], { scopedPeerId, scopedConversationId } = {}) {
   const [map, setMap] = useState({});
 
   const refresh = useCallback(async () => {
@@ -10,7 +10,9 @@ export function usePresenceMap(peerIds = []) {
     const entries = await Promise.all(
       unique.map(async (id) => {
         try {
-          const data = await fetchPresence(id);
+          const data = await fetchPresence(id, {
+            conversationId: id === scopedPeerId ? scopedConversationId : undefined,
+          });
           return [id, formatPresenceBucket(data.bucket)];
         } catch {
           return [id, ''];
@@ -18,7 +20,7 @@ export function usePresenceMap(peerIds = []) {
       })
     );
     setMap(Object.fromEntries(entries));
-  }, [peerIds]);
+  }, [peerIds, scopedPeerId, scopedConversationId]);
 
   useEffect(() => {
     refresh();

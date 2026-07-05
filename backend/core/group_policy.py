@@ -38,6 +38,11 @@ def public_group_conversation(doc: dict[str, Any], viewer_id: str, meta: dict | 
         out["muted"] = bool(meta.get("muted"))
         if meta.get("unread_count") is not None:
             out["unread_count"] = int(meta["unread_count"])
+        from core.conversation_privacy_policy import public_conversation_privacy  # noqa: PLC0415
+
+        privacy = public_conversation_privacy(meta)
+        if privacy:
+            out["privacy"] = privacy
     _ = viewer_id
     return out
 

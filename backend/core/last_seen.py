@@ -56,6 +56,7 @@ async def last_seen_for_viewer(
     subject_id: str,
     viewer_id: str,
     privacy_map: dict[str, dict[str, bool]] | None = None,
+    conversation_id: str | None = None,
 ) -> dict[str, Any]:
     if subject_id == viewer_id:
         return {"user_id": subject_id, "bucket": "online", "visible": True}
@@ -63,6 +64,13 @@ async def last_seen_for_viewer(
     pmap = privacy_map or await privacy_map_for_users(db, [subject_id])
     settings = pmap.get(subject_id, default_privacy_settings())
     visible = bool(settings.get("last_seen_visible", False))
+    if conversation_id:
+        from core.conversation_privacy_policy import effective_last_seen_visible  # noqa: PLC0415
+
+        meta = await db.conversation_meta.find_one(
+            {"user_id": subject_id, "conversation_id": conversation_id}
+        )
+        visible = effective_last_seen_visible(settings, meta)
 
     user = await db.users.find_one({"_id": subject_id}, {"last_active": 1})
     last_active = user.get("last_active") if user else None

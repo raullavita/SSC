@@ -22,7 +22,17 @@ FORBIDDEN_RESPONSE_FIELDS: frozenset[str] = frozenset(
 )
 
 CONVERSATION_PUBLIC_FIELDS: frozenset[str] = frozenset(
-    {"id", "type", "peer_id", "updated_at", "pinned", "muted", "unread_count"}
+    {
+        "id",
+        "type",
+        "peer_id",
+        "group_id",
+        "updated_at",
+        "pinned",
+        "muted",
+        "unread_count",
+        "privacy",
+    }
 )
 
 MESSAGE_PUBLIC_FIELDS: frozenset[str] = frozenset(
@@ -64,7 +74,16 @@ def public_conversation(
         out["muted"] = bool(meta.get("muted"))
         if meta.get("unread_count") is not None:
             out["unread_count"] = int(meta["unread_count"])
+        privacy = _public_privacy_from_meta(meta)
+        if privacy:
+            out["privacy"] = privacy
     return scrub_payload(out)
+
+
+def _public_privacy_from_meta(meta: dict[str, Any]) -> dict[str, Any]:
+    from core.conversation_privacy_policy import public_conversation_privacy  # noqa: PLC0415
+
+    return public_conversation_privacy(meta)
 
 
 def public_message(doc: dict[str, Any], viewer_id: str | None = None) -> dict[str, Any]:

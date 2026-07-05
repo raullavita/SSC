@@ -1,0 +1,70 @@
+.panel {
+  margin: 0.5rem 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #111b21;
+  border: 1px solid #2a3942;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #e9edef;
+}
+
+.close {
+  background: transparent;
+  border: none;
+  color: #8696a0;
+  cursor: pointer;
+}
+
+.intro {
+  margin: 0 0 0.65rem;
+  font-size: 0.75rem;
+  color: #8696a0;
+  line-height: 1.35;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.35rem 0.75rem;
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+
+.rowLabel {
+  font-size: 0.8rem;
+  color: #e9edef;
+}
+
+.inheritTag {
+  margin-left: 0.35rem;
+  font-size: 0.65rem;
+  color: #667781;
+  text-transform: uppercase;
+}
+
+.select {
+  min-width: 7.5rem;
+  background: #202c33;
+  color: #e9edef;
+  border: 1px solid #2a3942;
+  border-radius: 6px;
+  padding: 0.25rem 0.4rem;
+  font-size: 0.75rem;
+}
+
+.hint {
+  grid-column: 1 / -1;
+  font-size: 0.68rem;
+  color: #667781;
+}
