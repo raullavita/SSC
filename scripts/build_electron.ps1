@@ -6,8 +6,9 @@ Write-Host "Building frontend..."
 Push-Location "$Root\frontend"
 $env:REACT_APP_SSC_PLATFORM = "electron"
 $env:REACT_APP_SSC_VERSION = "0.3.0"
-$env:REACT_APP_SSC_BUILD = "local"
+$env:REACT_APP_SSC_BUILD = "3"
 $env:REACT_APP_SSC_REQUIRE_LIBCRYPTO = "true"
+$env:PUBLIC_URL = "."
 $env:REACT_APP_API_URL = $(if ($env:REACT_APP_API_URL) { $env:REACT_APP_API_URL } else { "https://api.supersecurechat.com" })
 yarn build
 Pop-Location

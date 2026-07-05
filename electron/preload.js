@@ -3,6 +3,11 @@
  */
 
 const { contextBridge, ipcRenderer } = require('electron');
+const pkg = require('./package.json');
+
+const CLIENT_VALUE = `electron/${pkg.version}/3`;
+
+contextBridge.exposeInMainWorld('__SSC_ELECTRON_CLIENT', CLIENT_VALUE);
 
 contextBridge.exposeInMainWorld('sscCrypto', {
   get available() {

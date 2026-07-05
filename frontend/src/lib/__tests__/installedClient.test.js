@@ -7,6 +7,7 @@ import {
 
 describe('installedClient', () => {
   beforeEach(() => {
+    delete window.__SSC_ELECTRON_CLIENT;
     delete window.__SSC_ANDROID_CLIENT;
     delete window.__SSC_ANDROID_SHELL;
     delete window.__SSC_ANDROID_FEATURES;
@@ -19,6 +20,11 @@ describe('installedClient', () => {
     const headers = getInstalledClientHeaders({ 'X-Test': '1' });
     expect(headers['X-SSC-Client']).toBeTruthy();
     expect(headers['X-Test']).toBe('1');
+  });
+
+  test('reads injected Electron client header', () => {
+    window.__SSC_ELECTRON_CLIENT = 'electron/0.3.0/3';
+    expect(getInstalledClientHeader()).toBe('electron/0.3.0/3');
   });
 
   test('reads injected Android shell flags', () => {
