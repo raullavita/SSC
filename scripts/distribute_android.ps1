@@ -4,7 +4,7 @@ param(
     [string]$Project = "super-chat-b0992",
     [string]$AppId = "1:814078411789:android:88e548025619ab48c68144",
     [string]$Testers = "raullavita1988@gmail.com,smashmaxxx@gmail.com,velvetnightshub@gmail.com",
-    [string]$ReleaseNotes = "SSC v0.3.0 build 4 - professional sign-in UI; test encrypted chat between Android and Windows."
+    [string]$ReleaseNotes = "SSC v0.3.0 build 5 - matches Windows PC build; Google OAuth + encrypted chat cross-device testing."
 )
 
 $ErrorActionPreference = "Stop"
