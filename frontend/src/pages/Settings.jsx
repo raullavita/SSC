@@ -16,12 +16,14 @@ import {
 import { executePanicWipe } from '../lib/panicWipe';
 import { fetchLanguages } from '../lib/translation';
 import { updatePrivacySettings } from '../lib/presence';
+import InviteQr from '../components/InviteQr';
 import { api } from '../lib/api';
+import { inviteAppUrl, inviteWebUrl } from '../lib/inviteLink';
 import { useMultiDevice } from '../devices/useMultiDevice';
 import styles from './Settings.module.css';
 
 export default function Settings() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [privacy, setPrivacy] = useState({ last_seen_visible: false, read_receipts: false });
   const [autoTranslate, setAutoTranslate] = useState(true);
@@ -43,6 +45,8 @@ export default function Settings() {
     error: deviceError,
   } = useMultiDevice();
   const [linkLabel, setLinkLabel] = useState('New device');
+  const [usernameInput, setUsernameInput] = useState('');
+  const [usernameBusy, setUsernameBusy] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -59,6 +63,7 @@ export default function Settings() {
       .then(setLanguages)
       .catch(() => {});
     loadDevices();
+    setUsernameInput(user.username || '');
   }, [user, loadDevices]);
 
   if (!loading && !user) return <Navigate to="/login" replace />;
@@ -106,6 +111,35 @@ export default function Settings() {
     setUserLang(lang);
     setPreferredLanguage(lang);
     setMessage('Language preference saved locally');
+  }
+
+  async function saveUsername(e) {
+    e.preventDefault();
+    const value = usernameInput.trim();
+    if (!value) return;
+    setUsernameBusy(true);
+    setMessage(null);
+    try {
+      const data = await api.patch('/api/users/me/username', { username: value });
+      await refreshUser();
+      setUsernameInput(data.user?.username || value);
+      setMessage(`Username set to @${data.user?.username || value}`);
+    } catch (err) {
+      setMessage(err.body?.detail || err.message || 'Could not save username');
+    } finally {
+      setUsernameBusy(false);
+    }
+  }
+
+  async function copyInvite() {
+    if (!user?.username) return;
+    const url = inviteWebUrl(user.username, window.location.origin);
+    try {
+      await navigator.clipboard.writeText(url);
+      setMessage('Invite link copied');
+    } catch {
+      setMessage(url);
+    }
   }
 
   async function handlePanicWipe() {
@@ -249,9 +283,52 @@ export default function Settings() {
       </section>
 
       <section className={styles.section}>
+        <h2>Username &amp; invites</h2>
+        <p className={styles.hint}>
+          Pick a public @username so people can find you without copying opaque IDs. No phone
+          numbers required.
+        </p>
+        <form className={styles.rowStack} onSubmit={saveUsername}>
+          <span>Username</span>
+          <div className={styles.usernameRow}>
+            <span className={styles.at}>@</span>
+            <input
+              className={styles.textInput}
+              value={usernameInput}
+              onChange={(e) => setUsernameInput(e.target.value.replace(/^@/, '').toLowerCase())}
+              placeholder="alice"
+              pattern="[a-z][a-z0-9_]{2,31}"
+              title="3–32 chars: lowercase letters, numbers, underscore; must start with a letter"
+            />
+            <button type="submit" className={styles.logout} disabled={usernameBusy}>
+              Save
+            </button>
+          </div>
+        </form>
+        {user.username && (
+          <>
+            <p className={styles.hint}>
+              Invite link: <code>{inviteWebUrl(user.username, window.location.origin)}</code>
+            </p>
+            <p className={styles.hint}>
+              App deep link: <code>{inviteAppUrl(user.username)}</code>
+            </p>
+            <button type="button" className={styles.logout} onClick={copyInvite}>
+              Copy invite link
+            </button>
+            <InviteQr
+              url={inviteWebUrl(user.username, window.location.origin)}
+              label="Scan to add this contact in SSC"
+            />
+          </>
+        )}
+      </section>
+
+      <section className={styles.section}>
         <h2>Account</h2>
         <p className={styles.account}>
           <strong>{user.display_name || user.id}</strong>
+          {user.username && <span className={styles.handle}>@{user.username}</span>}
           <code>{user.id}</code>
         </p>
       </section>

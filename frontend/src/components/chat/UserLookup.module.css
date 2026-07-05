@@ -45,6 +45,12 @@
   gap: 0.5rem;
 }
 
+.handle {
+  margin: 0.1rem 0 0;
+  font-size: 0.75rem;
+  color: #00a884;
+}
+
 .id {
   margin: 0.15rem 0 0;
   font-size: 0.7rem;

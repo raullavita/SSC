@@ -33,6 +33,17 @@ async def ensure_ttl_indexes(db: AsyncIOMotorDatabase) -> None:
     )
 
 
+async def ensure_username_index(db: AsyncIOMotorDatabase) -> None:
+    """Unique sparse index for @username discovery — Step 10."""
+    await db.users.create_index(
+        "username",
+        unique=True,
+        sparse=True,
+        name="uniq_username",
+    )
+
+
 async def bootstrap_database(db: AsyncIOMotorDatabase) -> None:
     """Startup hook: ensure TTL indexes exist."""
     await ensure_ttl_indexes(db)
+    await ensure_username_index(db)

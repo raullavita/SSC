@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import CallModal from '../components/chat/CallModal';
 import Composer from '../components/chat/Composer';
 import GroupPanel from '../components/chat/GroupPanel';
@@ -29,6 +29,7 @@ import { shouldAutoTranslate } from '../smart/languageDetect';
 import styles from './ChatHome.module.css';
 
 export default function ChatHome() {
+  const location = useLocation();
   const { user, wsToken, loading, logout } = useAuth();
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -51,6 +52,11 @@ export default function ChatHome() {
   const [pollOptions, setPollOptions] = useState(['', '']);
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
+
+  useEffect(() => {
+    const openId = location.state?.openConversationId;
+    if (openId) setActiveId(openId);
+  }, [location.state?.openConversationId]);
 
   const active = conversations.find((c) => c.id === activeId);
   const isGroup = active?.type === 'group';
