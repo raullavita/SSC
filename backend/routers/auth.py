@@ -51,10 +51,13 @@ class GoogleIdTokenBody(BaseModel):
 
 def _user_payload(user: dict) -> dict:
     """Metadata-minimized own-profile payload — never expose email."""
-    return {
+    out = {
         "id": user["_id"],
         "display_name": user.get("display_name", ""),
     }
+    if user.get("username"):
+        out["username"] = user["username"]
+    return out
 
 
 async def _issue_auth_response(user: dict, response: Response) -> dict:

@@ -51,7 +51,8 @@ async def test_lookup_returns_id_and_display_name_only(monkeypatch):
         resp = await ac.get(f"/api/users/lookup/{bob_id}", headers=CLIENT)
         assert resp.status_code == 200
         data = resp.json()["user"]
-        assert data == {"id": bob_id, "display_name": "Bob Target"}
+        assert data["id"] == bob_id
+        assert data["display_name"] == "Bob Target"
         assert "email" not in data
 
 

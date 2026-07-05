@@ -87,6 +87,26 @@
   word-break: break-all;
 }
 
+.handle {
+  color: #00a884;
+  font-size: 0.9rem;
+}
+
+.usernameRow {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.at {
+  color: #8696a0;
+  font-weight: 600;
+}
+
+.usernameRow .textInput {
+  flex: 1;
+}
+
 .toast {
   color: #00a884;
   font-size: 0.85rem;

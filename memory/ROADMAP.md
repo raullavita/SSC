@@ -125,8 +125,16 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
+## Step 10 — Usernames + invite links (discovery) ✅
+
+**Goal:** Let people find each other with `@username` and shareable invite links — no phone numbers, no app stores required.
+
+**Shipped (2026-07-05):** `username_policy.py`, unique index, `PATCH /me/username`, `GET /by-username/{name}`, invite links `/add/{username}`, Settings QR + copy, `step10_proof.py`, `qrcode` OSS dep.
+
+---
+
 ## Community contribution
 
-Steps 2–9 have GitHub issues (#4, #15–#21) with `help wanted` label. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
+Steps 2–10 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
 
 *Machine-readable gates: `backend/scripts/run_engine*_gate.py`*

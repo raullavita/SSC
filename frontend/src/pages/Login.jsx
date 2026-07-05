@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { googleAuthEnabled, promptGoogleSignIn } from '../lib/googleAuth';
 import styles from './Login.module.css';
@@ -7,6 +7,8 @@ import styles from './Login.module.css';
 export default function Login() {
   const { user, loading, login, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextPath = searchParams.get('next') || '/chat';
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,7 +16,7 @@ export default function Login() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  if (!loading && user) return <Navigate to="/chat" replace />;
+  if (!loading && user) return <Navigate to={nextPath} replace />;
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -26,7 +28,7 @@ export default function Login() {
       } else {
         await register(email, password, displayName || email.split('@')[0]);
       }
-      navigate('/chat');
+      navigate(nextPath);
     } catch (err) {
       setError(err.body?.detail || err.message || 'Auth failed');
     } finally {
@@ -41,7 +43,7 @@ export default function Login() {
       const data = await promptGoogleSignIn();
       if (data) {
         await loginWithGoogle(data);
-        navigate('/chat');
+        navigate(nextPath);
       }
     } catch (err) {
       setError(err.body?.detail || err.message || 'Google sign-in failed');
