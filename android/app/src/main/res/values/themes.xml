@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SSC" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/ssc_background</item>
+        <item name="android:statusBarColor">@color/ssc_background</item>
+        <item name="android:navigationBarColor">@color/ssc_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.SSC.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ssc_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ssc_splash_icon</item>
+        <item name="postSplashScreenTheme">@style/Theme.SSC</item>
+    </style>
+</resources>

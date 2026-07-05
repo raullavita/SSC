@@ -1,6 +1,7 @@
 package com.supersecurechat.app
 
 import android.content.Context
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -10,16 +11,25 @@ import java.net.URL
 
 /**
  * Injects X-SSC-Client on API requests and loads the native crypto bridge (Engine 11 / Step 5).
+ * Step 17: shell feature flags + offline detection callbacks.
  */
 object ApiClient {
     const val CLIENT_HEADER = "X-SSC-Client"
     const val CLIENT_VALUE = "android/0.2.0/2"
+    const val SHELL_FEATURES = "splash_screen,deep_links,pull_to_refresh,offline_retry,file_chooser,edge_to_edge"
 
     fun attachInstalledClientHeaders(conn: HttpURLConnection) {
         conn.setRequestProperty(CLIENT_HEADER, CLIENT_VALUE)
     }
 
-    fun webViewClient(context: Context, baseUrl: String, webView: WebView): WebViewClient =
+    fun webViewClient(
+        context: Context,
+        baseUrl: String,
+        webView: WebView,
+        onPageFinished: (() -> Unit)? = null,
+        onLoadError: (() -> Unit)? = null,
+        onLoadSuccess: (() -> Unit)? = null,
+    ): WebViewClient =
         object : WebViewClient() {
             private var bridgeInjected = false
 
@@ -55,7 +65,11 @@ object ApiClient {
                 favicon: android.graphics.Bitmap?,
             ) {
                 view?.evaluateJavascript(
-                    "window.__SSC_ANDROID_CLIENT='$CLIENT_VALUE';",
+                    """
+                    window.__SSC_ANDROID_CLIENT='$CLIENT_VALUE';
+                    window.__SSC_ANDROID_SHELL='1';
+                    window.__SSC_ANDROID_FEATURES='$SHELL_FEATURES';
+                    """.trimIndent(),
                     null,
                 )
                 super.onPageStarted(view, url, favicon)
@@ -66,7 +80,20 @@ object ApiClient {
                     bridgeInjected = true
                     injectBridgeScript(context, view)
                 }
+                onLoadSuccess?.invoke()
+                onPageFinished?.invoke()
                 super.onPageFinished(view, url)
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?,
+            ) {
+                if (request?.isForMainFrame == true) {
+                    onLoadError?.invoke()
+                }
+                super.onReceivedError(view, request, error)
             }
         }
 

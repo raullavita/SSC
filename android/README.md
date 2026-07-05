@@ -1,6 +1,6 @@
 # SSC Android
 
-Installed Android client — WebView shell with native `libsignal-android` crypto bridge (Step 5).
+Installed Android client — polished WebView shell with native `libsignal-android` crypto bridge (Step 5 + Step 17).
 
 ## Stack
 
@@ -8,6 +8,22 @@ Installed Android client — WebView shell with native `libsignal-android` crypt
 - **`X-SSC-Client: android/0.2.0/2`** injected on all `/api/` requests from the WebView
 - **`window.sscCrypto`** exposed via `SscNativeBridge` + `assets/ssc_crypto_bridge.js` — API matches Electron `preload.js`
 - **libsignal-android 0.96.4** — file-backed stores under `filesDir/ssc-signal/` (sessions, prekeys, sender keys)
+
+## Native shell polish (Step 17)
+
+| Feature | Details |
+|---------|---------|
+| Splash screen | SSC dark theme + animated icon (`Theme.SSC.Splash`) |
+| Deep links | `ssc://link-device`, `ssc://add/{username}`, HTTPS app links |
+| Pull to refresh | `SwipeRefreshLayout` around the WebView |
+| Offline retry | Native error panel with retry when the main frame fails |
+| File chooser | Backup restore + attachments via `onShowFileChooser` |
+| Edge-to-edge | Dark status/navigation bars matching web shell |
+
+Injected globals for the web app:
+
+- `window.__SSC_ANDROID_SHELL = '1'`
+- `window.__SSC_ANDROID_FEATURES = 'splash_screen,deep_links,...'`
 
 ## Crypto API (window.sscCrypto)
 
