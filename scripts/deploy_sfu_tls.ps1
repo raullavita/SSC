@@ -13,7 +13,7 @@ param(
     [string]$Zone = $(if ($env:SSC_SFU_ZONE) { $env:SSC_SFU_ZONE } else { "europe-west1-b" }),
     [string]$Instance = $(if ($env:SSC_SFU_INSTANCE) { $env:SSC_SFU_INSTANCE } else { "ssc-sfu" }),
     [string]$Service = $(if ($env:SSC_CLOUD_RUN_SERVICE) { $env:SSC_CLOUD_RUN_SERVICE } else { "ssc-api" }),
-    [string]$Region = $(if ($env:SSC_CLOUD_RUN_REGION) { $env:SSC_CLOUD_RUN_REGION } else { "us-central1" }),
+    [string]$Region = $(if ($env:SSC_CLOUD_RUN_REGION) { $env:SSC_CLOUD_RUN_REGION } else { "europe-west1" }),
     [switch]$UpdateCloudRun
 )
 

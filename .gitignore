@@ -16,6 +16,9 @@ atlas-credentials.env.*
 !atlas-credentials.env.example
 cloud_run.env
 backend/cloudrun-env.yaml
+android/keystore.properties
+android/*.keystore
+android/release.keystore
 *-service-account*.json
 ssc-firebase-key.json
 google-services.json

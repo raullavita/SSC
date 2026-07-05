@@ -18,9 +18,14 @@ if (-not (Test-Path $EnvProd)) {
 }
 
 if (-not $SkipBuild) {
-    Write-Host "Building React production bundle..."
+    Write-Host "Building React production bundle (landing-only; installed clients use build_electron/build_android)..."
     Push-Location $Frontend
     try {
+        $env:REACT_APP_SSC_PLATFORM = "web"
+        $env:REACT_APP_SSC_VERSION = "0.3.0"
+        $env:REACT_APP_SSC_BUILD = "0"
+        $env:REACT_APP_SSC_REQUIRE_LIBCRYPTO = "false"
+        $env:REACT_APP_API_URL = $(if ($env:REACT_APP_API_URL) { $env:REACT_APP_API_URL } else { "https://api.supersecurechat.com" })
         if (Test-Path "yarn.lock") { yarn build } else { npm run build }
     } finally {
         Pop-Location

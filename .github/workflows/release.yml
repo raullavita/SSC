@@ -40,8 +40,16 @@ jobs:
       - run: yarn install --frozen-lockfile || yarn install
       - run: yarn test:ci
 
+  secrets-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate no secrets in git
+        shell: pwsh
+        run: ./scripts/validate_secrets.ps1
+
   build-windows:
-    needs: [backend-test, frontend-test]
+    needs: [backend-test, frontend-test, secrets-check]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +66,7 @@ jobs:
           path: electron/dist/*.exe
 
   build-android:
-    needs: [backend-test, frontend-test]
+    needs: [backend-test, frontend-test, secrets-check]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,29 +74,44 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
       - name: Build Android APK
         run: |
-          chmod +x android/gradlew || true
-          cd android && ./gradlew assembleRelease || echo "Android build skipped if SDK missing"
+          chmod +x android/gradlew
+          cd android && ./gradlew assembleRelease
       - name: Upload Android artifact
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: SSC-Android
           path: android/app/build/outputs/apk/release/*.apk
-        continue-on-error: true
+
+  production-smoke:
+    needs: [backend-test, frontend-test, secrets-check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Production API smoke test
+        shell: pwsh
+        run: ./scripts/release_smoke_test.ps1
 
   publish-release:
-    needs: [build-windows]
+    needs: [build-windows, build-android, production-smoke]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: SSC-Windows
-          path: dist
+          path: dist/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: SSC-Android
+          path: dist/android
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: |
+            dist/windows/*
+            dist/android/*
           generate_release_notes: true

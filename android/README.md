@@ -45,9 +45,17 @@ cd android
 ./gradlew assembleRelease
 ```
 
+Or on Windows: `.\scripts\build_android.ps1` → `SSC-0.3.0.apk`
+
 APK: `app/build/outputs/apk/release/app-release.apk`
 
 Requires Android SDK 35, JDK 17, Kotlin 2.2.20, and `local.properties` with `sdk.dir`.
+
+### Signed release (optional, sideload trust)
+
+1. `keytool -genkey -v -keystore release.keystore -alias ssc-release -keyalg RSA -keysize 2048 -validity 10000`
+2. Copy `keystore.properties.example` → `keystore.properties` (gitignored)
+3. Rebuild — Gradle applies `signingConfigs.release` automatically
 
 Dependencies resolve from [Signal's Maven repository](https://build-artifacts.signal.org/libraries/maven/) (`settings.gradle.kts`).
 
