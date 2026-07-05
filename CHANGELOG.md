@@ -5,6 +5,33 @@ All notable changes to SSC (Super Secure Chat) are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 SSC is open source under [AGPL-3.0](LICENSE); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for libsignal attribution.
 
+## [0.3.0] - 2026-07-05
+
+### Added
+
+- **Usernames + invites** — `@username` discovery, `/add/{username}` links, Settings QR + copy
+- **Read receipts UI** — opt-in ✓✓ with per-chat overrides and WS fanout
+- **Call reliability** — ICE queue, hangup/missed flow, ring timeout, Android media permissions
+- **Message lifecycle** — edit within TTL, delete for me/everyone, forward as encrypted message
+- **Safety numbers + trust** — client-only trust store, verification QR, key-change banners
+- **Per-chat privacy** — read receipts, typing, last seen, disappearing defaults per conversation
+- **Multi-device QR link** — `ssc://link-device` deep links, expiry countdown, device list polish
+- **Encrypted backup** — passphrase `.ssc-backup` export/restore in Settings (client-only)
+- **Android shell polish** — splash screen, deep links, pull-to-refresh, offline retry, file chooser
+- **Release checklist** — `memory/RELEASE_v0.3.0_CHECKLIST.md`, `step18_proof.py`
+
+### Changed
+
+- Version bumped to **0.3.0** across clients, API health, and build scripts
+- Android `versionCode` 3, `X-SSC-Client: android/0.3.0/3`
+- First GitHub Release with attached **Electron installer** and **Android APK**
+
+### Open source
+
+- Source: https://github.com/raullavita/SSC  
+- License: AGPL-3.0  
+- E2E crypto: [Signal libsignal](https://github.com/signalapp/libsignal) (AGPL-3.0)
+
 ## [0.2.0] - 2026-07-05
 
 ### Added
@@ -47,5 +74,6 @@ Initial public release — install-only E2E messenger (Android + Windows Electro
 - FCM push, mediasoup SFU scaffold, Firebase Hosting + Cloud Run production deploy
 - Engines 1–14 gates, CI, ZAP security scan
 
+[0.3.0]: https://github.com/raullavita/SSC/releases/tag/v0.3.0
 [0.2.0]: https://github.com/raullavita/SSC/releases/tag/v0.2.0
 [0.1.0]: https://github.com/raullavita/SSC/releases/tag/v0.1.0

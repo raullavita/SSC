@@ -11,8 +11,8 @@ android {
         applicationId = "com.supersecurechat.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
         buildConfigField("String", "SSC_WEB_URL", "\"https://www.supersecurechat.com/login\"")
         buildConfigField("String", "SSC_API_URL", "\"https://api.supersecurechat.com\"")
     }

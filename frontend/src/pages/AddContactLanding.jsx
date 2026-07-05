@@ -5,7 +5,7 @@ import styles from './AddContactLanding.module.css';
 const RELEASE_BASE =
   process.env.REACT_APP_SSC_RELEASE_URL ||
   'https://github.com/raullavita/SSC/releases/latest/download';
-const VERSION = process.env.REACT_APP_SSC_VERSION || '0.2.0';
+const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.0';
 
 export default function AddContactLanding() {
   const { username } = useParams();

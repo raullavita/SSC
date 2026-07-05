@@ -36,7 +36,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title="SSC - Super Secure Chat",
-        version="0.2.0",
+        version="0.3.0",
         lifespan=lifespan,
     )
     app.state.enforce_installed_client = settings.enforce_installed_client

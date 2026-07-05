@@ -22,10 +22,10 @@ describe('installedClient', () => {
   });
 
   test('reads injected Android shell flags', () => {
-    window.__SSC_ANDROID_CLIENT = 'android/0.2.0/2';
+    window.__SSC_ANDROID_CLIENT = 'android/0.3.0/3';
     window.__SSC_ANDROID_SHELL = '1';
     window.__SSC_ANDROID_FEATURES = 'deep_links,pull_to_refresh';
-    expect(getInstalledClientHeader()).toBe('android/0.2.0/2');
+    expect(getInstalledClientHeader()).toBe('android/0.3.0/3');
     expect(isAndroidShell()).toBe(true);
     expect(getAndroidShellFeatures()).toEqual(['deep_links', 'pull_to_refresh']);
   });
