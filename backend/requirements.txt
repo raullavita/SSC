@@ -9,4 +9,4 @@ httpx==0.28.1
 pytest==9.0.3
 pytest-asyncio==1.4.0
 email-validator==2.2.0
-firebase-admin==6.6.0
+firebase-admin==7.5.0
