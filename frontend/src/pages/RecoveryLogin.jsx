@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import AuthLayout from '../components/AuthLayout';
+import AuthSplash from '../components/AuthSplash';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import styles from './Login.module.css';
@@ -15,7 +17,8 @@ export default function RecoveryLogin() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
-  if (!loading && user) return <Navigate to="/chat" replace />;
+  if (loading) return <AuthSplash />;
+  if (user) return <Navigate to="/chat" replace />;
 
   async function handleVerify(e) {
     e.preventDefault();
@@ -53,49 +56,77 @@ export default function RecoveryLogin() {
     }
   }
 
+  const title = step === 'verify' ? 'Recover your account' : 'Set a new password';
+  const subtitle =
+    step === 'verify'
+      ? 'Enter the email and recovery passphrase you saved when you registered.'
+      : 'Choose a strong new password — your encryption keys stay on this device.';
+
   return (
-    <div className={styles.page}>
-      <h1>Account recovery</h1>
+    <AuthLayout title={title} subtitle={subtitle}>
       {step === 'verify' ? (
-        <form onSubmit={handleVerify}>
-          <label>
-            Email
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <form className={styles.form} onSubmit={handleVerify}>
+          <label className={styles.field}>
+            <span>Email</span>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
           </label>
-          <label>
-            Recovery passphrase
+          <label className={styles.field}>
+            <span>Recovery passphrase</span>
             <input
               type="password"
+              placeholder="Your saved recovery key"
               value={passphrase}
               onChange={(e) => setPassphrase(e.target.value)}
               required
+              autoComplete="off"
             />
           </label>
-          <button type="submit" disabled={busy}>
-            Verify recovery key
+          {error && (
+            <p className={styles.error} role="alert">
+              {String(error)}
+            </p>
+          )}
+          <button type="submit" className={styles.primaryBtn} disabled={busy}>
+            {busy ? 'Verifying…' : 'Verify recovery key'}
           </button>
         </form>
       ) : (
-        <form onSubmit={handleReset}>
-          <label>
-            New password
+        <form className={styles.form} onSubmit={handleReset}>
+          <label className={styles.field}>
+            <span>New password</span>
             <input
               type="password"
+              placeholder="At least 8 characters"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               minLength={8}
               required
+              autoComplete="new-password"
             />
           </label>
-          <button type="submit" disabled={busy}>
-            Reset password & sign in
+          {error && (
+            <p className={styles.error} role="alert">
+              {String(error)}
+            </p>
+          )}
+          <button type="submit" className={styles.primaryBtn} disabled={busy}>
+            {busy ? 'Resetting…' : 'Reset password & sign in'}
           </button>
         </form>
       )}
-      {error && <p className={styles.error}>{error}</p>}
-      <p>
-        <Link to="/login">Back to login</Link>
-      </p>
-    </div>
+
+      <div className={styles.links}>
+        <Link to="/login" className={styles.link}>
+          ← Back to sign in
+        </Link>
+      </div>
+    </AuthLayout>
   );
 }

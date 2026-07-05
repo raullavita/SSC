@@ -7,6 +7,7 @@ describe('InstalledClientGate', () => {
   afterEach(() => {
     process.env = originalEnv;
     delete window.sscCrypto;
+    delete window.__SSC_ELECTRON_CLIENT;
     delete window.__SSC_ANDROID_CLIENT;
   });
 
@@ -25,7 +26,7 @@ describe('InstalledClientGate', () => {
     expect(screen.getByText('chat-ui')).toBeInTheDocument();
   });
 
-  it('blocks when production crypto required but libsignal missing', () => {
+  it('allows electron shell when platform is electron even before libsignal warms up', () => {
     process.env = {
       ...originalEnv,
       REACT_APP_SSC_REQUIRE_LIBCRYPTO: 'true',
@@ -37,8 +38,23 @@ describe('InstalledClientGate', () => {
         <span>chat-ui</span>
       </InstalledClientGate>
     );
-    expect(screen.queryByText('chat-ui')).not.toBeInTheDocument();
-    expect(screen.getByText(/libsignal enabled/i)).toBeInTheDocument();
+    expect(screen.getByText('chat-ui')).toBeInTheDocument();
+  });
+
+  it('allows electron shell via runtime client marker', () => {
+    window.__SSC_ELECTRON_CLIENT = 'electron/0.3.0/4';
+    process.env = {
+      ...originalEnv,
+      REACT_APP_SSC_REQUIRE_LIBCRYPTO: 'true',
+      REACT_APP_SSC_PLATFORM: 'web',
+      NODE_ENV: 'production',
+    };
+    render(
+      <InstalledClientGate>
+        <span>chat-ui</span>
+      </InstalledClientGate>
+    );
+    expect(screen.getByText('chat-ui')).toBeInTheDocument();
   });
 
   it('renders children for electron platform in non-crypto-strict dev builds', () => {

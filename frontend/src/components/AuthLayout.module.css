@@ -1,0 +1,136 @@
+.shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(280px, 42%) 1fr;
+}
+
+.brand {
+  background: linear-gradient(165deg, #0d1f1a 0%, #0b141a 45%, #111b21 100%);
+  border-right: 1px solid var(--ssc-border, #2a3942);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.brand::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(0, 168, 132, 0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.brandInner {
+  position: relative;
+  max-width: 22rem;
+}
+
+.logoMark {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1rem;
+  background: linear-gradient(145deg, #00a884, #007a62);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 8px 28px rgba(0, 168, 132, 0.3);
+}
+
+.productName {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ssc-text, #e9edef);
+}
+
+.tagline {
+  margin: 0 0 2rem;
+  color: var(--ssc-text-muted, #8696a0);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.highlights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.highlights li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  color: #aebac1;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: 0.45rem;
+  border-radius: 50%;
+  background: var(--ssc-accent, #00a884);
+  box-shadow: 0 0 8px rgba(0, 168, 132, 0.6);
+}
+
+.foot {
+  margin: 2.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ssc-text-dim, #667781);
+}
+
+.main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--ssc-bg, #0b141a);
+}
+
+.card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.cardTitle {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ssc-text, #e9edef);
+}
+
+.cardSub {
+  margin: 0 0 1.5rem;
+  color: var(--ssc-text-muted, #8696a0);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 860px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .brand {
+    display: none;
+  }
+
+  .main {
+    padding: 1.5rem;
+  }
+}
