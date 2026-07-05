@@ -55,11 +55,14 @@ def _finish_html(*, oauth_code: str | None, error: str | None) -> str:
       }}
 
       const deepLink = 'ssc://auth/google?oauth_code=' + encodeURIComponent(code);
-      const androidHome = 'file:///android_asset/www/index.html#/auth/google?oauth_code=' + encodeURIComponent(code);
       const isElectron = /Electron/i.test(navigator.userAgent || '');
+      const isAndroid = /Android/i.test(navigator.userAgent || '');
 
-      if (window.__SSC_ANDROID_CLIENT || window.__SSC_ANDROID_SHELL === '1') {{
-        window.location.replace(androidHome);
+      if (isAndroid && !isElectron) {{
+        try {{
+          window.location.replace(deepLink);
+        }} catch (_) {{}}
+        status.textContent = 'Returning to Super Secure Chat…';
         return;
       }}
 
