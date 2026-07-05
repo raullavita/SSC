@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from core.friend_request_policy import FRIEND_REQUEST_STATUSES
 from core.ids import new_conversation_id, new_friend_request_id
 from core.retention_policy import default_expires_at
 from core.ws_hub import ws_hub

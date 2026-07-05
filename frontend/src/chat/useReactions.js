@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { decryptMessage } from '../signal/signalBridge';
 import { decryptGroupMessage } from '../signal/groupSenderKeys';
-import { parseReactionText, removeReaction, sendReaction as postReaction } from './reactions';
+import {
+  fetchConversationReactions,
+  parseReactionText,
+  removeReaction,
+  sendReaction as postReaction,
+} from './reactions';
 
 async function hydrateReaction(row, { peerId, isGroup, groupId }) {
   try {
@@ -30,7 +35,7 @@ async function hydrateReaction(row, { peerId, isGroup, groupId }) {
   }
 }
 
-export function aggregateReactions(rows) {
+function aggregateReactions(rows) {
   const byEmoji = new Map();
   for (const row of rows) {
     const key = row.emoji;
@@ -62,7 +67,7 @@ export function useReactions({
     if (!conversationId || !enabled) return;
     setLoading(true);
     try {
-      const data = await api.get(`/api/conversations/${conversationId}/reactions`);
+      const data = await fetchConversationReactions(conversationId);
       const hydrated = [];
       for (const row of data.reactions || []) {
         const parsed = await hydrateReaction(row, { peerId, isGroup, groupId });

@@ -12,6 +12,12 @@ export async function fetchConversationReactions(conversationId) {
   return api.get(`/api/conversations/${conversationId}/reactions`);
 }
 
+export async function fetchMessageReactions(conversationId, messageId) {
+  return api.get(
+    `/api/conversations/${conversationId}/messages/${messageId}/reactions`
+  );
+}
+
 export async function sendReaction(
   conversationId,
   { emoji, targetMessageId, peerId, isGroup, groupId, userId, memberIds }

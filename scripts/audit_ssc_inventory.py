@@ -55,6 +55,8 @@ KNOWN_UNWIRED_INTENTIONAL = {
     "/api/status": "Status probe",
     "/api/config": "Public config endpoint",
     "/api/ws": "WebSocket upgrade path",
+    "/api/users/lookup/{target}": "UserLookup via lookupPathForQuery() template",
+    "/api/users/by-username/{username}": "AddContact via lookupPathForQuery() template",
 }
 
 POLICY_ONLY_FEATURES = [
@@ -85,8 +87,8 @@ POLICY_ONLY_FEATURES = [
     },
     {
         "name": "Read receipts aggregate UI",
-        "location": "frontend useReadReceipts.js",
-        "detail": "Per-message reads work; no rich read-by list view",
+        "location": "frontend/lib/readReceipts.js",
+        "detail": "Read-by-N tooltip on outgoing messages; full reader names not shown",
     },
     {
         "name": "Web chat in browser",
@@ -128,8 +130,16 @@ def discover_backend_routes() -> list[dict]:
             stem_key = stem
         prefix = ROUTER_PREFIXES.get(stem_key, f"/api/{stem}")
         text = _read_text(path)
+        conv_prefix = "/api/conversations"
         for method, sub in route_re.findall(text):
-            if stem == "messages" and sub.startswith("/conversations"):
+            if stem == "conversations":
+                if sub == "":
+                    full = conv_prefix
+                elif sub.startswith("/"):
+                    full = f"{conv_prefix}{sub}"
+                else:
+                    full = f"{conv_prefix}/{sub}"
+            elif stem == "messages" and sub.startswith("/conversations"):
                 full = f"/api{sub}" if not sub.startswith("/api") else sub
             elif stem in {"polls", "reactions", "typing"} and sub.startswith("/"):
                 full = f"/api{sub}"
@@ -140,11 +150,7 @@ def discover_backend_routes() -> list[dict]:
             elif sub == "":
                 full = prefix.rstrip("/") or prefix
             elif sub.startswith("/"):
-                base = prefix if not prefix.endswith(stem.replace("_router", "")) else prefix
-                if "{conversation_id}" in sub or "{message_id}" in sub or "{poll_id}" in sub:
-                    full = f"/api{sub}" if not sub.startswith("/api") else sub
-                else:
-                    full = f"{prefix}{sub}" if not sub.startswith("/api") else sub
+                full = f"{prefix}{sub}" if not sub.startswith("/api") else sub
             else:
                 full = f"{prefix}/{sub}"
             full = re.sub(r"/+", "/", full)
@@ -239,7 +245,10 @@ def find_stubs() -> list[dict]:
         for path in base.rglob("*"):
             if path.suffix not in {".py", ".js", ".jsx", ".kt", ".swift", ".ts", ".tsx"}:
                 continue
-            if "node_modules" in path.parts or "venv" in path.parts or "__pycache__" in path.parts:
+            if any(
+                x in path.parts
+                for x in ("node_modules", "venv", ".audit-venv", "__pycache__", ".gradle")
+            ):
                 continue
             text = _read_text(path)
             for pattern, label in STUB_PATTERNS:

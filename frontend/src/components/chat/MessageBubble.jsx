@@ -3,6 +3,7 @@ import { isImageAttachment, isVoiceAttachment } from '../../chat/attachments';
 import { canDeleteForEveryone, canEditMessage } from '../../chat/messageActions';
 import { fetchPreviewsForText } from '../../lib/linkPreview';
 import { decryptFileBytes } from '../../signal/signalBridge';
+import { formatReadReceiptLabel } from '../../lib/readReceipts';
 import LinkPreviewCard from './LinkPreviewCard';
 import PollBubble from './PollBubble';
 import styles from './MessageBubble.module.css';
@@ -101,6 +102,7 @@ export default function MessageBubble({
   onTranslate,
   downloadFile,
   readAt,
+  readAtList,
   poll,
   pollTallies,
   pollViewerVote,
@@ -187,10 +189,16 @@ export default function MessageBubble({
         <span className={styles.timestamp}>{formatTime(createdAt)}</span>
         {isOutgoing && (
           <span
-            className={`${styles.status} ${readAt ? styles.read : ''}`}
-            title={readAt ? 'Read' : 'Sent'}
+            className={`${styles.status} ${readAt || readAtList?.length ? styles.read : ''}`}
+            title={
+              readAtList?.length
+                ? formatReadReceiptLabel(readAtList)
+                : readAt
+                  ? formatReadReceiptLabel([readAt])
+                  : 'Sent'
+            }
           >
-            {readAt ? '✓✓' : '✓'}
+            {readAt || readAtList?.length ? '✓✓' : '✓'}
           </span>
         )}
       </div>

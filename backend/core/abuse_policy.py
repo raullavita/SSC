@@ -6,7 +6,6 @@ import os
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any
 
 # Per-user message rate (sliding window).
 MSG_RATE_LIMIT = int(os.getenv("SSC_MSG_RATE_LIMIT", "60"))
