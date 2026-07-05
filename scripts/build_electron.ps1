@@ -24,7 +24,21 @@ Write-Host "Installing Electron deps..."
 Push-Location "$Root\electron"
 npm install
 $env:SSC_PROD_FILE = "$Root\frontend\build\index.html"
+$env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
+$env:WIN_CSC_LINK = ""
+$env:CSC_LINK = ""
 npm run dist
 Pop-Location
+
+$installer = Get-ChildItem "$Root\electron\dist\SSC-Setup-*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$portable = Get-ChildItem "$Root\electron\dist\SSC-*-portable*.exe" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+if ($installer -and $installer.Length -gt 10MB) {
+  Copy-Item $installer.FullName "$env:USERPROFILE\Desktop\SSC-Setup-latest.exe" -Force
+  Write-Host "Installer copied to Desktop\SSC-Setup-latest.exe"
+}
+if ($portable) {
+  Copy-Item $portable.FullName "$env:USERPROFILE\Desktop\SSC-Portable-latest.exe" -Force
+  Write-Host "Portable build copied to Desktop\SSC-Portable-latest.exe"
+}
 
 Write-Host "Electron installer artifacts in electron\dist"
