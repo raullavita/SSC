@@ -44,6 +44,10 @@ Thumbs.db
 # Firebase local cache
 .firebase/
 
+# Audit reports (regenerate with scripts/full_app_audit.ps1)
+audit-reports/
+backend/.audit-venv/
+
 # Logs & temp
 *.log
 npm-debug.log*
