@@ -19,6 +19,7 @@ import { updatePrivacySettings } from '../lib/presence';
 import InviteQr from '../components/InviteQr';
 import { api } from '../lib/api';
 import { inviteAppUrl, inviteWebUrl } from '../lib/inviteLink';
+import BackupPanel from '../components/BackupPanel';
 import LinkedDevicesPanel from '../components/LinkedDevicesPanel';
 import { useMultiDevice } from '../devices/useMultiDevice';
 import styles from './Settings.module.css';
@@ -245,6 +246,11 @@ export default function Settings() {
           Point to a self-hosted LibreTranslate instance so translation never leaves your network.
           Leave empty to use the SSC proxy.
         </p>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Encrypted backup</h2>
+        <BackupPanel userId={user.id} onMessage={setMessage} />
       </section>
 
       <section className={styles.section}>
