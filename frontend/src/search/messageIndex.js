@@ -81,3 +81,39 @@ export function clearIndex(conversationId) {
 export function clearAllIndexes() {
   indexes.clear();
 }
+
+const INDEX_OPTIONS = {
+  fields: ['text'],
+  storeFields: ['id', 'text', 'sender_id', 'created_at'],
+  searchOptions: { boost: { text: 2 }, prefix: true, fuzzy: 0.2 },
+};
+
+export function exportAllIndexes() {
+  const out = {};
+  for (const [conversationId, idx] of indexes) {
+    try {
+      out[conversationId] = idx.toJSON();
+    } catch {
+      /* skip broken index */
+    }
+  }
+  return out;
+}
+
+export function importAllIndexes(data) {
+  if (!data || typeof data !== 'object') return 0;
+  clearAllIndexes();
+  let count = 0;
+  for (const [conversationId, json] of Object.entries(data)) {
+    if (!conversationId || !json) continue;
+    try {
+      const serialized = typeof json === 'string' ? json : JSON.stringify(json);
+      const idx = MiniSearch.loadJSON(serialized, INDEX_OPTIONS);
+      indexes.set(conversationId, idx);
+      count += 1;
+    } catch {
+      /* skip invalid snapshot */
+    }
+  }
+  return count;
+}

@@ -177,6 +177,8 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 **Goal:** Client-side encrypted chat export and restore.
 
+**Shipped (2026-07-05):** Passphrase-encrypted `.ssc-backup` export in Settings (`BackupPanel`), local trust/prefs/sender keys + search index snapshot, PBKDF2 + AES-GCM client crypto, restore with confirmation, `backup_policy.py`, `step16_proof.py`.
+
 ---
 
 ## Step 17 — Android shell improvements
@@ -193,6 +195,6 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ## Community contribution
 
-Steps 2–15 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
+Steps 2–16 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
 
 *Machine-readable gates: `backend/scripts/run_engine*_gate.py`*
