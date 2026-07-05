@@ -15,7 +15,7 @@ import java.net.URL
  */
 object ApiClient {
     const val CLIENT_HEADER = "X-SSC-Client"
-    const val CLIENT_VALUE = "android/0.3.0/5"
+    const val CLIENT_VALUE = "android/0.3.0/6"
     const val SHELL_FEATURES = "splash_screen,deep_links,pull_to_refresh,offline_retry,file_chooser,edge_to_edge"
 
     fun attachInstalledClientHeaders(conn: HttpURLConnection) {

@@ -60,9 +60,19 @@ if (-not $indexFound) {
 if (Test-Path $ApkPath) {
     $apk = Get-Item $ApkPath
     Assert-Ok "apk.exists" $true $ApkPath
-    Assert-Ok "apk.size" ($apk.Length -gt 1MB) "$([math]::Round($apk.Length / 1MB, 2)) MB"
+    $apkMb = [math]::Round($apk.Length / 1MB, 2)
+    Assert-Ok "apk.size" ($apk.Length -gt 1MB -and $apk.Length -lt 250MB) "${apkMb} MB (expected < 250 MB; >400 MB usually means test JNI libs bundled)"
 
-    Write-Host "OK: apk.unsigned_sideload (signing not required)"
+    $apksigner = Join-Path $env:LOCALAPPDATA "Android\Sdk\build-tools\35.0.0\apksigner.bat"
+    if (-not (Test-Path $apksigner)) {
+        $apksigner = Get-ChildItem (Join-Path $env:LOCALAPPDATA "Android\Sdk\build-tools") -Filter apksigner.bat -Recurse -ErrorAction SilentlyContinue | Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+    }
+    if ($apksigner -and (Test-Path $apksigner)) {
+        & $apksigner verify --print-certs $ApkPath 2>&1 | Out-Null
+        Assert-Ok "apk.signed" ($LASTEXITCODE -eq 0) "APK must be signed to install on Android"
+    } else {
+        Write-Host "WARN: apksigner not found — skipping APK signature check"
+    }
 } else {
     Add-Failure "apk - missing at $ApkPath"
 }
