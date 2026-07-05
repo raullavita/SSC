@@ -11,7 +11,7 @@ Engine 11 delivers **local builds only** — no live deploy to Firebase, Cloud R
 | Platform | Artifact | Crypto |
 |----------|----------|--------|
 | Windows/macOS/Linux | Electron installer (`electron-builder`) | `@signalapp/libsignal-client` v0.96.4 via IPC |
-| Android | Release APK (`gradle assembleRelease`) | `libsignal-android` v0.46.0 + WebView shell |
+| Android | Release APK (`gradle assembleRelease`) | `libsignal-android` v0.96.4 + WebView shell |
 
 ## Electron
 
@@ -21,7 +21,7 @@ Engine 11 delivers **local builds only** — no live deploy to Firebase, Cloud R
 
 ## Android
 
-- `android/.../ApiClient.kt` — injects `X-SSC-Client: android/0.1.0/1`
+- `android/.../ApiClient.kt` — injects `X-SSC-Client: android/0.2.0/2`
 - `android/.../MainActivity.kt` — WebView loads production web shell
 - `scripts/build_android.ps1` — local APK build
 

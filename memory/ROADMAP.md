@@ -109,11 +109,11 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
-## Step 8 — Release v0.2.0 (issue #20)
+## Step 8 — Release v0.2.0 (issue #20) ✅
 
 **Goal:** Signed Electron + Android APK, changelog, production deploy checklist.
 
-See `memory/PLATFORM_RELEASE_CHARTER.md`.
+**Shipped (2026-07-05):** `CHANGELOG.md`, version 0.2.0 across clients/API, professional landing with OSS/AGPL compliance, `memory/RELEASE_v0.2.0_CHECKLIST.md`, `step8_proof.py`, updated `PLATFORM_RELEASE_CHARTER.md` (libsignal-android 0.96.4).
 
 ---
 

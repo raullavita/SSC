@@ -13,7 +13,7 @@ import java.net.URL
  */
 object ApiClient {
     const val CLIENT_HEADER = "X-SSC-Client"
-    const val CLIENT_VALUE = "android/0.1.0/1"
+    const val CLIENT_VALUE = "android/0.2.0/2"
 
     fun attachInstalledClientHeaders(conn: HttpURLConnection) {
         conn.setRequestProperty(CLIENT_HEADER, CLIENT_VALUE)
