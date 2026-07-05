@@ -1,5 +1,6 @@
 appId: com.supersecurechat.desktop
 productName: Super Secure Chat
+forceCodeSigning: false
 publish:
   provider: github
   owner: raullavita
@@ -20,7 +21,9 @@ extraResources:
 win:
   target:
     - nsis
+    - portable
   artifactName: SSC-Setup-${version}.${ext}
+  signAndEditExecutable: false
 mac:
   target:
     - dmg
