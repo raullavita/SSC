@@ -104,7 +104,18 @@ object ApiClient {
                     val code = conn.responseCode
                     val stream = if (code in 200..299) conn.inputStream else conn.errorStream
                     val mime = conn.contentType?.substringBefore(";") ?: "application/json"
-                    WebResourceResponse(mime, conn.contentEncoding ?: "utf-8", code, "OK", conn.headerFields, stream)
+                    val responseHeaders = conn.headerFields
+                        .filterKeys { it != null }
+                        .mapKeys { it.key!! }
+                        .mapValues { (_, values) -> values.joinToString(", ") }
+                    WebResourceResponse(
+                        mime,
+                        conn.contentEncoding ?: "utf-8",
+                        code,
+                        "OK",
+                        responseHeaders,
+                        stream,
+                    )
                 } catch (_: Exception) {
                     super.shouldInterceptRequest(view, request)
                 }
