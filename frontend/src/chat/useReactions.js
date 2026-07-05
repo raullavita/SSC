@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { decryptMessage, decryptGroupMessage } from '../signal/signalBridge';
+import { decryptMessage } from '../signal/signalBridge';
+import { decryptGroupMessage } from '../signal/groupSenderKeys';
 import { parseReactionText, removeReaction, sendReaction as postReaction } from './reactions';
 
 async function hydrateReaction(row, { peerId, isGroup, groupId }) {
