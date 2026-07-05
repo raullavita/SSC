@@ -51,11 +51,7 @@ APK: `app/build/outputs/apk/release/app-release.apk`
 
 Requires Android SDK 35, JDK 17, Kotlin 2.2.20, and `local.properties` with `sdk.dir`.
 
-### Signed release (optional, sideload trust)
-
-1. `keytool -genkey -v -keystore release.keystore -alias ssc-release -keyalg RSA -keysize 2048 -validity 10000`
-2. Copy `keystore.properties.example` → `keystore.properties` (gitignored)
-3. Rebuild — Gradle applies `signingConfigs.release` automatically
+Release builds are **unsigned** (sideload only). Enable “Install unknown apps” on the device when installing.
 
 Dependencies resolve from [Signal's Maven repository](https://build-artifacts.signal.org/libraries/maven/) (`settings.gradle.kts`).
 
