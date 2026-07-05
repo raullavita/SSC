@@ -6,12 +6,12 @@ import base64
 import os
 import sys
 from pathlib import Path
-from urllib.parse import quote_plus
-
 import httpx
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from secret_url_builders import build_redis_tls_url
 CREDS = ROOT / "atlas-credentials.env"
 ENV_FILE = ROOT / "backend" / "cloudrun-env.yaml"
 
@@ -57,7 +57,7 @@ def main() -> int:
     host = updated.get("endpoint", target.get("endpoint", "merry-mole-114510"))
     if not str(host).endswith(".upstash.io"):
         host = f"{host}.upstash.io"
-    redis_url = f"rediss://default:{quote_plus(password)}@{host}:6379"
+    redis_url = build_redis_tls_url(password, host)
 
     lines = ENV_FILE.read_text(encoding="utf-8").splitlines()
     out = []
