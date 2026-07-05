@@ -117,8 +117,16 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
+## Step 9 — Read receipts UI + fanout (issue #4) ✅
+
+**Goal:** Wire privacy-opt-in read receipts end to end — default off.
+
+**Shipped (2026-07-05):** `GET /api/conversations/{id}/reads`, WS fanout on `user:` + `conversation:` topics, `useReadReceipts` hydrate + live updates, ✓✓ on outgoing bubbles when peer opted in, `step9_proof.py`.
+
+---
+
 ## Community contribution
 
-Steps 2–8 have GitHub issues (#15–#21) with `help wanted` label. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
+Steps 2–9 have GitHub issues (#4, #15–#21) with `help wanted` label. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
 
 *Machine-readable gates: `backend/scripts/run_engine*_gate.py`*
