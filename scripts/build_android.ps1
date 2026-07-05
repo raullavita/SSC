@@ -1,4 +1,8 @@
 # SSC Android local APK build — Engine 11 (no Play Store deploy)
+#
+# Signed release APK (optional):
+#   Copy android/keystore.properties.example -> android/keystore.properties
+#   Place release.keystore in android/ and fill passwords.
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $Version = "0.3.0"

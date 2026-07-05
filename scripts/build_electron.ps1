@@ -1,4 +1,9 @@
 # SSC Electron local build — Engine 11 (no cloud deploy)
+#
+# Optional Authenticode signing (reduces SmartScreen warnings):
+#   $env:CSC_LINK = "C:\path\to\codesign.pfx"   # or base64-encoded PFX
+#   $env:CSC_KEY_PASSWORD = "cert-password"
+# electron-builder signs automatically when CSC_* is set.
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 

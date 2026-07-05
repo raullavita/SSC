@@ -1,5 +1,5 @@
 # TLS termination for mediasoup SFU WebSocket (WSS).
-# DNS: sfu.supersecurechat.com -> GCE instance public IP (35.195.213.249)
+# DNS: sfu.supersecurechat.com -> GCE instance public IP (see scripts/update_sfu_internal_url.ps1)
 # Caddy obtains Let's Encrypt cert automatically on first HTTPS request.
 
 sfu.supersecurechat.com {
