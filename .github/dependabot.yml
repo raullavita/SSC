@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+    groups:
+      python-minor:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Starlette 1.x requires FastAPI >=0.118; do not let Dependabot split these bumps.
+      - dependency-name: starlette
+        versions:
+          - ">= 2.0"
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      frontend-minor:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
