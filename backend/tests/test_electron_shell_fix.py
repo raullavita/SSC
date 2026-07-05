@@ -38,6 +38,7 @@ def test_frontend_installed_shell_hash_router():
 def test_android_bundled_web_shell():
     gradle = (REPO / "android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
     script = (REPO / "scripts" / "build_android.ps1").read_text(encoding="utf-8")
+    normalized_script = script.replace("\\", "/")
     assert "android_asset/www/index.html" in gradle
     assert 'REACT_APP_SSC_LANDING_ONLY = "false"' in script
-    assert "assets/www" in script
+    assert "assets/www" in normalized_script
