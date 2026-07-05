@@ -10,10 +10,9 @@ const LOCAL_TRANSLATE_URL_KEY = 'ssc_local_translate_url';
 
 export function getAutoTranslateEnabled() {
   try {
-    const v = localStorage.getItem(AUTO_TRANSLATE_KEY);
-    return v !== 'false';
+    return localStorage.getItem(AUTO_TRANSLATE_KEY) === 'true';
   } catch {
-    return true;
+    return false;
   }
 }
 

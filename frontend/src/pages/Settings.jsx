@@ -28,7 +28,7 @@ export default function Settings() {
   const { user, loading, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [privacy, setPrivacy] = useState({ last_seen_visible: false, read_receipts: false });
-  const [autoTranslate, setAutoTranslate] = useState(true);
+  const [autoTranslate, setAutoTranslate] = useState(false);
   const [sealedSender, setSealedSender] = useState(true);
   const [linkPreviews, setLinkPreviews] = useState(false);
   const [localTranslateUrl, setLocalTranslateUrlState] = useState('');
@@ -88,7 +88,11 @@ export default function Settings() {
   function handleAutoTranslateChange(enabled) {
     setAutoTranslate(enabled);
     setAutoTranslateEnabled(enabled);
-    setMessage('Translation preference saved locally');
+    setMessage(
+      enabled
+        ? 'Auto-translate enabled — decrypted message text is sent to a translation service'
+        : 'Auto-translate disabled'
+    );
   }
 
   function handleSealedSenderChange(enabled) {
@@ -214,13 +218,23 @@ export default function Settings() {
 
       <section className={styles.section}>
         <h2>Translation</h2>
+        <p className={styles.hint}>
+          Translation is off by default. When enabled, decrypted message plaintext is sent to the SSC
+          proxy or your LibreTranslate URL — this is not end-to-end encrypted.
+        </p>
+        {autoTranslate && (
+          <p className={styles.warning}>
+            Privacy notice: auto-translate exposes message content to a third-party translation
+            service. Use a self-hosted LibreTranslate URL to keep text on your network.
+          </p>
+        )}
         <label className={styles.row}>
           <input
             type="checkbox"
             checked={autoTranslate}
             onChange={(e) => handleAutoTranslateChange(e.target.checked)}
           />
-          <span>Auto-translate incoming messages</span>
+          <span>Auto-translate incoming messages (off by default)</span>
         </label>
         <label className={styles.row}>
           <span>Preferred language</span>
