@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, wsUrl } from '../lib/api';
+import { indexReadsByMessage } from '../lib/readReceipts';
 
 function applyReadReceipt(setReadByMessage, payload) {
   if (payload?.type === 'read_receipt' && payload.message_id) {
-    setReadByMessage((prev) => ({
-      ...prev,
-      [payload.message_id]: payload.read_at,
-    }));
+    setReadByMessage((prev) => {
+      const existing = prev[payload.message_id] || [];
+      if (existing.includes(payload.read_at)) return prev;
+      return {
+        ...prev,
+        [payload.message_id]: [...existing, payload.read_at],
+      };
+    });
   }
 }
 
@@ -22,11 +27,7 @@ export function useReadReceipts(conversationId, messages, { wsToken, userId, ena
       .get(`/api/conversations/${conversationId}/reads`)
       .then((data) => {
         if (cancelled) return;
-        const next = {};
-        for (const row of data.reads || []) {
-          if (row.message_id) next[row.message_id] = row.read_at;
-        }
-        setReadByMessage(next);
+        setReadByMessage(indexReadsByMessage(data.reads));
       })
       .catch(() => {
         /* offline */

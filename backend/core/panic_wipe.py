@@ -7,7 +7,7 @@ from typing import Any
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from core.retention_policy import COLLECTIONS, PanicScope
+from core.retention_policy import COLLECTIONS
 
 # Shared relay data — TTL handles cleanup; panic wipe must not remove others' chat history.
 SKIP_PANIC_COLLECTIONS = frozenset({"messages", "polls"})

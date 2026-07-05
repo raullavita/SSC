@@ -101,19 +101,19 @@ if (-not $SkipTests) {
 
 Run-Step "Ruff (Python lint)" {
     Push-Location $Root
-    & $Python -m ruff check backend --exclude backend/venv,backend/tests 2>&1 | Select-Object -First 40
+    & $Python -m ruff check backend --exclude backend/venv,backend/.audit-venv,backend/tests 2>&1 | Select-Object -First 40
     Pop-Location
 } | Out-Null
 
 Run-Step "Bandit (Python security)" {
     Push-Location $Root
-    & $Python -m bandit -r backend -x backend/venv,backend/tests -f txt -q 2>&1 | Select-Object -First 40
+    & $Python -m bandit -r backend -x backend/venv,backend/.audit-venv,backend/tests -f txt -q 2>&1 | Select-Object -First 40
     Pop-Location
 } | Out-Null
 
 Run-Step "Vulture (dead Python code)" {
     Push-Location $Root
-    & $Python -m vulture backend --exclude backend/venv,backend/tests --min-confidence 80 2>&1 | Select-Object -First 30
+    & $Python -m vulture backend --exclude backend/venv,backend/.audit-venv,backend/tests --min-confidence 80 2>&1 | Select-Object -First 30
     Pop-Location
 } | Out-Null
 

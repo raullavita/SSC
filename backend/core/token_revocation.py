@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from datetime import datetime, timezone
+
+logger = logging.getLogger(__name__)
 
 from core.session_policy import SESSION_COLLECTION
 from core.session_ttl import session_expires_at
@@ -20,8 +23,8 @@ async def _redis_set_session(jti: str, user_id: str, ttl_seconds: int) -> None:
         return
     try:
         await redis.setex(f"session:{jti}", ttl_seconds, user_id)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("redis_set_session failed for jti=%s: %s", jti, exc)
 
 
 async def _redis_revoke(jti: str, ttl_seconds: int) -> None:
@@ -31,8 +34,8 @@ async def _redis_revoke(jti: str, ttl_seconds: int) -> None:
     try:
         await redis.delete(f"session:{jti}")
         await redis.setex(f"revoked:{jti}", ttl_seconds, "1")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("redis_revoke failed for jti=%s: %s", jti, exc)
 
 
 async def register_session(user_id: str, token: str, jti: str) -> None:
@@ -60,8 +63,8 @@ async def is_session_revoked(jti: str) -> bool:
             active = await redis.get(f"session:{jti}")
             if active:
                 return False
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("redis session lookup failed for jti=%s: %s", jti, exc)
 
     db = get_database()
     doc = await db[SESSION_COLLECTION].find_one({"_id": jti})

@@ -21,6 +21,7 @@ import InviteQr from '../components/InviteQr';
 import { api } from '../lib/api';
 import { inviteAppUrl, inviteWebUrl } from '../lib/inviteLink';
 import BackupPanel from '../components/BackupPanel';
+import AbuseReportPanel from '../components/AbuseReportPanel';
 import RecoveryPanel from '../components/RecoveryPanel';
 import LinkedDevicesPanel from '../components/LinkedDevicesPanel';
 import { useMultiDevice } from '../devices/useMultiDevice';
@@ -359,6 +360,11 @@ export default function Settings() {
             />
           </>
         )}
+      </section>
+
+      <section className={styles.section}>
+        <h2>Safety &amp; abuse</h2>
+        <AbuseReportPanel onMessage={setMessage} />
       </section>
 
       <section className={styles.section}>

@@ -675,7 +675,8 @@ export default function ChatHome() {
                     onReaction={sendReaction}
                     onTranslate={onTranslateMessage}
                     downloadFile={downloadFile}
-                    readAt={readByMessage[m.id]}
+                    readAt={readByMessage[m.id]?.[0]}
+                    readAtList={readByMessage[m.id]}
                     poll={m.poll}
                     pollTallies={m.poll_id ? pollMeta[m.poll_id]?.tallies : undefined}
                     pollViewerVote={m.poll_id ? pollMeta[m.poll_id]?.viewerVote : null}
