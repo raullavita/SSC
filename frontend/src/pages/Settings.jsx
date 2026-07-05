@@ -13,6 +13,7 @@ import {
   setPreferredLanguage,
   setSealedSenderEnabled,
 } from '../lib/chatPrefs';
+import { runClientFootprintAudit } from '../lib/clientFootprintOrchestrator';
 import { executePanicWipe } from '../lib/panicWipe';
 import { fetchLanguages } from '../lib/translation';
 import { updatePrivacySettings } from '../lib/presence';
@@ -37,6 +38,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [panicConfirm, setPanicConfirm] = useState('');
+  const [footprintAudit, setFootprintAudit] = useState(null);
   const {
     devices,
     linkSession,
@@ -66,6 +68,7 @@ export default function Settings() {
       .catch(() => {});
     loadDevices();
     setUsernameInput(user.username || '');
+    setFootprintAudit(runClientFootprintAudit());
   }, [user, loadDevices]);
 
   if (!loading && !user) return <Navigate to="/login" replace />;
@@ -145,6 +148,18 @@ export default function Settings() {
       setMessage('Invite link copied');
     } catch {
       setMessage(url);
+    }
+  }
+
+  function runSecurityCheck() {
+    const audit = runClientFootprintAudit();
+    setFootprintAudit(audit);
+    if (audit.localStorage.ok) {
+      setMessage('Device storage footprint is clean — no tokens in localStorage');
+    } else {
+      setMessage(
+        `Security issue: remove forbidden localStorage keys: ${audit.localStorage.violations.join(', ')}`
+      );
     }
   }
 
@@ -331,6 +346,24 @@ export default function Settings() {
           {user.username && <span className={styles.handle}>@{user.username}</span>}
           <code>{user.id}</code>
         </p>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Device security check</h2>
+        <p className={styles.hint}>
+          SSC stores session tokens in httpOnly cookies only. This scan flags any JWT or token
+          material accidentally left in localStorage.
+        </p>
+        <button type="button" className={styles.logout} onClick={runSecurityCheck}>
+          Run storage footprint audit
+        </button>
+        {footprintAudit && (
+          <p className={footprintAudit.localStorage.ok ? styles.hint : styles.warning}>
+            {footprintAudit.localStorage.ok
+              ? 'No forbidden auth material found in localStorage.'
+              : `Violations: ${footprintAudit.localStorage.violations.join(', ')}`}
+          </p>
+        )}
       </section>
 
       <section className={`${styles.section} ${styles.danger}`}>
