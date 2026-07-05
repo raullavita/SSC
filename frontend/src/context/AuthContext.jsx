@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
+import { exchangeOAuthCode } from '../lib/googleAuth';
 
 import { runClientFootprintAudit } from '../lib/clientFootprintOrchestrator';
 import { registerPushTokenIfAvailable } from '../lib/pushRegister';
@@ -29,8 +30,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
+    const timeoutMs = 8000;
     try {
-      const me = await api.get('/api/auth/me');
+      const me = await Promise.race([
+        api.get('/api/auth/me'),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('auth_refresh_timeout')), timeoutMs);
+        }),
+      ]);
       setUser(me);
       warnFootprintViolations();
       startPresenceHeartbeat();

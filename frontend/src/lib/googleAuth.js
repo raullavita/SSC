@@ -3,6 +3,7 @@
  */
 
 import { api } from './api';
+import { isInstalledApp } from './appMode';
 
 const API_BASE = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
 
@@ -24,10 +25,17 @@ export function extractOAuthCode() {
   const params = new URLSearchParams(window.location.search);
   let code = params.get('oauth_code');
   if (!code && window.location.hash) {
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    code = hashParams.get('oauth_code');
+    const hash = window.location.hash.replace(/^#/, '');
+    const qIndex = hash.indexOf('?');
+    const query = qIndex >= 0 ? hash.slice(qIndex + 1) : hash;
+    code = new URLSearchParams(query).get('oauth_code');
   }
   return code;
+}
+
+/** Installed Electron/Android/iOS must use full redirect — GIS One Tap hangs on file:// origins. */
+export function shouldUseGoogleRedirect() {
+  return isInstalledApp();
 }
 
 export function startGoogleRedirect() {
@@ -69,6 +77,11 @@ function loadGsiScript() {
 
 /** GIS popup — desktop dev when REACT_APP_GOOGLE_CLIENT_ID is set. */
 export async function promptGoogleSignIn() {
+  if (shouldUseGoogleRedirect()) {
+    startGoogleRedirect();
+    return null;
+  }
+
   const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
   if (!clientId) {
     startGoogleRedirect();
