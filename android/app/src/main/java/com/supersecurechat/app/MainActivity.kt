@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
         swipeRefresh.setOnRefreshListener { webView.reload() }
 
         webView.webViewClient = ApiClient.webViewClient(
-            context = this,
+            activity = this,
             baseUrl = BuildConfig.SSC_WEB_URL,
             webView = webView,
             onPageFinished = { swipeRefresh.isRefreshing = false },

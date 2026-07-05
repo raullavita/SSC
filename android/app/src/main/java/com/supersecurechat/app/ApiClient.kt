@@ -1,6 +1,8 @@
 package com.supersecurechat.app
 
+import android.app.Activity
 import android.content.Context
+import android.net.Uri
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -15,7 +17,7 @@ import java.net.URL
  */
 object ApiClient {
     const val CLIENT_HEADER = "X-SSC-Client"
-    const val CLIENT_VALUE = "android/0.3.0/6"
+    const val CLIENT_VALUE = "android/0.3.0/7"
     const val SHELL_FEATURES = "splash_screen,deep_links,pull_to_refresh,offline_retry,file_chooser,edge_to_edge"
 
     fun attachInstalledClientHeaders(conn: HttpURLConnection) {
@@ -23,7 +25,7 @@ object ApiClient {
     }
 
     fun webViewClient(
-        context: Context,
+        activity: Activity,
         baseUrl: String,
         webView: WebView,
         onPageFinished: (() -> Unit)? = null,
@@ -33,10 +35,40 @@ object ApiClient {
         object : WebViewClient() {
             private var bridgeInjected = false
 
+            @Deprecated("Deprecated in Java")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                return handleUrlLoading(view, url)
+            }
+
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?,
+            ): Boolean {
+                if (request == null) return false
+                return handleUrlLoading(view, request.url?.toString())
+            }
+
+            private fun handleUrlLoading(view: WebView?, url: String?): Boolean {
+                val target = url ?: return false
+                if (SscOAuthLauncher.isOAuthStart(target) || SscOAuthLauncher.isGoogleAccounts(target)) {
+                    SscOAuthLauncher.launchCustomTab(activity, target)
+                    return true
+                }
+                if (SscOAuthLauncher.isOAuthFinish(target)) {
+                    val webUrl = SscDeepLink.resolveUri(Uri.parse(target), baseUrl)
+                    view?.loadUrl(webUrl)
+                    return true
+                }
+                return false
+            }
+
             override fun shouldInterceptRequest(
                 view: WebView?,
                 request: WebResourceRequest?,
             ): WebResourceResponse? {
+                if (request?.isForMainFrame == true) {
+                    return super.shouldInterceptRequest(view, request)
+                }
                 val url = request?.url?.toString() ?: return super.shouldInterceptRequest(view, request)
                 if (!url.contains("/api/")) {
                     return super.shouldInterceptRequest(view, request)
@@ -78,7 +110,7 @@ object ApiClient {
             override fun onPageFinished(view: WebView?, url: String?) {
                 if (!bridgeInjected) {
                     bridgeInjected = true
-                    injectBridgeScript(context, view)
+                    injectBridgeScript(activity, view)
                 }
                 onLoadSuccess?.invoke()
                 onPageFinished?.invoke()

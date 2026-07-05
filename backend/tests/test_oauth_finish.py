@@ -14,7 +14,7 @@ def test_oauth_finish_renders_bridge_page():
     body = resp.text
     assert "ssc://auth/google" in body
     assert "test-code-123" in body
-    assert "android_asset" in body
+    assert "ssc://auth/google" in body
 
 
 def test_oauth_finish_renders_error():

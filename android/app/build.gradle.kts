@@ -11,7 +11,7 @@ android {
         applicationId = "com.supersecurechat.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
+        versionCode = 7
         versionName = "0.3.0"
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
@@ -88,4 +88,5 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("androidx.browser:browser:1.8.0")
 }

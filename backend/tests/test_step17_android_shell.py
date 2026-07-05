@@ -53,6 +53,28 @@ def test_main_activity_shell_features():
     assert "SscDeepLink" in main
 
 
+def test_android_oauth_custom_tabs():
+    launcher = (
+        REPO
+        / "android"
+        / "app"
+        / "src"
+        / "main"
+        / "java"
+        / "com"
+        / "supersecurechat"
+        / "app"
+        / "SscOAuthLauncher.kt"
+    ).read_text(encoding="utf-8")
+    api_client = (REPO / "android" / "app" / "src" / "main" / "java" / "com" / "supersecurechat" / "app" / "ApiClient.kt").read_text(
+        encoding="utf-8"
+    )
+    assert "CustomTabsIntent" in launcher
+    assert "isOAuthStart" in launcher
+    assert "shouldOverrideUrlLoading" in api_client
+    assert "isForMainFrame" in api_client
+
+
 def test_deep_link_resolver():
     resolver = (
         REPO
