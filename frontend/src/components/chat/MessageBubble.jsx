@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { isImageAttachment, isVoiceAttachment } from '../../chat/attachments';
 import { canDeleteForEveryone, canEditMessage } from '../../chat/messageActions';
+import { fetchPreviewsForText } from '../../lib/linkPreview';
 import { decryptFileBytes } from '../../signal/signalBridge';
+import LinkPreviewCard from './LinkPreviewCard';
 import PollBubble from './PollBubble';
 import styles from './MessageBubble.module.css';
 
@@ -115,8 +117,24 @@ export default function MessageBubble({
     forwarded_from: forwardedFrom,
   } = message;
   const isDeleted = messageKind === 'deleted';
+  const [linkPreviews, setLinkPreviews] = useState([]);
   const showEdit = onEdit && canEditMessage(message, userId);
   const showDeleteEveryone = onDelete && canDeleteForEveryone(message, userId);
+
+  useEffect(() => {
+    if (isDeleted || !text) {
+      setLinkPreviews([]);
+      return undefined;
+    }
+
+    let active = true;
+    fetchPreviewsForText(text).then((previews) => {
+      if (active) setLinkPreviews(previews);
+    });
+    return () => {
+      active = false;
+    };
+  }, [text, isDeleted]);
   const bubbleClass = [
     styles.bubble,
     isOutgoing ? styles.outgoing : styles.incoming,
@@ -136,6 +154,11 @@ export default function MessageBubble({
       ) : (
         text && <span className={styles.text}>{text}</span>
       )}
+
+      {!isDeleted &&
+        linkPreviews.map((preview) => (
+          <LinkPreviewCard key={preview.url} preview={preview} />
+        ))}
 
       {!isDeleted && poll && (
         <PollBubble
