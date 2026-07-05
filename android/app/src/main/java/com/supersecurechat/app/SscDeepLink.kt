@@ -5,7 +5,8 @@ import android.net.Uri
 import java.net.URLEncoder
 
 /**
- * Resolve Android deep links and app links into production web-shell URLs.
+ * Resolve Android deep links and app links into installed-app routes.
+ * Bundled WebView uses hash routes: file:///android_asset/www/index.html#/login
  */
 object SscDeepLink {
     private const val WEB_HOST = "www.supersecurechat.com"
@@ -51,7 +52,11 @@ object SscDeepLink {
     }
 
     private fun webBaseFrom(fallback: String): String {
+        if (fallback.startsWith("file://")) {
+            return fallback.substringBefore('#').trimEnd('/')
+        }
         return fallback
+            .substringBefore('#')
             .substringBeforeLast('/')
             .ifBlank { "https://$WEB_HOST" }
             .let { candidate ->
@@ -62,6 +67,10 @@ object SscDeepLink {
     private fun webUrl(base: String, path: String): String {
         val normalizedBase = base.trimEnd('/')
         val normalizedPath = if (path.startsWith("/")) path else "/$path"
-        return "$normalizedBase$normalizedPath"
+        return if (base.startsWith("file://")) {
+            "$normalizedBase#$normalizedPath"
+        } else {
+            "$normalizedBase$normalizedPath"
+        }
     }
 }

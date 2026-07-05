@@ -21,7 +21,7 @@ def test_release_constants():
     assert RELEASE_TAG == "v0.3.0"
     assert ELECTRON_ARTIFACT == "SSC-Setup-0.3.0.exe"
     assert ANDROID_ARTIFACT == "SSC-0.3.0.apk"
-    assert ANDROID_CLIENT_HEADER == "android/0.3.0/3"
+    assert ANDROID_CLIENT_HEADER == "android/0.3.0/4"
     assert step18_release_ready()
 
 

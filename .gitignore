@@ -26,6 +26,7 @@ frontend/desktop/dist/
 frontend/android/app/build/
 android/.gradle/
 android/app/build/
+android/app/src/main/assets/www/
 android/local.properties
 dist/
 *.apk

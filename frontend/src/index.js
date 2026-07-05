@@ -4,8 +4,9 @@ import { BrowserRouter, HashRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
 
-const isElectronShell = process.env.REACT_APP_SSC_PLATFORM === 'electron';
-const Router = isElectronShell ? HashRouter : BrowserRouter;
+const INSTALLED_SHELL_PLATFORMS = new Set(['electron', 'android', 'ios']);
+const isInstalledShell = INSTALLED_SHELL_PLATFORMS.has(process.env.REACT_APP_SSC_PLATFORM);
+const Router = isInstalledShell ? HashRouter : BrowserRouter;
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

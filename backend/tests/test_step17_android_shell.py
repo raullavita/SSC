@@ -68,3 +68,9 @@ def test_deep_link_resolver():
     ).read_text(encoding="utf-8")
     assert "resolveToWebUrl" in resolver
     assert '"ssc"' in resolver
+    assert "file://" in resolver
+
+
+def test_android_bundled_entry_url():
+    gradle = (REPO / "android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
+    assert "android_asset/www/index.html" in gradle
