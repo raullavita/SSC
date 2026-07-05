@@ -79,3 +79,4 @@ if ($failures.Count -gt 0) {
 
 Write-Host ""
 Write-Host "SMOKE TEST PASSED"
+exit 0

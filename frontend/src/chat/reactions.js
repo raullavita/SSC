@@ -3,7 +3,8 @@
  */
 
 import { api } from '../lib/api';
-import { encryptMessage, encryptGroupMessage } from '../signal/signalBridge';
+import { encryptMessage } from '../signal/signalBridge';
+import { encryptGroupMessage } from '../signal/groupSenderKeys';
 
 export const REACTION_PROTOCOL = 'signal_v1_reaction';
 
