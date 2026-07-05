@@ -50,7 +50,7 @@ We do **not** run inside AI on your messages. Translation is optional and user-c
 | Calls | WebRTC mesh + SFU scaffold |
 | Production API | Live |
 | Website | Professional landing + OSS compliance at [supersecurechat.com](https://www.supersecurechat.com) |
-| Latest release | [v0.2.0](https://github.com/raullavita/SSC/releases/tag/v0.2.0) |
+| Latest release | [v0.3.0](https://github.com/raullavita/SSC/releases/tag/v0.3.0) |
 
 ## Quick start (local dev)
 

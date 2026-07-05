@@ -193,10 +193,12 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 **Goal:** First release with attached Electron + Android binaries after Steps 10–17.
 
+**Shipped (2026-07-05):** Version **0.3.0** across API/clients, `CHANGELOG.md`, `RELEASE_v0.3.0_CHECKLIST.md`, `release_policy.py`, `SSC-Setup-0.3.0.exe` + `SSC-0.3.0.apk` on GitHub Releases, `step18_proof.py`.
+
 ---
 
 ## Community contribution
 
-Steps 2–17 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
+Steps 2–18 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
 
 *Machine-readable gates: `backend/scripts/run_engine*_gate.py`*

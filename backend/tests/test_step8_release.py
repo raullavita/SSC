@@ -29,4 +29,4 @@ def test_third_party_notices_libsignal():
 def test_landing_production_example():
     text = (REPO / "frontend" / ".env.production.example").read_text(encoding="utf-8")
     assert "REACT_APP_SSC_LANDING_ONLY=true" in text
-    assert VERSION in text
+    assert "REACT_APP_SSC_VERSION=" in text

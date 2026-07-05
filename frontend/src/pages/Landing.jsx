@@ -7,7 +7,7 @@ const LANDING_ONLY = process.env.REACT_APP_SSC_LANDING_ONLY === 'true';
 const RELEASE_BASE =
   process.env.REACT_APP_SSC_RELEASE_URL ||
   'https://github.com/raullavita/SSC/releases/latest/download';
-const VERSION = process.env.REACT_APP_SSC_VERSION || '0.2.0';
+const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.0';
 const GITHUB_REPO = 'https://github.com/raullavita/SSC';
 const LIBSIGNAL_REPO = 'https://github.com/signalapp/libsignal';
 

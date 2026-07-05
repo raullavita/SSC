@@ -35,10 +35,10 @@ async def health() -> dict:
             "enabled": SFU_ENABLED,
             "ws_url": SFU_WS_URL if SFU_ENABLED else None,
         },
-        "version": "0.2.0",
+        "version": "0.3.0",
     }
 
 
 @router.get("/")
 async def root() -> dict:
-    return {"name": "SSC - Super Secure Chat", "version": "0.2.0"}
+    return {"name": "SSC - Super Secure Chat", "version": "0.3.0"}
