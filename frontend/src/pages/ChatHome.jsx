@@ -6,10 +6,12 @@ import GroupPanel from '../components/chat/GroupPanel';
 import MessageBubble from '../components/chat/MessageBubble';
 import StoriesBar from '../components/chat/StoriesBar';
 import SafetyVerifyModal from '../components/chat/SafetyVerifyModal';
+import TrustBanner from '../components/chat/TrustBanner';
 import UserLookup from '../components/chat/UserLookup';
 import { useCall } from '../chat/useCall';
 import { useGroupCall } from '../calls/useGroupCall';
 import { useChatMessages } from '../chat/useChatMessages';
+import { useTrustState } from '../chat/useTrustState';
 import { useStories } from '../chat/useStories';
 import { useConversationMeta } from '../chat/useConversationMeta';
 import { useReadReceipts } from '../chat/useReadReceipts';
@@ -24,7 +26,7 @@ import { fetchLanguages, translateText } from '../lib/translation';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 import { searchMessages } from '../search/messageIndex';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
-import { computeSafetyNumber } from '../signal/safetyNumber';
+import { getPeerTrust, trustBadgeLabel } from '../lib/trustStore';
 import { shouldAutoTranslate } from '../smart/languageDetect';
 import styles from './ChatHome.module.css';
 
@@ -44,7 +46,6 @@ export default function ChatHome() {
   const [highlightedId, setHighlightedId] = useState(null);
   const [disappearingSeconds, setDisappearingSeconds] = useState(0);
   const [inlineTranslations, setInlineTranslations] = useState({});
-  const [safetyNumber, setSafetyNumber] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [forwardingMessage, setForwardingMessage] = useState(null);
@@ -62,6 +63,16 @@ export default function ChatHome() {
 
   const active = conversations.find((c) => c.id === activeId);
   const isGroup = active?.type === 'group';
+  const {
+    trust,
+    safetyNumber,
+    loading: trustLoading,
+    error: trustError,
+    markVerified,
+    resetTrust,
+    isVerified,
+    isChanged,
+  } = useTrustState(!isGroup ? active?.peer_id : null);
   const peerIds = useMemo(
     () => conversations.map((c) => c.peer_id).filter(Boolean),
     [conversations]
@@ -214,16 +225,6 @@ export default function ChatHome() {
     }
     return () => stopPresenceHeartbeat();
   }, [user, loadConversations]);
-
-  useEffect(() => {
-    if (active?.peer_id) {
-      computeSafetyNumber(active.peer_id)
-        .then(setSafetyNumber)
-        .catch(() => setSafetyNumber(null));
-    } else {
-      setSafetyNumber(null);
-    }
-  }, [active?.peer_id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -440,6 +441,12 @@ export default function ChatHome() {
                     {c.pinned ? '📌 ' : ''}
                     {c.muted ? '🔇 ' : ''}
                     {c.type === 'group' ? `👥 ${c.group_id}` : c.peer_id || c.id}
+                    {c.type !== 'group' && c.peer_id && getPeerTrust(c.peer_id).status === 'verified' && (
+                      <span className={styles.trustVerified} title="Verified"> ✓</span>
+                    )}
+                    {c.type !== 'group' && c.peer_id && getPeerTrust(c.peer_id).status === 'changed' && (
+                      <span className={styles.trustChanged} title="Safety number changed"> ⚠</span>
+                    )}
                   </span>
                   <span className={styles.convMeta}>
                     {c.unread_count > 0 && (
@@ -492,15 +499,31 @@ export default function ChatHome() {
                 )}
                 {peerTyping && <span className={styles.typing}>typing…</span>}
               </div>
-              {safetyNumber?.displayable && !isGroup && (
+              {!isGroup && active?.peer_id && (
                 <p className={styles.safetyNumber}>
-                  Safety number: <code>{safetyNumber.displayable}</code>
+                  <span
+                    className={
+                      isVerified
+                        ? styles.trustLabelVerified
+                        : isChanged
+                          ? styles.trustLabelChanged
+                          : styles.trustLabelDefault
+                    }
+                  >
+                    {trustBadgeLabel(trust.status)}
+                  </span>
+                  {safetyNumber?.displayable && (
+                    <>
+                      {' '}
+                      Safety number: <code>{safetyNumber.displayable}</code>
+                    </>
+                  )}
                   <button
                     type="button"
                     className={styles.verifyBtn}
                     onClick={() => setShowSafetyVerify(true)}
                   >
-                    Verify
+                    {isVerified ? 'View' : 'Verify'}
                   </button>
                 </p>
               )}
@@ -528,6 +551,10 @@ export default function ChatHome() {
                 </div>
               )}
             </header>
+
+            {!isGroup && (
+              <TrustBanner trust={trust} onVerify={() => setShowSafetyVerify(true)} />
+            )}
 
             <div className={styles.searchBar}>
               <input
@@ -714,6 +741,12 @@ export default function ChatHome() {
       <SafetyVerifyModal
         open={showSafetyVerify}
         peerId={active?.peer_id}
+        trust={trust}
+        safetyNumber={safetyNumber}
+        loading={trustLoading}
+        error={trustError}
+        onMarkVerified={markVerified}
+        onResetTrust={resetTrust}
         onClose={() => setShowSafetyVerify(false)}
       />
 
