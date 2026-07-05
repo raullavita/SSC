@@ -6,11 +6,11 @@ import hashlib
 import logging
 from datetime import datetime, timezone
 
-logger = logging.getLogger(__name__)
-
 from core.session_policy import SESSION_COLLECTION
 from core.session_ttl import session_expires_at
 from db import get_database, get_redis
+
+logger = logging.getLogger(__name__)
 
 
 def _token_hash(token: str) -> str:

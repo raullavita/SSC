@@ -35,6 +35,7 @@ def _patch(monkeypatch, fake_db):
         "routers.typing",
         "routers.presence",
         "deps",
+        "push",
         "core.token_revocation",
     ):
         monkeypatch.setattr(f"{mod}.get_database", lambda: fake_db)
