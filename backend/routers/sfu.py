@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.retention_policy import default_expires_at
-from core.sfu_client import provision_sfu_room
+from core.sfu_client import delete_sfu_room, provision_sfu_room
+from core.ws_hub import ws_hub
 from core.sfu_policy import (
     MAX_SFU_PARTICIPANTS,
     SFU_ENABLED,
@@ -89,3 +90,40 @@ async def create_sfu_room(
         "provider": "mediasoup",
         "provisioned": True,
     }
+
+
+@router.post("/rooms/{room_id}/end")
+async def end_sfu_room(
+    room_id: str,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    if not SFU_ENABLED:
+        raise HTTPException(status_code=503, detail="sfu_disabled")
+
+    db = get_database()
+    session = await db.call_sessions.find_one({"_id": room_id, "call_type": "sfu"})
+    if not session:
+        raise HTTPException(status_code=404, detail="sfu_room_not_found")
+
+    conv = await db.conversations.find_one(
+        {"_id": session["conversation_id"], "participants": user_id}
+    )
+    if not conv:
+        raise HTTPException(status_code=403, detail="not_a_conversation_participant")
+
+    ok, detail = await delete_sfu_room(room_id)
+    now = datetime.now(timezone.utc)
+    await db.call_sessions.update_one(
+        {"_id": room_id},
+        {"$set": {"status": "ended", "ended_at": now, "ended_by": user_id}},
+    )
+
+    for pid in conv.get("participants", []):
+        if pid != user_id:
+            await ws_hub.publish(
+                f"user:{pid}",
+                {"type": "sfu_room_ended", "room_id": room_id, "from": user_id},
+            )
+
+    return {"ok": True, "sfu_deleted": ok, "detail": detail}

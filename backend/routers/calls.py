@@ -16,7 +16,8 @@ from core.call_policy import (
 )
 from push import send_missed_call_push_to_user
 from core.turn_policy import build_ice_servers
-from core.sfu_policy import should_use_sfu
+from core.sfu_client import delete_sfu_room
+from core.sfu_policy import SFU_ROOM_PREFIX, should_use_sfu
 from core.ids import new_call_id
 from core.retention_policy import default_expires_at
 from core.signal_policy import SIGNAL_PROTOCOL_V1
@@ -197,5 +198,10 @@ async def end_call(
             conversation_id=conversation_id,
             call_id=call_id,
         )
+
+    sfu_room_id = call_id if call_id.startswith(f"{SFU_ROOM_PREFIX}-") else None
+    if sfu_room_id or call.get("call_type") == "sfu" or call.get("sfu_provisioned"):
+        room_to_delete = sfu_room_id or call_id
+        await delete_sfu_room(room_to_delete)
 
     return {"ok": True, "reason": body.reason}

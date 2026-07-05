@@ -10,6 +10,11 @@ export async function fetchSfuConfig() {
   return api.get('/api/sfu/config');
 }
 
+export async function endSfuRoom(roomId) {
+  if (!roomId) return { ok: true };
+  return api.post(`/api/sfu/rooms/${roomId}/end`, {});
+}
+
 export async function createSfuRoom(conversationId, expectedParticipants) {
   return api.post('/api/sfu/rooms', {
     conversation_id: conversationId,

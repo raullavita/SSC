@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { fetchIceServers } from './iceServers';
-import { connectSfuRoom, createSfuRoom, fetchSfuConfig } from './sfuClient';
+import { connectSfuRoom, createSfuRoom, endSfuRoom, fetchSfuConfig } from './sfuClient';
 
 const MESH_MAX = 8;
 
@@ -19,6 +19,7 @@ export function useGroupCall({ conversationId, participantCount, userId }) {
   const [status, setStatus] = useState('idle');
   const [error, setError] = useState(null);
   const sessionRef = useRef(null);
+  const sfuRoomRef = useRef(null);
   const remoteTracksRef = useRef(new Map());
 
   const cleanup = useCallback(() => {
@@ -37,10 +38,23 @@ export function useGroupCall({ conversationId, participantCount, userId }) {
     }
     setSfuSession(null);
     setSfuRoom(null);
+    sfuRoomRef.current = null;
     setCall(null);
     setMode(null);
     setStatus('idle');
   }, [localStream]);
+
+  const endGroupCall = useCallback(async () => {
+    const roomId = sfuRoomRef.current?.room_id;
+    if (roomId) {
+      try {
+        await endSfuRoom(roomId);
+      } catch {
+        /* local cleanup still runs */
+      }
+    }
+    cleanup();
+  }, [cleanup]);
 
   useEffect(() => () => cleanup(), [cleanup]);
 
@@ -69,6 +83,7 @@ export function useGroupCall({ conversationId, participantCount, userId }) {
           await fetchIceServers();
           const room = await createSfuRoom(conversationId, participantCount);
           setSfuRoom(room);
+          sfuRoomRef.current = room;
           setMode('sfu');
 
           let stream = null;
@@ -147,6 +162,7 @@ export function useGroupCall({ conversationId, participantCount, userId }) {
         sessionRef.current = conn.session;
         setSfuSession(conn.session);
         setSfuRoom(room);
+        sfuRoomRef.current = room;
         setMode('sfu');
         setStatus('connected');
         return conn;
@@ -169,7 +185,7 @@ export function useGroupCall({ conversationId, participantCount, userId }) {
     status,
     startGroupCall,
     joinGroupCall,
-    endGroupCall: cleanup,
+    endGroupCall,
     error,
     callOpen: status === 'connected' || status === 'joining' || status === 'starting',
   };
