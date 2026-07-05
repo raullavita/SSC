@@ -8,20 +8,47 @@ from urllib.parse import urlencode
 
 import httpx
 
-GOOGLE_CLIENT_ID = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
-GOOGLE_CLIENT_SECRET = (os.getenv("GOOGLE_CLIENT_SECRET") or "").strip()
-GOOGLE_REDIRECT_URI = (os.getenv("GOOGLE_REDIRECT_URI") or "").strip()
-FRONTEND_URL = (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
+def _google_client_id() -> str:
+    return (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
+
+
+def _google_client_secret() -> str:
+    return (os.getenv("GOOGLE_CLIENT_SECRET") or "").strip()
+
+
+def _google_redirect_uri() -> str:
+    return (os.getenv("GOOGLE_REDIRECT_URI") or "").strip()
+
+
+def _frontend_url() -> str:
+    return (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
+
+
+GOOGLE_CLIENT_ID = _google_client_id()
+GOOGLE_CLIENT_SECRET = _google_client_secret()
+GOOGLE_REDIRECT_URI = _google_redirect_uri()
+FRONTEND_URL = _frontend_url()
+
+
+def google_idtoken_configured() -> bool:
+    return bool(_google_client_id())
+
+
+def google_redirect_configured() -> bool:
+    secret = _google_client_secret()
+    if not secret or secret == "REPLACE_WITH_CLIENT_SECRET":
+        return False
+    return bool(_google_client_id() and secret and _google_redirect_uri())
 
 
 def google_oauth_configured() -> bool:
-    return bool(GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI)
+    return google_redirect_configured()
 
 
 def build_google_auth_url(state: str) -> str:
     params = {
-        "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "client_id": _google_client_id(),
+        "redirect_uri": _google_redirect_uri(),
         "response_type": "code",
         "scope": "openid email profile",
         "access_type": "online",
@@ -37,9 +64,9 @@ async def exchange_code_for_profile(code: str) -> dict[str, Any]:
             "https://oauth2.googleapis.com/token",
             data={
                 "code": code,
-                "client_id": GOOGLE_CLIENT_ID,
-                "client_secret": GOOGLE_CLIENT_SECRET,
-                "redirect_uri": GOOGLE_REDIRECT_URI,
+                "client_id": _google_client_id(),
+                "client_secret": _google_client_secret(),
+                "redirect_uri": _google_redirect_uri(),
                 "grant_type": "authorization_code",
             },
         )
@@ -54,7 +81,7 @@ async def exchange_code_for_profile(code: str) -> dict[str, Any]:
             )
             if info_resp.status_code == 200:
                 profile = info_resp.json()
-                if profile.get("aud") != GOOGLE_CLIENT_ID:
+                if profile.get("aud") != _google_client_id():
                     raise ValueError("google_audience_mismatch")
                 return {
                     "google_id": profile.get("sub"),
@@ -89,7 +116,7 @@ async def verify_id_token(id_token: str) -> dict[str, Any]:
         if resp.status_code != 200:
             raise ValueError("invalid_google_id_token")
         profile = resp.json()
-        if profile.get("aud") != GOOGLE_CLIENT_ID:
+        if profile.get("aud") != _google_client_id():
             raise ValueError("google_audience_mismatch")
         return {
             "google_id": profile.get("sub"),

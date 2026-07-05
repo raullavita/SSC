@@ -16,6 +16,7 @@ from routers.files import router as files_router
 from routers.friend_requests import router as friend_requests_router
 from routers.groups import router as groups_router
 from routers.health import router as health_router
+from routers.oauth_finish import router as oauth_finish_router
 from routers.messages import router as messages_router
 from routers.panic import router as panic_router
 from routers.polls import router as polls_router
@@ -37,6 +38,7 @@ from routers.ws import router as ws_router
 def include_routers(app: FastAPI) -> None:
     settings = get_settings()
     prefix = settings.api_prefix
+    app.include_router(oauth_finish_router)
     app.include_router(health_router, prefix=prefix)
     app.include_router(config_router, prefix=prefix)
     app.include_router(auth_router, prefix=prefix)

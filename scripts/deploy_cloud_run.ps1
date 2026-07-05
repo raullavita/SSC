@@ -1,4 +1,4 @@
-# SSC Cloud Run deploy — Engine 10
+# SSC Cloud Run deploy - Engine 10
 # Requires: gcloud CLI authenticated, Docker available
 
 param(
@@ -43,14 +43,14 @@ try {
         Write-Host "Applying env from $EnvFile"
         $deployArgs += @("--env-vars-file", $EnvFile)
     } else {
-        Write-Warning "No env file at $EnvFile — using minimal env vars"
+        Write-Warning "No env file at $EnvFile - using minimal env vars"
         $deployArgs += @("--set-env-vars", "SSC_ENV=production,SSC_ENFORCE_INSTALLED_CLIENT=true")
     }
 
     $VpcConnector = if ($env:SSC_VPC_CONNECTOR) { $env:SSC_VPC_CONNECTOR } else { "ssc-connector" }
     $deployArgs += @("--vpc-connector", $VpcConnector, "--vpc-egress", "all-traffic")
 
-    Write-Host "Deploying to Cloud Run ($Service @ $Region, VPC $VpcConnector)..."
+    Write-Host "Deploying to Cloud Run: $Service / $Region / VPC $VpcConnector ..."
     & gcloud @deployArgs
     Write-Host "Cloud Run deploy complete."
 } finally {

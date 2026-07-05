@@ -16,6 +16,7 @@ $env:REACT_APP_SSC_BUILD = "4"
 $env:REACT_APP_SSC_REQUIRE_LIBCRYPTO = "true"
 $env:PUBLIC_URL = "."
 $env:REACT_APP_API_URL = $(if ($env:REACT_APP_API_URL) { $env:REACT_APP_API_URL } else { "https://api.supersecurechat.com" })
+$env:REACT_APP_GOOGLE_CLIENT_ID = $(if ($env:REACT_APP_GOOGLE_CLIENT_ID) { $env:REACT_APP_GOOGLE_CLIENT_ID } else { "814078411789-s1vg9i4nd76nrdqvkddl26btv8fj3qmr.apps.googleusercontent.com" })
 yarn build
 Pop-Location
 

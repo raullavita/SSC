@@ -47,6 +47,10 @@ object SscDeepLink {
                 val username = uri.path?.trim('/')?.lowercase().orEmpty()
                 if (username.isBlank()) "/" else "/add/$username"
             }
+            "auth" -> {
+                val query = uri.encodedQuery?.let { "?$it" } ?: ""
+                "/auth/google$query"
+            }
             else -> "/"
         }
     }

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 ANDROID_DEEP_LINK_SCHEME = "ssc"
-ANDROID_DEEP_LINK_HOSTS = frozenset({"link-device", "add"})
+ANDROID_DEEP_LINK_HOSTS = frozenset({"link-device", "add", "auth"})
 ANDROID_APP_LINK_HOST = "www.supersecurechat.com"
 
 NATIVE_SHELL_FEATURES = frozenset(
