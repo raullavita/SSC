@@ -29,6 +29,10 @@ linux:
   target:
     - AppImage
   artifactName: SSC-${version}.${ext}
+protocols:
+  - name: Super Secure Chat
+    schemes:
+      - ssc
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
