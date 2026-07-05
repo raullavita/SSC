@@ -335,6 +335,36 @@
   color: #00a884;
 }
 
+.trustLabelVerified {
+  color: #53d4b6;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.trustLabelChanged {
+  color: #f5d7a1;
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.trustLabelDefault {
+  color: #8696a0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.trustVerified {
+  color: #53d4b6;
+  font-size: 0.75rem;
+}
+
+.trustChanged {
+  color: #f5d7a1;
+  font-size: 0.75rem;
+}
+
 .messageActions {
   display: flex;
   flex-wrap: wrap;

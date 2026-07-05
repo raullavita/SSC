@@ -1,44 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
-import { computeSafetyNumber } from '../../signal/safetyNumber';
+import { trustBadgeLabel } from '../../lib/trustStore';
+import SafetyQr from './SafetyQr';
 import styles from './SafetyVerifyModal.module.css';
 
-function drawQr(canvas, text) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const size = 180;
-  canvas.width = size;
-  canvas.height = size;
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, size, size);
-  ctx.fillStyle = '#111';
-  ctx.font = '8px monospace';
-  const lines = text.match(/.{1,20}/g) || [text];
-  lines.slice(0, 12).forEach((line, i) => {
-    ctx.fillText(line, 8, 14 + i * 12);
-  });
-  ctx.strokeStyle = '#00a884';
-  ctx.strokeRect(4, 4, size - 8, size - 8);
+function statusClass(status) {
+  if (status === 'verified') return styles.statusVerified;
+  if (status === 'changed') return styles.statusChanged;
+  return styles.statusDefault;
 }
 
-export default function SafetyVerifyModal({ peerId, open, onClose }) {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    if (!open || !peerId) return;
-    setError(null);
-    computeSafetyNumber(peerId)
-      .then(setData)
-      .catch((e) => setError(e.message || 'Failed to load safety number'));
-  }, [open, peerId]);
-
-  useEffect(() => {
-    if (!data?.displayable || !canvasRef.current) return;
-    drawQr(canvasRef.current, `SSC:${peerId}:${data.displayable}`);
-  }, [data, peerId]);
-
+export default function SafetyVerifyModal({
+  peerId,
+  open,
+  onClose,
+  trust,
+  safetyNumber,
+  loading,
+  error,
+  onMarkVerified,
+  onResetTrust,
+}) {
   if (!open) return null;
+
+  const qrPayload =
+    peerId && safetyNumber?.displayable
+      ? `ssc://verify/${peerId}/${safetyNumber.displayable.replace(/\s+/g, '')}`
+      : null;
+
+  const status = trust?.status || 'default';
+  const canMarkVerified = status !== 'verified' && safetyNumber?.displayable;
 
   return (
     <div className={styles.overlay} role="dialog" aria-label="Verify safety number">
@@ -49,23 +38,49 @@ export default function SafetyVerifyModal({ peerId, open, onClose }) {
             ✕
           </button>
         </header>
+
+        <span className={`${styles.statusBadge} ${statusClass(status)}`}>
+          {trustBadgeLabel(status)}
+        </span>
+
         <p className={styles.hint}>
-          Compare this number in person with your contact. If they match, your chat is
+          Compare this number in person with your contact. If they match, mark the contact as
           verified.
         </p>
+
+        {loading && <p className={styles.loading}>Loading safety number…</p>}
         {error && <p className={styles.error}>{error}</p>}
-        {data && (
+
+        {safetyNumber?.displayable && (
           <>
-            <p className={styles.number}>{data.displayable}</p>
-            <canvas ref={canvasRef} className={styles.qr} aria-label="Safety number QR" />
+            <p className={styles.number}>{safetyNumber.displayable}</p>
+            <SafetyQr payload={qrPayload} />
             <p className={styles.peer}>
               Contact: <code>{peerId}</code>
             </p>
+            {status === 'changed' && trust?.previousSafetyNumber && (
+              <p className={styles.previous}>
+                Previous: <code>{trust.previousSafetyNumber}</code>
+              </p>
+            )}
           </>
         )}
-        <button type="button" className={styles.okBtn} onClick={onClose}>
-          Done
-        </button>
+
+        <div className={styles.actions}>
+          {canMarkVerified && (
+            <button type="button" className={styles.primaryBtn} onClick={onMarkVerified}>
+              Mark as verified
+            </button>
+          )}
+          {status === 'verified' && (
+            <button type="button" className={styles.secondaryBtn} onClick={onResetTrust}>
+              Reset verification
+            </button>
+          )}
+          <button type="button" className={styles.okBtn} onClick={onClose}>
+            Done
+          </button>
+        </div>
       </div>
     </div>
   );

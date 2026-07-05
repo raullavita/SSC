@@ -68,14 +68,78 @@
   font-size: 0.85rem;
 }
 
+.statusBadge {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statusVerified {
+  background: #0d3d32;
+  color: #53d4b6;
+}
+
+.statusChanged {
+  background: #3b2a14;
+  color: #f5d7a1;
+}
+
+.statusDefault {
+  background: #2a3942;
+  color: #8696a0;
+}
+
+.loading {
+  font-size: 0.85rem;
+  color: #8696a0;
+}
+
+.previous {
+  font-size: 0.75rem;
+  color: #c47a2c;
+  text-align: center;
+  margin: 0 0 0.5rem;
+}
+
+.previous code {
+  font-family: monospace;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.primaryBtn,
+.secondaryBtn,
 .okBtn {
   width: 100%;
-  margin-top: 0.5rem;
   padding: 0.65rem;
   border: none;
   border-radius: 8px;
-  background: #00a884;
-  color: #0b141a;
   font-weight: 600;
   cursor: pointer;
+}
+
+.primaryBtn {
+  background: #00a884;
+  color: #0b141a;
+}
+
+.secondaryBtn {
+  background: transparent;
+  border: 1px solid #2a3942;
+  color: #8696a0;
+}
+
+.okBtn {
+  background: #2a3942;
+  color: #e9edef;
 }

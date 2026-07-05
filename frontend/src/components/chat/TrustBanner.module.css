@@ -1,0 +1,41 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: #3b2a14;
+  border: 1px solid #c47a2c;
+  color: #f5d7a1;
+}
+
+.copy {
+  flex: 1;
+}
+
+.copy strong {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+
+.copy p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #e8c88a;
+  line-height: 1.35;
+}
+
+.verifyBtn {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  background: #c47a2c;
+  color: #1a1208;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
