@@ -3,6 +3,7 @@
  */
 
 import { api } from './api';
+import { clientFootprintClean } from './clientFootprintOrchestrator';
 import { clearIceServerCache } from '../calls/iceServers';
 import { clearAllIndexes } from '../search/messageIndex';
 
@@ -52,5 +53,8 @@ export async function executePanicWipe() {
   const result = await api.post('/api/panic/wipe', {});
   await clearNativeCryptoStore();
   clearLocalClientData();
+  if (!clientFootprintClean()) {
+    console.warn('[ssc] panic wipe completed but localStorage footprint still has violations');
+  }
   return result;
 }

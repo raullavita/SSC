@@ -1,8 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 
+import { runClientFootprintAudit } from '../lib/clientFootprintOrchestrator';
 import { registerPushTokenIfAvailable } from '../lib/pushRegister';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
+
+function warnFootprintViolations() {
+  const audit = runClientFootprintAudit();
+  if (!audit.localStorage.ok) {
+    console.warn('[ssc] localStorage footprint violations:', audit.localStorage.violations);
+  }
+}
 
 const AuthContext = createContext(null);
 
@@ -14,6 +22,7 @@ export function AuthProvider({ children }) {
   const onAuthenticated = useCallback((data) => {
     setUser(data.user);
     if (data.ws_token) setWsToken(data.ws_token);
+    warnFootprintViolations();
     startPresenceHeartbeat();
     registerPushTokenIfAvailable().catch(() => {});
     return data.user;
@@ -23,6 +32,7 @@ export function AuthProvider({ children }) {
     try {
       const me = await api.get('/api/auth/me');
       setUser(me);
+      warnFootprintViolations();
       startPresenceHeartbeat();
       registerPushTokenIfAvailable().catch(() => {});
       return me;
