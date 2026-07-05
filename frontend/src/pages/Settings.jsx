@@ -19,6 +19,7 @@ import { updatePrivacySettings } from '../lib/presence';
 import InviteQr from '../components/InviteQr';
 import { api } from '../lib/api';
 import { inviteAppUrl, inviteWebUrl } from '../lib/inviteLink';
+import LinkedDevicesPanel from '../components/LinkedDevicesPanel';
 import { useMultiDevice } from '../devices/useMultiDevice';
 import styles from './Settings.module.css';
 
@@ -37,7 +38,7 @@ export default function Settings() {
   const [panicConfirm, setPanicConfirm] = useState('');
   const {
     devices,
-    linkToken,
+    linkSession,
     createLink,
     loadDevices,
     revokeDevice,
@@ -248,38 +249,17 @@ export default function Settings() {
 
       <section className={styles.section}>
         <h2>Linked devices</h2>
-        <p className={styles.hint}>Link Android or another desktop. Max 5 devices per account.</p>
-        <label className={styles.rowStack}>
-          <span>New device label</span>
-          <input
-            className={styles.textInput}
-            value={linkLabel}
-            onChange={(e) => setLinkLabel(e.target.value)}
-          />
-        </label>
-        <button
-          type="button"
-          className={styles.logout}
-          disabled={deviceLoading}
-          onClick={() => createLink(linkLabel)}
-        >
-          Generate link
-        </button>
-        {linkToken && (
-          <p className={styles.hint}>
-            Open on the new device:{' '}
-            <code>{`${window.location.origin}/link-device?token=${linkToken}`}</code>
-          </p>
-        )}
-        {devices.map((d) => (
-          <p key={d.id} className={styles.account}>
-            {d.name} ({d.platform}) — <code>{d.id}</code>{' '}
-            <button type="button" onClick={() => revokeDevice(d.id)} disabled={deviceLoading}>
-              Revoke
-            </button>
-          </p>
-        ))}
-        {deviceError && <p className={styles.hint}>{deviceError}</p>}
+        <LinkedDevicesPanel
+          devices={devices}
+          linkSession={linkSession}
+          linkLabel={linkLabel}
+          onLinkLabelChange={setLinkLabel}
+          onCreateLink={() => createLink(linkLabel)}
+          onRevoke={revokeDevice}
+          loading={deviceLoading}
+          error={deviceError}
+          onMessage={setMessage}
+        />
       </section>
 
       <section className={styles.section}>

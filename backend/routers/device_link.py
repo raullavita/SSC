@@ -10,8 +10,12 @@ from pydantic import BaseModel, Field
 from core.ids import new_link_token_id
 from core.multi_device_policy import (
     MAX_DEVICES_PER_USER,
+    build_device_link_deep_link,
+    build_device_link_path,
     link_token_expires_at,
+    link_ttl_seconds,
     new_link_token,
+    public_linked_device,
 )
 from db import get_database
 from deps import get_client_header, get_current_user_id
@@ -56,7 +60,10 @@ async def create_device_link(
     await db.device_link_tokens.insert_one(doc)
     return {
         "link_token": token,
+        "link_path": build_device_link_path(token),
+        "deep_link": build_device_link_deep_link(token),
         "expires_at": doc["expires_at"].isoformat(),
+        "expires_in_seconds": link_ttl_seconds(),
         "max_devices": MAX_DEVICES_PER_USER,
     }
 
@@ -98,9 +105,5 @@ async def confirm_device_link(
     return {
         "ok": True,
         "user_id": user_id,
-        "device": {
-            "id": body.device_id,
-            "name": device_doc["name"],
-            "platform": body.platform,
-        },
+        "device": public_linked_device(device_doc),
     }

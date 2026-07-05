@@ -1,12 +1,12 @@
 /**
- * Multi-device linking — create link, confirm, list, revoke.
+ * Multi-device linking — create link, confirm, list, revoke — Step 15.
  */
 
 import { useCallback, useState } from 'react';
 import { api, apiFetch } from '../lib/api';
 
 export function useMultiDevice() {
-  const [linkToken, setLinkToken] = useState(null);
+  const [linkSession, setLinkSession] = useState(null);
   const [devices, setDevices] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,15 @@ export function useMultiDevice() {
     setError(null);
     try {
       const data = await api.post('/api/devices/link', { device_name: deviceName });
-      setLinkToken(data.link_token);
+      const expiresAt = data.expires_at ? new Date(data.expires_at).getTime() : null;
+      setLinkSession({
+        token: data.link_token,
+        expiresAt,
+        expiresInSeconds: data.expires_in_seconds,
+        maxDevices: data.max_devices,
+        linkPath: data.link_path,
+        deepLink: data.deep_link,
+      });
       return data;
     } catch (e) {
       setError(e.message || 'Failed to create link');
@@ -40,6 +48,8 @@ export function useMultiDevice() {
       setLoading(false);
     }
   }, []);
+
+  const clearLink = useCallback(() => setLinkSession(null), []);
 
   const confirmLink = useCallback(async ({ linkToken: token, deviceId, name, platform }) => {
     setLoading(true);
@@ -59,36 +69,34 @@ export function useMultiDevice() {
     }
   }, []);
 
-  const revokeDevice = useCallback(
-    async (deviceId) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await apiFetch(`/api/devices/${encodeURIComponent(deviceId)}`, {
-          method: 'DELETE',
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        setDevices((prev) => prev.filter((d) => d.id !== deviceId));
-        return true;
-      } catch (e) {
-        setError(e.message || 'Failed to revoke device');
-        return false;
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+  const revokeDevice = useCallback(async (deviceId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiFetch(`/api/devices/${encodeURIComponent(deviceId)}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      setDevices((prev) => prev.filter((d) => d.id !== deviceId));
+      return true;
+    } catch (e) {
+      setError(e.message || 'Failed to revoke device');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return {
-    linkToken,
+    linkSession,
+    linkToken: linkSession?.token || null,
     devices,
     createLink,
+    clearLink,
     confirmLink,
     loadDevices,
     revokeDevice,
     loading,
     error,
   };
-}
-
+};
