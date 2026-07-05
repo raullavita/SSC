@@ -28,8 +28,11 @@ export function stopPresenceHeartbeat() {
   }
 }
 
-export async function fetchPresence(userId) {
-  return api.get(`/api/presence/users/${encodeURIComponent(userId)}`);
+export async function fetchPresence(userId, { conversationId } = {}) {
+  const query = conversationId
+    ? `?conversation_id=${encodeURIComponent(conversationId)}`
+    : '';
+  return api.get(`/api/presence/users/${encodeURIComponent(userId)}${query}`);
 }
 
 export async function updatePrivacySettings(patch) {

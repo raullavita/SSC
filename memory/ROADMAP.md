@@ -157,9 +157,11 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
-## Step 14 — Per-chat privacy controls
+## Step 14 — Per-chat privacy controls ✅
 
 **Goal:** Per-conversation toggles for read receipts, typing, last seen, and disappearing defaults.
+
+**Shipped (2026-07-05):** `conversation_privacy_policy.py`, `PATCH /conversations/{id}/privacy`, per-chat overrides in `conversation_meta`, effective privacy for read receipts/typing/last-seen, `ChatPrivacyPanel` + composer disappearing default, `step14_proof.py`.
 
 ---
 
@@ -189,6 +191,6 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ## Community contribution
 
-Steps 2–13 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
+Steps 2–14 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
 
 *Machine-readable gates: `backend/scripts/run_engine*_gate.py`*

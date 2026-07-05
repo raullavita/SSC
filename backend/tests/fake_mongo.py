@@ -62,6 +62,12 @@ class FakeCollection:
                             merged[key] = [value]
                         elif isinstance(current, list) and value not in current:
                             merged[key] = [*current, value]
+                if "$unset" in update:
+                    for key in update["$unset"]:
+                        merged.pop(key, None)
+                if "$inc" in update:
+                    for key, value in update["$inc"].items():
+                        merged[key] = int(merged.get(key, 0)) + int(value)
                 self.docs[i] = merged
                 return
         if upsert and "$set" in update:

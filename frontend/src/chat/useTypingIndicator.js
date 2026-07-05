@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 const DEBOUNCE_MS = 400;
 const STOP_MS = 3000;
 
-export function useTypingIndicator({ conversationId, userId }) {
+export function useTypingIndicator({ conversationId, userId, enabled = true }) {
   const [peerTyping, setPeerTyping] = useState(false);
   const timerRef = useRef(null);
   const stopRef = useRef(null);
@@ -26,15 +26,15 @@ export function useTypingIndicator({ conversationId, userId }) {
 
   const notifyTyping = useCallback(
     (active) => {
-      if (!conversationId) return;
+      if (!conversationId || !enabled) return;
       api.post(`/api/conversations/${conversationId}/typing`, { active }).catch(() => {});
     },
-    [conversationId]
+    [conversationId, enabled]
   );
 
   const onDraftChange = useCallback(
     (text) => {
-      if (!conversationId) return;
+      if (!conversationId || !enabled) return;
       const isActive = Boolean(text?.trim());
       if (!isActive) {
         if (activeRef.current) {
@@ -56,7 +56,7 @@ export function useTypingIndicator({ conversationId, userId }) {
         }, STOP_MS);
       }, DEBOUNCE_MS);
     },
-    [conversationId, notifyTyping]
+    [conversationId, enabled, notifyTyping]
   );
 
   useEffect(() => {

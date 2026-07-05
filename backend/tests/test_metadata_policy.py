@@ -28,7 +28,16 @@ def test_public_conversation_omits_participants_list():
     assert "participants" not in out
     assert out["peer_id"] == "u_b"
     assert set(out.keys()).issubset(
-        {"id", "type", "peer_id", "updated_at", "pinned", "muted", "unread_count"}
+        {
+            "id",
+            "type",
+            "peer_id",
+            "updated_at",
+            "pinned",
+            "muted",
+            "unread_count",
+            "privacy",
+        }
     )
 
 

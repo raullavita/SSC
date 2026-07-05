@@ -7,11 +7,14 @@ import MessageBubble from '../components/chat/MessageBubble';
 import StoriesBar from '../components/chat/StoriesBar';
 import SafetyVerifyModal from '../components/chat/SafetyVerifyModal';
 import TrustBanner from '../components/chat/TrustBanner';
+import ChatPrivacyPanel from '../components/chat/ChatPrivacyPanel';
 import UserLookup from '../components/chat/UserLookup';
 import { useCall } from '../chat/useCall';
 import { useGroupCall } from '../calls/useGroupCall';
 import { useChatMessages } from '../chat/useChatMessages';
 import { useTrustState } from '../chat/useTrustState';
+import { useConversationPrivacy } from '../chat/useConversationPrivacy';
+import { effectivePrivacy } from '../lib/conversationPrivacy';
 import { useStories } from '../chat/useStories';
 import { useConversationMeta } from '../chat/useConversationMeta';
 import { useReadReceipts } from '../chat/useReadReceipts';
@@ -50,6 +53,12 @@ export default function ChatHome() {
   const [editingMessage, setEditingMessage] = useState(null);
   const [forwardingMessage, setForwardingMessage] = useState(null);
   const [showSafetyVerify, setShowSafetyVerify] = useState(false);
+  const [showPrivacyPanel, setShowPrivacyPanel] = useState(false);
+  const [globalPrivacy, setGlobalPrivacy] = useState({
+    read_receipts: false,
+    last_seen_visible: false,
+    typing_visible: true,
+  });
   const [showPollForm, setShowPollForm] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
@@ -77,11 +86,19 @@ export default function ChatHome() {
     () => conversations.map((c) => c.peer_id).filter(Boolean),
     [conversations]
   );
-  const presenceMap = usePresenceMap(peerIds);
+  const chatPrivacy = useMemo(
+    () => effectivePrivacy(active?.privacy, globalPrivacy),
+    [active?.privacy, globalPrivacy]
+  );
+  const presenceMap = usePresenceMap(peerIds, {
+    scopedPeerId: active?.peer_id,
+    scopedConversationId: activeId,
+  });
 
   const { peerTyping, onDraftChange, handleSocketPayload } = useTypingIndicator({
     conversationId: activeId,
     userId: user?.id,
+    enabled: chatPrivacy.typing_visible,
   });
 
   const handleSocketEvent = useCallback(
@@ -130,6 +147,7 @@ export default function ChatHome() {
     );
   }, []);
   const { togglePin, toggleMute } = useConversationMeta(handleMetaUpdated);
+  const { patchPrivacy } = useConversationPrivacy(handleMetaUpdated);
 
   const sortedConversations = useMemo(() => {
     return [...conversations].sort((a, b) => {
@@ -221,6 +239,17 @@ export default function ChatHome() {
       fetchLanguages()
         .then(setLanguages)
         .catch(() => {});
+      api
+        .get('/api/privacy')
+        .then((data) => {
+          const settings = data.privacy_settings || {};
+          setGlobalPrivacy({
+            read_receipts: Boolean(settings.read_receipts),
+            last_seen_visible: Boolean(settings.last_seen_visible),
+            typing_visible: true,
+          });
+        })
+        .catch(() => {});
       setUserLang(getPreferredLanguage());
     }
     return () => stopPresenceHeartbeat();
@@ -229,6 +258,10 @@ export default function ChatHome() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    setDisappearingSeconds(chatPrivacy.disappearing_seconds_default || 0);
+  }, [activeId, chatPrivacy.disappearing_seconds_default]);
 
   useEffect(() => {
     let cancelled = false;
@@ -499,6 +532,13 @@ export default function ChatHome() {
                 )}
                 {peerTyping && <span className={styles.typing}>typing…</span>}
               </div>
+              <button
+                type="button"
+                className={styles.privacyBtn}
+                onClick={() => setShowPrivacyPanel((v) => !v)}
+              >
+                Privacy
+              </button>
               {!isGroup && active?.peer_id && (
                 <p className={styles.safetyNumber}>
                   <span
@@ -555,6 +595,17 @@ export default function ChatHome() {
             {!isGroup && (
               <TrustBanner trust={trust} onVerify={() => setShowSafetyVerify(true)} />
             )}
+
+            <ChatPrivacyPanel
+              open={showPrivacyPanel}
+              onClose={() => setShowPrivacyPanel(false)}
+              overrides={active?.privacy || {}}
+              globalSettings={globalPrivacy}
+              onPatch={async (patch) => {
+                if (!activeId) return;
+                await patchPrivacy(activeId, patch);
+              }}
+            />
 
             <div className={styles.searchBar}>
               <input

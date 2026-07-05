@@ -138,6 +138,17 @@
   cursor: pointer;
 }
 
+.privacyBtn {
+  margin-top: 0.35rem;
+  background: transparent;
+  border: 1px solid #2a3942;
+  color: #8696a0;
+  border-radius: 4px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
 .convList button {
   width: 100%;
   text-align: left;

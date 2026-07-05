@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from core.conversation_privacy_policy import effective_read_receipts
 from core.last_seen import default_privacy_settings
 from core.retention_policy import default_expires_at
 from core.ws_hub import ws_hub
@@ -53,7 +54,10 @@ async def mark_conversation_read(
 
     user = await db.users.find_one({"_id": user_id}, {"privacy_settings": 1})
     settings = (user or {}).get("privacy_settings") or default_privacy_settings()
-    if not settings.get("read_receipts"):
+    meta = await db.conversation_meta.find_one(
+        {"user_id": user_id, "conversation_id": conversation_id}
+    )
+    if not effective_read_receipts(settings, meta):
         return None
 
     msg = await db.messages.find_one(
