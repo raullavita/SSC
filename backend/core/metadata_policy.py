@@ -68,14 +68,19 @@ def public_conversation(
 
 
 def public_message(doc: dict[str, Any], viewer_id: str | None = None) -> dict[str, Any]:
+    from core.message_lifecycle_policy import is_hidden_for_viewer, is_tombstone  # noqa: PLC0415
     from core.sealed_sender_policy import (  # noqa: PLC0415
         SEALED_ENVELOPE_FLAG,
         is_sealed_protocol,
         public_message_sealed,
     )
 
+    if is_hidden_for_viewer(doc, viewer_id):
+        return {}
+
     if doc.get(SEALED_ENVELOPE_FLAG) or is_sealed_protocol(doc.get("protocol", "")):
-        return scrub_payload(public_message_sealed(doc, viewer_id))
+        out = public_message_sealed(doc, viewer_id)
+        return scrub_payload(_attach_lifecycle_fields(out, doc))
 
     created = doc.get("created_at")
     if hasattr(created, "isoformat"):
@@ -88,6 +93,13 @@ def public_message(doc: dict[str, Any], viewer_id: str | None = None) -> dict[st
         "protocol": doc.get("protocol", "signal_v1"),
         "created_at": created,
     }
+    if is_tombstone(doc):
+        out["message_kind"] = "deleted"
+        out.pop("ciphertext", None)
+        deleted = doc.get("deleted_at")
+        if hasattr(deleted, "isoformat"):
+            out["deleted_at"] = deleted.isoformat()
+        return scrub_payload(out)
     if doc.get("disappearing_seconds"):
         out["disappearing_seconds"] = int(doc["disappearing_seconds"])
         exp = doc.get("expires_at")
@@ -99,7 +111,27 @@ def public_message(doc: dict[str, Any], viewer_id: str | None = None) -> dict[st
         out["message_kind"] = doc["message_kind"]
     if doc.get("poll_id"):
         out["poll_id"] = doc["poll_id"]
-    return scrub_payload(out)
+    return scrub_payload(_attach_lifecycle_fields(out, doc))
+
+
+def _attach_lifecycle_fields(out: dict[str, Any], doc: dict[str, Any]) -> dict[str, Any]:
+    edited = doc.get("edited_at")
+    if hasattr(edited, "isoformat"):
+        out["edited_at"] = edited.isoformat()
+    if doc.get("forwarded_from"):
+        out["forwarded_from"] = doc["forwarded_from"]
+    if doc.get("disappearing_seconds"):
+        out["disappearing_seconds"] = int(doc["disappearing_seconds"])
+        exp = doc.get("expires_at")
+        if hasattr(exp, "isoformat"):
+            out["expires_at"] = exp.isoformat()
+    if doc.get("reply_to"):
+        out["reply_to"] = doc["reply_to"]
+    if doc.get("message_kind"):
+        out["message_kind"] = doc["message_kind"]
+    if doc.get("poll_id"):
+        out["poll_id"] = doc["poll_id"]
+    return out
 
 
 def engine4_metadata_policy_ready() -> bool:

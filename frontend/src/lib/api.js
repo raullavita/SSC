@@ -58,6 +58,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
       body: JSON.stringify(body),
     }),
+  delete: (path, options) => apiJson(path, { ...options, method: 'DELETE' }),
 };
 
 export function wsUrl(wsToken) {

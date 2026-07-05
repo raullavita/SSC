@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { isImageAttachment, isVoiceAttachment } from '../../chat/attachments';
+import { canDeleteForEveryone, canEditMessage } from '../../chat/messageActions';
 import { decryptFileBytes } from '../../signal/signalBridge';
 import PollBubble from './PollBubble';
 import styles from './MessageBubble.module.css';
@@ -91,6 +92,9 @@ export default function MessageBubble({
   replyPreview,
   highlighted = false,
   onReply,
+  onEdit,
+  onDelete,
+  onForward,
   onReaction,
   onTranslate,
   downloadFile,
@@ -101,7 +105,18 @@ export default function MessageBubble({
   onPollVote,
   disappearingRemaining,
 }) {
-  const { text, attachment, created_at: createdAt, disappearing_seconds: disappearing } = message;
+  const {
+    text,
+    attachment,
+    created_at: createdAt,
+    disappearing_seconds: disappearing,
+    message_kind: messageKind,
+    edited_at: editedAt,
+    forwarded_from: forwardedFrom,
+  } = message;
+  const isDeleted = messageKind === 'deleted';
+  const showEdit = onEdit && canEditMessage(message, userId);
+  const showDeleteEveryone = onDelete && canDeleteForEveryone(message, userId);
   const bubbleClass = [
     styles.bubble,
     isOutgoing ? styles.outgoing : styles.incoming,
@@ -114,9 +129,15 @@ export default function MessageBubble({
     <div className={bubbleClass} data-message-id={message.id}>
       {replyPreview && <p className={styles.replyPreview}>↩ {replyPreview}</p>}
 
-      {text && <span className={styles.text}>{text}</span>}
+      {forwardedFrom && <p className={styles.forwardedLabel}>↪ Forwarded</p>}
 
-      {poll && (
+      {isDeleted ? (
+        <span className={styles.deletedText}>This message was deleted</span>
+      ) : (
+        text && <span className={styles.text}>{text}</span>
+      )}
+
+      {!isDeleted && poll && (
         <PollBubble
           poll={poll}
           tallies={pollTallies}
@@ -125,7 +146,7 @@ export default function MessageBubble({
         />
       )}
 
-      {attachment && (
+      {!isDeleted && attachment && (
         <div className={styles.attachment}>
           <AttachmentContent attachment={attachment} downloadFile={downloadFile} />
         </div>
@@ -139,6 +160,7 @@ export default function MessageBubble({
         ) : disappearing ? (
           <span className={styles.timer}>⏱ {disappearing}s</span>
         ) : null}
+        {editedAt && <span className={styles.editedLabel}>edited</span>}
         <span className={styles.timestamp}>{formatTime(createdAt)}</span>
         {isOutgoing && (
           <span
@@ -151,12 +173,38 @@ export default function MessageBubble({
       </div>
 
       <div className={styles.messageActions}>
-        {onReply && (
+        {!isDeleted && onReply && (
           <button type="button" className={styles.actionBtn} onClick={() => onReply(message)}>
             Reply
           </button>
         )}
-        {onTranslate && text && (
+        {showEdit && (
+          <button type="button" className={styles.actionBtn} onClick={() => onEdit(message)}>
+            Edit
+          </button>
+        )}
+        {onDelete && !isDeleted && (
+          <>
+            <button type="button" className={styles.actionBtn} onClick={() => onDelete(message, 'me')}>
+              Delete
+            </button>
+            {showDeleteEveryone && (
+              <button
+                type="button"
+                className={styles.actionBtn}
+                onClick={() => onDelete(message, 'everyone')}
+              >
+                Delete for all
+              </button>
+            )}
+          </>
+        )}
+        {!isDeleted && onForward && text && (
+          <button type="button" className={styles.actionBtn} onClick={() => onForward(message)}>
+            Forward
+          </button>
+        )}
+        {onTranslate && text && !isDeleted && (
           <button type="button" className={styles.translateBtn} onClick={() => onTranslate(message)}>
             Translate
           </button>

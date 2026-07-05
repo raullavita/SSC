@@ -150,3 +150,20 @@
   padding: 0.1rem 0.4rem;
   font-size: 0.85rem;
 }
+
+.deletedText {
+  display: block;
+  color: #8696a0;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.editedLabel,
+.forwardedLabel {
+  font-size: 0.65rem;
+  color: #8696a0;
+}
+
+.forwardedLabel {
+  margin: 0 0 0.25rem;
+}
