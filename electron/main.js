@@ -5,6 +5,7 @@ const path = require('path');
 const { getSession, wipeLocalData } = require('./libsignalSession');
 const { getGroupSenderKeySession } = require('./groupSenderKeySession');
 
+let mainWindow = null;
 let libsignalAvailable = false;
 try {
   require('@signalapp/libsignal-client');
@@ -106,6 +107,41 @@ function resolvePackagedIndex() {
   return null;
 }
 
+function routeFromDeepLink(rawUrl) {
+  if (!rawUrl || !rawUrl.startsWith('ssc://')) return '/';
+  try {
+    const parsed = new URL(rawUrl.replace('ssc://', 'https://ssc.local/'));
+    const host = (parsed.hostname || '').toLowerCase();
+    if (host === 'auth') {
+      const query = parsed.search || '';
+      return `/auth/google${query}`;
+    }
+    if (host === 'link-device') {
+      return `/link-device${parsed.search || ''}`;
+    }
+    if (host === 'add') {
+      const username = parsed.pathname.replace(/^\//, '').trim();
+      return username ? `/add/${username}` : '/';
+    }
+  } catch {
+    return '/';
+  }
+  return '/';
+}
+
+function navigateInstalledRoute(route) {
+  if (!mainWindow) return;
+  const indexPath = resolvePackagedIndex();
+  if (!indexPath) return;
+  const normalized = route.startsWith('/') ? route : `/${route}`;
+  const target = `file://${indexPath.replace(/\\/g, '/')}#${normalized}`;
+  mainWindow.loadURL(target);
+}
+
+function handleDeepLink(rawUrl) {
+  navigateInstalledRoute(routeFromDeepLink(rawUrl));
+}
+
 function loadWindow(win) {
   const devUrl = process.env.SSC_DEV_URL || 'http://localhost:3000';
   const prodFile = process.env.SSC_PROD_FILE;
@@ -138,7 +174,26 @@ function createWindow() {
   });
 
   loadWindow(win);
+  mainWindow = win;
   return win;
+}
+
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (_event, argv) => {
+    const deepLink = argv.find((arg) => typeof arg === 'string' && arg.startsWith('ssc://'));
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+      if (deepLink) handleDeepLink(deepLink);
+    }
+  });
+}
+
+if (!app.isDefaultProtocolClient('ssc')) {
+  app.setAsDefaultProtocolClient('ssc');
 }
 
 function registerAutoUpdater(win) {
@@ -169,6 +224,13 @@ app.whenReady().then(() => {
   registerCryptoIpc();
   const win = createWindow();
   registerAutoUpdater(win);
+  const deepLink = process.argv.find((arg) => typeof arg === 'string' && arg.startsWith('ssc://'));
+  if (deepLink) handleDeepLink(deepLink);
+});
+
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  handleDeepLink(url);
 });
 
 app.on('window-all-closed', () => {

@@ -11,12 +11,13 @@ from pydantic import BaseModel, EmailStr, Field
 
 from core.auth_tokens import decode_access_token
 from core.google_oauth import (
-    FRONTEND_URL,
     build_google_auth_url,
     exchange_code_for_profile,
+    google_idtoken_configured,
     google_oauth_configured,
     verify_id_token,
 )
+from core.google_oauth import _frontend_url as frontend_url
 from core.ids import new_user_id
 from core.last_seen import default_privacy_settings
 from core.oauth_exchange import consume_oauth_code, issue_oauth_code
@@ -154,16 +155,16 @@ async def google_callback(
     error: str | None = Query(default=None),
 ) -> RedirectResponse:
     if error:
-        return RedirectResponse(f"{FRONTEND_URL}/auth/google?error={error}")
+        return RedirectResponse(f"{frontend_url()}/auth/google?error={error}")
     if not google_oauth_configured():
         raise HTTPException(status_code=503, detail="google_oauth_not_configured")
     try:
         profile = await exchange_code_for_profile(code)
         user = await _find_or_create_google_user(profile)
         oauth_code = issue_oauth_code(user["_id"])
-        return RedirectResponse(f"{FRONTEND_URL}/auth/google?oauth_code={oauth_code}")
+        return RedirectResponse(f"{frontend_url()}/auth/google?oauth_code={oauth_code}")
     except ValueError:
-        return RedirectResponse(f"{FRONTEND_URL}/auth/google?error=oauth_failed")
+        return RedirectResponse(f"{frontend_url()}/auth/google?error=oauth_failed")
 
 
 @router.post("/google/exchange")
@@ -188,7 +189,7 @@ async def google_idtoken(
     response: Response,
     _client: str = Depends(get_client_header),
 ) -> dict:
-    if not google_oauth_configured():
+    if not google_idtoken_configured():
         raise HTTPException(status_code=503, detail="google_oauth_not_configured")
     try:
         profile = await verify_id_token(body.id_token)
