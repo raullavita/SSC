@@ -4,27 +4,17 @@ updates:
     directory: /backend
     schedule:
       interval: weekly
-    groups:
-      python-minor:
-        patterns:
-          - "*"
-        update-types:
-          - minor
-          - patch
+    # Security-only: avoid auto-opening major bumps (redis 8, firebase-admin 7, etc.).
+    open-pull-requests-limit: 5
     ignore:
-      # Starlette 1.x requires FastAPI >=0.118; do not let Dependabot split these bumps.
-      - dependency-name: starlette
-        versions:
-          - ">= 2.0"
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
-    groups:
-      frontend-minor:
-        patterns:
-          - "*"
-        update-types:
-          - minor
-          - patch
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
