@@ -45,6 +45,8 @@ if (-not $srcApk) {
 }
 
 $destApk = Join-Path $releaseDir "SSC-$Version.apk"
-Copy-Item $srcApk.FullName $destApk -Force
+if ($srcApk.FullName -ne (Resolve-Path $destApk -ErrorAction SilentlyContinue)) {
+    Copy-Item $srcApk.FullName $destApk -Force
+}
 $sizeMb = [math]::Round((Get-Item $destApk).Length / 1MB, 1)
 Write-Host "APK output: $destApk ($sizeMb MB)"
