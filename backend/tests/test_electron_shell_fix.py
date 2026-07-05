@@ -14,6 +14,7 @@ def test_electron_main_loads_packaged_app():
     assert "resolvePackagedIndex" in main
     assert "attachOAuthNavigationHandlers" in main
     assert "isOAuthFinishUrl" in main
+    assert "completeOAuthFinishNavigation" in main
 
 
 def test_electron_preload_injects_client_header():
@@ -25,7 +26,7 @@ def test_electron_preload_injects_client_header():
 
 def test_build_electron_uses_numeric_build():
     script = (REPO / "scripts" / "build_electron.ps1").read_text(encoding="utf-8")
-    assert 'REACT_APP_SSC_BUILD = "4"' in script
+    assert 'REACT_APP_SSC_BUILD = "5"' in script
     assert 'REACT_APP_SSC_LANDING_ONLY = "false"' in script
     assert 'PUBLIC_URL = "."' in script
 

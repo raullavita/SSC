@@ -176,9 +176,23 @@ function interceptOAuthNavigation(event, url) {
   navigateInstalledRoute(route);
 }
 
+function completeOAuthFinishNavigation(url) {
+  if (!isOAuthFinishUrl(url)) return false;
+  const route = routeFromOAuthFinishUrl(url);
+  if (!route) return false;
+  navigateInstalledRoute(route);
+  return true;
+}
+
 function attachOAuthNavigationHandlers(win) {
   win.webContents.on('will-navigate', interceptOAuthNavigation);
   win.webContents.on('will-redirect', interceptOAuthNavigation);
+  win.webContents.on('did-navigate', (_event, url) => {
+    completeOAuthFinishNavigation(url);
+  });
+  win.webContents.on('did-redirect-navigation', (_event, url) => {
+    completeOAuthFinishNavigation(url);
+  });
 }
 
 function handleDeepLink(rawUrl) {
@@ -255,7 +269,9 @@ function registerAutoUpdater(win) {
   });
 
   if (app.isPackaged) {
-    autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+    setTimeout(() => {
+      autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+    }, 8000);
   }
 }
 
