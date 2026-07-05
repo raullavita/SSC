@@ -12,7 +12,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if (-not $Project) { $Project = "super-chat-b0992" }
-if (-not $Region) { $Region = "us-central1" }
+if (-not $Region) { $Region = "europe-west1" }
 if (-not $Service) { $Service = "ssc-api" }
 
 $Backend = Join-Path $ProjectRoot "backend"
@@ -47,7 +47,10 @@ try {
         $deployArgs += @("--set-env-vars", "SSC_ENV=production,SSC_ENFORCE_INSTALLED_CLIENT=true")
     }
 
-    Write-Host "Deploying to Cloud Run ($Service @ $Region)..."
+    $VpcConnector = if ($env:SSC_VPC_CONNECTOR) { $env:SSC_VPC_CONNECTOR } else { "ssc-connector" }
+    $deployArgs += @("--vpc-connector", $VpcConnector, "--vpc-egress", "all-traffic")
+
+    Write-Host "Deploying to Cloud Run ($Service @ $Region, VPC $VpcConnector)..."
     & gcloud @deployArgs
     Write-Host "Cloud Run deploy complete."
 } finally {
