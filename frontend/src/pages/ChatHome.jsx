@@ -512,6 +512,9 @@ export default function ChatHome() {
             </li>
           ))}
         </ul>
+        <Link to="/settings" className={styles.syncLink}>
+          Linked devices &amp; sync
+        </Link>
         <Link to="/" className={styles.homeLink}>
           ← Home
         </Link>

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useMultiDevice } from '../devices/useMultiDevice';
+import { getLocalDeviceId, parseDeviceLinkToken, platformLabel } from '../lib/deviceLink';
 import { getInstalledClientHeader } from '../lib/installedClient';
+import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import styles from './Settings.module.css';
 
 function detectPlatform() {
@@ -15,26 +17,50 @@ function detectPlatform() {
 export default function DeviceLink() {
   const { user, loading } = useAuth();
   const [params] = useSearchParams();
-  const token = params.get('token') || '';
+  const queryToken = params.get('token') || '';
   const { confirmLink, loading: linking, error } = useMultiDevice();
   const [done, setDone] = useState(false);
   const [deviceName, setDeviceName] = useState('Linked device');
+  const [pasteToken, setPasteToken] = useState('');
+  const [status, setStatus] = useState('');
 
-  useEffect(() => {
-    if (!user || !token || done) return;
-    const deviceId = `linked-${Date.now()}`;
-    confirmLink({
-      linkToken: token,
-      deviceId,
-      name: deviceName,
-      platform: detectPlatform(),
-    }).then((result) => {
-      if (result?.ok) setDone(true);
-    });
-  }, [user, token, confirmLink, deviceName, done]);
+  const token = useMemo(
+    () => parseDeviceLinkToken(queryToken) || parseDeviceLinkToken(pasteToken),
+    [queryToken, pasteToken]
+  );
 
   if (!loading && !user) {
-    return <Navigate to={`/login?next=${encodeURIComponent(`/link-device?token=${token}`)}`} replace />;
+    const next = token ? `/link-device?token=${encodeURIComponent(token)}` : '/link-device';
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
+  }
+
+  async function handleLinkDevice() {
+    if (!token) return;
+    setStatus('Linking device…');
+    const deviceId = getLocalDeviceId();
+    const platform = detectPlatform();
+    const result = await confirmLink({
+      linkToken: token,
+      deviceId,
+      name: deviceName.trim() || 'Linked device',
+      platform,
+    });
+    if (!result?.ok) {
+      setStatus('');
+      return;
+    }
+    setStatus('Registering encryption keys…');
+    try {
+      await registerDeviceAndPrekeys({
+        deviceId,
+        deviceName: deviceName.trim() || 'Linked device',
+        platform,
+      });
+    } catch {
+      /* prekeys optional in dev */
+    }
+    setDone(true);
+    setStatus('');
   }
 
   return (
@@ -46,9 +72,29 @@ export default function DeviceLink() {
         <h1>Link device</h1>
       </header>
       <section className={styles.section}>
-        {!token && <p className={styles.hint}>Missing link token. Generate a link from Settings on your primary device.</p>}
+        {!token && (
+          <>
+            <p className={styles.hint}>
+              Scan the QR code from Settings on your primary device, or paste the link token below.
+            </p>
+            <label className={styles.rowStack}>
+              <span>Link token or URL</span>
+              <input
+                className={styles.textInput}
+                value={pasteToken}
+                onChange={(e) => setPasteToken(e.target.value)}
+                placeholder="Paste link or ssc://link-device?token=…"
+              />
+            </label>
+          </>
+        )}
+
         {token && !done && (
           <>
+            <p className={styles.hint}>
+              You are linking this {platformLabel(detectPlatform())} device to your SSC account.
+              Confirm the name below, then link.
+            </p>
             <label className={styles.rowStack}>
               <span>Device name</span>
               <input
@@ -57,16 +103,30 @@ export default function DeviceLink() {
                 onChange={(e) => setDeviceName(e.target.value)}
               />
             </label>
-            <p className={styles.hint}>{linking ? 'Linking this device…' : 'Confirming secure link…'}</p>
+            <button
+              type="button"
+              className={styles.logout}
+              disabled={linking || !deviceName.trim()}
+              onClick={handleLinkDevice}
+            >
+              {linking ? 'Linking…' : 'Link this device'}
+            </button>
+            {status && <p className={styles.hint}>{status}</p>}
           </>
         )}
-        {done && <p className={styles.toast}>Device linked. You can open chat now.</p>}
-        {error && <p className={styles.hint}>{error}</p>}
+
         {done && (
-          <Link className={styles.back} to="/chat">
-            Open chat →
-          </Link>
+          <>
+            <p className={styles.toast}>
+              Device linked. Messages will sync in real time across your linked devices.
+            </p>
+            <Link className={styles.back} to="/chat">
+              Open chat →
+            </Link>
+          </>
         )}
+
+        {error && <p className={styles.hint}>{error}</p>}
       </section>
     </div>
   );

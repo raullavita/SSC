@@ -1,0 +1,125 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #667781;
+  line-height: 1.4;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.input {
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #2a3942;
+  background: #202c33;
+  color: #e9edef;
+}
+
+.primaryBtn {
+  align-self: flex-start;
+  border: 1px solid #00a884;
+  background: transparent;
+  color: #00a884;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+}
+
+.linkCard {
+  margin-top: 0.35rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #2a3942;
+  background: #0b141a;
+}
+
+.expiry {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: #00a884;
+}
+
+.mono {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  color: #8696a0;
+  word-break: break-all;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.actions button {
+  background: transparent;
+  border: 1px solid #2a3942;
+  color: #aebac1;
+  border-radius: 6px;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.deviceList {
+  margin-top: 0.75rem;
+}
+
+.deviceList h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #e9edef;
+}
+
+.deviceRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid #2a3942;
+}
+
+.badge {
+  margin-left: 0.4rem;
+  font-size: 0.65rem;
+  color: #53d4b6;
+  text-transform: uppercase;
+}
+
+.revokeBtn {
+  background: transparent;
+  border: 1px solid #5b2c2c;
+  color: #ea9999;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.revokeBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.expired {
+  color: #f5d7a1;
+  font-size: 0.82rem;
+}
+
+.error {
+  color: #ea4335;
+  font-size: 0.82rem;
+}

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from core.multi_device_policy import public_linked_device
 from db import get_database
 from deps import get_client_header, get_current_user_id
 
@@ -45,13 +46,8 @@ async def register_device(
         )
     else:
         await db.devices.insert_one(doc)
-    return {
-        "device": {
-            "id": body.device_id,
-            "name": doc["name"],
-            "platform": doc["platform"],
-        }
-    }
+    saved = await db.devices.find_one({"_id": doc_id})
+    return {"device": public_linked_device(saved or doc)}
 
 
 @router.get("")
@@ -61,14 +57,7 @@ async def list_devices(
 ) -> dict:
     db = get_database()
     cursor = db.devices.find({"user_id": user_id})
-    items = [
-        {
-            "id": d.get("device_id"),
-            "name": d.get("name"),
-            "platform": d.get("platform"),
-        }
-        async for d in cursor
-    ]
+    items = [public_linked_device(d) async for d in cursor]
     return {"devices": items}
 
 
