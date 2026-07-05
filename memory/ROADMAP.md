@@ -141,8 +141,52 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
+## Step 12 — Message edit, delete, forward ✅
+
+**Goal:** Edit within TTL, delete for me / for everyone, forward as new encrypted message.
+
+**Shipped (2026-07-05):** `message_lifecycle_policy.py`, `PATCH/DELETE /api/messages/{id}`, `forwarded_from` on send, WS `message_edited` + `message_deleted`, `messageActions.js`, MessageBubble context actions, `step12_proof.py`.
+
+---
+
+## Step 13 — Safety numbers + trust UX
+
+**Goal:** Surface safety-number verification and trust state in chat UI.
+
+---
+
+## Step 14 — Per-chat privacy controls
+
+**Goal:** Per-conversation toggles for read receipts, typing, last seen, and disappearing defaults.
+
+---
+
+## Step 15 — Multi-device polish (QR link)
+
+**Goal:** Streamlined QR device linking and multi-device sync UX.
+
+---
+
+## Step 16 — Encrypted backup/export
+
+**Goal:** Client-side encrypted chat export and restore.
+
+---
+
+## Step 17 — Android shell improvements
+
+**Goal:** Native Android UX polish beyond WebView shell.
+
+---
+
+## Step 18 — Release v0.3.0
+
+**Goal:** First release with attached Electron + Android binaries after Steps 10–17.
+
+---
+
 ## Community contribution
 
-Steps 2–11 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
+Steps 2–12 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
 
 *Machine-readable gates: `backend/scripts/run_engine*_gate.py`*

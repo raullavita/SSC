@@ -46,6 +46,8 @@ export default function ChatHome() {
   const [inlineTranslations, setInlineTranslations] = useState({});
   const [safetyNumber, setSafetyNumber] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [forwardingMessage, setForwardingMessage] = useState(null);
   const [showSafetyVerify, setShowSafetyVerify] = useState(false);
   const [showPollForm, setShowPollForm] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
@@ -92,6 +94,9 @@ export default function ChatHome() {
     sendPoll,
     votePoll,
     sendReaction,
+    editMessage,
+    deleteMessage,
+    forwardMessage,
     loading: messagesLoading,
   } = useChatMessages(activeId, Boolean(user), active?.peer_id, {
     onSocketEvent: handleSocketEvent,
@@ -295,13 +300,51 @@ export default function ChatHome() {
     onDraftChange('');
     setTranslatedPreview('');
     try {
-      await sendMessage(text, {
-        disappearingSeconds: disappearingSeconds || undefined,
-        replyTo: replyTo?.id,
-      });
-      setReplyTo(null);
+      if (editingMessage) {
+        await editMessage(editingMessage.id, text);
+        setEditingMessage(null);
+      } else {
+        await sendMessage(text, {
+          disappearingSeconds: disappearingSeconds || undefined,
+          replyTo: replyTo?.id,
+        });
+        setReplyTo(null);
+      }
     } catch (err) {
       setDraft(text);
+      setListError(err.message);
+    }
+  }
+
+  async function onDeleteMessage(message, scope) {
+    try {
+      await deleteMessage(message.id, scope);
+    } catch (err) {
+      setListError(err.message);
+    }
+  }
+
+  function onEditMessage(message) {
+    setEditingMessage(message);
+    setReplyTo(null);
+    setForwardingMessage(null);
+    setDraft(message.text || '');
+  }
+
+  async function onForwardToConversation(targetConv) {
+    if (!forwardingMessage || !targetConv) return;
+    try {
+      await forwardMessage(
+        forwardingMessage,
+        targetConv.id,
+        targetConv.peer_id,
+        targetConv.type === 'group'
+      );
+      setForwardingMessage(null);
+      if (targetConv.id !== activeId) {
+        setActiveId(targetConv.id);
+      }
+    } catch (err) {
       setListError(err.message);
     }
   }
@@ -523,6 +566,9 @@ export default function ChatHome() {
                     replyPreview={getReplyPreview(m)}
                     highlighted={highlightedId === m.id}
                     onReply={setReplyTo}
+                    onEdit={onEditMessage}
+                    onDelete={onDeleteMessage}
+                    onForward={setForwardingMessage}
                     onReaction={sendReaction}
                     onTranslate={onTranslateMessage}
                     downloadFile={downloadFile}
@@ -549,6 +595,46 @@ export default function ChatHome() {
                   {replyTo.text?.slice(0, 60) || replyTo.attachment?.name || 'Message'}
                 </span>
                 <button type="button" onClick={() => setReplyTo(null)}>
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {editingMessage && (
+              <div className={styles.replyBar}>
+                <span>Editing message</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingMessage(null);
+                    setDraft('');
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {forwardingMessage && (
+              <div className={styles.replyBar}>
+                <span>Forward to:</span>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const conv = conversations.find((c) => c.id === e.target.value);
+                    if (conv) onForwardToConversation(conv);
+                  }}
+                >
+                  <option value="">Choose chat…</option>
+                  {conversations
+                    .filter((c) => c.id !== activeId)
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.type === 'group' ? `Group ${c.id.slice(0, 8)}` : c.peer_id?.slice(0, 12)}
+                      </option>
+                    ))}
+                </select>
+                <button type="button" onClick={() => setForwardingMessage(null)}>
                   ✕
                 </button>
               </div>

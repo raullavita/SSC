@@ -52,8 +52,17 @@ class FakeCollection:
     async def update_one(self, query: dict, update: dict, upsert: bool = False) -> None:
         for i, doc in enumerate(self.docs):
             if _matches(doc, query):
+                merged = deepcopy(doc)
                 if "$set" in update:
-                    self.docs[i] = {**doc, **update["$set"]}
+                    merged.update(update["$set"])
+                if "$addToSet" in update:
+                    for key, value in update["$addToSet"].items():
+                        current = merged.get(key)
+                        if current is None:
+                            merged[key] = [value]
+                        elif isinstance(current, list) and value not in current:
+                            merged[key] = [*current, value]
+                self.docs[i] = merged
                 return
         if upsert and "$set" in update:
             new_doc = {**query, **update["$set"]}

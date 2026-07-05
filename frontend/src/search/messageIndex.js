@@ -63,6 +63,17 @@ export function searchMessages(conversationId, query, { limit = 20 } = {}) {
   return idx.search(query.trim()).slice(0, limit);
 }
 
+export function removeMessageFromIndex(conversationId, messageId) {
+  if (!conversationId || !messageId) return;
+  const idx = indexes.get(conversationId);
+  if (!idx) return;
+  try {
+    idx.discard(messageId);
+  } catch {
+    // not indexed
+  }
+}
+
 export function clearIndex(conversationId) {
   indexes.delete(conversationId);
 }

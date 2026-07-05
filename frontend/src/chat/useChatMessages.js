@@ -4,7 +4,12 @@ import { parseAttachmentText } from './attachments';
 import { castPollVote, createPoll, fetchPoll, parsePollText } from './polls';
 import { parseReactionText, sendReaction as postReaction } from './reactions';
 import { useDisappearingMessages } from './useDisappearingMessages';
-import { indexMessage, indexMessages } from '../search/messageIndex';
+import {
+  deleteMessageApi,
+  editMessageApi,
+  forwardMessageApi,
+} from './messageActions';
+import { indexMessage, indexMessages, removeMessageFromIndex } from '../search/messageIndex';
 import { getSealedSenderEnabled } from '../lib/chatPrefs';
 import {
   GROUP_SENDER_KEY_DIST_PROTOCOL,
@@ -80,6 +85,10 @@ export function useChatMessages(
       const data = await api.get(`/api/conversations/${conversationId}/messages`);
       const rows = [];
       for (const m of data.messages || []) {
+        if (m.message_kind === 'deleted') {
+          rows.push({ ...m, text: null, reaction: null, attachment: null, poll: null });
+          continue;
+        }
         if (isGroup) {
           const row = await hydrateGroupMessage(m, { groupId });
           if (row) rows.push(row);
@@ -135,6 +144,53 @@ export function useChatMessages(
       onSocketEvent?.(data);
       const payload = data?.payload || data;
       if (payload?.type === 'read_receipt') return;
+      if (payload?.type === 'message_edited' && payload.message) {
+        const m = payload.message;
+        if (m.message_kind === 'deleted') return;
+        try {
+          let row;
+          if (isGroup) {
+            const raw = await decryptGroupMessage(m.ciphertext, {
+              groupId,
+              senderId: m.sender_id,
+              protocol: m.protocol,
+            });
+            const parsed = parseMessageContent(raw, m.message_kind);
+            row = { ...m, text: parsed.text, reaction: null, attachment: parsed.attachment, poll: parsed.poll };
+          } else {
+            const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+            const parsed = parseMessageContent(raw, m.message_kind);
+            row = {
+              ...m,
+              text: parsed.text,
+              reaction: parsed.reaction,
+              attachment: parsed.attachment,
+              poll: parsed.poll,
+            };
+          }
+          setMessages((prev) => prev.map((x) => (x.id === m.id ? row : x)));
+          if (row.text) indexMessage(conversationId, row);
+        } catch {
+          setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...m, text: null } : x)));
+        }
+        return;
+      }
+      if (payload?.type === 'message_deleted') {
+        const { message_id: messageId, scope, message: tombstone } = payload;
+        if (scope === 'everyone' && tombstone) {
+          setMessages((prev) =>
+            prev.map((x) =>
+              x.id === messageId
+                ? { ...x, ...tombstone, text: null, attachment: null, poll: null, message_kind: 'deleted' }
+                : x
+            )
+          );
+        } else {
+          setMessages((prev) => prev.filter((x) => x.id !== messageId));
+          removeMessageFromIndex(conversationId, messageId);
+        }
+        return;
+      }
       if (payload?.type === 'message' && payload.message) {
         const m = payload.message;
         if (isGroup) {
@@ -311,6 +367,75 @@ export function useChatMessages(
     [conversationId, peerId]
   );
 
+  const encryptCtx = useMemo(
+    () => ({ peerId, isGroup, groupId, userId, memberIds, conversationId }),
+    [peerId, isGroup, groupId, userId, memberIds, conversationId]
+  );
+
+  const editMessage = useCallback(
+    async (messageId, text) => {
+      if (!messageId || !text?.trim()) return;
+      const data = await editMessageApi(messageId, text, encryptCtx);
+      const m = data.message;
+      const row = { ...m, text: text.trim(), reaction: null, attachment: null, poll: null };
+      setMessages((prev) => prev.map((x) => (x.id === messageId ? row : x)));
+      indexMessage(conversationId, row);
+    },
+    [conversationId, encryptCtx]
+  );
+
+  const deleteMessage = useCallback(
+    async (messageId, scope = 'me') => {
+      if (!messageId) return;
+      const data = await deleteMessageApi(messageId, scope);
+      if (scope === 'everyone' && data.message) {
+        setMessages((prev) =>
+          prev.map((x) =>
+            x.id === messageId
+              ? { ...x, ...data.message, text: null, attachment: null, poll: null, message_kind: 'deleted' }
+              : x
+          )
+        );
+      } else {
+        setMessages((prev) => prev.filter((x) => x.id !== messageId));
+        removeMessageFromIndex(conversationId, messageId);
+      }
+    },
+    [conversationId]
+  );
+
+  const forwardMessage = useCallback(
+    async (sourceMessage, targetConversationId, targetPeerId, targetIsGroup = false) => {
+      if (!sourceMessage?.text || !targetConversationId) return;
+      const data = await forwardMessageApi(sourceMessage.text, {
+        sourceMessageId: sourceMessage.id,
+        conversationId: targetConversationId,
+        peerId: targetPeerId,
+        isGroup: targetIsGroup,
+        groupId: targetIsGroup ? targetConversationId : undefined,
+        userId,
+        memberIds,
+      });
+      if (targetConversationId === conversationId) {
+        const m = data.message;
+        const row = {
+          ...m,
+          text: sourceMessage.text,
+          reaction: null,
+          attachment: null,
+          poll: null,
+        };
+        setMessages((prev) => {
+          if (prev.some((x) => x.id === m.id)) return prev;
+          return [...prev, row];
+        });
+        indexMessage(conversationId, row);
+      }
+      return data.message;
+    },
+    [conversationId, userId, memberIds]
+  );
+
   return {
     messages: displayMessages,
     reactionsByTarget,
@@ -323,5 +448,8 @@ export function useChatMessages(
     sendPoll,
     votePoll,
     sendReaction,
+    editMessage,
+    deleteMessage,
+    forwardMessage,
   };
 }
