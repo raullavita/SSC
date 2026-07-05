@@ -1,6 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './CallModal.module.css';
 
+const STATUS_LABELS = {
+  idle: 'Idle',
+  ringing: 'Ringing…',
+  incoming: 'Incoming call',
+  connecting: 'Connecting…',
+  connected: 'Connected',
+  failed: 'Call failed',
+  declined: 'Declined',
+  missed: 'Missed call',
+  ended: 'Call ended',
+  busy: 'Line busy',
+};
+
 export default function CallModal({
   open,
   status,
@@ -8,6 +21,7 @@ export default function CallModal({
   isVideo,
   localStream,
   remoteStream,
+  errorMessage,
   onAnswer,
   onDecline,
   onEnd,
@@ -33,7 +47,7 @@ export default function CallModal({
   }, [remoteStream]);
 
   useEffect(() => {
-    if (!localStream) return;
+    if (!localStream?.getAudioTracks) return;
     localStream.getAudioTracks().forEach((t) => {
       t.enabled = !muted;
     });
@@ -44,14 +58,20 @@ export default function CallModal({
   const showVideo = isVideo && (localStream || remoteStream);
   const isIncoming = status === 'incoming' || status === 'ringing';
   const isConnected = status === 'connected' || status === 'connecting';
+  const isTerminal = ['failed', 'declined', 'missed', 'ended', 'busy'].includes(status);
+  const statusLabel = STATUS_LABELS[status] || status;
 
   return (
     <div className={styles.overlay} role="dialog" aria-label="Call">
       <div className={styles.modal}>
         <div className={styles.header}>
           <strong>{peerLabel || 'Call'}</strong>
-          <span className={styles.status}>{status}</span>
+          <span className={`${styles.status} ${status === 'failed' ? styles.statusError : ''}`}>
+            {statusLabel}
+          </span>
         </div>
+
+        {errorMessage && <p className={styles.error}>{errorMessage}</p>}
 
         {showVideo ? (
           <div className={styles.videoGrid}>
@@ -67,7 +87,15 @@ export default function CallModal({
         ) : (
           <div className={styles.audioOnly}>
             <div className={styles.avatar}>{isVideo ? '📹' : '📞'}</div>
-            <p>{isIncoming ? 'Incoming call…' : isConnected ? 'Connected' : 'Calling…'}</p>
+            <p>
+              {isIncoming
+                ? 'Incoming call…'
+                : isConnected
+                  ? 'Connected'
+                  : isTerminal
+                    ? statusLabel
+                    : 'Calling…'}
+            </p>
             <audio ref={remoteAudioRef} autoPlay playsInline />
           </div>
         )}
@@ -92,9 +120,14 @@ export default function CallModal({
               {muted ? 'Unmute' : 'Mute'}
             </button>
           )}
-          {onEnd && status !== 'idle' && (
+          {onEnd && !isTerminal && status !== 'idle' && (
             <button type="button" className={styles.endBtn} onClick={onEnd}>
               End call
+            </button>
+          )}
+          {onEnd && isTerminal && (
+            <button type="button" className={styles.endBtn} onClick={onEnd}>
+              Close
             </button>
           )}
         </div>

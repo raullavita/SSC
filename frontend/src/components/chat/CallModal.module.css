@@ -32,6 +32,17 @@
   color: #8696a0;
 }
 
+.statusError {
+  color: #ea4335;
+}
+
+.error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #ea4335;
+  text-align: center;
+}
+
 .videoGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;

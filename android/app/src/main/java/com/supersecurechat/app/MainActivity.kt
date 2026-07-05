@@ -2,11 +2,14 @@ package com.supersecurechat.app
 
 import android.app.Activity
 import android.os.Bundle
+import android.webkit.PermissionRequest
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 
 /**
  * SSC Android installed client — WebView shell + libsignal-android (Engine 14).
+ * Step 11: grant WebRTC camera/mic permissions inside WebView.
  */
 class MainActivity : Activity() {
     private lateinit var webView: WebView
@@ -20,7 +23,14 @@ class MainActivity : Activity() {
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
+            mediaPlaybackRequiresUserGesture = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        }
+
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onPermissionRequest(request: PermissionRequest?) {
+                request?.grant(request.resources)
+            }
         }
 
         nativeBridge = SscNativeBridge(this, webView, filesDir)

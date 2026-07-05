@@ -6,7 +6,7 @@ import logging
 from typing import Any
 
 from core.firebase_init import ensure_firebase
-from core.push_payload import build_generic_push
+from core.push_payload import build_generic_push, build_missed_call_push
 from db import get_database
 
 logger = logging.getLogger("ssc")
@@ -66,6 +66,36 @@ async def notify_conversation_participants(
             )
         )
     return results
+
+
+async def send_missed_call_push_to_user(
+    user_id: str,
+    *,
+    conversation_id: str | None = None,
+    call_id: str | None = None,
+) -> dict[str, Any]:
+    """Notify callee of missed/declined call — generic body only."""
+    db = get_database()
+    payload = build_missed_call_push(
+        {
+            k: v
+            for k, v in {
+                "conversation_id": conversation_id,
+                "call_id": call_id,
+            }.items()
+            if v
+        }
+    )
+    cursor = db.push_tokens.find({"user_id": user_id})
+    sent = 0
+    async for row in cursor:
+        token = row.get("token")
+        if not token:
+            continue
+        ok = await _dispatch_fcm(token, payload)
+        if ok:
+            sent += 1
+    return {"user_id": user_id, "sent": sent, "payload": payload}
 
 
 async def db_conversation_muted(user_id: str, conversation_id: str) -> bool:

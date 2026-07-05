@@ -7,7 +7,9 @@ from typing import Any
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 
 CALL_TYPES = frozenset({"offer", "answer", "ice", "hangup"})
+CALL_END_REASONS = frozenset({"ended", "declined", "missed", "busy"})
 MESH_MAX_PARTICIPANTS = 8
+RING_TIMEOUT_SEC = 45
 
 CALL_PUBLIC_FIELDS: frozenset[str] = frozenset(
     {

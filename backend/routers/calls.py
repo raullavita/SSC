@@ -8,11 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.call_policy import (
+    CALL_END_REASONS,
     CALL_TYPES,
     MESH_MAX_PARTICIPANTS,
     public_call_session,
     validate_signaling_envelope,
 )
+from push import send_missed_call_push_to_user
 from core.turn_policy import build_ice_servers
 from core.sfu_policy import should_use_sfu
 from core.ids import new_call_id
@@ -37,6 +39,10 @@ class SignalBody(BaseModel):
     signal_type: str = Field(min_length=3)
     ciphertext: str = Field(min_length=1)
     protocol: str = Field(default=SIGNAL_PROTOCOL_V1)
+
+
+class EndCallBody(BaseModel):
+    reason: str = Field(default="ended", min_length=3, max_length=16)
 
 
 @router.get("/ice-servers")
@@ -140,3 +146,56 @@ async def relay_signal(
         },
     )
     return {"ok": True}
+
+
+@router.post("/{call_id}/end")
+async def end_call(
+    call_id: str,
+    body: EndCallBody,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    if body.reason not in CALL_END_REASONS:
+        raise HTTPException(status_code=400, detail="invalid_end_reason")
+
+    db = get_database()
+    call = await db.call_sessions.find_one({"_id": call_id})
+    if not call:
+        raise HTTPException(status_code=404, detail="call_not_found")
+
+    participants = {call.get("caller_id"), call.get("callee_id")}
+    if user_id not in participants:
+        raise HTTPException(status_code=403, detail="not_a_call_participant")
+
+    peer = call["callee_id"] if user_id == call["caller_id"] else call["caller_id"]
+    now = datetime.now(timezone.utc)
+    await db.call_sessions.update_one(
+        {"_id": call_id},
+        {"$set": {"status": body.reason, "ended_at": now, "ended_by": user_id}},
+    )
+
+    await ws_hub.publish(
+        f"user:{peer}",
+        {
+            "type": "call_ended",
+            "call_id": call_id,
+            "reason": body.reason,
+            "from": user_id,
+        },
+    )
+
+    conversation_id = call.get("conversation_id")
+    if body.reason == "declined" and call.get("caller_id"):
+        await send_missed_call_push_to_user(
+            call["caller_id"],
+            conversation_id=conversation_id,
+            call_id=call_id,
+        )
+    elif body.reason == "missed" and call.get("callee_id"):
+        await send_missed_call_push_to_user(
+            call["callee_id"],
+            conversation_id=conversation_id,
+            call_id=call_id,
+        )
+
+    return {"ok": True, "reason": body.reason}
