@@ -57,4 +57,7 @@ dependencies {
     implementation("org.signal:libsignal-android:0.96.4")
     implementation("org.signal:libsignal-client:0.96.4")
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("androidx.activity:activity-ktx:1.9.3")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 }

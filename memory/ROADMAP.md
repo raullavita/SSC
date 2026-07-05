@@ -185,6 +185,8 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 **Goal:** Native Android UX polish beyond WebView shell.
 
+**Shipped (2026-07-05):** Splash screen + SSC dark theme, `ssc://` and HTTPS deep links (`link-device`, `add/{username}`), pull-to-refresh, offline retry panel, WebView file chooser, `SscDeepLink.kt`, `android_shell_policy.py`, `step17_proof.py`.
+
 ---
 
 ## Step 18 — Release v0.3.0
@@ -195,6 +197,6 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ## Community contribution
 
-Steps 2–16 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
+Steps 2–17 tracked on roadmap and GitHub issues. Pick one issue, comment, open a PR against `main`. Do **not** combine multiple steps in one PR.
 
 *Machine-readable gates: `backend/scripts/run_engine*_gate.py`*

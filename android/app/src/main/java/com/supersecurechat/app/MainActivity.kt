@@ -1,51 +1,145 @@
 package com.supersecurechat.app
 
-import android.app.Activity
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.webkit.PermissionRequest
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.widget.Button
+import android.widget.LinearLayout
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 /**
- * SSC Android installed client — WebView shell + libsignal-android (Engine 14).
- * Step 11: grant WebRTC camera/mic permissions inside WebView.
+ * SSC Android installed client — polished WebView shell (Step 17).
  */
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
     private lateinit var webView: WebView
+    private lateinit var swipeRefresh: SwipeRefreshLayout
+    private lateinit var offlinePanel: LinearLayout
     private lateinit var nativeBridge: SscNativeBridge
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private var currentUrl: String = BuildConfig.SSC_WEB_URL
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
-        webView = WebView(this)
-        setContentView(webView)
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        window.statusBarColor = Color.parseColor("#0B141A")
+        window.navigationBarColor = Color.parseColor("#0B141A")
+
+        setContentView(R.layout.activity_main)
+        webView = findViewById(R.id.webview)
+        swipeRefresh = findViewById(R.id.swipe_refresh)
+        offlinePanel = findViewById(R.id.offline_panel)
+        findViewById<Button>(R.id.retry_button).setOnClickListener { reloadCurrentUrl() }
 
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
             mediaPlaybackRequiresUserGesture = false
             mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            allowFileAccess = true
         }
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest?) {
                 request?.grant(request.resources)
             }
+
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?,
+            ): Boolean {
+                this@MainActivity.filePathCallback?.onReceiveValue(null)
+                this@MainActivity.filePathCallback = filePathCallback
+                val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                    putExtra(
+                        Intent.EXTRA_MIME_TYPES,
+                        arrayOf("application/json", "application/octet-stream", "*/*"),
+                    )
+                }
+                startActivityForResult(Intent.createChooser(intent, "Choose file"), FILE_CHOOSER_REQUEST)
+                return true
+            }
         }
 
         nativeBridge = SscNativeBridge(this, webView, filesDir)
         webView.addJavascriptInterface(nativeBridge, "__sscBridge")
 
-        val entryUrl = BuildConfig.SSC_WEB_URL
-        webView.webViewClient = ApiClient.webViewClient(this, entryUrl, webView)
-        webView.loadUrl(entryUrl)
+        swipeRefresh.setColorSchemeColors(Color.parseColor("#00A884"))
+        swipeRefresh.setOnRefreshListener { webView.reload() }
+
+        webView.webViewClient = ApiClient.webViewClient(
+            context = this,
+            baseUrl = BuildConfig.SSC_WEB_URL,
+            webView = webView,
+            onPageFinished = { swipeRefresh.isRefreshing = false },
+            onLoadError = { showOfflinePanel(true) },
+            onLoadSuccess = { showOfflinePanel(false) },
+        )
+
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (webView.canGoBack()) {
+                        webView.goBack()
+                    } else {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            },
+        )
+
+        loadEntryUrl(intent)
     }
 
-    override fun onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        loadEntryUrl(intent)
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != FILE_CHOOSER_REQUEST) return
+        val callback = filePathCallback ?: return
+        filePathCallback = null
+        val result = WebChromeClient.FileChooserParams.parseResult(resultCode, data)
+        callback.onReceiveValue(result)
+    }
+
+    private fun loadEntryUrl(intent: Intent?) {
+        currentUrl = SscDeepLink.resolveToWebUrl(intent, BuildConfig.SSC_WEB_URL)
+        showOfflinePanel(false)
+        webView.loadUrl(currentUrl)
+    }
+
+    private fun reloadCurrentUrl() {
+        showOfflinePanel(false)
+        webView.loadUrl(currentUrl)
+    }
+
+    private fun showOfflinePanel(show: Boolean) {
+        offlinePanel.visibility = if (show) View.VISIBLE else View.GONE
+        swipeRefresh.visibility = if (show) View.GONE else View.VISIBLE
+    }
+
+    companion object {
+        private const val FILE_CHOOSER_REQUEST = 9101
     }
 }

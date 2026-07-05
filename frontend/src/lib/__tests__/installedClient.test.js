@@ -1,6 +1,16 @@
-import { getInstalledClientHeader, getInstalledClientHeaders } from '../installedClient';
+import {
+  getAndroidShellFeatures,
+  getInstalledClientHeader,
+  getInstalledClientHeaders,
+  isAndroidShell,
+} from '../installedClient';
 
 describe('installedClient', () => {
+  beforeEach(() => {
+    delete window.__SSC_ANDROID_CLIENT;
+    delete window.__SSC_ANDROID_SHELL;
+    delete window.__SSC_ANDROID_FEATURES;
+  });
   test('builds header with platform version build', () => {
     expect(getInstalledClientHeader()).toMatch(/^(android|ios|windows|mac|electron)\/\d+\.\d+\.\d+\/\d+$/);
   });
@@ -9,5 +19,14 @@ describe('installedClient', () => {
     const headers = getInstalledClientHeaders({ 'X-Test': '1' });
     expect(headers['X-SSC-Client']).toBeTruthy();
     expect(headers['X-Test']).toBe('1');
+  });
+
+  test('reads injected Android shell flags', () => {
+    window.__SSC_ANDROID_CLIENT = 'android/0.2.0/2';
+    window.__SSC_ANDROID_SHELL = '1';
+    window.__SSC_ANDROID_FEATURES = 'deep_links,pull_to_refresh';
+    expect(getInstalledClientHeader()).toBe('android/0.2.0/2');
+    expect(isAndroidShell()).toBe(true);
+    expect(getAndroidShellFeatures()).toEqual(['deep_links', 'pull_to_refresh']);
   });
 });

@@ -29,3 +29,15 @@ export function getInstalledClientHeaders(extra = {}) {
     ...extra,
   };
 }
+
+export function isAndroidShell() {
+  return typeof window !== 'undefined' && window.__SSC_ANDROID_SHELL === '1';
+}
+
+export function getAndroidShellFeatures() {
+  if (typeof window === 'undefined' || !window.__SSC_ANDROID_FEATURES) return [];
+  return String(window.__SSC_ANDROID_FEATURES)
+    .split(',')
+    .map((f) => f.trim())
+    .filter(Boolean);
+}
