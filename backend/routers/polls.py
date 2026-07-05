@@ -126,6 +126,7 @@ async def create_poll(
         sender_id=user_id,
         conversation_id=conversation_id,
         message_id=message_id,
+        kind="poll",
     )
 
     return {

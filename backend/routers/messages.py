@@ -173,7 +173,8 @@ async def send_message(
 
     participants = conv.get("participants", [])
     await fanout_message(conversation_id, doc, participants, user_id)
-    await increment_unread(db, conversation_id, participants, user_id)
+    if message_kind != "reaction":
+        await increment_unread(db, conversation_id, participants, user_id)
 
     background_tasks.add_task(
         notify_conversation_participants,
@@ -181,6 +182,8 @@ async def send_message(
         sender_id=user_id,
         conversation_id=conversation_id,
         message_id=doc["_id"],
+        kind=message_kind,
+        skip_kinds=frozenset({"reaction", "sender_key_distribution"}),
     )
 
     return {"message": public_message(doc, viewer_id=user_id)}

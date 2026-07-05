@@ -29,13 +29,29 @@ export default function AddContact() {
         const lookup = await api.get(lookupPathForQuery(name));
         if (cancelled) return;
         const peer = lookup.user;
-        setStatus(`Starting chat with ${peer.display_name || peer.username || peer.id}…`);
-        const conv = await api.post('/api/conversations', { participant_id: peer.id });
+        setStatus(`Sending friend request to ${peer.display_name || peer.username || peer.id}…`);
+        const result = await api.post('/api/friend_requests', { to_user_id: peer.id });
         if (cancelled) return;
-        navigate('/chat', { replace: true, state: { openConversationId: conv.conversation.id } });
+        if (result.existing) {
+          setStatus('Friend request already pending — check incoming requests in chat.');
+        } else {
+          setStatus('Friend request sent. They can accept from their SSC app.');
+        }
       } catch (err) {
         if (!cancelled) {
-          setError(err.body?.detail || err.message || 'Could not add contact');
+          const detail = err.body?.detail || err.message || 'Could not send request';
+          if (detail === 'already_contacts') {
+            const lookup = await api.get(lookupPathForQuery(name));
+            const conv = await api.post('/api/conversations', {
+              participant_id: lookup.user.id,
+            });
+            navigate('/chat', {
+              replace: true,
+              state: { openConversationId: conv.conversation.id },
+            });
+            return;
+          }
+          setError(detail);
           setStatus(null);
         }
       }
@@ -63,6 +79,11 @@ export default function AddContact() {
             Back to chat
           </Link>
         </>
+      )}
+      {!error && status && !status.includes('Sending') && (
+        <Link to="/chat" className={styles.link}>
+          Back to chat
+        </Link>
       )}
     </div>
   );

@@ -12,6 +12,8 @@ import UserLookup from '../components/chat/UserLookup';
 import { useCall } from '../chat/useCall';
 import { useGroupCall } from '../calls/useGroupCall';
 import { useChatMessages } from '../chat/useChatMessages';
+import { useReactions } from '../chat/useReactions';
+import FriendRequestsPanel from '../components/FriendRequestsPanel';
 import { useTrustState } from '../chat/useTrustState';
 import { useConversationPrivacy } from '../chat/useConversationPrivacy';
 import { effectivePrivacy } from '../lib/conversationPrivacy';
@@ -101,11 +103,27 @@ export default function ChatHome() {
     enabled: chatPrivacy.typing_visible,
   });
 
+  const {
+    reactionsByTarget,
+    sendReaction,
+    handleReactionSocketPayload,
+  } = useReactions({
+    conversationId: activeId,
+    enabled: Boolean(user && activeId),
+    peerId: active?.peer_id,
+    isGroup,
+    groupId: activeId,
+    userId: user?.id,
+    memberIds: active?.participants || [],
+  });
+
   const handleSocketEvent = useCallback(
     (data) => {
+      const payload = data?.payload || data;
       handleSocketPayload(data);
+      handleReactionSocketPayload(payload);
     },
-    [handleSocketPayload]
+    [handleSocketPayload, handleReactionSocketPayload]
   );
 
   const storyPeerId = active?.peer_id || peerIds[0] || null;
@@ -115,13 +133,11 @@ export default function ChatHome() {
 
   const {
     messages,
-    reactionsByTarget,
     pollMeta,
     remainingById,
     sendMessage,
     sendPoll,
     votePoll,
-    sendReaction,
     editMessage,
     deleteMessage,
     forwardMessage,
@@ -451,6 +467,12 @@ export default function ChatHome() {
         />
 
         <UserLookup onStartChat={startChat} />
+        <FriendRequestsPanel
+          onAccepted={(conversationId) => {
+            loadConversations();
+            setActiveId(conversationId);
+          }}
+        />
         <GroupPanel onGroupCreated={onGroupCreated} />
 
         {listError && <p className={styles.error}>{String(listError)}</p>}

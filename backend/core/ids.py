@@ -37,6 +37,14 @@ def new_story_id() -> str:
     return f"story_{secrets.token_hex(8)}"
 
 
+def new_reaction_id() -> str:
+    return f"rx_{secrets.token_hex(10)}"
+
+
+def new_friend_request_id() -> str:
+    return f"fr_{secrets.token_hex(8)}"
+
+
 def new_poll_id() -> str:
     return f"poll_{secrets.token_hex(8)}"
 

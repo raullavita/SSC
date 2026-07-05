@@ -248,9 +248,16 @@ export default function MessageBubble({
       {reactions.length > 0 && (
         <div className={styles.reactionRow}>
           {reactions.map((r) => (
-            <span key={r.id} className={styles.reactionChip} title={r.sender_id}>
+            <button
+              key={`${message.id}-${r.emoji}`}
+              type="button"
+              className={`${styles.reactionChip} ${r.mine ? styles.reactionChipMine : ''}`}
+              title={r.mine ? 'Tap to remove your reaction' : `${r.count} reaction(s)`}
+              onClick={() => r.mine && onReaction && onReaction(r.emoji, message.id)}
+            >
               {r.emoji}
-            </span>
+              {r.count > 1 ? <span className={styles.reactionCount}>{r.count}</span> : null}
+            </button>
           ))}
         </div>
       )}

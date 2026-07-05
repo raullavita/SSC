@@ -1,4 +1,4 @@
-"""Push notification dispatch — generic payloads only — Engine 4."""
+"""Push notification dispatch — metadata-minimal with rich kind labels — Engine 4."""
 
 from __future__ import annotations
 
@@ -7,9 +7,16 @@ from typing import Any
 
 from core.firebase_init import ensure_firebase
 from core.push_payload import build_generic_push, build_missed_call_push
+from core.push_rich_policy import resolve_conversation_label
 from db import get_database
 
 logger = logging.getLogger("ssc")
+
+
+async def _recipient_push_rich_labels(db, user_id: str) -> bool:
+    user = await db.users.find_one({"_id": user_id}, {"privacy_settings": 1})
+    settings = (user or {}).get("privacy_settings") or {}
+    return bool(settings.get("push_rich_labels", False))
 
 
 async def send_generic_push_to_user(
@@ -17,19 +24,29 @@ async def send_generic_push_to_user(
     *,
     conversation_id: str | None = None,
     message_id: str | None = None,
+    kind: str | None = "message",
 ) -> dict[str, Any]:
     """Send generic push to all tokens registered for a user."""
     db = get_database()
-    payload = build_generic_push(
-        {
-            k: v
-            for k, v in {
-                "conversation_id": conversation_id,
-                "message_id": message_id,
-            }.items()
-            if v
-        }
-    )
+    extra: dict[str, Any] = {
+        k: v
+        for k, v in {
+            "conversation_id": conversation_id,
+            "message_id": message_id,
+            "kind": kind or "message",
+        }.items()
+        if v
+    }
+    if conversation_id and await _recipient_push_rich_labels(db, user_id):
+        label = await resolve_conversation_label(
+            db,
+            conversation_id=conversation_id,
+            recipient_id=user_id,
+        )
+        if label:
+            extra["conversation_label"] = label
+
+    payload = build_generic_push(extra)
 
     cursor = db.push_tokens.find({"user_id": user_id})
     sent = 0
@@ -50,7 +67,11 @@ async def notify_conversation_participants(
     sender_id: str,
     conversation_id: str,
     message_id: str,
+    kind: str | None = "message",
+    skip_kinds: frozenset[str] | None = None,
 ) -> list[dict[str, Any]]:
+    if skip_kinds and kind in skip_kinds:
+        return []
     results = []
     for uid in participant_ids:
         if uid == sender_id:
@@ -63,6 +84,7 @@ async def notify_conversation_participants(
                 uid,
                 conversation_id=conversation_id,
                 message_id=message_id,
+                kind=kind,
             )
         )
     return results
@@ -76,16 +98,25 @@ async def send_missed_call_push_to_user(
 ) -> dict[str, Any]:
     """Notify callee of missed/declined call — generic body only."""
     db = get_database()
-    payload = build_missed_call_push(
-        {
-            k: v
-            for k, v in {
-                "conversation_id": conversation_id,
-                "call_id": call_id,
-            }.items()
-            if v
-        }
-    )
+    extra: dict[str, Any] = {
+        k: v
+        for k, v in {
+            "conversation_id": conversation_id,
+            "call_id": call_id,
+            "kind": "call",
+        }.items()
+        if v
+    }
+    if conversation_id and await _recipient_push_rich_labels(db, user_id):
+        label = await resolve_conversation_label(
+            db,
+            conversation_id=conversation_id,
+            recipient_id=user_id,
+        )
+        if label:
+            extra["conversation_label"] = label
+
+    payload = build_missed_call_push(extra)
     cursor = db.push_tokens.find({"user_id": user_id})
     sent = 0
     async for row in cursor:
@@ -112,6 +143,7 @@ async def _dispatch_fcm(token: str, payload: dict[str, Any]) -> bool:
 
     try:
         from firebase_admin import messaging  # noqa: PLC0415
+
         message = messaging.Message(
             token=token,
             notification=messaging.Notification(

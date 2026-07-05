@@ -15,6 +15,7 @@ router = APIRouter(prefix="/privacy", tags=["privacy"])
 class PrivacyPatch(BaseModel):
     last_seen_visible: bool | None = None
     read_receipts: bool | None = None
+    push_rich_labels: bool | None = None
 
 
 @router.get("")
@@ -41,5 +42,7 @@ async def patch_privacy(
         settings["last_seen_visible"] = body.last_seen_visible
     if body.read_receipts is not None:
         settings["read_receipts"] = body.read_receipts
+    if body.push_rich_labels is not None:
+        settings["push_rich_labels"] = body.push_rich_labels
     await db.users.update_one({"_id": user_id}, {"$set": {"privacy_settings": settings}})
     return {"privacy_settings": settings}

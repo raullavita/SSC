@@ -3,6 +3,13 @@
  */
 
 const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('sscUpdater', {
+  onStatus: (cb) => {
+    ipcRenderer.on('ssc-update', (_evt, payload) => cb(payload));
+  },
+  installUpdate: () => ipcRenderer.invoke('ssc-update:install'),
+});
 const pkg = require('./package.json');
 
 const CLIENT_VALUE = `electron/${pkg.version}/3`;

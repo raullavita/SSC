@@ -4,8 +4,8 @@
  */
 
 const PLATFORM = process.env.REACT_APP_SSC_PLATFORM || 'electron';
-const VERSION = process.env.REACT_APP_SSC_VERSION || '0.1.0';
-const BUILD = process.env.REACT_APP_SSC_BUILD || '0';
+const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.0';
+const BUILD = process.env.REACT_APP_SSC_BUILD || '3';
 
 const ALLOWED = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
 
@@ -17,8 +17,23 @@ function runtimeClientHeader() {
     if (window.__SSC_ANDROID_CLIENT) {
       return window.__SSC_ANDROID_CLIENT;
     }
+    if (window.__SSC_IOS_CLIENT) {
+      return window.__SSC_IOS_CLIENT;
+    }
   }
   return null;
+}
+
+export function isIosShell() {
+  return typeof window !== 'undefined' && window.__SSC_IOS_SHELL === '1';
+}
+
+export function getIosShellFeatures() {
+  if (typeof window === 'undefined' || !window.__SSC_IOS_FEATURES) return [];
+  return String(window.__SSC_IOS_FEATURES)
+    .split(',')
+    .map((f) => f.trim())
+    .filter(Boolean);
 }
 
 export function getInstalledClientHeader() {

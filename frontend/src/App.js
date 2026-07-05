@@ -7,6 +7,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import AddContact from './pages/AddContact';
 import AddContactLanding from './pages/AddContactLanding';
+import RecoveryLogin from './pages/RecoveryLogin';
 import DeviceLink from './pages/DeviceLink';
 import Settings from './pages/Settings';
 
@@ -29,6 +30,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/recovery" element={<RecoveryLogin />} />
           <Route path="/auth/google" element={<GoogleAuthCallback />} />
           <Route path="/chat" element={<ChatHome />} />
           <Route path="/add/:username" element={<AddContact />} />

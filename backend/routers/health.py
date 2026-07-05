@@ -28,7 +28,8 @@ async def health() -> dict:
         "push": {
             "provider": "fcm",
             "ready": firebase_ready(),
-            "generic_only": True,
+            "generic_only": False,
+            "rich_labels_opt_in": True,
         },
         "sfu": {
             "provider": "mediasoup",

@@ -7,7 +7,7 @@ from httpx import ASGITransport, AsyncClient
 
 from server import create_app
 
-CLIENT_HEADERS = {"X-SSC-Client": "electron/0.1.0/1"}
+CLIENT_HEADERS = {"X-SSC-Client": "electron/0.3.0/3"}
 
 
 async def _stub_mongo_probe():

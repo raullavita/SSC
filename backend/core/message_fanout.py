@@ -39,6 +39,25 @@ async def fanout_message(
         )
 
 
+async def fanout_reaction_event(
+    conversation_id: str,
+    reaction: dict,
+    participants: list[str],
+    *,
+    event_type: str,
+) -> None:
+    payload = scrub_payload(
+        {
+            "type": event_type,
+            "reaction": reaction,
+            "conversation_id": conversation_id,
+        }
+    )
+    await ws_hub.publish(f"conversation:{conversation_id}", payload)
+    for uid in participants:
+        await ws_hub.publish(f"user:{uid}", payload)
+
+
 async def fanout_message_edited(
     conversation_id: str,
     doc: dict[str, Any],

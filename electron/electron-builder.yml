@@ -1,5 +1,9 @@
 appId: com.supersecurechat.desktop
 productName: Super Secure Chat
+publish:
+  provider: github
+  owner: raullavita
+  repo: SSC
 directories:
   output: dist
 files:
