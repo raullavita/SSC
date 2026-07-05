@@ -14,8 +14,11 @@ import android.widget.Button
 import android.widget.LinearLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import android.webkit.CookieManager
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 /**
@@ -32,11 +35,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, true)
+        // targetSdk 35 draws edge-to-edge; pad content below the status bar ourselves.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = Color.parseColor("#0B141A")
         window.navigationBarColor = Color.parseColor("#0B141A")
 
         setContentView(R.layout.activity_main)
+        val root = findViewById<View>(R.id.root)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         webView = findViewById(R.id.webview)
         swipeRefresh = findViewById(R.id.swipe_refresh)
         offlinePanel = findViewById(R.id.offline_panel)
@@ -52,6 +62,11 @@ class MainActivity : ComponentActivity() {
             allowFileAccessFromFileURLs = true
             @Suppress("DEPRECATION")
             allowUniversalAccessFromFileURLs = true
+        }
+
+        CookieManager.getInstance().apply {
+            setAcceptCookie(true)
+            setAcceptThirdPartyCookies(webView, true)
         }
 
         webView.webChromeClient = object : WebChromeClient() {

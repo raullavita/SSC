@@ -5,13 +5,14 @@ import AuthSplash from '../components/AuthSplash';
 import { useAuth } from '../context/AuthContext';
 import { googleAuthEnabled, promptGoogleSignIn } from '../lib/googleAuth';
 import { isInstalledApp } from '../lib/appMode';
+import { postAuthPath } from '../lib/onboarding';
 import styles from './Login.module.css';
 
 export default function Login() {
   const { user, loading, login, register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const nextPath = searchParams.get('next') || '/chat';
+  const nextParam = searchParams.get('next');
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,19 +22,20 @@ export default function Login() {
   const installed = isInstalledApp();
 
   if (loading) return <AuthSplash />;
-  if (user) return <Navigate to={nextPath} replace />;
+  if (user) return <Navigate to={postAuthPath(user, nextParam || '/chat')} replace />;
 
   async function onSubmit(e) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
+      let authed;
       if (mode === 'login') {
-        await login(email, password);
+        authed = await login(email, password);
       } else {
-        await register(email, password, displayName || email.split('@')[0]);
+        authed = await register(email, password, displayName || email.split('@')[0]);
       }
-      navigate(nextPath);
+      navigate(postAuthPath(authed, nextParam || '/chat'));
     } catch (err) {
       setError(err.body?.detail || err.message || 'Auth failed');
     } finally {
@@ -47,8 +49,8 @@ export default function Login() {
     try {
       const data = await promptGoogleSignIn();
       if (data) {
-        await loginWithGoogle(data);
-        navigate(nextPath);
+        const authed = await loginWithGoogle(data);
+        navigate(postAuthPath(authed, nextParam || '/chat'));
       }
     } catch (err) {
       setError(err.body?.detail || err.message || 'Google sign-in failed');

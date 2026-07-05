@@ -12,6 +12,7 @@ import AddContactLanding from './pages/AddContactLanding';
 import RecoveryLogin from './pages/RecoveryLogin';
 import DeviceLink from './pages/DeviceLink';
 import Settings from './pages/Settings';
+import SetupUsername from './pages/SetupUsername';
 
 const LANDING_ONLY = isMarketingWebOnly();
 
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/recovery" element={<RecoveryLogin />} />
           <Route path="/auth/google" element={<GoogleAuthCallback />} />
+          <Route path="/setup-username" element={<SetupUsername />} />
           <Route path="/chat" element={<ChatHome />} />
           <Route path="/add/:username" element={<AddContact />} />
           <Route path="/settings" element={<Settings />} />

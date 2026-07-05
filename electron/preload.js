@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld('sscUpdater', {
 });
 const pkg = require('./package.json');
 
-const CLIENT_VALUE = `electron/${pkg.version}/5`;
+const CLIENT_VALUE = `electron/${pkg.version}/8`;
 
 contextBridge.exposeInMainWorld('__SSC_ELECTRON_CLIENT', CLIENT_VALUE);
 

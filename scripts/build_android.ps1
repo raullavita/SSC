@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $Version = "0.3.0"
-$Build = "7"
+$Build = "8"
 
 Write-Host "Building frontend for Android..."
 Push-Location "$Root\frontend"
