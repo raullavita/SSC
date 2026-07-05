@@ -3,7 +3,8 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/ssc_background">
+    android:background="@color/ssc_background"
+    android:fitsSystemWindows="false">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh"

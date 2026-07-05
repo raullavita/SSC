@@ -3,6 +3,7 @@ package com.supersecurechat.app
 import android.app.Activity
 import android.content.Context
 import android.net.Uri
+import android.webkit.CookieManager
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -17,7 +18,7 @@ import java.net.URL
  */
 object ApiClient {
     const val CLIENT_HEADER = "X-SSC-Client"
-    const val CLIENT_VALUE = "android/0.3.0/7"
+    const val CLIENT_VALUE = "android/0.3.0/8"
     const val SHELL_FEATURES = "splash_screen,deep_links,pull_to_refresh,offline_retry,file_chooser,edge_to_edge"
 
     fun attachInstalledClientHeaders(conn: HttpURLConnection) {
@@ -73,19 +74,37 @@ object ApiClient {
                 if (!url.contains("/api/")) {
                     return super.shouldInterceptRequest(view, request)
                 }
+                // WebView does not expose POST/PATCH bodies here — let the native stack handle them.
+                val method = request.method?.uppercase() ?: "GET"
+                if (method != "GET" && method != "HEAD") {
+                    return super.shouldInterceptRequest(view, request)
+                }
                 return try {
+                    val cookieManager = CookieManager.getInstance()
                     val conn = (URL(url).openConnection() as HttpURLConnection).apply {
                         requestMethod = request.method
+                        instanceFollowRedirects = true
                         attachInstalledClientHeaders(this)
+                        cookieManager.getCookie(url)?.takeIf { it.isNotBlank() }?.let { cookie ->
+                            setRequestProperty("Cookie", cookie)
+                        }
                         request.requestHeaders.forEach { (k, v) ->
                             if (!k.equals(CLIENT_HEADER, ignoreCase = true)) {
                                 setRequestProperty(k, v)
                             }
                         }
                     }
-                    val stream = conn.inputStream
-                    val mime = conn.contentType ?: "application/json"
-                    WebResourceResponse(mime, conn.contentEncoding, stream)
+                    conn.connect()
+                    conn.headerFields.forEach { (key, values) ->
+                        if (key.equals("Set-Cookie", ignoreCase = true)) {
+                            values.forEach { cookieManager.setCookie(url, it) }
+                        }
+                    }
+                    cookieManager.flush()
+                    val code = conn.responseCode
+                    val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                    val mime = conn.contentType?.substringBefore(";") ?: "application/json"
+                    WebResourceResponse(mime, conn.contentEncoding ?: "utf-8", code, "OK", conn.headerFields, stream)
                 } catch (_: Exception) {
                     super.shouldInterceptRequest(view, request)
                 }

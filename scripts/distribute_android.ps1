@@ -9,7 +9,7 @@ param(
     [string]$PackageName = "com.supersecurechat.app",
     [string]$TesterGroup = "ssc-testers",
     [string]$Testers = "raullavita1988@gmail.com,smashmaxxx@gmail.com,velvetnightshub@gmail.com",
-    [string]$ReleaseNotes = "SSC v0.3.0 build 7 - Google sign-in via Chrome Custom Tab (fixes gstatic/WebView). Signed APK. Cross-device chat with Windows."
+    [string]$ReleaseNotes = "SSC v0.3.0 build 8 - username onboarding, Android auth fix, simplified settings. Same build as Windows PC."
 )
 
 $ErrorActionPreference = "Stop"

@@ -34,6 +34,7 @@ import { searchMessages } from '../search/messageIndex';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import { getPeerTrust, trustBadgeLabel } from '../lib/trustStore';
 import { isInstalledApp } from '../lib/appMode';
+import { needsUsernameSetup } from '../lib/onboarding';
 import { shouldAutoTranslate } from '../smart/languageDetect';
 import styles from './ChatHome.module.css';
 
@@ -332,6 +333,7 @@ export default function ChatHome() {
   const installed = isInstalledApp();
 
   if (!loading && !user) return <Navigate to="/login" replace />;
+  if (!loading && user && needsUsernameSetup(user)) return <Navigate to="/setup-username" replace />;
   if (loading) return <AuthSplash />;
 
   async function startChat(participantId) {

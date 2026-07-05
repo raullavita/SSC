@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { postAuthPath } from '../lib/onboarding';
 import styles from './Login.module.css';
 
 export default function GoogleAuthCallback() {
@@ -27,11 +28,11 @@ export default function GoogleAuthCallback() {
     }
 
     completeGoogleOAuth(code)
-      .then(() => navigate('/chat', { replace: true }))
+      .then((authed) => navigate(postAuthPath(authed), { replace: true }))
       .catch((err) => setError(err.body?.detail || err.message || 'Google sign-in failed'));
   }, [params, completeGoogleOAuth, navigate]);
 
-  if (user) return <Navigate to="/chat" replace />;
+  if (user) return <Navigate to={postAuthPath(user)} replace />;
 
   if (error) {
     return (

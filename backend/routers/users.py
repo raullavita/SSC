@@ -80,6 +80,16 @@ async def set_username(
 
     username = normalize_username(body.username)
     db = get_database()
+    current = await db.users.find_one({"_id": user_id})
+    if not current:
+        raise HTTPException(status_code=404, detail="user_not_found")
+    if current.get("username") and current.get("username") != username:
+        raise HTTPException(status_code=409, detail="username_locked")
+    if current.get("username") == username:
+        from routers.auth import _user_payload  # noqa: PLC0415
+
+        return {"user": _user_payload(current)}
+
     existing = await db.users.find_one({"username": username})
     if existing and existing["_id"] != user_id:
         raise HTTPException(status_code=409, detail="username_taken")
