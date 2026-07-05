@@ -4,8 +4,8 @@ Installed Android client — polished WebView shell with native `libsignal-andro
 
 ## Stack
 
-- **WebView** loads `https://www.supersecurechat.com` (configurable via `SSC_WEB_URL` in `app/build.gradle.kts`)
-- **`X-SSC-Client: android/0.3.0/3`** injected on all `/api/` requests from the WebView
+- **WebView** loads the **bundled React app** from `assets/www/` (same installed UI as Windows Electron — sign-in on launch, not the marketing site)
+- **`X-SSC-Client: android/0.3.0/4`** injected on all `/api/` requests from the WebView
 - **`window.sscCrypto`** exposed via `SscNativeBridge` + `assets/ssc_crypto_bridge.js` — API matches Electron `preload.js`
 - **libsignal-android 0.96.4** — file-backed stores under `filesDir/ssc-signal/` (sessions, prekeys, sender keys)
 
@@ -40,12 +40,17 @@ Injected globals for the web app:
 
 ## Build
 
-```bash
-cd android
-./gradlew assembleRelease
+```powershell
+.\scripts\build_android.ps1
 ```
 
-Or on Windows: `.\scripts\build_android.ps1` → `SSC-0.3.0.apk`
+This builds the React bundle (`REACT_APP_SSC_PLATFORM=android`, `LANDING_ONLY=false`), copies it into `app/src/main/assets/www/`, then runs Gradle → `SSC-0.3.0.apk`.
+
+## Firebase App Distribution (testers)
+
+```powershell
+.\scripts\distribute_android.ps1
+```
 
 APK: `app/build/outputs/apk/release/app-release.apk`
 
