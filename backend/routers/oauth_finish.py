@@ -56,9 +56,16 @@ def _finish_html(*, oauth_code: str | None, error: str | None) -> str:
 
       const deepLink = 'ssc://auth/google?oauth_code=' + encodeURIComponent(code);
       const androidHome = 'file:///android_asset/www/index.html#/auth/google?oauth_code=' + encodeURIComponent(code);
+      const isElectron = /Electron/i.test(navigator.userAgent || '');
 
       if (window.__SSC_ANDROID_CLIENT || window.__SSC_ANDROID_SHELL === '1') {{
         window.location.replace(androidHome);
+        return;
+      }}
+
+      if (isElectron) {{
+        status.textContent = 'Completing sign-in…';
+        hint.textContent = 'Returning to Super Secure Chat.';
         return;
       }}
 

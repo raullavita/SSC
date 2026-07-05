@@ -138,6 +138,49 @@ function navigateInstalledRoute(route) {
   mainWindow.loadURL(target);
 }
 
+const API_HOST = (process.env.SSC_API_HOST || 'api.supersecurechat.com').toLowerCase();
+
+function isOAuthFinishUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.toLowerCase() === API_HOST && parsed.pathname === '/auth/google';
+  } catch {
+    return false;
+  }
+}
+
+function routeFromOAuthFinishUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const oauthCode = parsed.searchParams.get('oauth_code');
+    const error = parsed.searchParams.get('error');
+    if (oauthCode) return `/auth/google?oauth_code=${encodeURIComponent(oauthCode)}`;
+    if (error) return `/auth/google?error=${encodeURIComponent(error)}`;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function interceptOAuthNavigation(event, url) {
+  if (typeof url !== 'string') return;
+  if (url.startsWith('ssc://')) {
+    event.preventDefault();
+    handleDeepLink(url);
+    return;
+  }
+  if (!isOAuthFinishUrl(url)) return;
+  const route = routeFromOAuthFinishUrl(url);
+  if (!route) return;
+  event.preventDefault();
+  navigateInstalledRoute(route);
+}
+
+function attachOAuthNavigationHandlers(win) {
+  win.webContents.on('will-navigate', interceptOAuthNavigation);
+  win.webContents.on('will-redirect', interceptOAuthNavigation);
+}
+
 function handleDeepLink(rawUrl) {
   navigateInstalledRoute(routeFromDeepLink(rawUrl));
 }
@@ -173,6 +216,7 @@ function createWindow() {
     },
   });
 
+  attachOAuthNavigationHandlers(win);
   loadWindow(win);
   mainWindow = win;
   return win;

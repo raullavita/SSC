@@ -12,6 +12,8 @@ def test_electron_main_loads_packaged_app():
     assert "app.isPackaged" in main
     assert "process.resourcesPath" in main
     assert "resolvePackagedIndex" in main
+    assert "attachOAuthNavigationHandlers" in main
+    assert "isOAuthFinishUrl" in main
 
 
 def test_electron_preload_injects_client_header():
