@@ -86,3 +86,27 @@ async def mark_conversation_read(
     await ws_hub.publish(f"conversation:{conversation_id}", receipt)
     await ws_hub.publish(f"user:{msg['sender_id']}", receipt)
     return receipt
+
+
+def public_read_receipt(doc: dict[str, Any]) -> dict[str, Any]:
+    """Metadata-minimized read receipt for API — message_id + read_at only."""
+    read_at = doc.get("read_at")
+    if hasattr(read_at, "isoformat"):
+        read_at = read_at.isoformat()
+    return {
+        "message_id": doc["message_id"],
+        "read_at": read_at,
+    }
+
+
+async def list_read_receipts_for_sender(
+    db,
+    user_id: str,
+    conversation_id: str,
+) -> list[dict[str, Any]]:
+    """Reads on messages the current user sent (for double-check UI)."""
+    cursor = db.message_reads.find(
+        {"conversation_id": conversation_id, "sender_id": user_id},
+        {"message_id": 1, "read_at": 1, "_id": 0},
+    )
+    return [public_read_receipt(doc) async for doc in cursor]

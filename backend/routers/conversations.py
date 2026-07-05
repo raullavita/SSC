@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.conversation_meta import get_meta_map, upsert_meta
-from core.read_receipts import mark_conversation_read
+from core.read_receipts import list_read_receipts_for_sender, mark_conversation_read
 from core.ids import direct_conversation_key, new_conversation_id
 from core.group_policy import public_group_conversation
 from core.metadata_policy import public_conversation
@@ -112,6 +112,18 @@ async def get_conversation(
     else:
         conv = public_conversation(doc, user_id, meta.get(conversation_id))
     return {"conversation": conv}
+
+
+@router.get("/{conversation_id}/reads")
+async def list_conversation_reads(
+    conversation_id: str,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    db = get_database()
+    await _require_participant(db, conversation_id, user_id)
+    reads = await list_read_receipts_for_sender(db, user_id, conversation_id)
+    return {"reads": reads}
 
 
 @router.post("/{conversation_id}/read")
