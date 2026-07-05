@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const { getSession, wipeLocalData } = require('./libsignalSession');
 const { getGroupSenderKeySession } = require('./groupSenderKeySession');
@@ -91,6 +92,39 @@ function registerCryptoIpc() {
   });
 }
 
+function resolvePackagedIndex() {
+  const candidates = [
+    path.join(process.resourcesPath, 'app', 'index.html'),
+    path.join(__dirname, 'app', 'index.html'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function loadWindow(win) {
+  const devUrl = process.env.SSC_DEV_URL || 'http://localhost:3000';
+  const prodFile = process.env.SSC_PROD_FILE;
+
+  if (prodFile && fs.existsSync(prodFile)) {
+    win.loadFile(prodFile);
+    return;
+  }
+
+  if (app.isPackaged) {
+    const indexPath = resolvePackagedIndex();
+    if (indexPath) {
+      win.loadFile(indexPath);
+      return;
+    }
+  }
+
+  win.loadURL(devUrl);
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
@@ -102,13 +136,7 @@ function createWindow() {
     },
   });
 
-  const devUrl = process.env.SSC_DEV_URL || 'http://localhost:3000';
-  const prodFile = process.env.SSC_PROD_FILE;
-  if (prodFile) {
-    win.loadFile(prodFile);
-  } else {
-    win.loadURL(devUrl);
-  }
+  loadWindow(win);
 }
 
 app.whenReady().then(() => {

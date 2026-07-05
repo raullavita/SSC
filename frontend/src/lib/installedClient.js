@@ -10,8 +10,13 @@ const BUILD = process.env.REACT_APP_SSC_BUILD || '0';
 const ALLOWED = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
 
 function runtimeClientHeader() {
-  if (typeof window !== 'undefined' && window.__SSC_ANDROID_CLIENT) {
-    return window.__SSC_ANDROID_CLIENT;
+  if (typeof window !== 'undefined') {
+    if (window.__SSC_ELECTRON_CLIENT) {
+      return window.__SSC_ELECTRON_CLIENT;
+    }
+    if (window.__SSC_ANDROID_CLIENT) {
+      return window.__SSC_ANDROID_CLIENT;
+    }
   }
   return null;
 }
