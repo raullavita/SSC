@@ -9,7 +9,8 @@
     "dist": "electron-builder"
   },
   "dependencies": {
-    "@signalapp/libsignal-client": "0.96.4"
+    "@signalapp/libsignal-client": "0.96.4",
+    "electron-updater": "^6.6.2"
   },
   "devDependencies": {
     "electron": "^41.7.1",

@@ -14,7 +14,7 @@ from core.poll_policy import engine7_polls_ready, public_poll, validate_option_c
 from server import create_app
 from tests.fake_mongo import FakeDatabase
 
-CLIENT = {"X-SSC-Client": "electron/0.1.0/1"}
+CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 VALID_B64 = base64.b64encode(b"hello step 7 poll story").decode()
 
 

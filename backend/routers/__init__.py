@@ -13,11 +13,14 @@ from routers.conversations import router as conversations_router
 from routers.device_link import router as device_link_router
 from routers.devices import router as devices_router
 from routers.files import router as files_router
+from routers.friend_requests import router as friend_requests_router
 from routers.groups import router as groups_router
 from routers.health import router as health_router
 from routers.messages import router as messages_router
 from routers.panic import router as panic_router
 from routers.polls import router as polls_router
+from routers.reactions import router as reactions_router
+from routers.recovery import router as recovery_router
 from routers.prekeys import router as prekeys_router
 from routers.stories import router as stories_router
 from routers.presence import router as presence_router
@@ -43,6 +46,9 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(groups_router, prefix=prefix)
     app.include_router(conversations_router, prefix=prefix)
     app.include_router(messages_router, prefix=prefix)
+    app.include_router(reactions_router, prefix=prefix)
+    app.include_router(friend_requests_router, prefix=prefix)
+    app.include_router(recovery_router, prefix=prefix)
     app.include_router(polls_router, prefix=prefix)
     app.include_router(stories_router, prefix=prefix)
     app.include_router(files_router, prefix=prefix)

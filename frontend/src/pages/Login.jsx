@@ -97,6 +97,9 @@ export default function Login() {
       >
         {mode === 'login' ? 'Need an account? Register' : 'Have an account? Sign in'}
       </button>
+      <Link to="/recovery" className={styles.switch}>
+        Forgot password? Use recovery key
+      </Link>
       <Link to="/" className={styles.back}>
         ← Back
       </Link>

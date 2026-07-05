@@ -11,7 +11,7 @@ from core.session_policy import SESSION_COOKIE_NAME
 from server import create_app
 from tests.fake_mongo import FakeDatabase
 
-CLIENT = {"X-SSC-Client": "electron/0.1.0/1"}
+CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
 
 async def _no_redis():

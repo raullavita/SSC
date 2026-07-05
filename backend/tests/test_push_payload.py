@@ -9,9 +9,10 @@ from push import send_generic_push_to_user
 
 
 def test_build_generic_push_has_no_content_leak():
-    payload = build_generic_push({"conversation_id": "c_1", "message_id": "m_1"})
+    payload = build_generic_push({"conversation_id": "c_1", "message_id": "m_1", "kind": "message"})
     assert payload["title"] == GENERIC_TITLE
     assert payload["body"] == GENERIC_BODY
+    assert payload["data"]["kind"] == "message"
     assert "sender" not in payload["body"].lower()
     assert "ciphertext" not in str(payload).lower()
     assert payload["data"]["type"] == "generic_message"

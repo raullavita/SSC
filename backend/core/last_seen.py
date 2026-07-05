@@ -13,6 +13,7 @@ def default_privacy_settings() -> dict[str, bool]:
     return {
         "last_seen_visible": False,
         "read_receipts": False,
+        "push_rich_labels": False,
     }
 
 

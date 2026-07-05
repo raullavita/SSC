@@ -21,6 +21,7 @@ import InviteQr from '../components/InviteQr';
 import { api } from '../lib/api';
 import { inviteAppUrl, inviteWebUrl } from '../lib/inviteLink';
 import BackupPanel from '../components/BackupPanel';
+import RecoveryPanel from '../components/RecoveryPanel';
 import LinkedDevicesPanel from '../components/LinkedDevicesPanel';
 import { useMultiDevice } from '../devices/useMultiDevice';
 import styles from './Settings.module.css';
@@ -74,13 +75,13 @@ export default function Settings() {
   if (!loading && !user) return <Navigate to="/login" replace />;
   if (loading) return <div className={styles.page}>Loading…</div>;
 
-  async function savePrivacy(patch) {
+  async function savePrivacy(patch, successMessage = 'Privacy settings saved') {
     setSaving(true);
     setMessage(null);
     try {
       const data = await updatePrivacySettings(patch);
       setPrivacy(data.privacy_settings);
-      setMessage('Privacy settings saved');
+      setMessage(successMessage);
     } catch (err) {
       setMessage(err.message);
     } finally {
@@ -213,6 +214,22 @@ export default function Settings() {
         <label className={styles.row}>
           <input
             type="checkbox"
+            checked={Boolean(privacy.push_rich_labels)}
+            onChange={(e) =>
+              savePrivacy(
+                { push_rich_labels: e.target.checked },
+                e.target.checked
+                  ? 'Push notifications may show contact/group names (never message content)'
+                  : 'Push notifications use generic SSC title'
+              )
+            }
+            disabled={saving}
+          />
+          <span>Rich push labels (contact/group name in notification title)</span>
+        </label>
+        <label className={styles.row}>
+          <input
+            type="checkbox"
             checked={sealedSender}
             onChange={(e) => handleSealedSenderChange(e.target.checked)}
           />
@@ -275,6 +292,11 @@ export default function Settings() {
           Point to a self-hosted LibreTranslate instance so translation never leaves your network.
           Leave empty to use the SSC proxy.
         </p>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Account recovery</h2>
+        <RecoveryPanel onMessage={setMessage} />
       </section>
 
       <section className={styles.section}>

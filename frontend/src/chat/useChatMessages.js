@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { parseAttachmentText } from './attachments';
 import { castPollVote, createPoll, fetchPoll, parsePollText } from './polls';
-import { parseReactionText, sendReaction as postReaction } from './reactions';
+import { parseReactionText } from './reactions';
 import { useDisappearingMessages } from './useDisappearingMessages';
 import {
   deleteMessageApi,
@@ -251,19 +251,14 @@ export function useChatMessages(
     },
   });
 
-  const reactionsByTarget = useMemo(() => {
-    const map = {};
-    for (const m of messages) {
-      if (!m.reaction?.target) continue;
-      const key = m.reaction.target;
-      if (!map[key]) map[key] = [];
-      map[key].push({ emoji: m.reaction.emoji, sender_id: m.sender_id, id: m.id });
-    }
-    return map;
-  }, [messages]);
-
   const displayMessages = useMemo(
-    () => messages.filter((m) => !m.reaction && m.message_kind !== 'sender_key_distribution'),
+    () =>
+      messages.filter(
+        (m) =>
+          m.message_kind !== 'reaction' &&
+          !m.reaction &&
+          m.message_kind !== 'sender_key_distribution'
+      ),
     [messages]
   );
 
@@ -349,24 +344,6 @@ export function useChatMessages(
     [conversationId, peerId]
   );
 
-  const sendReaction = useCallback(
-    async (emoji, targetMessageId) => {
-      if (!conversationId || !targetMessageId) return;
-      const data = await postReaction(conversationId, {
-        emoji,
-        targetMessageId,
-        peerId,
-      });
-      const m = data.message;
-      const row = { ...m, reaction: { emoji, target: targetMessageId }, text: null, attachment: null };
-      setMessages((prev) => {
-        if (prev.some((x) => x.id === m.id)) return prev;
-        return [...prev, row];
-      });
-    },
-    [conversationId, peerId]
-  );
-
   const encryptCtx = useMemo(
     () => ({ peerId, isGroup, groupId, userId, memberIds, conversationId }),
     [peerId, isGroup, groupId, userId, memberIds, conversationId]
@@ -438,7 +415,6 @@ export function useChatMessages(
 
   return {
     messages: displayMessages,
-    reactionsByTarget,
     pollMeta,
     remainingById,
     loading,
@@ -447,7 +423,6 @@ export function useChatMessages(
     sendMessage,
     sendPoll,
     votePoll,
-    sendReaction,
     editMessage,
     deleteMessage,
     forwardMessage,

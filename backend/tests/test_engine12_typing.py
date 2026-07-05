@@ -26,7 +26,7 @@ async def test_send_typing_publishes_ws():
         patch("routers.typing.get_database", return_value=mock_db),
         patch("routers.typing.ws_hub.publish", new_callable=AsyncMock) as mock_publish,
     ):
-        result = await send_typing("c_test", type("Body", (), {"active": True})(), "u_a", "electron/0.1.0/1")
+        result = await send_typing("c_test", type("Body", (), {"active": True})(), "u_a", "electron/0.3.0/3")
 
     assert result == {"ok": True}
     mock_publish.assert_awaited_once()

@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const fs = require('fs');
 const path = require('path');
 const { getSession, wipeLocalData } = require('./libsignalSession');
@@ -137,11 +138,37 @@ function createWindow() {
   });
 
   loadWindow(win);
+  return win;
 }
+
+function registerAutoUpdater(win) {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', () => {
+    win?.webContents?.send('ssc-update', { status: 'available' });
+  });
+  autoUpdater.on('update-downloaded', () => {
+    win?.webContents?.send('ssc-update', { status: 'downloaded' });
+  });
+  autoUpdater.on('error', (err) => {
+    win?.webContents?.send('ssc-update', { status: 'error', detail: err?.message || 'update_failed' });
+  });
+
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+  }
+}
+
+ipcMain.handle('ssc-update:install', () => {
+  autoUpdater.quitAndInstall();
+  return { ok: true };
+});
 
 app.whenReady().then(() => {
   registerCryptoIpc();
-  createWindow();
+  const win = createWindow();
+  registerAutoUpdater(win);
 });
 
 app.on('window-all-closed', () => {

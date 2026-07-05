@@ -1,0 +1,43 @@
+.panel {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #111b21;
+  border: 1px solid #2a3942;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #00a884;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.label {
+  color: #e9edef;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.actions button {
+  background: #202c33;
+  border: 1px solid #2a3942;
+  color: #e9edef;
+  border-radius: 6px;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
