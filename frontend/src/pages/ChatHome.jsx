@@ -144,7 +144,8 @@ export default function ChatHome() {
     startCall,
     answerCall,
     declineCall,
-    cleanup: endCall,
+    endCall,
+    errorMessage: callErrorMessage,
   } = useCall({
     conversationId: activeId,
     peerId: active?.peer_id,
@@ -637,6 +638,7 @@ export default function ChatHome() {
         isVideo={Boolean(activeCall?.video) || groupRemoteStreams.length > 0}
         localStream={groupCallOpen ? groupLocalStream : localStream}
         remoteStream={groupCallOpen ? groupRemoteStreams[0] || null : remoteStream}
+        errorMessage={groupCallOpen ? null : callErrorMessage}
         onAnswer={answerCall}
         onDecline={declineCall}
         onEnd={groupCallOpen ? endGroupCall : endCall}
