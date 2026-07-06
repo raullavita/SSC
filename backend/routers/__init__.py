@@ -22,6 +22,7 @@ from routers.panic import router as panic_router
 from routers.polls import router as polls_router
 from routers.reactions import router as reactions_router
 from routers.recovery import router as recovery_router
+from routers.site_feedback import router as site_feedback_router
 from routers.prekeys import router as prekeys_router
 from routers.stories import router as stories_router
 from routers.presence import router as presence_router
@@ -40,6 +41,7 @@ def include_routers(app: FastAPI) -> None:
     prefix = settings.api_prefix
     app.include_router(oauth_finish_router)
     app.include_router(health_router, prefix=prefix)
+    app.include_router(site_feedback_router, prefix=prefix)
     app.include_router(config_router, prefix=prefix)
     app.include_router(auth_router, prefix=prefix)
     app.include_router(devices_router, prefix=prefix)

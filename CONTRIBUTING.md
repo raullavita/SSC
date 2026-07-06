@@ -59,6 +59,14 @@ python backend/scripts/run_engine13_gate.py
 - Frontend: `yarn test:ci` must pass.
 - No production secrets or home IPs in the diff.
 
+## Feedback & reviews
+
+After you install SSC:
+
+- **Website:** [supersecurechat.com](https://www.supersecurechat.com) → **Reviews & feedback** (short public notes)
+- **GitHub:** [Open an issue](https://github.com/raullavita/SSC/issues/new/choose) for bugs or feature ideas
+- **Security:** [SECURITY.md](SECURITY.md) only — never public exploit details
+
 ## Ideas and suggestions
 
 Email: contact@supersecurechat.com

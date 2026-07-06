@@ -1,0 +1,38 @@
+name: Feedback / review
+description: Share experience after using SSC (non-security)
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer a quick public note on [supersecurechat.com](https://www.supersecurechat.com) (#feedback).
+        Use this template for longer GitHub feedback.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows desktop
+        - Android
+        - Website
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: rating
+    attributes:
+      label: Overall rating (optional)
+      options:
+        - "5 - Excellent"
+        - "4 - Good"
+        - "3 - OK"
+        - "2 - Needs work"
+        - "1 - Poor"
+        - N/A
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Your feedback
+      placeholder: What worked well? What should we improve?
+    validations:
+      required: true
