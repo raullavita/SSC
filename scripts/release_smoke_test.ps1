@@ -80,6 +80,35 @@ function Read-ErrorBody($Exception) {
     return @{ status = $status; detail = $detail; raw = $raw }
 }
 
+function Get-CurlExecutable {
+    if ($IsWindows -or $env:OS -eq "Windows_NT") {
+        if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+            return "curl.exe"
+        }
+    }
+    if (Get-Command curl -ErrorAction SilentlyContinue) {
+        return "curl"
+    }
+    return $null
+}
+
+function Parse-HttpJsonProbeResult {
+    param(
+        [int]$Status,
+        [string]$BodyText
+    )
+    $detail = $null
+    if ($BodyText) {
+        try {
+            $parsed = $BodyText | ConvertFrom-Json
+            $detail = $parsed.detail
+        } catch {
+            $detail = $BodyText
+        }
+    }
+    return @{ status = $Status; detail = $detail; body = $BodyText }
+}
+
 function Invoke-CurlJsonProbe {
     param(
         [string]$Name,
@@ -88,34 +117,56 @@ function Invoke-CurlJsonProbe {
         [hashtable]$Headers,
         [string]$Body = ""
     )
-    $curlArgs = @("-s", "-w", "`nHTTP:%{http_code}", "-X", $Method)
-    foreach ($key in $Headers.Keys) {
-        $curlArgs += "-H"
-        $curlArgs += ("{0}: {1}" -f $key, $Headers[$key])
+    $curl = Get-CurlExecutable
+    if ($curl) {
+        $curlArgs = @("-s", "-w", "`nHTTP:%{http_code}", "-X", $Method)
+        foreach ($key in $Headers.Keys) {
+            $curlArgs += "-H"
+            $curlArgs += ("{0}: {1}" -f $key, $Headers[$key])
+        }
+        if ($Body) {
+            $curlArgs += "-d"
+            $curlArgs += $Body
+        }
+        $curlArgs += $Url
+        $raw = & $curl @curlArgs 2>&1 | Out-String
+        $lines = $raw.Trim() -split "`n"
+        $httpLine = $lines | Where-Object { $_ -match '^HTTP:' } | Select-Object -Last 1
+        $status = 0
+        if ($httpLine -match 'HTTP:(\d+)') {
+            $status = [int]$Matches[1]
+        }
+        $bodyText = ($lines | Where-Object { $_ -notmatch '^HTTP:' }) -join "`n"
+        return Parse-HttpJsonProbeResult -Status $status -BodyText $bodyText
+    }
+
+    $iwrParams = @{
+        Uri             = $Url
+        Method          = $Method
+        TimeoutSec      = 45
+        UseBasicParsing = $true
+    }
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+        $iwrParams.SkipHttpErrorCheck = $true
+    }
+    if ($Headers) {
+        $iwrParams.Headers = $Headers
     }
     if ($Body) {
-        $curlArgs += "-d"
-        $curlArgs += $Body
+        $iwrParams.Body = $Body
+        $iwrParams.ContentType = "application/json"
     }
-    $curlArgs += $Url
-    $raw = & curl.exe @curlArgs 2>&1 | Out-String
-    $lines = $raw.Trim() -split "`n"
-    $httpLine = $lines | Where-Object { $_ -match '^HTTP:' } | Select-Object -Last 1
-    $status = 0
-    if ($httpLine -match 'HTTP:(\d+)') {
-        $status = [int]$Matches[1]
-    }
-    $bodyText = ($lines | Where-Object { $_ -notmatch '^HTTP:' }) -join "`n"
-    $detail = $null
-    if ($bodyText) {
-        try {
-            $parsed = $bodyText | ConvertFrom-Json
-            $detail = $parsed.detail
-        } catch {
-            $detail = $bodyText
+    try {
+        $response = Invoke-WebRequest @iwrParams
+        return Parse-HttpJsonProbeResult -Status ([int]$response.StatusCode) -BodyText $response.Content
+    } catch {
+        $errInfo = Read-ErrorBody $_
+        $bodyText = $errInfo.raw
+        if (-not $bodyText) {
+            $bodyText = $errInfo.detail
         }
+        return Parse-HttpJsonProbeResult -Status $errInfo.status -BodyText $bodyText
     }
-    return @{ status = $status; detail = $detail; body = $bodyText }
 }
 
 function Invoke-SscConfigProbe {

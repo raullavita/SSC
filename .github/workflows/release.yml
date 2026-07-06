@@ -56,6 +56,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - name: Install frontend dependencies (craco build)
+        working-directory: frontend
+        run: yarn install --frozen-lockfile || yarn install
       - name: Build Electron Windows installer
         shell: pwsh
         run: ./scripts/build_electron.ps1
@@ -76,6 +81,17 @@ jobs:
           java-version: '17'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+      # CI uses the standard Android debug keystore (see android/app/build.gradle.kts fallback).
+      # Production-signed APKs: set GitHub secrets SSC_ANDROID_KEYSTORE (base64), SSC_ANDROID_KEYSTORE_PASSWORD,
+      # SSC_ANDROID_KEY_ALIAS, SSC_ANDROID_KEY_PASSWORD — or build locally via scripts/build_android.ps1.
+      - name: Prepare Android debug keystore for CI signing
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android \
+              -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
       - name: Build Android APK
         run: |
           chmod +x android/gradlew
