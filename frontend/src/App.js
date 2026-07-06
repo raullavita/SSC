@@ -1,4 +1,5 @@
 import { Navigate, Routes, Route } from 'react-router-dom';
+import CryptoRuntimeGate from './components/CryptoRuntimeGate';
 import InstalledClientGate from './components/InstalledClientGate';
 import InstalledAppEntry from './components/InstalledAppEntry';
 import { AuthProvider } from './context/AuthContext';
@@ -39,6 +40,7 @@ export default function App() {
 
   return (
     <AuthProvider>
+      <CryptoRuntimeGate>
       <InstalledClientGate>
         <Routes>
           <Route path="/" element={<AppRoot />} />
@@ -53,6 +55,7 @@ export default function App() {
           <Route path="*" element={<AppFallback />} />
         </Routes>
       </InstalledClientGate>
+      </CryptoRuntimeGate>
     </AuthProvider>
   );
 }

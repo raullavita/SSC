@@ -14,7 +14,10 @@ def test_oauth_finish_renders_bridge_page():
     body = resp.text
     assert "ssc://auth/google" in body
     assert "test-code-123" in body
-    assert "ssc://auth/google" in body
+    assert "intent://auth/google" in body
+    assert "com.supersecurechat.app" in body
+    assert "browser_fallback_url" not in body
+    assert "Open Super Secure Chat" in body
 
 
 def test_oauth_finish_renders_error():
