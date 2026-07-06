@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 
 from core.google_oauth import google_idtoken_configured, google_redirect_configured
 from core.oauth_exchange import consume_oauth_code, issue_oauth_code
