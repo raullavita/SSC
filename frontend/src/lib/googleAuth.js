@@ -38,9 +38,18 @@ function shouldUseGoogleRedirect() {
   return isInstalledApp();
 }
 
-function startGoogleRedirect() {
+function isElectronShell() {
+  return typeof window !== 'undefined' && Boolean(window.__SSC_ELECTRON_CLIENT);
+}
+
+async function startGoogleRedirect() {
   const base = API_BASE || `${window.location.protocol}//${window.location.host}`;
-  window.location.href = `${base}/api/auth/google/start`;
+  const url = `${base}/api/auth/google/start`;
+  if (isElectronShell() && window.sscShell?.openOAuth) {
+    await window.sscShell.openOAuth(url);
+    return;
+  }
+  window.location.href = url;
 }
 
 export async function exchangeOAuthCode(oauthCode) {
@@ -78,7 +87,7 @@ function loadGsiScript() {
 /** GIS popup — desktop dev when REACT_APP_GOOGLE_CLIENT_ID is set. */
 export async function promptGoogleSignIn() {
   if (shouldUseGoogleRedirect()) {
-    startGoogleRedirect();
+    await startGoogleRedirect();
     return null;
   }
 
