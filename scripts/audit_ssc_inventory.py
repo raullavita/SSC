@@ -42,6 +42,8 @@ ROUTER_PREFIXES = {
     "typing": "/api",
     "users": "/api/users",
     "ws": "/api/ws",
+    "site_feedback": "/api/public",
+    "oauth_finish": "",
 }
 
 KNOWN_UNWIRED_INTENTIONAL = {
@@ -49,7 +51,7 @@ KNOWN_UNWIRED_INTENTIONAL = {
     "/api/translation/translate": "Server translate exists; client uses opt-in local path too",
     "/api/abuse/report": "Abuse report API — no Settings UI yet",
     "/api/auth/google/start": "OAuth redirect — browser navigation, not api.get",
-    "/api/auth/google/callback": "OAuth callback — browser redirect",
+    "/api/auth/google/callback": "OAuth callback ÔÇö browser redirect",
     "/api/health": "Health/monitoring only",
     "/api/": "Root health alias",
     "/api/status": "Status probe",
@@ -57,13 +59,15 @@ KNOWN_UNWIRED_INTENTIONAL = {
     "/api/ws": "WebSocket upgrade path",
     "/api/users/lookup/{target}": "UserLookup via lookupPathForQuery() template",
     "/api/users/by-username/{username}": "AddContact via lookupPathForQuery() template",
+    "/api/conversations/{conversation_id}/reads": "useReadReceipts.js (multiline api.get)",
+    "/auth/google": "OAuth finish HTML page — browser navigation after Google redirect",
 }
 
 POLICY_ONLY_FEATURES = [
     {
         "name": "Broadcast lists",
         "location": "backend/core/retention_policy.py",
-        "detail": "Mongo collection policy only — no router or UI",
+        "detail": "Mongo collection policy only ÔÇö no router or UI",
     },
     {
         "name": "Inside AI / smart replies",
@@ -179,6 +183,10 @@ def discover_frontend_api_calls() -> list[str]:
         r"api\.(?:get|post|put|patch|delete)\(\s*[`'](/api/[^`'?]+)",
         re.IGNORECASE,
     )
+    chained_call_re = re.compile(
+        r"\.(?:get|post|put|patch|delete)\(\s*[`'](/api/[^`'?]+)",
+        re.IGNORECASE,
+    )
     template_re = re.compile(
         r"[`'](/api/\$\{[^}]+\}[^`'?]*)[`']"
     )
@@ -187,6 +195,8 @@ def discover_frontend_api_calls() -> list[str]:
             continue
         text = _read_text(path)
         for m in call_re.findall(text):
+            calls.add(m.split("?")[0])
+        for m in chained_call_re.findall(text):
             calls.add(m.split("?")[0])
         for m in template_re.findall(text):
             # normalize template paths to patterns
