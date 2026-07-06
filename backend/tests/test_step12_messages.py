@@ -15,6 +15,7 @@ from core.message_lifecycle_policy import (
     can_delete_for_everyone,
     can_edit_message,
 )
+from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 from server import create_app
 from tests.fake_mongo import FakeDatabase
@@ -276,6 +277,49 @@ async def test_forward_message_with_metadata(monkeypatch):
         )
         assert forwarded.status_code == 200
         assert forwarded.json()["message"]["forwarded_from"] == original_id
+
+
+@pytest.mark.asyncio
+async def test_attachment_protocol_creates_attachment_message(monkeypatch):
+    fake_db = FakeDatabase()
+    _patch(monkeypatch, fake_db)
+
+    app = create_app()
+    app.state.enforce_installed_client = True
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://test", headers=CLIENT) as client:
+        reg_a = await client.post(
+            "/api/auth/register",
+            json={"email": "attach_a@example.com", "password": "password123", "display_name": "AttachA"},
+        )
+        reg_b = await client.post(
+            "/api/auth/register",
+            json={"email": "attach_b@example.com", "password": "password123", "display_name": "AttachB"},
+        )
+        bob_id = reg_b.json()["user"]["id"]
+
+        conv = await client.post(
+            "/api/conversations",
+            json={"participant_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        conv_id = conv.json()["conversation"]["id"]
+
+        send = await client.post(
+            f"/api/conversations/{conv_id}/messages",
+            json={"ciphertext": _ciphertext(), "protocol": SIGNAL_PROTOCOL_ATTACHMENT},
+            cookies=reg_a.cookies,
+        )
+        assert send.status_code == 200
+        message = send.json()["message"]
+        assert message["protocol"] == SIGNAL_PROTOCOL_ATTACHMENT
+        assert message["message_kind"] == "attachment"
+
+        listed = await client.get(f"/api/conversations/{conv_id}/messages", cookies=reg_b.cookies)
+        assert listed.status_code == 200
+        assert listed.json()["messages"][0]["id"] == message["id"]
+        assert listed.json()["messages"][0]["message_kind"] == "attachment"
 
 
 def test_lifecycle_policy_windows():
