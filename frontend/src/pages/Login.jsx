@@ -21,6 +21,7 @@ export default function Login() {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [googlePending, setGooglePending] = useState(false);
   const [captchaConfig, setCaptchaConfig] = useState({ required: false, siteKey: null });
   const [captchaToken, setCaptchaToken] = useState('');
   const turnstileRef = useRef(null);
@@ -71,6 +72,14 @@ export default function Login() {
       if (data) {
         const authed = await loginWithGoogle(data);
         navigate(postAuthPath(authed, nextParam || '/chat'));
+        setBusy(false);
+        return;
+      }
+      if (installed && window.__SSC_ELECTRON_CLIENT) {
+        setGooglePending(true);
+        setError(null);
+        setBusy(false);
+        return;
       }
     } catch (err) {
       setError(err.body?.detail || err.message || 'Google sign-in failed');
@@ -117,6 +126,12 @@ export default function Login() {
         <button type="button" className={styles.googleBtn} onClick={onGoogle} disabled={busy}>
           Continue with Google
         </button>
+      )}
+
+      {googlePending && (
+        <p className={styles.hint}>
+          Finish sign-in in your browser — SSC will reopen automatically when done.
+        </p>
       )}
 
       {googleAuthEnabled() && <p className={styles.orDivider}>or use email</p>}

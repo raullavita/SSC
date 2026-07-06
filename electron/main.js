@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { app, BrowserWindow, ipcMain, session } = require('electron');
+const { app, BrowserWindow, ipcMain, session, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const fs = require('fs');
 const path = require('path');
@@ -257,6 +257,23 @@ function isOAuthFinishUrl(url) {
   }
 }
 
+function isExternalOAuthUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    if (host === API_HOST && parsed.pathname.startsWith('/api/auth/google')) {
+      return true;
+    }
+    return (
+      host === 'accounts.google.com' ||
+      host === 'oauth2.googleapis.com' ||
+      host.endsWith('.googleusercontent.com')
+    );
+  } catch {
+    return false;
+  }
+}
+
 function routeFromOAuthFinishUrl(url) {
   try {
     const parsed = new URL(url);
@@ -277,11 +294,19 @@ function interceptOAuthNavigation(event, url) {
     handleDeepLink(url);
     return;
   }
-  if (!isOAuthFinishUrl(url)) return;
-  const route = routeFromOAuthFinishUrl(url);
-  if (!route) return;
-  event.preventDefault();
-  navigateInstalledRoute(route);
+  if (isOAuthFinishUrl(url)) {
+    const route = routeFromOAuthFinishUrl(url);
+    if (!route) return;
+    event.preventDefault();
+    navigateInstalledRoute(route);
+    return;
+  }
+  if (isExternalOAuthUrl(url)) {
+    event.preventDefault();
+    shell.openExternal(url).catch((err) => {
+      console.error('[ssc] openExternal oauth failed', err?.message || err);
+    });
+  }
 }
 
 function completeOAuthFinishNavigation(url) {
@@ -394,6 +419,14 @@ function registerAutoUpdater(win) {
 
 ipcMain.handle('ssc-update:install', () => {
   autoUpdater.quitAndInstall();
+  return { ok: true };
+});
+
+ipcMain.handle('ssc-shell:open-oauth', async (_evt, url) => {
+  if (typeof url !== 'string' || !url.startsWith('http')) {
+    throw new Error('invalid_oauth_url');
+  }
+  await shell.openExternal(url);
   return { ok: true };
 });
 

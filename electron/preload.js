@@ -20,6 +20,12 @@ contextBridge.exposeInMainWorld('__SSC_DEVICE_ATTEST', () => 'ssc-attest-test-v1
 // Chromium Translator API is used in-renderer when available (see onDevice.js).
 contextBridge.exposeInMainWorld('__SSC_ELECTRON_TRANSLATE', 'browser_translator');
 
+contextBridge.exposeInMainWorld('sscShell', {
+  openOAuth(url) {
+    return ipcRenderer.invoke('ssc-shell:open-oauth', url);
+  },
+});
+
 contextBridge.exposeInMainWorld('sscCrypto', {
   get available() {
     return ipcRenderer.invoke('ssc-crypto:available');
