@@ -25,6 +25,10 @@ contextBridge.exposeInMainWorld('sscCrypto', {
     return ipcRenderer.invoke('ssc-crypto:available');
   },
 
+  diagnostics() {
+    return ipcRenderer.invoke('ssc-crypto:diagnostics');
+  },
+
   async configure(opts) {
     return ipcRenderer.invoke('ssc-crypto:configure', opts);
   },

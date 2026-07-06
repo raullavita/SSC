@@ -8,19 +8,51 @@ const { getGroupSenderKeySession } = require('./groupSenderKeySession');
 
 let mainWindow = null;
 let libsignalAvailable = false;
+let libsignalLoadError = '';
 try {
   require('@signalapp/libsignal-client');
   libsignalAvailable = true;
 } catch (err) {
   libsignalAvailable = false;
+  libsignalLoadError = err?.message || String(err);
   console.error(
     '[ssc] libsignal-client failed to load — Windows Smart App Control often blocks unsigned .node files.',
-    err?.message || err,
+    libsignalLoadError,
   );
+}
+
+function writeStartupDiagnostics() {
+  try {
+    const logPath = path.join(app.getPath('userData'), 'ssc-startup.log');
+    fs.writeFileSync(
+      logPath,
+      JSON.stringify(
+        {
+          at: new Date().toISOString(),
+          libsignalAvailable,
+          libsignalLoadError: libsignalLoadError || null,
+          packaged: app.isPackaged,
+          version: app.getVersion(),
+        },
+        null,
+        2,
+      ),
+      'utf8',
+    );
+  } catch {
+    // ignore diagnostic write failures
+  }
 }
 
 function registerCryptoIpc() {
   ipcMain.handle('ssc-crypto:available', () => libsignalAvailable);
+
+  ipcMain.handle('ssc-crypto:diagnostics', () => ({
+    libsignalAvailable,
+    libsignalLoadError: libsignalLoadError || null,
+    version: app.getVersion(),
+    packaged: app.isPackaged,
+  }));
 
   ipcMain.handle('ssc-crypto:configure', (_evt, opts) => {
     const s = getSession(app.getPath('userData'));
@@ -341,6 +373,7 @@ ipcMain.handle('ssc-desktop:attest-token', () => {
 });
 
 app.whenReady().then(() => {
+  writeStartupDiagnostics();
   attachCertificatePinning();
   registerCryptoIpc();
   const win = createWindow();
