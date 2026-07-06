@@ -90,7 +90,8 @@ async def test_list_reads_route_metadata_minimal(monkeypatch):
         assert len(reads) == 1
         assert reads[0]["message_id"] == "m_step9"
         assert "read_at" in reads[0]
-        assert "reader_id" not in reads[0]
+        assert reads[0]["reader_id"] == reader_id
+        assert "email" not in reads[0]
 
 
 def test_step9_frontend_hook_exists():
@@ -105,5 +106,9 @@ def test_message_bubble_read_marks():
     bubble = (repo / "frontend" / "src" / "components" / "chat" / "MessageBubble.jsx").read_text(
         encoding="utf-8"
     )
-    assert "readAt" in bubble
-    assert "✓✓" in bubble
+    assert "readReceipts" in bubble
+    assert "ReadReceiptIndicator" in bubble
+    indicator = (
+        repo / "frontend" / "src" / "components" / "chat" / "ReadReceiptIndicator.jsx"
+    ).read_text(encoding="utf-8")
+    assert "✓✓" in indicator

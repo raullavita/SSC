@@ -167,13 +167,15 @@ object ApiClient {
 
     private fun injectBridgeScript(context: Context, view: WebView?) {
         if (view == null) return
-        try {
-            val script = context.assets.open("ssc_crypto_bridge.js")
-                .bufferedReader()
-                .use { it.readText() }
-            view.evaluateJavascript(script, null)
-        } catch (_: Exception) {
-            // Bridge asset missing — WebView still loads; cryptoPolicy will hard-fail in production.
+        for (asset in listOf("ssc_crypto_bridge.js", "ssc_translate_bridge.js")) {
+            try {
+                val script = context.assets.open(asset)
+                    .bufferedReader()
+                    .use { it.readText() }
+                view.evaluateJavascript(script, null)
+            } catch (_: Exception) {
+                // Bridge asset missing — WebView still loads; cryptoPolicy will hard-fail in production.
+            }
         }
     }
 }

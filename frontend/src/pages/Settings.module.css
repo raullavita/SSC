@@ -124,6 +124,12 @@
   text-align: center;
 }
 
+.toastInline {
+  margin: 0.5rem 0 0;
+  color: #53d4b6;
+  font-size: 0.82rem;
+}
+
 .rowStack {
   display: flex;
   flex-direction: column;

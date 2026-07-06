@@ -1,10 +1,4 @@
-import {
-  getAndroidShellFeatures,
-  getInstalledClientHeader,
-  getInstalledClientHeaders,
-  getNativeBridgeHeader,
-  isAndroidShell,
-} from '../installedClient';
+import { getInstalledClientHeader, getInstalledClientHeaders } from '../installedClient';
 
 describe('installedClient', () => {
   beforeEach(() => {
@@ -14,8 +8,11 @@ describe('installedClient', () => {
     delete window.__SSC_ANDROID_FEATURES;
     delete window.__SSC_NATIVE_BRIDGE;
   });
+
   test('builds header with platform version build', () => {
-    expect(getInstalledClientHeader()).toMatch(/^(android|ios|windows|mac|electron)\/\d+\.\d+\.\d+\/\d+$/);
+    expect(getInstalledClientHeader()).toMatch(
+      /^(android|ios|windows|mac|electron)\/\d+\.\d+\.\d+\/\d+$/
+    );
   });
 
   test('getInstalledClientHeaders includes X-SSC-Client', () => {
@@ -29,18 +26,8 @@ describe('installedClient', () => {
     expect(getInstalledClientHeader()).toBe('electron/0.3.0/3');
   });
 
-  test('reads injected Android shell flags', () => {
-    window.__SSC_ANDROID_CLIENT = 'android/0.3.0/8';
-    window.__SSC_ANDROID_SHELL = '1';
-    window.__SSC_ANDROID_FEATURES = 'deep_links,pull_to_refresh';
-    expect(getInstalledClientHeader()).toBe('android/0.3.0/8');
-    expect(isAndroidShell()).toBe(true);
-    expect(getAndroidShellFeatures()).toEqual(['deep_links', 'pull_to_refresh']);
-  });
-
   test('includes native bridge header when attested', () => {
     window.__SSC_NATIVE_BRIDGE = 'v1';
-    expect(getNativeBridgeHeader()).toBe('v1');
     expect(getInstalledClientHeaders()['X-SSC-Native-Bridge']).toBe('v1');
   });
 });

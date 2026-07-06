@@ -1,6 +1,4 @@
 import {
-  BACKUP_FORMAT,
-  BACKUP_VERSION,
   decryptBackupPayload,
   encryptBackupPayload,
   isForbiddenBackupKey,
@@ -17,8 +15,8 @@ describe('backupCrypto', () => {
     const plaintext = JSON.stringify({ hello: 'world' });
     const envelope = await encryptBackupPayload(plaintext, 'test-passphrase');
     validateBackupEnvelope(envelope);
-    expect(envelope.format).toBe(BACKUP_FORMAT);
-    expect(envelope.version).toBe(BACKUP_VERSION);
+    expect(envelope.format).toBe('ssc-backup');
+    expect(envelope.version).toBe(1);
     const decrypted = await decryptBackupPayload(envelope, 'test-passphrase');
     expect(decrypted).toBe(plaintext);
   });

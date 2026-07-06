@@ -9,7 +9,7 @@ import { clearAllIndexes } from '../search/messageIndex';
 
 const SSC_LOCAL_PREFIXES = ['ssc_', 'SSC_'];
 
-export function clearLocalClientData() {
+function clearLocalClientData() {
   try {
     const keys = [];
     for (let i = 0; i < localStorage.length; i += 1) {
@@ -39,7 +39,7 @@ export function clearLocalClientData() {
   }
 }
 
-export async function clearNativeCryptoStore() {
+async function clearNativeCryptoStore() {
   try {
     if (typeof window !== 'undefined' && window.sscCrypto?.wipeLocalData) {
       await window.sscCrypto.wipeLocalData();

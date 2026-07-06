@@ -113,18 +113,20 @@
 .messageActions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.25rem;
   margin-top: 0.35rem;
   opacity: 0;
   transition: opacity 0.15s;
 }
 
-.bubble:hover .messageActions {
+.bubble:hover .messageActions,
+.bubble:focus-within .messageActions,
+.bubble.actionsOpen .messageActions {
   opacity: 1;
 }
 
 .actionBtn,
-.reactionBtn,
 .translateBtn {
   background: transparent;
   border: none;
@@ -134,34 +136,74 @@
   padding: 0.1rem 0.25rem;
 }
 
-.reactionBtn {
-  font-size: 0.9rem;
+.reactWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.reactBtn {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 12px;
+  line-height: 1;
+}
+
+.reactBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.reactBtn:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }
 
 .reactionRow {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.25rem;
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
 }
 
 .reactionChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
   background: #2a3942;
   border: none;
   border-radius: 12px;
-  padding: 0.1rem 0.4rem;
+  padding: 0.12rem 0.45rem;
   font-size: 0.85rem;
   cursor: pointer;
   color: inherit;
+  transition: transform 0.1s ease, background 0.1s ease;
+}
+
+.reactionChip:hover:not(:disabled) {
+  background: #374955;
+  transform: scale(1.04);
+}
+
+.reactionChip:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .reactionChipMine {
+  background: rgba(0, 168, 132, 0.18);
   outline: 1px solid #00a884;
 }
 
+.reactionEmoji {
+  line-height: 1;
+}
+
 .reactionCount {
-  margin-left: 0.2rem;
   font-size: 0.7rem;
   color: #8696a0;
+  font-weight: 600;
 }
 
 .deletedText {
@@ -179,4 +221,14 @@
 
 .forwardedLabel {
   margin: 0 0 0.25rem;
+}
+
+@media (hover: none) {
+  .reactBtn {
+    opacity: 0.85;
+  }
+
+  .reactionRow {
+    margin-top: 0.25rem;
+  }
 }

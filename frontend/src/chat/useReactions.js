@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api } from '../lib/api';
+import { isAllowedReactionEmoji } from './reactionEmojis';
 import { decryptMessage } from '../signal/signalBridge';
 import { decryptGroupMessage } from '../signal/groupSenderKeys';
 import {
@@ -23,6 +23,7 @@ async function hydrateReaction(row, { peerId, isGroup, groupId }) {
     }
     const parsed = parseReactionText(raw);
     if (!parsed?.emoji || !parsed?.target) return null;
+    if (!isAllowedReactionEmoji(parsed.emoji)) return null;
     return {
       id: row.id,
       emoji: parsed.emoji,
@@ -59,9 +60,11 @@ export function useReactions({
   groupId,
   userId,
   memberIds = [],
+  onError,
 }) {
   const [reactionRows, setReactionRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [pendingTargets, setPendingTargets] = useState(() => new Set());
 
   const reload = useCallback(async () => {
     if (!conversationId || !enabled) return;
@@ -74,12 +77,13 @@ export function useReactions({
         if (parsed) hydrated.push(parsed);
       }
       setReactionRows(hydrated);
-    } catch {
+    } catch (err) {
       setReactionRows([]);
+      onError?.(err?.message || 'Failed to load reactions');
     } finally {
       setLoading(false);
     }
-  }, [conversationId, enabled, peerId, isGroup, groupId]);
+  }, [conversationId, enabled, peerId, isGroup, groupId, onError]);
 
   useEffect(() => {
     reload();
@@ -116,35 +120,98 @@ export function useReactions({
     return aggregated;
   }, [reactionRows]);
 
+  const setTargetPending = useCallback((targetMessageId, pending) => {
+    setPendingTargets((prev) => {
+      const next = new Set(prev);
+      if (pending) next.add(targetMessageId);
+      else next.delete(targetMessageId);
+      return next;
+    });
+  }, []);
+
   const sendReaction = useCallback(
     async (emoji, targetMessageId) => {
-      if (!conversationId || !targetMessageId) return;
+      if (!conversationId || !targetMessageId || !userId) return;
+      if (!isAllowedReactionEmoji(emoji)) {
+        onError?.('Invalid reaction emoji');
+        return;
+      }
+      if (pendingTargets.has(targetMessageId)) return;
+
       const existing = reactionRows.find(
         (r) => r.target === targetMessageId && r.emoji === emoji && r.sender_id === userId
       );
+
+      setTargetPending(targetMessageId, true);
+
       if (existing) {
-        await removeReaction(existing.id);
+        const snapshot = existing;
         setReactionRows((prev) => prev.filter((x) => x.id !== existing.id));
+        try {
+          await removeReaction(existing.id);
+        } catch (err) {
+          setReactionRows((prev) => {
+            if (prev.some((x) => x.id === snapshot.id)) return prev;
+            return [...prev, snapshot];
+          });
+          onError?.(err?.message || 'Failed to remove reaction');
+        } finally {
+          setTargetPending(targetMessageId, false);
+        }
         return;
       }
-      const data = await postReaction(conversationId, {
+
+      const tempId = `temp_rx_${Date.now()}`;
+      const optimistic = {
+        id: tempId,
         emoji,
-        targetMessageId,
-        peerId,
-        isGroup,
-        groupId,
-        userId,
-        memberIds,
-      });
-      const parsed = await hydrateReaction(data.reaction, { peerId, isGroup, groupId });
-      if (parsed) {
-        setReactionRows((prev) => {
-          if (prev.some((x) => x.id === parsed.id)) return prev;
-          return [...prev, { ...parsed, mine: true }];
+        target: targetMessageId,
+        sender_id: userId,
+        mine: true,
+      };
+      setReactionRows((prev) => [...prev, optimistic]);
+
+      try {
+        const data = await postReaction(conversationId, {
+          emoji,
+          targetMessageId,
+          peerId,
+          isGroup,
+          groupId,
+          userId,
+          memberIds,
         });
+        const parsed = await hydrateReaction(data.reaction, { peerId, isGroup, groupId });
+        setReactionRows((prev) => {
+          const withoutTemp = prev.filter((x) => x.id !== tempId);
+          if (!parsed) return withoutTemp;
+          if (withoutTemp.some((x) => x.id === parsed.id)) return withoutTemp;
+          return [...withoutTemp, { ...parsed, mine: true }];
+        });
+      } catch (err) {
+        setReactionRows((prev) => prev.filter((x) => x.id !== tempId));
+        onError?.(err?.message || 'Failed to send reaction');
+      } finally {
+        setTargetPending(targetMessageId, false);
       }
     },
-    [conversationId, peerId, isGroup, groupId, userId, memberIds, reactionRows]
+    [
+      conversationId,
+      peerId,
+      isGroup,
+      groupId,
+      userId,
+      memberIds,
+      reactionRows,
+      pendingTargets,
+      onError,
+      setTargetPending,
+    ]
+  );
+
+  const isReactionPending = useCallback(
+    (targetMessageId) => pendingTargets.has(targetMessageId),
+    [pendingTargets]
   );
 
   return {
@@ -153,5 +220,6 @@ export function useReactions({
     reloadReactions: reload,
     reactionsLoading: loading,
     handleReactionSocketPayload: handleSocketPayload,
+    isReactionPending,
   };
 }

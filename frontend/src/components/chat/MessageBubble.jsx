@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { isImageAttachment, isVoiceAttachment } from '../../chat/attachments';
 import { canDeleteForEveryone, canEditMessage } from '../../chat/messageActions';
+import { QUICK_REACTION_EMOJI } from '../../chat/reactionEmojis';
 import { fetchPreviewsForText } from '../../lib/linkPreview';
 import { decryptFileBytes } from '../../signal/signalBridge';
-import { formatReadReceiptLabel } from '../../lib/readReceipts';
 import LinkPreviewCard from './LinkPreviewCard';
 import PollBubble from './PollBubble';
+import ReactionPicker from './ReactionPicker';
+import ReadReceiptIndicator from './ReadReceiptIndicator';
 import styles from './MessageBubble.module.css';
-
-const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
 function formatTime(iso) {
   if (!iso) return '';
@@ -101,13 +101,15 @@ export default function MessageBubble({
   onReaction,
   onTranslate,
   downloadFile,
-  readAt,
-  readAtList,
+  readReceipts = [],
+  isGroup = false,
+  nameForId,
   poll,
   pollTallies,
   pollViewerVote,
   onPollVote,
   disappearingRemaining,
+  reactionPending = false,
 }) {
   const {
     text,
@@ -119,7 +121,11 @@ export default function MessageBubble({
     forwarded_from: forwardedFrom,
   } = message;
   const isDeleted = messageKind === 'deleted';
+  const canReact = Boolean(onReaction && !isDeleted);
   const [linkPreviews, setLinkPreviews] = useState([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const bubbleRef = useRef(null);
   const showEdit = onEdit && canEditMessage(message, userId);
   const showDeleteEveryone = onDelete && canDeleteForEveryone(message, userId);
 
@@ -137,16 +143,49 @@ export default function MessageBubble({
       active = false;
     };
   }, [text, isDeleted]);
+
+  useEffect(() => {
+    if (!actionsOpen) return undefined;
+    function closeActions(event) {
+      if (bubbleRef.current?.contains(event.target)) return;
+      setActionsOpen(false);
+    }
+    document.addEventListener('mousedown', closeActions);
+    return () => document.removeEventListener('mousedown', closeActions);
+  }, [actionsOpen]);
+
   const bubbleClass = [
     styles.bubble,
     isOutgoing ? styles.outgoing : styles.incoming,
     highlighted ? styles.highlighted : '',
+    actionsOpen ? styles.actionsOpen : '',
   ]
     .filter(Boolean)
     .join(' ');
 
+  function handleReactionPick(emoji) {
+    if (!canReact || reactionPending) return;
+    onReaction(emoji, message.id);
+  }
+
+  function handleQuickReact() {
+    if (!canReact || reactionPending) return;
+    handleReactionPick(QUICK_REACTION_EMOJI);
+  }
+
+  function handleBubbleClick() {
+    if (window.matchMedia('(hover: hover)').matches) return;
+    setActionsOpen((open) => !open);
+  }
+
   return (
-    <div className={bubbleClass} data-message-id={message.id}>
+    <div
+      ref={bubbleRef}
+      className={bubbleClass}
+      data-message-id={message.id}
+      onClick={handleBubbleClick}
+      onDoubleClick={handleQuickReact}
+    >
       {replyPreview && <p className={styles.replyPreview}>↩ {replyPreview}</p>}
 
       {forwardedFrom && <p className={styles.forwardedLabel}>↪ Forwarded</p>}
@@ -179,6 +218,32 @@ export default function MessageBubble({
 
       {inlineTranslation && <p className={styles.translation}>{inlineTranslation}</p>}
 
+      {reactions.length > 0 && (
+        <div className={styles.reactionRow} aria-label="Message reactions">
+          {reactions.map((r) => (
+            <button
+              key={`${message.id}-${r.emoji}`}
+              type="button"
+              className={`${styles.reactionChip} ${r.mine ? styles.reactionChipMine : ''}`}
+              title={
+                r.mine
+                  ? 'Tap to remove your reaction'
+                  : `React with ${r.emoji} (${r.count} total)`
+              }
+              disabled={reactionPending || !canReact}
+              aria-label={`${r.emoji} ${r.count} reactions${r.mine ? ', yours' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReactionPick(r.emoji);
+              }}
+            >
+              <span className={styles.reactionEmoji}>{r.emoji}</span>
+              {r.count > 1 ? <span className={styles.reactionCount}>{r.count}</span> : null}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className={styles.meta}>
         {disappearingRemaining != null && disappearingRemaining > 0 ? (
           <span className={styles.timer}>⏱ {disappearingRemaining}s</span>
@@ -187,20 +252,18 @@ export default function MessageBubble({
         ) : null}
         {editedAt && <span className={styles.editedLabel}>edited</span>}
         <span className={styles.timestamp}>{formatTime(createdAt)}</span>
-        {isOutgoing && (
-          <span
-            className={`${styles.status} ${readAt || readAtList?.length ? styles.read : ''}`}
-            title={
-              readAtList?.length
-                ? formatReadReceiptLabel(readAtList)
-                : readAt
-                  ? formatReadReceiptLabel([readAt])
-                  : 'Sent'
-            }
-          >
-            {readAt || readAtList?.length ? '✓✓' : '✓'}
+        {isOutgoing && readReceipts?.length > 0 ? (
+          <ReadReceiptIndicator
+            readers={readReceipts}
+            isGroup={isGroup}
+            nameForId={nameForId}
+            currentUserId={userId}
+          />
+        ) : isOutgoing ? (
+          <span className={styles.status} title="Sent">
+            ✓
           </span>
-        )}
+        ) : null}
       </div>
 
       <div className={styles.messageActions}>
@@ -240,35 +303,31 @@ export default function MessageBubble({
             Translate
           </button>
         )}
-        {onReaction &&
-          REACTION_EMOJIS.map((emoji) => (
+        {canReact && (
+          <div className={styles.reactWrap}>
             <button
-              key={`${message.id}-${emoji}`}
               type="button"
-              className={styles.reactionBtn}
-              onClick={() => onReaction(emoji, message.id)}
+              className={styles.reactBtn}
+              aria-label="Add reaction"
+              aria-expanded={pickerOpen}
+              disabled={reactionPending}
+              onClick={(e) => {
+                e.stopPropagation();
+                setPickerOpen((open) => !open);
+              }}
             >
-              {emoji}
+              {reactionPending ? '…' : '😀'}
             </button>
-          ))}
+            <ReactionPicker
+              open={pickerOpen}
+              onClose={() => setPickerOpen(false)}
+              onPick={handleReactionPick}
+              existingReactions={reactions}
+              disabled={reactionPending}
+            />
+          </div>
+        )}
       </div>
-
-      {reactions.length > 0 && (
-        <div className={styles.reactionRow}>
-          {reactions.map((r) => (
-            <button
-              key={`${message.id}-${r.emoji}`}
-              type="button"
-              className={`${styles.reactionChip} ${r.mine ? styles.reactionChipMine : ''}`}
-              title={r.mine ? 'Tap to remove your reaction' : `${r.count} reaction(s)`}
-              onClick={() => r.mine && onReaction && onReaction(r.emoji, message.id)}
-            >
-              {r.emoji}
-              {r.count > 1 ? <span className={styles.reactionCount}>{r.count}</span> : null}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

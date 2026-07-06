@@ -4,16 +4,32 @@ import { buildSubscribePayload } from '../lib/wsSubscribe';
 import { indexReadsByMessage } from '../lib/readReceipts';
 
 function applyReadReceipt(setReadByMessage, payload) {
-  if (payload?.type === 'read_receipt' && payload.message_id) {
-    setReadByMessage((prev) => {
-      const existing = prev[payload.message_id] || [];
-      if (existing.includes(payload.read_at)) return prev;
+  if (payload?.type !== 'read_receipt' || !payload.message_id) return;
+
+  const readerId = payload.reader_id || null;
+  const readAt = payload.read_at;
+  if (!readAt && !readerId) return;
+
+  setReadByMessage((prev) => {
+    const existing = prev[payload.message_id] || [];
+    if (readerId) {
+      const duplicate = existing.find(
+        (row) => row.readerId === readerId && row.readAt === readAt
+      );
+      if (duplicate) return prev;
+      const filtered = existing.filter((row) => row.readerId !== readerId);
       return {
         ...prev,
-        [payload.message_id]: [...existing, payload.read_at],
+        [payload.message_id]: [...filtered, { readerId, readAt }],
       };
-    });
-  }
+    }
+
+    if (existing.some((row) => row.readAt === readAt && !row.readerId)) return prev;
+    return {
+      ...prev,
+      [payload.message_id]: [...existing, { readerId: null, readAt }],
+    };
+  });
 }
 
 export function useReadReceipts(conversationId, messages, { wsToken, userId, enabled }) {

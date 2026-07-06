@@ -34,7 +34,7 @@ function send(ws, payload) {
   ws.send(JSON.stringify(payload));
 }
 
-export class SfuSession {
+class SfuSession {
   constructor({ wsUrl, roomId, joinToken, peerId, onRemoteTrack } = {}) {
     this.wsUrl = wsUrl;
     this.roomId = roomId;

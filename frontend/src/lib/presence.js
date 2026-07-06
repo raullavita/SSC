@@ -7,7 +7,7 @@ import { api } from './api';
 const HEARTBEAT_MS = 60_000;
 let timer = null;
 
-export async function sendHeartbeat() {
+async function sendHeartbeat() {
   try {
     await api.post('/api/presence/heartbeat', {});
   } catch {

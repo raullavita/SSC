@@ -150,10 +150,4 @@ export async function encryptFileBytes(arrayBuffer) {
   return { ciphertext: btoa(payload), protocol: SIGNAL_PROTOCOL_V1 };
 }
 
-export function getSignalLibTarget() {
-  return '0.96.4';
-}
 
-export function installedClientHeader() {
-  return getInstalledClientHeader();
-}

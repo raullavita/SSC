@@ -5,13 +5,13 @@
 import { api } from '../lib/api';
 import { numericFingerprintDisplayable } from './numericFingerprint';
 
-export async function fetchPeerIdentityKey(peerId, deviceId = '1') {
+async function fetchPeerIdentityKey(peerId, deviceId = '1') {
   const data = await api.get(`/api/prekeys/users/${peerId}/devices/${deviceId}`);
   const bundle = data.bundle || data;
   return bundle.identity_key || bundle.identityKey;
 }
 
-export async function fetchLocalIdentityKey(userId, deviceId = '1') {
+async function fetchLocalIdentityKey(userId, deviceId = '1') {
   const data = await api.get(`/api/prekeys/users/${userId}/devices/${deviceId}`);
   const bundle = data.bundle || data;
   return bundle.identity_key || bundle.identityKey;
@@ -41,6 +41,3 @@ export async function computeSafetyNumber(peerId, deviceId = '1', localUserId = 
   };
 }
 
-export function trustStoreKey(peerId, deviceId = '1') {
-  return `${peerId}:${deviceId}`;
-}

@@ -222,6 +222,14 @@
   gap: 0.15rem;
 }
 
+.convMuted {
+  opacity: 0.72;
+}
+
+.convPinned {
+  border-left: 2px solid #00a884;
+}
+
 .convActions {
   display: flex;
   gap: 0.1rem;
@@ -332,6 +340,33 @@
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #2a3942;
   color: #aebac1;
+}
+
+.threadTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.threadHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.threadMetaChip {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #2a3942;
+  color: #8696a0;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .messages {

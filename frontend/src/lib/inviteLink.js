@@ -7,22 +7,13 @@ export function normalizeUsername(raw) {
     .toLowerCase();
 }
 
-export function inviteWebPath(username) {
+function inviteWebPath(username) {
   const name = normalizeUsername(username);
   return name ? `/add/${encodeURIComponent(name)}` : '/';
 }
 
 export function inviteWebUrl(username, base = WEB_BASE) {
   return `${base.replace(/\/$/, '')}${inviteWebPath(username)}`;
-}
-
-export function inviteAppUrl(username) {
-  const name = normalizeUsername(username);
-  return name ? `ssc://add/${name}` : 'ssc://';
-}
-
-export function isUserIdQuery(query) {
-  return String(query || '').trim().startsWith('u_');
 }
 
 export function lookupPathForQuery(query) {

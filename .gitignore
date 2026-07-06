@@ -11,6 +11,9 @@ __pycache__/
 .env
 .env.*
 !.env.example
+android/signing.local.env
+*.jks
+*.keystore
 atlas-credentials.env
 atlas-credentials.env.*
 !atlas-credentials.env.example

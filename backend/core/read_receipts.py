@@ -93,14 +93,18 @@ async def mark_conversation_read(
 
 
 def public_read_receipt(doc: dict[str, Any]) -> dict[str, Any]:
-    """Metadata-minimized read receipt for API — message_id + read_at only."""
+    """Metadata-minimized read receipt — message_id, reader_id, read_at (no email)."""
     read_at = doc.get("read_at")
     if hasattr(read_at, "isoformat"):
         read_at = read_at.isoformat()
-    return {
+    out = {
         "message_id": doc["message_id"],
         "read_at": read_at,
     }
+    reader_id = doc.get("reader_id") or doc.get("user_id")
+    if reader_id:
+        out["reader_id"] = reader_id
+    return out
 
 
 async def list_read_receipts_for_sender(
@@ -111,6 +115,6 @@ async def list_read_receipts_for_sender(
     """Reads on messages the current user sent (for double-check UI)."""
     cursor = db.message_reads.find(
         {"conversation_id": conversation_id, "sender_id": user_id},
-        {"message_id": 1, "read_at": 1, "_id": 0},
+        {"message_id": 1, "read_at": 1, "reader_id": 1, "user_id": 1, "_id": 0},
     )
     return [public_read_receipt(doc) async for doc in cursor]

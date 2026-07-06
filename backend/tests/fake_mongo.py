@@ -136,7 +136,7 @@ def _matches(doc: dict, query: dict) -> bool:
                 if bool(expected["$exists"]) != exists:
                     return False
                 continue
-        if key == "participants" and isinstance(expected, str):
+        if key in ("participants", "member_ids") and isinstance(expected, str):
             if expected not in (value or []):
                 return False
             continue

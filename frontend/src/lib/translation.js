@@ -1,45 +1,54 @@
 /**
- * Translation client — LibreTranslate via SSC backend proxy, or local instance.
+ * Translation client — privacy-first provider chain (on-device default).
  */
 
-import { api } from './api';
-import { getLocalTranslateUrl } from './chatPrefs';
+import { DEFAULT_LANGUAGES } from './translation/languages';
+import { fetchLocalLibreLanguages } from './translation/providers/localLibre';
+import { fetchServerLanguages, serverProxyAllowed } from './translation/providers/serverProxy';
+import {
+  getTranslationProviderStatus,
+  runTranslationChain,
+} from './translation/providers/index';
 
-export async function fetchLanguages() {
-  const local = getLocalTranslateUrl();
-  if (local) {
-    try {
-      const res = await fetch(`${local.replace(/\/$/, '')}/languages`);
-      if (res.ok) {
-        const data = await res.json();
-        const codes = (data || []).map((l) => l.code || l).filter(Boolean);
-        if (codes.length) return codes;
-      }
-    } catch {
-      /* fall through to proxy */
-    }
+export { getTranslationProviderStatus, DEFAULT_LANGUAGES };
+
+export class TranslationError extends Error {
+  constructor(message, { status, provider } = {}) {
+    super(message);
+    this.name = 'TranslationError';
+    this.status = status;
+    this.provider = provider;
   }
-  const data = await api.get('/api/translation/languages');
-  return data.languages || [];
 }
 
-export async function translateText(text, { source = 'auto', target = 'en' } = {}) {
-  const local = getLocalTranslateUrl();
-  if (local) {
+export async function fetchLanguages() {
+  const local = await fetchLocalLibreLanguages();
+  if (local?.length) return local;
+  if (serverProxyAllowed()) {
     try {
-      const res = await fetch(`${local.replace(/\/$/, '')}/translate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ q: text, source, target, format: 'text' }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return data.translatedText || data.translated_text || '';
-      }
+      return await fetchServerLanguages();
     } catch {
       /* fall through */
     }
   }
-  const data = await api.post('/api/translation/translate', { text, source, target });
-  return data.translated_text || '';
+  return DEFAULT_LANGUAGES;
+}
+
+async function translateTextDetailed(text, options = {}) {
+  return runTranslationChain(text, options);
+}
+
+export async function translateText(text, options = {}) {
+  const result = await translateTextDetailed(text, options);
+  if (result.status === 'ok') return result.text;
+  if (result.status === 'pending_api_key') {
+    throw new TranslationError(
+      result.message || 'Add a translation API key in Settings.',
+      result
+    );
+  }
+  throw new TranslationError(
+    result.message || 'Translation unavailable.',
+    result
+  );
 }

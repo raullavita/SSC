@@ -12,7 +12,7 @@ import {
 const SSC_PREFIX = 'ssc_';
 const BACKUP_FORMAT_INNER = 'ssc-backup-payload';
 
-export function collectLocalStorageSnapshot() {
+function collectLocalStorageSnapshot() {
   const snapshot = {};
   try {
     for (let i = 0; i < localStorage.length; i += 1) {
@@ -27,7 +27,7 @@ export function collectLocalStorageSnapshot() {
   return snapshot;
 }
 
-export function buildBackupPayload({ userId } = {}) {
+function buildBackupPayload({ userId } = {}) {
   return {
     format: BACKUP_FORMAT_INNER,
     version: 1,

@@ -13,7 +13,9 @@
   border: 1px solid #2a3942;
   border-radius: 12px;
   padding: 1.25rem;
-  width: min(90vw, 400px);
+  width: min(92vw, 440px);
+  max-height: 90vh;
+  overflow-y: auto;
   color: #e9edef;
 }
 
@@ -36,19 +38,68 @@
   font-size: 1.1rem;
 }
 
-.hint {
+.peerLine {
+  margin: 0.5rem 0 0;
   font-size: 0.85rem;
+  color: #aebac1;
+}
+
+.peerLine strong {
+  color: #e9edef;
+}
+
+.hint {
+  font-size: 0.82rem;
   color: #8696a0;
+  margin: 0.75rem 0;
+  line-height: 1.45;
+}
+
+.numberGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
   margin: 0.75rem 0;
 }
 
-.number {
-  font-family: monospace;
-  font-size: 1.25rem;
+.numberGroup {
+  font-family: ui-monospace, monospace;
+  font-size: 0.95rem;
   text-align: center;
   color: #00a884;
-  letter-spacing: 0.05em;
-  margin: 1rem 0;
+  background: #0b141a;
+  border: 1px solid #2a3942;
+  border-radius: 6px;
+  padding: 0.35rem 0.2rem;
+  letter-spacing: 0.04em;
+}
+
+.toolRow {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.toolBtn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid #2a3942;
+  color: #aebac1;
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.toolBtn:hover {
+  border-color: #00a884;
+  color: #00a884;
+}
+
+.copyToast {
+  font-size: 0.75rem;
+  color: #53d4b6;
+  margin: 0 0 0.5rem;
 }
 
 .qr {
@@ -57,10 +108,56 @@
   border-radius: 8px;
 }
 
-.peer {
-  font-size: 0.75rem;
-  color: #667781;
-  text-align: center;
+.compareSection {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  background: #0b141a;
+  border: 1px solid #2a3942;
+  border-radius: 8px;
+}
+
+.compareLabel {
+  display: block;
+  font-size: 0.78rem;
+  color: #8696a0;
+  margin-bottom: 0.35rem;
+}
+
+.compareInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid #2a3942;
+  background: #202c33;
+  color: #e9edef;
+  font-size: 0.82rem;
+}
+
+.compareOk {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: #53d4b6;
+}
+
+.compareBad {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: #f28b82;
+}
+
+.confirmRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  font-size: 0.8rem;
+  color: #aebac1;
+  cursor: pointer;
+}
+
+.confirmRow input {
+  margin-top: 0.15rem;
 }
 
 .error {
@@ -131,6 +228,11 @@
 .primaryBtn {
   background: #00a884;
   color: #0b141a;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .secondaryBtn {
