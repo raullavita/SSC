@@ -10,23 +10,25 @@ function hasNativeBridgeAttestation() {
 }
 
 function isInstalledRuntime() {
-  if (requiresProductionCrypto()) {
-    return hasNativeBridgeAttestation() && isLibsignalRuntimeAvailable();
-  }
-
-  if (isLibsignalRuntimeAvailable()) return true;
+  const platform = (process.env.REACT_APP_SSC_PLATFORM || '').trim().toLowerCase();
+  const installedPlatforms = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
 
   if (typeof window !== 'undefined') {
     if (window.__SSC_ELECTRON_CLIENT || window.__SSC_ANDROID_CLIENT || window.__SSC_IOS_CLIENT) {
       return true;
     }
+    if (window.__SSC_ANDROID_SHELL === '1') {
+      return true;
+    }
   }
 
-  const platform = (process.env.REACT_APP_SSC_PLATFORM || '').trim().toLowerCase();
-  const allowed = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
-  if (allowed.has(platform)) return true;
+  if (installedPlatforms.has(platform)) return true;
 
-  if (requiresProductionCrypto()) return false;
+  if (requiresProductionCrypto()) {
+    return hasNativeBridgeAttestation() && isLibsignalRuntimeAvailable();
+  }
+
+  if (isLibsignalRuntimeAvailable()) return true;
   return false;
 }
 
