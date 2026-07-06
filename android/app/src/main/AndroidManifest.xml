@@ -43,7 +43,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="ssc" android:host="auth" android:pathPrefix="/google" />
+                <data android:scheme="ssc" android:host="auth" />
             </intent-filter>
 
             <intent-filter android:autoVerify="true">

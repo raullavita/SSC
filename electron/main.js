@@ -11,8 +11,12 @@ let libsignalAvailable = false;
 try {
   require('@signalapp/libsignal-client');
   libsignalAvailable = true;
-} catch {
+} catch (err) {
   libsignalAvailable = false;
+  console.error(
+    '[ssc] libsignal-client failed to load — Windows Smart App Control often blocks unsigned .node files.',
+    err?.message || err,
+  );
 }
 
 function registerCryptoIpc() {
@@ -237,19 +241,25 @@ function handleDeepLink(rawUrl) {
   navigateInstalledRoute(routeFromDeepLink(rawUrl));
 }
 
+function fileUrlWithHash(filePath, hashRoute = '/') {
+  const normalized = filePath.replace(/\\/g, '/');
+  const route = hashRoute.startsWith('/') ? hashRoute : `/${hashRoute}`;
+  return `file:///${normalized.replace(/^\//, '')}#${route}`;
+}
+
 function loadWindow(win) {
   const devUrl = process.env.SSC_DEV_URL || 'http://localhost:3000';
   const prodFile = process.env.SSC_PROD_FILE;
 
   if (prodFile && fs.existsSync(prodFile)) {
-    win.loadFile(prodFile);
+    win.loadURL(fileUrlWithHash(prodFile, '/'));
     return;
   }
 
   if (app.isPackaged) {
     const indexPath = resolvePackagedIndex();
     if (indexPath) {
-      win.loadFile(indexPath);
+      win.loadURL(fileUrlWithHash(indexPath, '/'));
       return;
     }
   }
@@ -269,6 +279,9 @@ function createWindow() {
   });
 
   attachOAuthNavigationHandlers(win);
+  win.webContents.on('did-fail-load', (_event, code, description, url) => {
+    console.error('[ssc] did-fail-load', code, description, url);
+  });
   loadWindow(win);
   mainWindow = win;
   return win;

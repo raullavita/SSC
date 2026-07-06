@@ -1,6 +1,6 @@
 appId: com.supersecurechat.desktop
 productName: Super Secure Chat
-forceCodeSigning: false
+afterSign: scripts/afterSign.js
 publish:
   provider: github
   owner: raullavita
@@ -23,8 +23,6 @@ win:
   target:
     - nsis
     - portable
-  artifactName: SSC-Setup-${version}.${ext}
-  signAndEditExecutable: false
 mac:
   target:
     - dmg
@@ -38,5 +36,12 @@ protocols:
     schemes:
       - ssc
 nsis:
+  artifactName: SSC-Setup-${version}.${ext}
   oneClick: false
   allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Super Secure Chat
+  uninstallDisplayName: Super Secure Chat ${version}
+portable:
+  artifactName: SSC-${version}-portable.${ext}

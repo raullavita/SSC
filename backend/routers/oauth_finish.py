@@ -28,6 +28,11 @@ def _finish_html(*, oauth_code: str | None, error: str | None) -> str:
     .card {{ max-width: 28rem; }}
     .muted {{ color: #8696a0; margin-top: 1rem; font-size: 0.95rem; }}
     a {{ color: #00a884; }}
+    .btn {{
+      display: inline-block; margin-top: 1.25rem; padding: 0.9rem 1.4rem;
+      background: #00a884; color: #0b141a; font-weight: 600; text-decoration: none;
+      border-radius: 0.5rem; font-size: 1rem;
+    }}
   </style>
 </head>
 <body>
@@ -57,29 +62,29 @@ def _finish_html(*, oauth_code: str | None, error: str | None) -> str:
       const deepLink = 'ssc://auth/google?oauth_code=' + encodeURIComponent(code);
       const isElectron = /Electron/i.test(navigator.userAgent || '');
       const isAndroid = /Android/i.test(navigator.userAgent || '');
+      const pkg = 'com.supersecurechat.app';
+      const intentLink =
+        'intent://auth/google?oauth_code=' + encodeURIComponent(code) +
+        '#Intent;scheme=ssc;package=' + pkg +
+        ';action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;end';
 
       if (isAndroid && !isElectron) {{
-        try {{
-          window.location.replace(deepLink);
-        }} catch (_) {{}}
-        status.textContent = 'Returning to Super Secure Chat…';
+        status.textContent = 'Google sign-in complete';
+        hint.innerHTML =
+          '<a class="btn" id="open-ssc" href="' + intentLink + '">Open Super Secure Chat</a>' +
+          '<p class="muted">Tap the button to return to the app and finish sign-in.</p>';
         return;
       }}
 
-      if (isElectron) {{
-        status.textContent = 'Completing sign-in…';
-        hint.textContent = 'Returning to Super Secure Chat.';
-        return;
-      }}
-
-      try {{
-        window.location.replace(deepLink);
-      }} catch (_) {{}}
+      window.location.replace(deepLink);
+      hint.innerHTML =
+        '<a id="open-ssc" href="' + deepLink + '">Tap here if the app does not open</a>';
 
       setTimeout(function () {{
         status.textContent = 'Open Super Secure Chat to finish sign-in';
-        hint.innerHTML = 'If the app did not open automatically, switch back to SSC on this device.';
-      }}, 1800);
+        hint.innerHTML =
+          '<a id="open-ssc" href="' + deepLink + '">Tap here to return to SSC</a>';
+      }}, 1200);
     }})();
   </script>
 </body>
