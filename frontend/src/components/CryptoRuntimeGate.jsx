@@ -11,17 +11,23 @@ function isElectronShell() {
 }
 
 async function probeLibsignalRuntime() {
-  if (typeof window === 'undefined' || !window.sscCrypto) return false;
+  if (typeof window === 'undefined' || !window.sscCrypto) {
+    return { ok: false, preload: false, diagnostics: null };
+  }
   try {
-    const available = await window.sscCrypto.available;
-    return Boolean(available);
+    const [available, diagnostics] = await Promise.all([
+      window.sscCrypto.available,
+      window.sscCrypto.diagnostics?.() ?? null,
+    ]);
+    return { ok: Boolean(available), preload: true, diagnostics };
   } catch {
-    return false;
+    return { ok: false, preload: true, diagnostics: null };
   }
 }
 
 export default function CryptoRuntimeGate({ children }) {
   const [state, setState] = useState('checking');
+  const [detail, setDetail] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,8 +37,11 @@ export default function CryptoRuntimeGate({ children }) {
         if (!cancelled) setState('ready');
         return;
       }
-      const ok = await probeLibsignalRuntime();
-      if (!cancelled) setState(ok ? 'ready' : 'blocked');
+      const result = await probeLibsignalRuntime();
+      if (!cancelled) {
+        setDetail(result);
+        setState(result.ok ? 'ready' : 'blocked');
+      }
     }
 
     run();
@@ -51,14 +60,15 @@ export default function CryptoRuntimeGate({ children }) {
   }
 
   if (state === 'blocked') {
-    const preloadMissing = typeof window !== 'undefined' && !window.sscCrypto;
+    const preloadMissing = !detail?.preload;
+    const diag = detail?.diagnostics;
     return (
       <div className={styles.screen}>
         <h1>Encryption engine blocked</h1>
         {preloadMissing ? (
           <p>
-            SSC could not start its secure bridge (preload script failed). Reinstall from the
-            latest NSIS installer, or rebuild after the preload fix is applied.
+            SSC secure bridge did not load (old install or broken preload). Close the app and run
+            the latest installer: <strong>SSC-Setup-0.3.1-v4.exe</strong> on your Desktop.
           </p>
         ) : (
           <p>
@@ -67,12 +77,17 @@ export default function CryptoRuntimeGate({ children }) {
           </p>
         )}
         <p className={styles.muted}>
-          Fix options: turn off Smart App Control in Windows Security → App &amp; browser
-          control, or install a properly Authenticode-signed SSC build once signing is enabled
-          for releases.
+          Diagnostics: preload={detail?.preload ? 'ok' : 'missing'}; libsignal=
+          {diag?.libsignalAvailable ? 'ok' : 'blocked'}
+          {diag?.libsignalLoadError ? ` (${diag.libsignalLoadError})` : ''}
         </p>
         <p className={styles.muted}>
-          Check Windows Security → Protection history for the blocked file name.
+          Installed copy must be updated — old builds are in AppData\Local\Programs\Super Secure
+          Chat. Run the latest NSIS installer, or turn off Smart App Control under Windows
+          Security → App &amp; browser control.
+        </p>
+        <p className={styles.muted}>
+          Startup log: %APPDATA%\ssc-electron\ssc-startup.log
         </p>
       </div>
     );
