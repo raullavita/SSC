@@ -5,7 +5,7 @@
 
 const PLATFORM = process.env.REACT_APP_SSC_PLATFORM || 'electron';
 const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.0';
-const BUILD = process.env.REACT_APP_SSC_BUILD || '3';
+const BUILD = process.env.REACT_APP_SSC_BUILD || '8';
 
 const ALLOWED = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
 
@@ -43,11 +43,23 @@ export function getInstalledClientHeader() {
   return `${platform}/${VERSION}/${BUILD}`;
 }
 
+export function getNativeBridgeHeader() {
+  if (typeof window !== 'undefined' && window.__SSC_NATIVE_BRIDGE === 'v1') {
+    return 'v1';
+  }
+  return null;
+}
+
 export function getInstalledClientHeaders(extra = {}) {
-  return {
+  const headers = {
     'X-SSC-Client': getInstalledClientHeader(),
     ...extra,
   };
+  const bridge = getNativeBridgeHeader();
+  if (bridge) {
+    headers['X-SSC-Native-Bridge'] = bridge;
+  }
+  return headers;
 }
 
 export function isAndroidShell() {

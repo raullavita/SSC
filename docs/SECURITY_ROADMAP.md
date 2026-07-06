@@ -16,6 +16,7 @@ This document is the master plan from the red-team audit. Work proceeds phase by
 | httpOnly session cookies | Keys on disk unencrypted (Phase 2) |
 | Install-only client charter | No certificate pinning (Phase 2) |
 | Panic wipe + retention charters | iOS crypto stub (Phase 3) |
+| Phase 2 encrypted stores + pinning | — |
 
 ---
 
@@ -84,17 +85,29 @@ See GitHub issues #54–#75 and security issues opened from this audit.
 
 ## Phase 2 — Raise the walls (2–6 weeks)
 
-| # | Task | Closes |
-|---|------|--------|
-| 2.1 | Encrypt signal stores at rest (Keystore / safeStorage / Keychain) | C6 |
-| 2.2 | Certificate pinning on API + WSS | C9 |
-| 2.3 | Harden Android WebView (remove file URL access, restrict bridge) | C7 |
-| 2.4 | Native bridge attestation (not `window.__SSC_*` alone) | C5, H7 |
-| 2.5 | Argon2id for recovery passphrases | H3 |
-| 2.6 | Redis for OAuth one-time codes + recovery tokens | H4 |
-| 2.7 | Content-Security-Policy on API + WebView shells | H6 |
-| 2.8 | Prekey fetch authz or strict rate limits | H8 |
-| 2.9 | Minimum client build version on API | — |
+| # | Task | Closes | Status |
+|---|------|--------|--------|
+| 2.1 | Encrypt signal stores at rest (Keystore / safeStorage / Keychain) | C6 | **Done** |
+| 2.2 | Certificate pinning on API + WSS | C9 | **Done** |
+| 2.3 | Harden Android WebView (remove file URL access, restrict bridge) | C7 | **Done** |
+| 2.4 | Native bridge attestation (not `window.__SSC_*` alone) | C5, H7 | **Done** |
+| 2.5 | Argon2id for recovery passphrases | H3 | **Done** |
+| 2.6 | Redis for OAuth one-time codes + recovery tokens | H4 | **Done** |
+| 2.7 | Content-Security-Policy on API + WebView shells | H6 | **Done** |
+| 2.8 | Prekey fetch authz or strict rate limits | H8 | **Done** |
+| 2.9 | Minimum client build version on API | — | **Done** |
+
+**Phase 2 exit criteria** (verified 2026-07-06)
+
+- [x] Android `SscSecureStore` (Keystore AES-GCM) + Electron `safeStorage` for signal JSON stores
+- [x] Android `network_security_config.xml` + Electron `setCertificateVerifyProc` pinning
+- [x] `X-SSC-Native-Bridge: v1` required in production (`installed_client_policy.py`)
+- [x] Recovery passphrases use Argon2id with legacy SHA256 migration (`recovery_crypto.py`)
+- [x] OAuth codes + recovery tokens in Redis via `short_lived_tokens.py`
+- [x] CSP on API responses; prekey fetch rate limits; min client build 8
+- [x] `scripts/verify_phase2_build_policy.ps1`
+- [x] `pytest tests/test_phase2_security.py -q`
+- [x] `yarn test:ci`
 
 ---
 
@@ -145,6 +158,11 @@ yarn test:ci
 # Phase 1 security tests
 cd backend
 .\venv\Scripts\python.exe -m pytest tests/test_phase1_security.py -q
+
+# Phase 2 security tests + build policy
+.\venv\Scripts\python.exe -m pytest tests/test_phase2_security.py -q
+cd ..
+.\scripts\verify_phase2_build_policy.ps1
 ```
 
 ---

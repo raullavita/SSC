@@ -7,7 +7,10 @@ from httpx import ASGITransport, AsyncClient
 
 from server import create_app
 
-CLIENT_HEADERS = {"X-SSC-Client": "electron/0.3.0/3"}
+CLIENT_HEADERS = {
+    "X-SSC-Client": "electron/0.3.0/8",
+    "X-SSC-Native-Bridge": "v1",
+}
 
 
 async def _stub_mongo_probe():
@@ -25,14 +28,26 @@ async def _no_redis():
 @pytest.fixture(autouse=True)
 def isolate_external_services(monkeypatch):
     """Avoid hanging on localhost Mongo/Redis when services are not running."""
-    from core.abuse_policy import auth_rate_limiter, feedback_rate_limiter, file_rate_limiter, msg_rate_limiter
+    from core.abuse_policy import (
+        auth_rate_limiter,
+        feedback_rate_limiter,
+        file_rate_limiter,
+        msg_rate_limiter,
+        prekey_fetch_limiter,
+    )
     from core.oauth_state import clear_oauth_states_for_tests
+    from core.short_lived_tokens import clear_memory_tokens_for_tests
 
     auth_rate_limiter.clear()
     feedback_rate_limiter.clear()
     msg_rate_limiter.clear()
     file_rate_limiter.clear()
+    prekey_fetch_limiter.clear()
     clear_oauth_states_for_tests()
+    clear_memory_tokens_for_tests()
+
+    monkeypatch.setenv("SSC_REQUIRE_NATIVE_BRIDGE", "false")
+    monkeypatch.setenv("SSC_MIN_CLIENT_BUILD", "1")
 
     monkeypatch.setattr("db.probe_mongo", _stub_mongo_probe)
     monkeypatch.setattr("db.probe_redis", _stub_redis_probe)

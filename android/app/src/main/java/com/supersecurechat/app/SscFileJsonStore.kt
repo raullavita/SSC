@@ -7,14 +7,13 @@ class SscFileJsonStore(private val file: File) {
     val data: JSONObject = load()
 
     fun save() {
-        file.parentFile?.mkdirs()
-        file.writeText(data.toString())
+        SscSecureStore.writeText(file, data.toString())
     }
 
     private fun load(): JSONObject {
         if (!file.exists()) return JSONObject()
         return try {
-            JSONObject(file.readText())
+            JSONObject(SscSecureStore.readText(file))
         } catch (_: Exception) {
             JSONObject()
         }

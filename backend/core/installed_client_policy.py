@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 
+from core.client_version_policy import client_meets_minimum
+
 INSTALLED_CLIENT_HEADER = "X-SSC-Client"
+NATIVE_BRIDGE_HEADER = "X-SSC-Native-Bridge"
+NATIVE_BRIDGE_VALUE = "v1"
 
 ALLOWED_PLATFORMS: frozenset[str] = frozenset(
     {"android", "ios", "windows", "mac", "electron"}
@@ -68,7 +73,20 @@ def is_exempt_path(path: str) -> bool:
     return normalized == "/api/health"
 
 
-def validate_request(path: str, header_value: str | None) -> tuple[bool, str]:
+def _require_native_bridge() -> bool:
+    from config import get_settings
+
+    default = "true" if get_settings().is_production else "false"
+    raw = os.getenv("SSC_REQUIRE_NATIVE_BRIDGE", default).strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+def validate_request(
+    path: str,
+    header_value: str | None,
+    *,
+    native_bridge: str | None = None,
+) -> tuple[bool, str]:
     if not path.startswith("/api"):
         return True, ""
     if is_exempt_path(path):
@@ -79,6 +97,13 @@ def validate_request(path: str, header_value: str | None) -> tuple[bool, str]:
             "installed_client_required: SSC works only in the "
             "installed Android, iOS, Windows, or Mac app"
         )
+    ok, detail = client_meets_minimum(identity)
+    if not ok:
+        return False, detail
+    if _require_native_bridge():
+        bridge = (native_bridge or "").strip()
+        if bridge != NATIVE_BRIDGE_VALUE:
+            return False, "native_bridge_required"
     return True, ""
 
 

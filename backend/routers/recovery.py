@@ -1,24 +1,24 @@
-"""Account recovery keys — hash-only storage — Phase C5."""
+"""Account recovery keys — Argon2id hash-only storage — Phase 2."""
 
 from __future__ import annotations
 
-import hashlib
-import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, EmailStr, Field
 
 from core.passwords import hash_password
+from core.recovery_crypto import hash_recovery_passphrase, needs_rehash, verify_recovery_passphrase
 from core.recovery_policy import RECOVERY_KEY_MAX_LEN, RECOVERY_KEY_MIN_LEN
 from core.session_issue import issue_user_session
+from core.short_lived_tokens import issue_token, consume_token
 from db import get_database
 from deps import get_client_header, get_current_user_id
 
 router = APIRouter(prefix="/auth/recovery", tags=["recovery"])
 
 RECOVERY_TOKEN_TTL = timedelta(minutes=15)
-_recovery_tokens: dict[str, dict] = {}
+_RECOVERY_TOKEN_NS = "recovery_token"
 
 
 class RecoverySetupBody(BaseModel):
@@ -35,26 +35,19 @@ class RecoveryResetBody(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
-def _hash_recovery_passphrase(passphrase: str) -> str:
-    return hashlib.sha256(passphrase.encode("utf-8")).hexdigest()
+async def _issue_recovery_token(user_id: str) -> str:
+    return await issue_token(
+        _RECOVERY_TOKEN_NS,
+        {"user_id": user_id},
+        int(RECOVERY_TOKEN_TTL.total_seconds()),
+    )
 
 
-def _issue_recovery_token(user_id: str) -> str:
-    token = secrets.token_urlsafe(32)
-    _recovery_tokens[token] = {
-        "user_id": user_id,
-        "expires_at": datetime.now(timezone.utc) + RECOVERY_TOKEN_TTL,
-    }
-    return token
-
-
-def _consume_recovery_token(token: str) -> str | None:
-    row = _recovery_tokens.pop(token, None)
-    if not row:
+async def _consume_recovery_token(token: str) -> str | None:
+    record = await consume_token(_RECOVERY_TOKEN_NS, token)
+    if not record:
         return None
-    if row["expires_at"] < datetime.now(timezone.utc):
-        return None
-    return row["user_id"]
+    return str(record.get("user_id", "")) or None
 
 
 @router.get("/status")
@@ -75,13 +68,14 @@ async def setup_recovery(
 ) -> dict:
     db = get_database()
     now = datetime.now(timezone.utc)
-    recovery_hash = _hash_recovery_passphrase(body.recovery_passphrase)
+    recovery_hash = hash_recovery_passphrase(body.recovery_passphrase)
     await db.recovery_keys.update_one(
         {"user_id": user_id},
         {
             "$set": {
                 "user_id": user_id,
                 "recovery_hash": recovery_hash,
+                "hash_algo": "argon2id",
                 "updated_at": now,
             },
             "$setOnInsert": {"_id": f"rk_{user_id}", "created_at": now},
@@ -104,11 +98,17 @@ async def verify_recovery(
     if not stored:
         raise HTTPException(status_code=404, detail="recovery_not_configured")
 
-    submitted = _hash_recovery_passphrase(body.recovery_passphrase)
-    if not secrets.compare_digest(submitted, stored["recovery_hash"]):
+    if not verify_recovery_passphrase(body.recovery_passphrase, stored["recovery_hash"]):
         raise HTTPException(status_code=403, detail="recovery_invalid")
 
-    token = _issue_recovery_token(user["_id"])
+    if needs_rehash(stored["recovery_hash"]):
+        new_hash = hash_recovery_passphrase(body.recovery_passphrase)
+        await db.recovery_keys.update_one(
+            {"user_id": user["_id"]},
+            {"$set": {"recovery_hash": new_hash, "hash_algo": "argon2id"}},
+        )
+
+    token = await _issue_recovery_token(user["_id"])
     return {"ok": True, "recovery_token": token, "expires_in_seconds": int(RECOVERY_TOKEN_TTL.total_seconds())}
 
 
@@ -118,7 +118,7 @@ async def reset_password_with_recovery(
     response: Response,
     _client: str = Depends(get_client_header),
 ) -> dict:
-    user_id = _consume_recovery_token(body.recovery_token)
+    user_id = await _consume_recovery_token(body.recovery_token)
     if not user_id:
         raise HTTPException(status_code=403, detail="recovery_token_invalid")
 

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from config import get_settings
+from core.abuse_policy import prekey_fetch_limiter
 from core.pqxdh_policy import validate_kyber_prekey
 from core.signal_policy import (
     FORBIDDEN_PREKEY_FIELDS,
@@ -87,8 +88,10 @@ async def fetch_prekey_bundle(
     target_user_id: str,
     device_id: str,
     _client: str = Depends(get_client_header),
-    _viewer: str = Depends(get_current_user_id),
+    viewer: str = Depends(get_current_user_id),
 ) -> dict:
+    if not await prekey_fetch_limiter.allow(f"prekey_fetch:{viewer}:{target_user_id}:{device_id}"):
+        raise HTTPException(status_code=429, detail="prekey_fetch_rate_limited")
     db = get_database()
     doc_id = f"{target_user_id}:{device_id}"
     doc = await db.prekeys.find_one({"_id": doc_id})
@@ -101,8 +104,10 @@ async def fetch_prekey_bundle(
 async def list_user_prekey_devices(
     target_user_id: str,
     _client: str = Depends(get_client_header),
-    _viewer: str = Depends(get_current_user_id),
+    viewer: str = Depends(get_current_user_id),
 ) -> dict:
+    if not await prekey_fetch_limiter.allow(f"prekey_list:{viewer}:{target_user_id}"):
+        raise HTTPException(status_code=429, detail="prekey_fetch_rate_limited")
     db = get_database()
     cursor = db.prekeys.find({"user_id": target_user_id})
     devices = [public_prekey_bundle(doc) async for doc in cursor]

@@ -5,7 +5,15 @@ import { isLibsignalRuntimeAvailable, requiresProductionCrypto } from '../lib/cr
  * Blocks browser-tab chat in production client builds.
  * Step 4: production crypto builds also require libsignal runtime (Electron/Android bridge).
  */
+function hasNativeBridgeAttestation() {
+  return typeof window !== 'undefined' && window.__SSC_NATIVE_BRIDGE === 'v1';
+}
+
 function isInstalledRuntime() {
+  if (requiresProductionCrypto()) {
+    return hasNativeBridgeAttestation() && isLibsignalRuntimeAvailable();
+  }
+
   if (isLibsignalRuntimeAvailable()) return true;
 
   if (typeof window !== 'undefined') {

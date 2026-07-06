@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from core.client_version_policy import min_client_build, min_client_version
 from core.firebase_init import firebase_ready
+from core.release_policy import RELEASE_BUILD, RELEASE_VERSION
 from core.sfu_policy import SFU_ENABLED, SFU_WS_URL
 
 router = APIRouter(tags=["config"])
@@ -37,6 +39,11 @@ async def public_config() -> dict:
         "multi_device": True,
         "group_chat": True,
         "sfu_provider": "mediasoup",
+        "release_version": RELEASE_VERSION,
+        "release_build": RELEASE_BUILD,
+        "min_client_version": min_client_version(),
+        "min_client_build": min_client_build(),
+        "native_bridge_required": True,
     }
 
 

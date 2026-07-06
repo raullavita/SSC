@@ -24,6 +24,9 @@ def add_security_headers(response: Response) -> None:
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     if get_settings().is_production:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    )
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -66,7 +69,8 @@ class InstalledClientMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
         header_value = request.headers.get(INSTALLED_CLIENT_HEADER)
-        ok, detail = validate_request(path, header_value)
+        native_bridge = request.headers.get("X-SSC-Native-Bridge")
+        ok, detail = validate_request(path, header_value, native_bridge=native_bridge)
         if not ok:
             return JSONResponse(status_code=403, content={"detail": detail})
         return await call_next(request)

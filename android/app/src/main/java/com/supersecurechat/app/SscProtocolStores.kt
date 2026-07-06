@@ -70,7 +70,7 @@ class SscIdentityStore(
     private fun loadTrusted(): JSONObject {
         if (!trustedFile.exists()) return JSONObject()
         return try {
-            JSONObject(trustedFile.readText())
+            JSONObject(SscSecureStore.readText(trustedFile))
         } catch (_: Exception) {
             JSONObject()
         }
@@ -79,7 +79,7 @@ class SscIdentityStore(
     private fun loadPair(): IdentityKeyPair {
         pair?.let { return it }
         if (identityFile.exists()) {
-            val doc = JSONObject(identityFile.readText())
+            val doc = JSONObject(SscSecureStore.readText(identityFile))
             pair = IdentityKeyPair(B64.decode(doc.getString("identityKeyPair")))
             meta.registrationId = doc.getInt("registrationId")
             meta.deviceId = doc.optString("deviceId", meta.deviceId)
@@ -89,14 +89,14 @@ class SscIdentityStore(
         val generated = IdentityKeyPair.generate()
         meta.registrationId = (1..16380).random()
         if (meta.deviceId.isEmpty()) meta.deviceId = "1"
-        identityFile.parentFile?.mkdirs()
-        identityFile.writeText(
+        SscSecureStore.writeText(
+            identityFile,
             JSONObject()
                 .put("identityKeyPair", B64.encode(generated.serialize()))
                 .put("registrationId", meta.registrationId)
                 .put("deviceId", meta.deviceId)
                 .put("localUserId", meta.localUserId ?: JSONObject.NULL)
-                .toString()
+                .toString(),
         )
         pair = generated
         return generated
@@ -116,7 +116,7 @@ class SscIdentityStore(
         val key = address.toString()
         val prev = trusted.optString(key, "")
         trusted.put(key, B64.encode(identityKey.serialize()))
-        trustedFile.writeText(trusted.toString())
+        SscSecureStore.writeText(trustedFile, trusted.toString())
         return if (prev.isNotEmpty()) {
             IdentityKeyStore.IdentityChange.REPLACED_EXISTING
         } else {

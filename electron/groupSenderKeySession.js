@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const { randomUUID } = require('crypto');
+const { FileJsonStore } = require('./secureFileStore');
 const {
   ProtocolAddress,
   SenderKeyRecord,
@@ -22,25 +23,6 @@ function b64encode(buf) {
 
 function b64decode(str) {
   return new Uint8Array(Buffer.from(str, 'base64'));
-}
-
-class FileJsonStore {
-  constructor(dir, filename) {
-    this.file = path.join(dir, filename);
-    this.data = {};
-    if (fs.existsSync(this.file)) {
-      try {
-        this.data = JSON.parse(fs.readFileSync(this.file, 'utf8'));
-      } catch {
-        this.data = {};
-      }
-    }
-  }
-
-  save() {
-    fs.mkdirSync(path.dirname(this.file), { recursive: true });
-    fs.writeFileSync(this.file, JSON.stringify(this.data));
-  }
 }
 
 class SscSenderKeyStore extends SenderKeyStore {
