@@ -2,6 +2,7 @@
  * SSC API client — installed-client header + httpOnly session cookies (Engine 5).
  */
 
+import { androidApiFetch, androidApiFetchEnabled } from './androidApiFetch';
 import { getInstalledClientHeaders } from './installedClient';
 
 const API_BASE = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
@@ -19,12 +20,17 @@ function authHeaders(extra = {}) {
 }
 
 export async function apiFetch(path, options = {}) {
-  const response = await fetch(buildUrl(path), {
+  const url = buildUrl(path);
+  const headers = authHeaders(options.headers || {});
+  const init = {
     ...options,
-    headers: authHeaders(options.headers || {}),
+    headers,
     credentials: options.credentials ?? 'include',
-  });
-  return response;
+  };
+  if (androidApiFetchEnabled() && url.includes('/api/')) {
+    return androidApiFetch(url, init);
+  }
+  return fetch(url, init);
 }
 
 export async function apiJson(path, options = {}) {
