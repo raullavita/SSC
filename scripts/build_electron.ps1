@@ -38,7 +38,6 @@ $installer = Get-ChildItem "$Root\electron\dist\SSC-Setup-*.exe" -ErrorAction Si
   Where-Object { $_.Name -notmatch 'portable' } |
   Sort-Object LastWriteTime -Descending |
   Select-Object -First 1
-$portable = Get-ChildItem "$Root\electron\dist\SSC-*-portable*.exe" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($installer -and $installer.Length -gt 10MB) {
   $desktopInstaller = "$env:USERPROFILE\Desktop\SSC-Setup-0.3.1.exe"
   try {
@@ -50,10 +49,7 @@ if ($installer -and $installer.Length -gt 10MB) {
     Write-Host "Desktop copy locked - wrote $alt instead. Close the running SSC app and rename if needed."
   }
 } else {
-  Write-Host "WARN: NSIS installer not found - check electron\dist for SSC-Setup-0.3.1.exe (not portable)"
-}
-if ($portable) {
-  Write-Host "Portable build (no installer): $($portable.FullName)"
+  Write-Host "WARN: NSIS installer not found - check electron\dist for SSC-Setup-0.3.1.exe"
 }
 
 Write-Host "Electron installer artifacts in electron\dist"

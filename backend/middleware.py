@@ -17,22 +17,34 @@ from core.installed_client_policy import (
 )
 
 
-def add_security_headers(response: Response) -> None:
+def _oauth_finish_path(path: str) -> bool:
+    normalized = path.split("?", 1)[0].rstrip("/") or "/"
+    return normalized == "/auth/google"
+
+
+def add_security_headers(response: Response, *, request_path: str = "") -> None:
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     if get_settings().is_production:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    response.headers["Content-Security-Policy"] = (
-        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
-    )
+    if _oauth_finish_path(request_path):
+        # OAuth finish page uses inline script/style to deep-link back into installed clients.
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+            "frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+        )
+    else:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+        )
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
-        add_security_headers(response)
+        add_security_headers(response, request_path=request.url.path)
         return response
 
 
