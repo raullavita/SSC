@@ -139,8 +139,7 @@ function navigateInstalledRoute(route) {
   const indexPath = resolvePackagedIndex();
   if (!indexPath) return;
   const normalized = route.startsWith('/') ? route : `/${route}`;
-  const target = `file://${indexPath.replace(/\\/g, '/')}#${normalized}`;
-  mainWindow.loadURL(target);
+  mainWindow.loadURL(fileUrlWithHash(indexPath, normalized));
 }
 
 const API_HOST = (process.env.SSC_API_HOST || 'api.supersecurechat.com').toLowerCase();

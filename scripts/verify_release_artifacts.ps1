@@ -20,10 +20,10 @@ function Assert-Ok([string]$Name, [bool]$Passed, [string]$Detail) {
 }
 
 if (-not $ExePath) {
-    $ExePath = Join-Path $Root "electron\dist\SSC-Setup-0.3.0.exe"
+    $ExePath = Join-Path $Root "electron\dist\SSC-Setup-0.3.1.exe"
 }
 if (-not $ApkPath) {
-    $ApkPath = Join-Path $Root "android\app\build\outputs\apk\release\SSC-0.3.0.apk"
+    $ApkPath = Join-Path $Root "android\app\build\outputs\apk\release\SSC-0.3.1.apk"
 }
 if (-not $UnpackedDir) {
     $UnpackedDir = Join-Path $Root "electron\dist\win-unpacked"
