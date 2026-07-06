@@ -5,9 +5,10 @@ import { api } from '../lib/api';
 import styles from './Landing.module.css';
 
 const LANDING_ONLY = process.env.REACT_APP_SSC_LANDING_ONLY === 'true';
+const RELEASE_TAG = process.env.REACT_APP_SSC_RELEASE_TAG || 'v0.3.0';
 const RELEASE_BASE =
   process.env.REACT_APP_SSC_RELEASE_URL ||
-  'https://github.com/raullavita/SSC/releases/latest/download';
+  `https://github.com/raullavita/SSC/releases/download/${RELEASE_TAG}`;
 const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.0';
 const BUILD = process.env.REACT_APP_SSC_BUILD || '8';
 const GITHUB_REPO = 'https://github.com/raullavita/SSC';
@@ -315,7 +316,8 @@ function LandingPublic() {
           Download v{VERSION} (build {BUILD})
         </h2>
         <p className={styles.lead}>
-          Install the app to sign up and chat. Builds are published on GitHub Releases.
+          Install the app to sign up and chat. Same build {BUILD} binaries on this site and{' '}
+          <a href={`${GITHUB_REPO}/releases/tag/${RELEASE_TAG}`}>GitHub {RELEASE_TAG}</a>.
         </p>
         <div className={styles.platforms}>
           <div className={styles.platform}>
@@ -346,9 +348,9 @@ function LandingPublic() {
           </div>
         </div>
         <p className={styles.muted}>
-          <a href={`${GITHUB_REPO}/releases`}>All releases on GitHub</a>
+          <a href={`${GITHUB_REPO}/releases/tag/${RELEASE_TAG}`}>GitHub release {RELEASE_TAG} (build {BUILD})</a>
           {' · '}
-          Android testers: Firebase App Distribution (SSC Installed)
+          <a href={`${GITHUB_REPO}/releases`}>All releases</a>
           {' · '}
           API: <a href="https://api.supersecurechat.com/api/health">api.supersecurechat.com</a>
         </p>

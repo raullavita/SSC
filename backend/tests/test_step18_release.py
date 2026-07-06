@@ -8,6 +8,10 @@ from core.release_policy import (
     ANDROID_ARTIFACT,
     ANDROID_CLIENT_HEADER,
     ELECTRON_ARTIFACT,
+    ELECTRON_CLIENT_HEADER,
+    GITHUB_RELEASE_DOWNLOAD_BASE,
+    RELEASE_BUILD,
+    RELEASE_LABEL,
     RELEASE_TAG,
     RELEASE_VERSION,
     step18_release_ready,
@@ -18,10 +22,14 @@ REPO = Path(__file__).resolve().parents[2]
 
 def test_release_constants():
     assert RELEASE_VERSION == "0.3.0"
+    assert RELEASE_BUILD == "8"
     assert RELEASE_TAG == "v0.3.0"
+    assert RELEASE_LABEL == "v0.3.0 (build 8)"
     assert ELECTRON_ARTIFACT == "SSC-Setup-0.3.0.exe"
     assert ANDROID_ARTIFACT == "SSC-0.3.0.apk"
+    assert ELECTRON_CLIENT_HEADER == "electron/0.3.0/8"
     assert ANDROID_CLIENT_HEADER == "android/0.3.0/8"
+    assert GITHUB_RELEASE_DOWNLOAD_BASE.endswith("/releases/download/v0.3.0")
     assert step18_release_ready()
 
 
