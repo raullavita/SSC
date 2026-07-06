@@ -132,4 +132,10 @@ async def test_list_read_receipts_for_sender():
     )
 
     reads = await list_read_receipts_for_sender(db, "u_a", "c_1")
-    assert reads == [{"message_id": "m_1", "read_at": "2026-07-05T00:00:00+00:00"}]
+    assert reads == [
+        {
+            "message_id": "m_1",
+            "read_at": "2026-07-05T00:00:00+00:00",
+            "reader_id": "u_b",
+        }
+    ]

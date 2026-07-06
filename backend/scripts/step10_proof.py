@@ -52,7 +52,7 @@ def main() -> int:
 
     for rel, needles in [
         ("frontend/src/lib/inviteLink.js", ["inviteWebUrl", "lookupPathForQuery"]),
-        ("frontend/src/components/InviteQr.jsx", ["QRCode"]),
+        ("frontend/src/components/DeviceLinkQr.jsx", ["QRCode"]),
         ("frontend/src/pages/AddContact.jsx", ["/api/conversations"]),
         ("frontend/src/pages/AddContactLanding.jsx", ["Download"]),
         ("frontend/src/components/chat/UserLookup.jsx", ["@username"]),

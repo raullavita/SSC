@@ -38,10 +38,13 @@ class SscNativeBridge(
         executor.execute {
             try {
                 val args = if (argsJson.isBlank()) JSONObject() else JSONObject(argsJson)
-                val result = SscCryptoService.dispatch(method, args)
+                val result = when {
+                    method.startsWith("translate") -> SscTranslateService.dispatch(method, args)
+                    else -> SscCryptoService.dispatch(method, args)
+                }
                 deliver(callbackId, true, result)
             } catch (error: Throwable) {
-                deliver(callbackId, false, error.message ?: "ssc_crypto_error")
+                deliver(callbackId, false, error.message ?: "ssc_native_error")
             }
         }
     }

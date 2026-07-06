@@ -7,6 +7,7 @@
     "build": "craco build",
     "test": "craco test",
     "test:ci": "craco test --watchAll=false --passWithNoTests",
+    "knip": "knip --config knip.json",
     "eject": "react-scripts eject"
   },
   "dependencies": {
@@ -22,11 +23,12 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.1.0",
-    "webpack": "^5.95.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
-    "@testing-library/user-event": "^14.5.2"
+    "@testing-library/user-event": "^14.5.2",
+    "knip": "^6.24.0",
+    "webpack": "^5.95.0"
   },
   "browserslist": {
     "production": [

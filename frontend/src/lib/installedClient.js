@@ -24,18 +24,6 @@ function runtimeClientHeader() {
   return null;
 }
 
-export function isIosShell() {
-  return typeof window !== 'undefined' && window.__SSC_IOS_SHELL === '1';
-}
-
-export function getIosShellFeatures() {
-  if (typeof window === 'undefined' || !window.__SSC_IOS_FEATURES) return [];
-  return String(window.__SSC_IOS_FEATURES)
-    .split(',')
-    .map((f) => f.trim())
-    .filter(Boolean);
-}
-
 export function getInstalledClientHeader() {
   const runtime = runtimeClientHeader();
   if (runtime) return runtime;
@@ -43,14 +31,14 @@ export function getInstalledClientHeader() {
   return `${platform}/${VERSION}/${BUILD}`;
 }
 
-export function getNativeBridgeHeader() {
+function getNativeBridgeHeader() {
   if (typeof window !== 'undefined' && window.__SSC_NATIVE_BRIDGE === 'v1') {
     return 'v1';
   }
   return null;
 }
 
-export function getDeviceAttestHeader() {
+function getDeviceAttestHeader() {
   if (typeof window !== 'undefined' && window.__SSC_DEVICE_ATTEST) {
     return String(window.__SSC_DEVICE_ATTEST);
   }
@@ -73,11 +61,11 @@ export function getInstalledClientHeaders(extra = {}) {
   return headers;
 }
 
-export function isAndroidShell() {
+function isAndroidShell() {
   return typeof window !== 'undefined' && window.__SSC_ANDROID_SHELL === '1';
 }
 
-export function getAndroidShellFeatures() {
+function getAndroidShellFeatures() {
   if (typeof window === 'undefined' || !window.__SSC_ANDROID_FEATURES) return [];
   return String(window.__SSC_ANDROID_FEATURES)
     .split(',')

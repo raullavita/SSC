@@ -4,6 +4,14 @@ $Root = Split-Path -Parent $PSScriptRoot
 $Version = "0.3.0"
 $Build = "8"
 
+$signingLoaded = & "$PSScriptRoot\load_android_signing.ps1"
+if ($signingLoaded -and $env:SSC_ANDROID_KEYSTORE) {
+    Write-Host "Release signing: $($env:SSC_ANDROID_KEYSTORE)"
+} else {
+    Write-Host "WARN: No release keystore — using debug keystore (fine for dev, not for releases)."
+    Write-Host "      Run .\scripts\create_android_keystore.ps1 first."
+}
+
 Write-Host "Building frontend for Android..."
 Push-Location "$Root\frontend"
 $env:REACT_APP_SSC_PLATFORM = "android"

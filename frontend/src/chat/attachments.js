@@ -5,7 +5,7 @@
 import { api } from '../lib/api';
 import { encryptMessage } from '../signal/signalBridge';
 
-export const ATTACHMENT_PROTOCOL = 'signal_v1_attachment';
+const ATTACHMENT_PROTOCOL = 'signal_v1_attachment';
 
 export async function sendAttachmentMessage(
   conversationId,

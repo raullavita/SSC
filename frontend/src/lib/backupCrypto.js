@@ -3,11 +3,11 @@
  * Uses Web Crypto PBKDF2 + AES-256-GCM; never sent to server.
  */
 
-export const BACKUP_FORMAT = 'ssc-backup';
-export const BACKUP_VERSION = 1;
+const BACKUP_FORMAT = 'ssc-backup';
+const BACKUP_VERSION = 1;
 export const BACKUP_FILE_EXTENSION = '.ssc-backup';
 export const MIN_PASSPHRASE_LENGTH = 8;
-export const PBKDF2_ITERATIONS = 310000;
+const PBKDF2_ITERATIONS = 310000;
 
 const FORBIDDEN_KEY_FRAGMENTS = ['access_token', 'refresh_token', 'jwt'];
 
@@ -61,7 +61,7 @@ export function isForbiddenBackupKey(key) {
   return FORBIDDEN_KEY_FRAGMENTS.some((fragment) => lower.includes(fragment));
 }
 
-export function assertPassphrase(passphrase) {
+function assertPassphrase(passphrase) {
   if (!passphrase || passphrase.length < MIN_PASSPHRASE_LENGTH) {
     throw new Error(`Passphrase must be at least ${MIN_PASSPHRASE_LENGTH} characters`);
   }

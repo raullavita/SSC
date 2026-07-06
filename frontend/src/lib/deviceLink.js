@@ -16,7 +16,7 @@ export function getLocalDeviceId() {
   }
 }
 
-export function deviceLinkPath(token) {
+function deviceLinkPath(token) {
   if (!token) return '/link-device';
   return `/link-device?token=${encodeURIComponent(token)}`;
 }

@@ -1,3 +1,9 @@
+import { useEffect, useMemo, useState } from 'react';
+import {
+  buildSafetyQrPayload,
+  comparePastedSafetyValue,
+  splitSafetyNumberGroups,
+} from '../../lib/safetyVerify';
 import { trustBadgeLabel } from '../../lib/trustStore';
 import SafetyQr from './SafetyQr';
 import styles from './SafetyVerifyModal.module.css';
@@ -10,6 +16,7 @@ function statusClass(status) {
 
 export default function SafetyVerifyModal({
   peerId,
+  peerLabel,
   open,
   onClose,
   trust,
@@ -18,22 +25,62 @@ export default function SafetyVerifyModal({
   error,
   onMarkVerified,
   onResetTrust,
+  onRefresh,
 }) {
+  const [compareInput, setCompareInput] = useState('');
+  const [compareConfirmed, setCompareConfirmed] = useState(false);
+  const [copyMessage, setCopyMessage] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setCompareInput('');
+      setCompareConfirmed(false);
+      setCopyMessage('');
+    }
+  }, [open, peerId]);
+
   if (!open) return null;
 
-  const qrPayload =
-    peerId && safetyNumber?.displayable
-      ? `ssc://verify/${peerId}/${safetyNumber.displayable.replace(/\s+/g, '')}`
-      : null;
-
+  const displayable = safetyNumber?.displayable || '';
+  const groups = splitSafetyNumberGroups(displayable);
+  const qrPayload = buildSafetyQrPayload(peerId, displayable);
   const status = trust?.status || 'default';
-  const canMarkVerified = status !== 'verified' && safetyNumber?.displayable;
+  const isVerified = status === 'verified';
+
+  const compareResult = useMemo(
+    () => comparePastedSafetyValue(displayable, compareInput),
+    [displayable, compareInput]
+  );
+
+  const peerMismatch =
+    compareResult.peerId && peerId && compareResult.peerId !== peerId;
+
+  const canMarkVerified =
+    !isVerified &&
+    displayable &&
+    (compareConfirmed || (compareResult.match && !peerMismatch));
+
+  async function handleCopy() {
+    if (!displayable) return;
+    try {
+      await navigator.clipboard.writeText(displayable);
+      setCopyMessage('Copied to clipboard');
+    } catch {
+      setCopyMessage(displayable);
+    }
+  }
+
+  function handleMarkVerified() {
+    if (!canMarkVerified) return;
+    onMarkVerified?.();
+    onClose?.();
+  }
 
   return (
     <div className={styles.overlay} role="dialog" aria-label="Verify safety number">
       <div className={styles.modal}>
         <header className={styles.header}>
-          <h2>Verify contact</h2>
+          <h2>Safety number</h2>
           <button type="button" onClick={onClose} className={styles.close}>
             ✕
           </button>
@@ -43,24 +90,85 @@ export default function SafetyVerifyModal({
           {trustBadgeLabel(status)}
         </span>
 
+        <p className={styles.peerLine}>
+          Contact: <strong>{peerLabel || peerId}</strong>
+        </p>
+
         <p className={styles.hint}>
-          Compare this number in person with your contact. If they match, mark the contact as
-          verified.
+          Compare this number with your contact in person, or scan the QR code on their device.
+          Only mark verified after the numbers match exactly.
         </p>
 
         {loading && <p className={styles.loading}>Loading safety number…</p>}
         {error && <p className={styles.error}>{error}</p>}
 
-        {safetyNumber?.displayable && (
+        {displayable && (
           <>
-            <p className={styles.number}>{safetyNumber.displayable}</p>
+            <div className={styles.numberGrid} aria-label="Safety number digit groups">
+              {groups.map((group) => (
+                <span key={group} className={styles.numberGroup}>
+                  {group}
+                </span>
+              ))}
+            </div>
+
+            <div className={styles.toolRow}>
+              <button type="button" className={styles.toolBtn} onClick={handleCopy}>
+                Copy number
+              </button>
+              {onRefresh && (
+                <button type="button" className={styles.toolBtn} onClick={onRefresh}>
+                  Refresh
+                </button>
+              )}
+            </div>
+            {copyMessage && <p className={styles.copyToast}>{copyMessage}</p>}
+
             <SafetyQr payload={qrPayload} />
-            <p className={styles.peer}>
-              Contact: <code>{peerId}</code>
-            </p>
+
+            {!isVerified && (
+              <div className={styles.compareSection}>
+                <label className={styles.compareLabel} htmlFor="safety-compare-input">
+                  Paste their safety number or scan result
+                </label>
+                <input
+                  id="safety-compare-input"
+                  className={styles.compareInput}
+                  value={compareInput}
+                  onChange={(e) => setCompareInput(e.target.value)}
+                  placeholder="Paste number or ssc://verify/…"
+                  autoComplete="off"
+                />
+                {compareInput && (
+                  <p
+                    className={
+                      compareResult.match && !peerMismatch
+                        ? styles.compareOk
+                        : styles.compareBad
+                    }
+                  >
+                    {peerMismatch
+                      ? 'QR is for a different contact.'
+                      : compareResult.match
+                        ? 'Numbers match.'
+                        : 'Numbers do not match yet.'}
+                  </p>
+                )}
+                <label className={styles.confirmRow}>
+                  <input
+                    type="checkbox"
+                    checked={compareConfirmed}
+                    onChange={(e) => setCompareConfirmed(e.target.checked)}
+                  />
+                  <span>We compared in person and the numbers match</span>
+                </label>
+              </div>
+            )}
+
             {status === 'changed' && trust?.previousSafetyNumber && (
               <p className={styles.previous}>
-                Previous: <code>{trust.previousSafetyNumber}</code>
+                Previous verified number:{' '}
+                <code>{trust.previousSafetyNumber}</code>
               </p>
             )}
           </>
@@ -68,11 +176,11 @@ export default function SafetyVerifyModal({
 
         <div className={styles.actions}>
           {canMarkVerified && (
-            <button type="button" className={styles.primaryBtn} onClick={onMarkVerified}>
+            <button type="button" className={styles.primaryBtn} onClick={handleMarkVerified}>
               Mark as verified
             </button>
           )}
-          {status === 'verified' && (
+          {isVerified && (
             <button type="button" className={styles.secondaryBtn} onClick={onResetTrust}>
               Reset verification
             </button>

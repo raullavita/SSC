@@ -33,7 +33,7 @@ export async function apiFetch(path, options = {}) {
   return fetch(url, init);
 }
 
-export async function apiJson(path, options = {}) {
+async function apiJson(path, options = {}) {
   const response = await apiFetch(path, options);
   if (!response.ok) {
     const err = new Error(`HTTP ${response.status}`);

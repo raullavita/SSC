@@ -1,0 +1,35 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.compact {
+  font-size: 0.62rem;
+  padding: 0.05rem 0.3rem;
+}
+
+.icon {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.libsignal {
+  border: 1px solid #0d3d32;
+  color: #53d4b6;
+  background: rgba(13, 61, 50, 0.35);
+}
+
+.dev {
+  border: 1px solid #5c4a1f;
+  color: #f5d7a1;
+  background: rgba(92, 74, 31, 0.25);
+}

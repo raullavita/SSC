@@ -1,0 +1,48 @@
+.section {
+  background: #111b21;
+  border: 1px solid #2a3942;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #00a884;
+}
+
+.intro {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: #667781;
+  line-height: 1.4;
+}
+
+.toggleBlock {
+  margin-bottom: 0.85rem;
+}
+
+.toggleBlock:last-child {
+  margin-bottom: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #e9edef;
+}
+
+.row input {
+  flex-shrink: 0;
+}
+
+.rowHint {
+  margin: 0.35rem 0 0 1.65rem;
+  font-size: 0.78rem;
+  color: #667781;
+  line-height: 1.35;
+}

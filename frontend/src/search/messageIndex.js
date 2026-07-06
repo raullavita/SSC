@@ -74,9 +74,6 @@ export function removeMessageFromIndex(conversationId, messageId) {
   }
 }
 
-export function clearIndex(conversationId) {
-  indexes.delete(conversationId);
-}
 
 export function clearAllIndexes() {
   indexes.clear();

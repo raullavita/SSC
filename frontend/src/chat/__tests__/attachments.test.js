@@ -1,5 +1,4 @@
 import {
-  ATTACHMENT_PROTOCOL,
   parseAttachmentText,
   isVoiceAttachment,
   isImageAttachment,
@@ -20,10 +19,6 @@ import { encryptMessage } from '../../signal/signalBridge';
 describe('attachments', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('exports signal_v1_attachment protocol constant', () => {
-    expect(ATTACHMENT_PROTOCOL).toBe('signal_v1_attachment');
   });
 
   describe('parseAttachmentText', () => {

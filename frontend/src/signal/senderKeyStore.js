@@ -30,12 +30,8 @@ export function getSenderKey(groupId, senderId) {
   return store[groupId]?.[senderId] || null;
 }
 
-export function listGroupSenderKeys(groupId) {
-  const store = readStore();
-  return store[groupId] || {};
-}
 
-export function generateSenderKeyMaterial() {
+function generateSenderKeyMaterial() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
   let binary = '';
@@ -58,7 +54,7 @@ export function ensureOwnSenderKey(groupId, userId) {
   return material;
 }
 
-export const SENDER_KEY_DIST_PREFIX = 'ssc-skd:';
+const SENDER_KEY_DIST_PREFIX = 'ssc-skd:';
 
 export function packSenderKeyDistribution({ groupId, senderId, keyMaterial }) {
   return `${SENDER_KEY_DIST_PREFIX}${JSON.stringify({

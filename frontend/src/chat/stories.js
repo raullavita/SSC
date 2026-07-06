@@ -5,7 +5,7 @@
 import { api } from '../lib/api';
 import { encryptMessage } from '../signal/signalBridge';
 
-export const STORY_PROTOCOL = 'signal_v1_story';
+const STORY_PROTOCOL = 'signal_v1_story';
 
 export async function createStory(plaintext, { peerId } = {}) {
   if (!peerId) {

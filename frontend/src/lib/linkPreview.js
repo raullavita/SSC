@@ -9,7 +9,7 @@ const URL_RE = /https?:\/\/[^\s<>"']+/gi;
 const MAX_PREVIEWS_PER_MESSAGE = 3;
 const FETCH_TIMEOUT_MS = 5000;
 
-export function extractUrls(text) {
+function extractUrls(text) {
   if (!text) return [];
   const seen = new Set();
   const urls = [];
@@ -23,7 +23,7 @@ export function extractUrls(text) {
   return urls;
 }
 
-export function hostnameFromUrl(url) {
+function hostnameFromUrl(url) {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
   } catch {
@@ -43,7 +43,7 @@ function metaContent(html, key) {
   return null;
 }
 
-export function parsePreviewFromHtml(html, url) {
+function parsePreviewFromHtml(html, url) {
   const hostname = hostnameFromUrl(url);
   const title =
     metaContent(html, 'og:title') ||
@@ -56,12 +56,12 @@ export function parsePreviewFromHtml(html, url) {
   return { url, hostname, title, description, image, limited: false };
 }
 
-export function fallbackPreview(url) {
+function fallbackPreview(url) {
   const hostname = hostnameFromUrl(url);
   return { url, hostname, title: hostname, description: null, image: null, limited: true };
 }
 
-export async function maybeFetchLinkPreview(url) {
+async function maybeFetchLinkPreview(url) {
   if (!getLinkPreviewsEnabled()) return null;
 
   const controller = new AbortController();

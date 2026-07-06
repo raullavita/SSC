@@ -30,20 +30,13 @@ import {
   unpackSenderKeyDistribution,
 } from './senderKeyStore';
 
-export {
-  GROUP_SENDER_KEY_DIST_PROTOCOL,
-  GROUP_SENDER_KEY_PROTOCOL,
-  LEGACY_SENDER_KEY_DIST_PREFIX,
-};
-
 export function isSenderKeyDistributionMessage(message) {
   if (!message) return false;
   if (message.protocol === GROUP_SENDER_KEY_DIST_PROTOCOL) return true;
   return Boolean(message.ciphertext?.startsWith(LEGACY_SENDER_KEY_DIST_PREFIX));
 }
 
-/** @deprecated use isSenderKeyDistributionMessage */
-export function isSenderKeyDistribution(ciphertext) {
+function isSenderKeyDistribution(ciphertext) {
   return Boolean(ciphertext && ciphertext.startsWith(LEGACY_SENDER_KEY_DIST_PREFIX));
 }
 
@@ -155,6 +148,3 @@ export function groupE2EStatus() {
   };
 }
 
-export function packLegacySenderKeyDistribution(payload) {
-  return packSenderKeyDistribution(payload);
-}

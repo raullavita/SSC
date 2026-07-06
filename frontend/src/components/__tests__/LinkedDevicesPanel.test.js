@@ -1,5 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import LinkedDevicesPanel from '../LinkedDevicesPanel';
+
+jest.mock('../../lib/deviceLink', () => ({
+  ...jest.requireActual('../../lib/deviceLink'),
+  getLocalDeviceId: () => 'dev-current',
+}));
 
 jest.mock('../DeviceLinkQr', () => function MockDeviceLinkQr() {
   return <div data-testid="device-link-qr">QR</div>;
@@ -42,5 +47,49 @@ describe('LinkedDevicesPanel', () => {
     );
     expect(screen.getByTestId('device-link-qr')).toBeInTheDocument();
     expect(screen.getByText(/Expires in/)).toBeInTheDocument();
+  });
+
+  it('disables revoke for the current device', () => {
+    render(
+      <LinkedDevicesPanel
+        devices={[
+          { id: 'dev-current', name: 'This PC', platform: 'electron' },
+          { id: 'dev-other', name: 'Phone', platform: 'android' },
+        ]}
+        linkSession={null}
+        linkLabel="Tablet"
+        onLinkLabelChange={() => {}}
+        onCreateLink={() => {}}
+        onRevoke={() => {}}
+        loading={false}
+        error={null}
+      />
+    );
+
+    const revokeButtons = screen.getAllByRole('button', { name: 'Revoke' });
+    expect(revokeButtons[0]).toBeDisabled();
+    expect(revokeButtons[1]).not.toBeDisabled();
+  });
+
+  it('calls onRevoke for other devices', () => {
+    const onRevoke = jest.fn();
+    render(
+      <LinkedDevicesPanel
+        devices={[
+          { id: 'dev-current', name: 'This PC', platform: 'electron' },
+          { id: 'dev-other', name: 'Phone', platform: 'android' },
+        ]}
+        linkSession={null}
+        linkLabel="Tablet"
+        onLinkLabelChange={() => {}}
+        onCreateLink={() => {}}
+        onRevoke={onRevoke}
+        loading={false}
+        error={null}
+      />
+    );
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Revoke' })[1]);
+    expect(onRevoke).toHaveBeenCalledWith('dev-other');
   });
 });

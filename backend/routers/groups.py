@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.group_policy import MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS, public_group
+from core.username_policy import public_user_lookup
 from core.ids import new_conversation_id, new_group_id
 from core.retention_policy import default_expires_at
 from db import get_database
@@ -82,6 +83,25 @@ async def create_group(
         "group": public_group(group_doc, user_id),
         "conversation_id": conv_id,
     }
+
+
+@router.get("/{group_id}/members")
+async def list_group_members(
+    group_id: str,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    db = get_database()
+    group = await db.groups.find_one({"_id": group_id, "member_ids": user_id})
+    if not group:
+        raise HTTPException(status_code=404, detail="group_not_found")
+
+    members = []
+    for mid in group.get("member_ids", []):
+        doc = await db.users.find_one({"_id": mid}, {"display_name": 1, "username": 1})
+        if doc:
+            members.append(public_user_lookup(doc))
+    return {"group_id": group_id, "members": members}
 
 
 @router.get("")

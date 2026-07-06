@@ -16,6 +16,8 @@ const CLIENT_VALUE = `electron/${pkg.version}/8`;
 
 contextBridge.exposeInMainWorld('__SSC_ELECTRON_CLIENT', CLIENT_VALUE);
 contextBridge.exposeInMainWorld('__SSC_NATIVE_BRIDGE', 'v1');
+// Chromium Translator API is used in-renderer when available (see onDevice.js).
+contextBridge.exposeInMainWorld('__SSC_ELECTRON_TRANSLATE', 'browser_translator');
 
 contextBridge.exposeInMainWorld('sscCrypto', {
   get available() {

@@ -5,7 +5,7 @@
 import { api } from '../lib/api';
 import { encryptMessage } from '../signal/signalBridge';
 
-export const POLL_PROTOCOL = 'signal_v1_poll';
+const POLL_PROTOCOL = 'signal_v1_poll';
 
 export function parsePollText(text) {
   try {

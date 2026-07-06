@@ -6,16 +6,10 @@ import { api } from '../lib/api';
 import { encryptMessage } from '../signal/signalBridge';
 import { encryptGroupMessage } from '../signal/groupSenderKeys';
 
-export const REACTION_PROTOCOL = 'signal_v1_reaction';
+const REACTION_PROTOCOL = 'signal_v1_reaction';
 
 export async function fetchConversationReactions(conversationId) {
   return api.get(`/api/conversations/${conversationId}/reactions`);
-}
-
-export async function fetchMessageReactions(conversationId, messageId) {
-  return api.get(
-    `/api/conversations/${conversationId}/messages/${messageId}/reactions`
-  );
 }
 
 export async function sendReaction(

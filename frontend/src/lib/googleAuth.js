@@ -12,7 +12,7 @@ export function googleAuthEnabled() {
 }
 
 /** Detect OAuth return on Electron (hash), Android (pathname+search), or BrowserRouter. */
-export function isGoogleOAuthReturn() {
+function isGoogleOAuthReturn() {
   if (typeof window === 'undefined') return false;
   const { pathname, search, hash } = window.location;
   if (pathname === '/auth/google' || pathname.endsWith('/auth/google')) {
@@ -21,7 +21,7 @@ export function isGoogleOAuthReturn() {
   return search.includes('oauth_code=');
 }
 
-export function extractOAuthCode() {
+function extractOAuthCode() {
   const params = new URLSearchParams(window.location.search);
   let code = params.get('oauth_code');
   if (!code && window.location.hash) {
@@ -34,11 +34,11 @@ export function extractOAuthCode() {
 }
 
 /** Installed Electron/Android/iOS must use full redirect — GIS One Tap hangs on file:// origins. */
-export function shouldUseGoogleRedirect() {
+function shouldUseGoogleRedirect() {
   return isInstalledApp();
 }
 
-export function startGoogleRedirect() {
+function startGoogleRedirect() {
   const base = API_BASE || `${window.location.protocol}//${window.location.host}`;
   window.location.href = `${base}/api/auth/google/start`;
 }
@@ -47,7 +47,7 @@ export async function exchangeOAuthCode(oauthCode) {
   return api.post('/api/auth/google/exchange', { oauth_code: oauthCode });
 }
 
-export async function signInWithIdToken(idToken) {
+async function signInWithIdToken(idToken) {
   return api.post('/api/auth/google/idtoken', { id_token: idToken });
 }
 

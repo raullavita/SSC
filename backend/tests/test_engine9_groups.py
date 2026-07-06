@@ -62,3 +62,14 @@ async def test_create_group(monkeypatch):
         assert body["group"]["member_count"] == 2
         assert body["conversation_id"]
         assert len(fake_db["groups"].docs) == 1
+        group_id = body["group"]["id"]
+
+        members = await ac.get(f"/api/groups/{group_id}/members", headers=CLIENT)
+        assert members.status_code == 200
+        payload = members.json()
+        assert payload["group_id"] == group_id
+        names = {m["id"]: m["display_name"] for m in payload["members"]}
+        assert names[alice["user"]["id"]] == "Alice"
+        assert names[bob["user"]["id"]] == "Bob"
+        for member in payload["members"]:
+            assert "email" not in member

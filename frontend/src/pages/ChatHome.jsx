@@ -6,6 +6,9 @@ import Composer from '../components/chat/Composer';
 import GroupPanel from '../components/chat/GroupPanel';
 import MessageBubble from '../components/chat/MessageBubble';
 import StoriesBar from '../components/chat/StoriesBar';
+import GroupE2EBadge from '../components/chat/GroupE2EBadge';
+import GroupE2EBanner from '../components/chat/GroupE2EBanner';
+import SafetyVerifyButton from '../components/chat/SafetyVerifyButton';
 import SafetyVerifyModal from '../components/chat/SafetyVerifyModal';
 import TrustBanner from '../components/chat/TrustBanner';
 import ChatPrivacyPanel from '../components/chat/ChatPrivacyPanel';
@@ -19,22 +22,34 @@ import { useTrustState } from '../chat/useTrustState';
 import { useConversationPrivacy } from '../chat/useConversationPrivacy';
 import { effectivePrivacy } from '../lib/conversationPrivacy';
 import { useStories } from '../chat/useStories';
+import { useActiveConversation } from '../chat/useActiveConversation';
 import { useConversationMeta } from '../chat/useConversationMeta';
+import { useUserConversationSync } from '../chat/useUserConversationSync';
 import { useReadReceipts } from '../chat/useReadReceipts';
+import { useParticipantNames } from '../chat/useParticipantNames';
 import { useFileTransfer } from '../chat/useFileTransfer';
 import { useTypingIndicator } from '../chat/useTypingIndicator';
 import { useVoiceMessage } from '../chat/useVoiceMessage';
 import { useAuth } from '../context/AuthContext';
 import { usePresenceMap } from '../hooks/usePresenceMap';
 import { api } from '../lib/api';
-import { getAutoTranslateEnabled, getPreferredLanguage } from '../lib/chatPrefs';
-import { fetchLanguages, translateText } from '../lib/translation';
+import {
+  getAutoTranslateEnabled,
+  getPreferredLanguage,
+  setPreferredLanguage,
+} from '../lib/chatPrefs';
+import { fetchLanguages, translateText, TranslationError } from '../lib/translation';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 import { searchMessages } from '../search/messageIndex';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
-import { getPeerTrust, trustBadgeLabel } from '../lib/trustStore';
+import { getPeerTrust } from '../lib/trustStore';
 import { isInstalledApp } from '../lib/appMode';
 import { needsUsernameSetup } from '../lib/onboarding';
+import {
+  bumpUnread,
+  mergeConversationMeta,
+  patchConversationInList,
+} from '../lib/conversationMeta';
 import { shouldAutoTranslate } from '../smart/languageDetect';
 import styles from './ChatHome.module.css';
 
@@ -76,8 +91,67 @@ export default function ChatHome() {
     if (openId) setActiveId(openId);
   }, [location.state?.openConversationId]);
 
-  const active = conversations.find((c) => c.id === activeId);
+  const loadConversations = useCallback(async () => {
+    try {
+      const data = await api.get('/api/conversations');
+      setConversations(data.conversations || []);
+      setListError(null);
+    } catch (e) {
+      setListError(e.message);
+    }
+  }, []);
+
+  const handleMetaUpdated = useCallback((conv) => {
+    setConversations((prev) => patchConversationInList(prev, conv));
+  }, []);
+
+  const {
+    active,
+    refresh: refreshActiveConversation,
+    applyListPatch,
+  } = useActiveConversation(conversations, activeId, handleMetaUpdated);
   const isGroup = active?.type === 'group';
+
+  const handleUserSync = useCallback(
+    (payload) => {
+      if (payload?.type !== 'sync_message' || !payload.conversation_id) return;
+      const convId = payload.conversation_id;
+      const updatedAt = payload.message?.created_at;
+
+      setConversations((prev) => {
+        const existing = prev.find((entry) => entry.id === convId);
+        if (!existing) {
+          loadConversations();
+          return prev;
+        }
+        if (convId === activeId) {
+          return prev.map((entry) =>
+            entry.id === convId
+              ? mergeConversationMeta(entry, {
+                  unread_count: 0,
+                  ...(updatedAt ? { updated_at: updatedAt } : {}),
+                })
+              : entry
+          );
+        }
+        return prev.map((entry) =>
+          entry.id === convId ? bumpUnread(entry, { updatedAt }) : entry
+        );
+      });
+
+      if (convId === activeId) {
+        refreshActiveConversation();
+      }
+    },
+    [activeId, loadConversations, refreshActiveConversation]
+  );
+
+  useUserConversationSync({
+    userId: user?.id,
+    wsToken,
+    enabled: Boolean(user),
+    onEvent: handleUserSync,
+  });
   const {
     trust,
     safetyNumber,
@@ -85,8 +159,7 @@ export default function ChatHome() {
     error: trustError,
     markVerified,
     resetTrust,
-    isVerified,
-    isChanged,
+    refresh: refreshTrust,
   } = useTrustState(!isGroup ? active?.peer_id : null);
   const peerIds = useMemo(
     () => conversations.map((c) => c.peer_id).filter(Boolean),
@@ -111,6 +184,7 @@ export default function ChatHome() {
     reactionsByTarget,
     sendReaction,
     handleReactionSocketPayload,
+    isReactionPending,
   } = useReactions({
     conversationId: activeId,
     enabled: Boolean(user && activeId),
@@ -119,6 +193,7 @@ export default function ChatHome() {
     groupId: activeId,
     userId: user?.id,
     memberIds: active?.participants || [],
+    onError: (msg) => setListError(msg),
   });
 
   const handleSocketEvent = useCallback(
@@ -161,11 +236,18 @@ export default function ChatHome() {
     enabled: Boolean(user && activeId),
   });
 
-  const handleMetaUpdated = useCallback((conv) => {
-    setConversations((prev) =>
-      prev.map((c) => (c.id === conv.id ? { ...c, ...conv } : c))
-    );
-  }, []);
+  useEffect(() => {
+    if (!activeId || !messages.length) return;
+    applyListPatch({ id: activeId, unread_count: 0 });
+  }, [activeId, messages.length, applyListPatch]);
+
+  const { nameForId } = useParticipantNames({
+    groupId: active?.group_id,
+    peerId: active?.peer_id,
+    isGroup,
+    enabled: Boolean(user && activeId),
+  });
+
   const { togglePin, toggleMute } = useConversationMeta(handleMetaUpdated);
   const { patchPrivacy } = useConversationPrivacy(handleMetaUpdated);
 
@@ -247,16 +329,6 @@ export default function ChatHome() {
     return map;
   }, [messages]);
 
-  const loadConversations = useCallback(async () => {
-    try {
-      const data = await api.get('/api/conversations');
-      setConversations(data.conversations || []);
-      setListError(null);
-    } catch (e) {
-      setListError(e.message);
-    }
-  }, []);
-
   useEffect(() => {
     if (user) {
       loadConversations();
@@ -310,8 +382,12 @@ export default function ChatHome() {
           if (!cancelled) {
             setInlineTranslations((prev) => ({ ...prev, [m.id]: translated }));
           }
-        } catch {
-          /* offline */
+        } catch (err) {
+          if (err instanceof TranslationError && err.status === 'pending_api_key') {
+            if (!cancelled) {
+              setListError('Add a translation API key in Settings to auto-translate.');
+            }
+          }
         }
       }
     }
@@ -422,7 +498,9 @@ export default function ChatHome() {
       const out = await translateText(draft, { target: translateTarget });
       setTranslatedPreview(out);
     } catch (err) {
-      setListError(err.message);
+      setListError(
+        err instanceof TranslationError ? err.message : err.message || 'Translation failed'
+      );
     }
   }
 
@@ -432,8 +510,15 @@ export default function ChatHome() {
       const out = await translateText(message.text, { target: userLang });
       setInlineTranslations((prev) => ({ ...prev, [message.id]: out }));
     } catch (err) {
-      setListError(err.message);
+      setListError(
+        err instanceof TranslationError ? err.message : err.message || 'Translation failed'
+      );
     }
+  }
+
+  function onUserLangChange(lang) {
+    setUserLang(lang);
+    setPreferredLanguage(lang);
   }
 
   async function onFileSelected(e) {
@@ -452,7 +537,12 @@ export default function ChatHome() {
   }
 
   function getThreadTitle() {
+    if (!active) return '';
     if (isGroup) return `Group ${active.group_id || active.id}`;
+    if (active.peer_id && nameForId) {
+      const label = nameForId(active.peer_id, user?.id);
+      if (label && label !== active.peer_id.slice(0, 10)) return label;
+    }
     return active.peer_id;
   }
 
@@ -534,7 +624,12 @@ export default function ChatHome() {
             <li className={styles.convEmpty}>No chats match your search.</li>
           )}
           {filteredConversations.map((c) => (
-            <li key={c.id} className={styles.convItem}>
+            <li
+              key={c.id}
+              className={`${styles.convItem} ${c.muted ? styles.convMuted : ''} ${
+                c.pinned ? styles.convPinned : ''
+              }`}
+            >
               <button
                 type="button"
                 className={c.id === activeId ? styles.active : ''}
@@ -550,6 +645,7 @@ export default function ChatHome() {
                     {c.pinned ? '📌 ' : ''}
                     {c.muted ? '🔇 ' : ''}
                     {c.type === 'group' ? `👥 ${c.group_id}` : c.peer_id || c.id}
+                    {c.type === 'group' && <GroupE2EBadge compact />}
                     {c.type !== 'group' && c.peer_id && getPeerTrust(c.peer_id).status === 'verified' && (
                       <span className={styles.trustVerified} title="Verified"> ✓</span>
                     )}
@@ -558,7 +654,7 @@ export default function ChatHome() {
                     )}
                   </span>
                   <span className={styles.convMeta}>
-                    {c.unread_count > 0 && (
+                    {c.unread_count > 0 && c.id !== activeId && (
                       <span className={styles.unreadBadge}>{c.unread_count}</span>
                     )}
                     {presenceMap[c.peer_id] && (
@@ -588,7 +684,7 @@ export default function ChatHome() {
             </li>
           ))}
         </ul>
-        <Link to="/settings" className={styles.syncLink}>
+        <Link to="/link-device" className={styles.syncLink}>
           Linked devices &amp; sync
         </Link>
         {!installed && (
@@ -613,50 +709,44 @@ export default function ChatHome() {
         ) : (
           <>
             <header className={styles.threadHeader}>
-              <div className={styles.threadTitle}>
-                <span>
-                  Chat with <code>{getThreadTitle()}</code>
-                </span>
-                {presenceMap[active.peer_id] && (
-                  <span className={styles.presenceLabel}>{presenceMap[active.peer_id]}</span>
-                )}
-                {peerTyping && <span className={styles.typing}>typing…</span>}
-              </div>
-              <button
-                type="button"
-                className={styles.privacyBtn}
-                onClick={() => setShowPrivacyPanel((v) => !v)}
-              >
-                Privacy
-              </button>
-              {!isGroup && active?.peer_id && (
-                <p className={styles.safetyNumber}>
-                  <span
-                    className={
-                      isVerified
-                        ? styles.trustLabelVerified
-                        : isChanged
-                          ? styles.trustLabelChanged
-                          : styles.trustLabelDefault
-                    }
-                  >
-                    {trustBadgeLabel(trust.status)}
+              <div className={styles.threadTitleRow}>
+                <div className={styles.threadTitle}>
+                  <span>
+                    Chat with <strong>{getThreadTitle()}</strong>
                   </span>
-                  {safetyNumber?.displayable && (
-                    <>
-                      {' '}
-                      Safety number: <code>{safetyNumber.displayable}</code>
-                    </>
+                  {presenceMap[active.peer_id] && (
+                    <span className={styles.presenceLabel}>{presenceMap[active.peer_id]}</span>
+                  )}
+                  {peerTyping && <span className={styles.typing}>typing…</span>}
+                  {active?.muted && (
+                    <span className={styles.threadMetaChip} title="Notifications muted">
+                      Muted
+                    </span>
+                  )}
+                  {active?.pinned && (
+                    <span className={styles.threadMetaChip} title="Pinned chat">
+                      Pinned
+                    </span>
+                  )}
+                </div>
+                <div className={styles.threadHeaderActions}>
+                  {isGroup && <GroupE2EBadge />}
+                  {!isGroup && active?.peer_id && (
+                    <SafetyVerifyButton
+                      trust={trust}
+                      disabled={trustLoading}
+                      onClick={() => setShowSafetyVerify(true)}
+                    />
                   )}
                   <button
                     type="button"
-                    className={styles.verifyBtn}
-                    onClick={() => setShowSafetyVerify(true)}
+                    className={styles.privacyBtn}
+                    onClick={() => setShowPrivacyPanel((v) => !v)}
                   >
-                    {isVerified ? 'View' : 'Verify'}
+                    Privacy
                   </button>
-                </p>
-              )}
+                </div>
+              </div>
               {!isGroup ? (
                 <div className={styles.callBar}>
                   <button type="button" onClick={() => startCall(false)}>
@@ -681,6 +771,8 @@ export default function ChatHome() {
                 </div>
               )}
             </header>
+
+            {isGroup && <GroupE2EBanner />}
 
             {!isGroup && (
               <TrustBanner trust={trust} onVerify={() => setShowSafetyVerify(true)} />
@@ -738,10 +830,12 @@ export default function ChatHome() {
                     onDelete={onDeleteMessage}
                     onForward={setForwardingMessage}
                     onReaction={sendReaction}
+                    reactionPending={isReactionPending(m.id)}
                     onTranslate={onTranslateMessage}
                     downloadFile={downloadFile}
-                    readAt={readByMessage[m.id]?.[0]}
-                    readAtList={readByMessage[m.id]}
+                    readReceipts={readByMessage[m.id] || []}
+                    isGroup={isGroup}
+                    nameForId={nameForId}
                     poll={m.poll}
                     pollTallies={m.poll_id ? pollMeta[m.poll_id]?.tallies : undefined}
                     pollViewerVote={m.poll_id ? pollMeta[m.poll_id]?.viewerVote : null}
@@ -866,7 +960,7 @@ export default function ChatHome() {
               translateTarget={translateTarget}
               onTranslateTargetChange={setTranslateTarget}
               userLang={userLang}
-              onUserLangChange={setUserLang}
+              onUserLangChange={onUserLangChange}
               languages={languages}
               disappearingSeconds={disappearingSeconds}
               onDisappearingChange={setDisappearingSeconds}
@@ -883,12 +977,14 @@ export default function ChatHome() {
       <SafetyVerifyModal
         open={showSafetyVerify}
         peerId={active?.peer_id}
+        peerLabel={active?.peer_id ? nameForId(active.peer_id, user?.id) : ''}
         trust={trust}
         safetyNumber={safetyNumber}
         loading={trustLoading}
         error={trustError}
         onMarkVerified={markVerified}
         onResetTrust={resetTrust}
+        onRefresh={refreshTrust}
         onClose={() => setShowSafetyVerify(false)}
       />
 

@@ -7,6 +7,7 @@ Installed Android client — polished WebView shell with native `libsignal-andro
 - **WebView** loads the **bundled React app** from `assets/www/` (same installed UI as Windows Electron — sign-in on launch, not the marketing site)
 - **`X-SSC-Client: android/0.3.0/4`** injected on all `/api/` requests from the WebView
 - **`window.sscCrypto`** exposed via `SscNativeBridge` + `assets/ssc_crypto_bridge.js` — API matches Electron `preload.js`
+- **`window.sscTranslate`** exposed via `SscNativeBridge` + `assets/ssc_translate_bridge.js` — ML Kit on-device translation (no text leaves device)
 - **libsignal-android 0.96.4** — file-backed stores under `filesDir/ssc-signal/` (sessions, prekeys, sender keys)
 
 ## Native shell polish (Step 17)
@@ -56,7 +57,20 @@ APK: `app/build/outputs/apk/release/app-release.apk`
 
 Requires Android SDK 35, JDK 17, Kotlin 2.2.20, and `local.properties` with `sdk.dir`.
 
-Release builds are **unsigned** (sideload only). Enable “Install unknown apps” on the device when installing.
+## Release signing (free — no Play Store)
+
+```powershell
+.\scripts\create_android_keystore.ps1
+.\scripts\build_android.ps1
+```
+
+- Keystore: `%USERPROFILE%\.ssc\ssc-release.jks` (never commit)
+- Credentials: `%USERPROFILE%\.ssc\android-signing.env` (never commit)
+- `build_android.ps1` loads signing env automatically
+
+**Back up** the `.jks` file and password. Losing either blocks future updates for users who installed that APK.
+
+Sideload only (no Play Store yet). Enable “Install unknown apps” on the device when installing.
 
 Dependencies resolve from [Signal's Maven repository](https://build-artifacts.signal.org/libraries/maven/) (`settings.gradle.kts`).
 

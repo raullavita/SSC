@@ -89,4 +89,5 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.browser:browser:1.8.0")
+    implementation("com.google.mlkit:translate:17.0.3")
 }

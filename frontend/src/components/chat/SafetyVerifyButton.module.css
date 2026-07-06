@@ -1,0 +1,48 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 6px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  border: 1px solid #2a3942;
+  background: transparent;
+  color: #aebac1;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.badge {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.85;
+}
+
+.verified {
+  border-color: #0d3d32;
+  color: #53d4b6;
+}
+
+.changed {
+  border-color: #c47a2c;
+  color: #f5d7a1;
+}
+
+.default {
+  border-color: #00a884;
+  color: #00a884;
+}

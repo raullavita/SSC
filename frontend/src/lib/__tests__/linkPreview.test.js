@@ -1,11 +1,4 @@
-import {
-  extractUrls,
-  fallbackPreview,
-  fetchPreviewsForText,
-  hostnameFromUrl,
-  maybeFetchLinkPreview,
-  parsePreviewFromHtml,
-} from '../linkPreview';
+import { fetchPreviewsForText } from '../linkPreview';
 import { setLinkPreviewsEnabled } from '../chatPrefs';
 
 describe('linkPreview', () => {
@@ -15,46 +8,42 @@ describe('linkPreview', () => {
     global.fetch = jest.fn();
   });
 
-  test('extractUrls dedupes and strips trailing punctuation', () => {
-    const text = 'See https://example.com/path, and https://example.com/path again.';
-    expect(extractUrls(text)).toEqual(['https://example.com/path']);
+  test('fetchPreviewsForText returns empty when disabled', async () => {
+    await expect(fetchPreviewsForText('https://example.com')).resolves.toEqual([]);
   });
 
-  test('hostnameFromUrl strips www prefix', () => {
-    expect(hostnameFromUrl('https://www.example.com/x')).toBe('example.com');
-  });
+  test('fetchPreviewsForText returns fallback preview when enabled', async () => {
+    setLinkPreviewsEnabled(true);
+    global.fetch.mockRejectedValue(new Error('blocked'));
 
-  test('parsePreviewFromHtml reads Open Graph tags', () => {
-    const html = `
-      <html><head>
-        <meta property="og:title" content="Example Title" />
-        <meta property="og:description" content="Example description" />
-        <meta property="og:image" content="https://example.com/img.png" />
-      </head></html>
-    `;
-    expect(parsePreviewFromHtml(html, 'https://example.com')).toEqual({
-      url: 'https://example.com',
-      hostname: 'example.com',
-      title: 'Example Title',
-      description: 'Example description',
-      image: 'https://example.com/img.png',
-      limited: false,
+    const previews = await fetchPreviewsForText('Check https://news.example.com/story');
+    expect(previews).toHaveLength(1);
+    expect(previews[0]).toMatchObject({
+      url: 'https://news.example.com/story',
+      hostname: 'news.example.com',
+      limited: true,
     });
   });
 
-  test('maybeFetchLinkPreview returns null when disabled', async () => {
-    await expect(maybeFetchLinkPreview('https://example.com')).resolves.toBeNull();
-  });
-
-  test('maybeFetchLinkPreview falls back when fetch fails', async () => {
+  test('fetchPreviewsForText parses Open Graph metadata', async () => {
     setLinkPreviewsEnabled(true);
-    global.fetch.mockRejectedValue(new Error('blocked'));
-    await expect(maybeFetchLinkPreview('https://news.example.com/story')).resolves.toEqual(
-      fallbackPreview('https://news.example.com/story')
-    );
-  });
+    global.fetch.mockResolvedValue({
+      ok: true,
+      headers: { get: () => 'text/html; charset=utf-8' },
+      text: async () => `
+        <html><head>
+          <meta property="og:title" content="Example Title" />
+          <meta property="og:description" content="Example description" />
+        </head></html>
+      `,
+    });
 
-  test('fetchPreviewsForText returns empty when disabled', async () => {
-    await expect(fetchPreviewsForText('https://example.com')).resolves.toEqual([]);
+    const previews = await fetchPreviewsForText('See https://example.com/page');
+    expect(previews[0]).toMatchObject({
+      url: 'https://example.com/page',
+      title: 'Example Title',
+      description: 'Example description',
+      limited: false,
+    });
   });
 });

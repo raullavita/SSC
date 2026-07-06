@@ -14,7 +14,7 @@ export function isLibsignalRuntimeAvailable() {
   );
 }
 
-export function isGroupLibsignalAvailable() {
+function isGroupLibsignalAvailable() {
   if (typeof window === 'undefined') return false;
   return Boolean(
     window.sscCrypto?.encryptGroupMessage && window.sscCrypto?.decryptGroupMessage

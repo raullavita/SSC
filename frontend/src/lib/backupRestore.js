@@ -24,7 +24,7 @@ async function readFileText(file) {
   });
 }
 
-export async function readBackupFile(file) {
+async function readBackupFile(file) {
   if (!file) throw new Error('No backup file selected');
   const text = await readFileText(file);
   try {
@@ -34,7 +34,7 @@ export async function readBackupFile(file) {
   }
 }
 
-export function validateBackupPayload(payload) {
+function validateBackupPayload(payload) {
   if (!payload || payload.format !== PAYLOAD_FORMAT) {
     throw new Error('Invalid backup payload');
   }
@@ -58,7 +58,7 @@ function clearSscLocalStorage() {
   }
 }
 
-export function restoreLocalStorageSnapshot(snapshot, { replace = true } = {}) {
+function restoreLocalStorageSnapshot(snapshot, { replace = true } = {}) {
   if (!snapshot || typeof snapshot !== 'object') return 0;
   if (replace) {
     clearSscLocalStorage();
