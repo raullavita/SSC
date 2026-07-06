@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import os
-import time
-from collections import defaultdict
-from dataclasses import dataclass, field
+
+from core.rate_limit import RateLimiter
 
 # Per-user message rate (sliding window).
 MSG_RATE_LIMIT = int(os.getenv("SSC_MSG_RATE_LIMIT", "60"))
@@ -31,34 +30,10 @@ BLOCKED_FILE_MAGIC: tuple[bytes, ...] = (
     b"PK\x03\x04",  # ZIP (often used to smuggle executables)
 )
 
-
-@dataclass
-class SlidingWindow:
-    limit: int
-    window_sec: int
-    buckets: dict[str, list[float]] = field(default_factory=lambda: defaultdict(list))
-
-    def allow(self, key: str) -> bool:
-        now = time.monotonic()
-        hits = self.buckets[key]
-        cutoff = now - self.window_sec
-        self.buckets[key] = [t for t in hits if t >= cutoff]
-        if len(self.buckets[key]) >= self.limit:
-            return False
-        self.buckets[key].append(now)
-        return True
-
-    def remaining(self, key: str) -> int:
-        now = time.monotonic()
-        cutoff = now - self.window_sec
-        hits = [t for t in self.buckets.get(key, []) if t >= cutoff]
-        return max(0, self.limit - len(hits))
-
-
-msg_rate_limiter = SlidingWindow(MSG_RATE_LIMIT, MSG_RATE_WINDOW_SEC)
-auth_rate_limiter = SlidingWindow(AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_SEC)
-feedback_rate_limiter = SlidingWindow(FEEDBACK_RATE_LIMIT, FEEDBACK_RATE_WINDOW_SEC)
-file_rate_limiter = SlidingWindow(MAX_FILES_PER_HOUR, 3600)
+msg_rate_limiter = RateLimiter("msg", MSG_RATE_LIMIT, MSG_RATE_WINDOW_SEC)
+auth_rate_limiter = RateLimiter("auth", AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_SEC)
+feedback_rate_limiter = RateLimiter("feedback", FEEDBACK_RATE_LIMIT, FEEDBACK_RATE_WINDOW_SEC)
+file_rate_limiter = RateLimiter("file", MAX_FILES_PER_HOUR, 3600)
 
 
 def file_magic_blocked(data: bytes) -> bool:

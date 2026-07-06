@@ -102,7 +102,7 @@ async def send_message(
     user_id: str = Depends(get_current_user_id),
     _client: str = Depends(get_client_header),
 ) -> dict:
-    if not msg_rate_limiter.allow(f"msg:{user_id}"):
+    if not await msg_rate_limiter.allow(f"msg:{user_id}"):
         raise HTTPException(status_code=429, detail="message_rate_limited")
 
     protocol = body.protocol or SIGNAL_PROTOCOL_V1

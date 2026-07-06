@@ -21,6 +21,7 @@ from core.google_oauth import _frontend_url as frontend_url
 from core.ids import new_user_id
 from core.last_seen import default_privacy_settings
 from core.oauth_exchange import consume_oauth_code, issue_oauth_code
+from core.oauth_state import consume_oauth_state, store_oauth_state
 from core.passwords import hash_password, verify_password
 from core.session_cookie import clear_session_cookie, read_session_cookie
 from core.session_issue import issue_user_session
@@ -145,19 +146,23 @@ async def login(
 async def google_start() -> RedirectResponse:
     if not google_oauth_configured():
         raise HTTPException(status_code=503, detail="google_oauth_not_configured")
-    state = secrets.token_urlsafe(16)
+    state = secrets.token_urlsafe(24)
+    await store_oauth_state(state)
     return RedirectResponse(build_google_auth_url(state), status_code=302)
 
 
 @router.get("/google/callback")
 async def google_callback(
     code: str = Query(..., min_length=4),
+    state: str = Query(..., min_length=8),
     error: str | None = Query(default=None),
 ) -> RedirectResponse:
     if error:
         return RedirectResponse(f"{frontend_url()}/auth/google?error={error}")
     if not google_oauth_configured():
         raise HTTPException(status_code=503, detail="google_oauth_not_configured")
+    if not await consume_oauth_state(state):
+        return RedirectResponse(f"{frontend_url()}/auth/google?error=oauth_state_invalid")
     try:
         profile = await exchange_code_for_profile(code)
         user = await _find_or_create_google_user(profile)

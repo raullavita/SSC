@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { wsUrl } from '../lib/api';
+import { wsAuthPayload, wsUrl } from '../lib/api';
 
 /** Subscribe to user:{userId} for incoming calls and signals. */
 export function useUserSocket({ userId, wsToken, onEvent }) {
@@ -7,10 +7,12 @@ export function useUserSocket({ userId, wsToken, onEvent }) {
   onEventRef.current = onEvent;
 
   useEffect(() => {
-    if (!userId || !wsToken) return undefined;
+    if (!userId) return undefined;
 
-    const ws = new WebSocket(wsUrl(wsToken));
+    const ws = new WebSocket(wsUrl());
     ws.onopen = () => {
+      const auth = wsAuthPayload(wsToken);
+      if (auth) ws.send(auth);
       ws.send(JSON.stringify({ type: 'subscribe', topic: `user:${userId}` }));
     };
     ws.onmessage = (event) => {

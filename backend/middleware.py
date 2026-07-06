@@ -9,6 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from config import get_settings
 from core.abuse_policy import auth_rate_limiter, feedback_rate_limiter
 from core.installed_client_policy import (
     INSTALLED_CLIENT_HEADER,
@@ -21,6 +22,8 @@ def add_security_headers(response: Response) -> None:
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if get_settings().is_production:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -45,10 +48,10 @@ class AbuseRateLimitMiddleware(BaseHTTPMiddleware):
         client_ip = request.client.host if request.client else "unknown"
         ip_key = _privacy_rate_key(client_ip)
         if path.endswith("/auth/login") or path.endswith("/auth/register"):
-            if not auth_rate_limiter.allow(f"auth:{ip_key}"):
+            if not await auth_rate_limiter.allow(f"auth:{ip_key}"):
                 return JSONResponse(status_code=429, content={"detail": "auth_rate_limited"})
         if path.endswith("/public/feedback") and request.method.upper() == "POST":
-            if not feedback_rate_limiter.allow(f"feedback:{ip_key}"):
+            if not await feedback_rate_limiter.allow(f"feedback:{ip_key}"):
                 return JSONResponse(status_code=429, content={"detail": "feedback_rate_limited"})
         return await call_next(request)
 
