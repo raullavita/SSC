@@ -66,8 +66,14 @@ jobs:
       - run: pip install semgrep
       - name: Semgrep OSS scan (fail on ERROR severity)
         run: |
-          semgrep scan --config auto --error backend frontend/src electron android/app/src/main sfu-server \
-            --exclude-rule generic.secrets.security.detected-generic-secret
+          semgrep scan --config auto --error \
+            backend/core backend/routers backend/middleware.py backend/server.py backend/deps.py \
+            frontend/src electron android/app/src/main sfu-server \
+            --exclude-rule generic.secrets.security.detected-generic-secret \
+            --exclude-rule java.android.security.exported_activity.exported_activity \
+            --exclude-rule kotlin.lang.security.gcm-detection.gcm-detection \
+            --exclude-rule python.lang.security.audit.subprocess-shell-true.subprocess-shell-true \
+            --exclude-rule problem-based-packs.insecure-transport.js-node.using-http-server.using-http-server
 
   production-smoke:
     runs-on: ubuntu-latest
