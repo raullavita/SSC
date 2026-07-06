@@ -38,7 +38,7 @@ export function AuthProvider({ children }) {
           setTimeout(() => reject(new Error('auth_refresh_timeout')), timeoutMs);
         }),
       ]);
-      setUser(me);
+      setUser(me?.user ?? me);
       warnFootprintViolations();
       startPresenceHeartbeat();
       registerPushTokenIfAvailable().catch(() => {});

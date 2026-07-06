@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from core.abuse_policy import auth_rate_limiter
+from core.abuse_policy import auth_rate_limiter, feedback_rate_limiter
 from core.installed_client_policy import (
     INSTALLED_CLIENT_HEADER,
     validate_request,
@@ -42,10 +42,14 @@ class AbuseRateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         path = request.url.path
+        client_ip = request.client.host if request.client else "unknown"
+        ip_key = _privacy_rate_key(client_ip)
         if path.endswith("/auth/login") or path.endswith("/auth/register"):
-            client_ip = request.client.host if request.client else "unknown"
-            if not auth_rate_limiter.allow(f"auth:{_privacy_rate_key(client_ip)}"):
+            if not auth_rate_limiter.allow(f"auth:{ip_key}"):
                 return JSONResponse(status_code=429, content={"detail": "auth_rate_limited"})
+        if path.endswith("/public/feedback") and request.method.upper() == "POST":
+            if not feedback_rate_limiter.allow(f"feedback:{ip_key}"):
+                return JSONResponse(status_code=429, content={"detail": "feedback_rate_limited"})
         return await call_next(request)
 
 

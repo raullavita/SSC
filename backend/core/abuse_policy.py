@@ -15,6 +15,10 @@ MSG_RATE_WINDOW_SEC = int(os.getenv("SSC_MSG_RATE_WINDOW_SEC", "60"))
 AUTH_RATE_LIMIT = int(os.getenv("SSC_AUTH_RATE_LIMIT", "20"))
 AUTH_RATE_WINDOW_SEC = int(os.getenv("SSC_AUTH_RATE_WINDOW_SEC", "300"))
 
+# Public website feedback (per hashed IP).
+FEEDBACK_RATE_LIMIT = int(os.getenv("SSC_FEEDBACK_RATE_LIMIT", "6"))
+FEEDBACK_RATE_WINDOW_SEC = int(os.getenv("SSC_FEEDBACK_RATE_WINDOW_SEC", "600"))
+
 # File upload limits.
 MAX_FILE_BYTES = int(os.getenv("SSC_MAX_FILE_BYTES", str(25 * 1024 * 1024)))
 MAX_FILES_PER_HOUR = int(os.getenv("SSC_MAX_FILES_PER_HOUR", "30"))
@@ -53,6 +57,7 @@ class SlidingWindow:
 
 msg_rate_limiter = SlidingWindow(MSG_RATE_LIMIT, MSG_RATE_WINDOW_SEC)
 auth_rate_limiter = SlidingWindow(AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_SEC)
+feedback_rate_limiter = SlidingWindow(FEEDBACK_RATE_LIMIT, FEEDBACK_RATE_WINDOW_SEC)
 file_rate_limiter = SlidingWindow(MAX_FILES_PER_HOUR, 3600)
 
 

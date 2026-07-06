@@ -197,6 +197,13 @@ COLLECTIONS: dict[str, CollectionPolicy] = {
         mode="until_panic",
         panic_field="user_id",
     ),
+    "site_feedback": CollectionPolicy(
+        name="site_feedback",
+        purpose="Public website reviews and feedback",
+        mode="until_panic",
+        panic_field="_id",
+        panic_scope="skip_shared",
+    ),
     "recovery_keys": CollectionPolicy(
         name="recovery_keys",
         purpose="Account recovery key hashes",
