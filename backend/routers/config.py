@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from core.captcha import captcha_public_config
 from core.client_version_policy import min_client_build, min_client_version
 from core.firebase_init import firebase_ready
 from core.release_policy import RELEASE_BUILD, RELEASE_VERSION
@@ -46,6 +47,7 @@ async def public_config() -> dict:
         "min_client_build": min_client_build(),
         "native_bridge_required": True,
         "ws_subscribe_token_required": ws_subscribe_token_required(),
+        **captcha_public_config(),
     }
 
 

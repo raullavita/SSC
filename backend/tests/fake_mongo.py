@@ -123,8 +123,17 @@ def _matches(doc: dict, query: dict) -> bool:
             continue
         value = doc.get(key)
         if isinstance(expected, dict):
+            if "$all" in expected:
+                items = value or []
+                if not all(item in items for item in expected["$all"]):
+                    return False
+                continue
             if "$in" in expected:
                 if value not in expected["$in"]:
+                    return False
+                continue
+            if "$gte" in expected:
+                if value is None or not (value >= expected["$gte"]):
                     return False
                 continue
             if "$gt" in expected:

@@ -10,6 +10,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
 
 from core.auth_tokens import decode_access_token
+from core.captcha import verify_captcha
 from core.google_oauth import (
     build_google_auth_url,
     exchange_code_for_profile,
@@ -36,6 +37,7 @@ class RegisterBody(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     display_name: str = Field(min_length=1, max_length=64)
+    captcha_token: str | None = Field(default=None, max_length=4096)
 
 
 class LoginBody(BaseModel):
@@ -107,9 +109,15 @@ async def _find_or_create_google_user(profile: dict) -> dict:
 @router.post("/register")
 async def register(
     body: RegisterBody,
+    request: Request,
     response: Response,
     _client: str = Depends(get_client_header),
 ) -> dict:
+    client_ip = request.client.host if request.client else None
+    captcha_ok, captcha_detail = await verify_captcha(body.captcha_token, client_ip)
+    if not captcha_ok:
+        raise HTTPException(status_code=400, detail=captcha_detail)
+
     db = get_database()
     existing = await db.users.find_one({"email": body.email.lower()})
     if existing:

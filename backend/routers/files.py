@@ -9,7 +9,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from core.abuse_policy import MAX_FILE_BYTES, file_magic_blocked, file_rate_limiter
+from core.abuse_enforcement import is_abuse_rate_limited
+from core.abuse_policy import MAX_FILE_BYTES, file_rate_limiter, file_upload_allowed
 from core.file_policy import public_file, validate_file_ciphertext
 from core.ids import new_file_id
 from core.retention_policy import default_expires_at
@@ -54,10 +55,13 @@ async def upload_file(
 
     if len(raw) > MAX_FILE_BYTES:
         raise HTTPException(status_code=413, detail="file_too_large")
-    if file_magic_blocked(raw[:8]):
-        raise HTTPException(status_code=400, detail="file_type_blocked")
+    allowed, detail = file_upload_allowed(body.mime_hint, raw)
+    if not allowed:
+        raise HTTPException(status_code=400, detail=detail)
 
     db = get_database()
+    if await is_abuse_rate_limited(db, user_id):
+        raise HTTPException(status_code=429, detail="abuse_rate_limited")
     await _require_participant(db, body.conversation_id, user_id)
 
     now = datetime.now(timezone.utc)

@@ -66,12 +66,14 @@ export function AuthProvider({ children }) {
   );
 
   const register = useCallback(
-    async (email, password, displayName) => {
-      const data = await api.post('/api/auth/register', {
+    async (email, password, displayName, captchaToken = null) => {
+      const payload = {
         email,
         password,
         display_name: displayName,
-      });
+      };
+      if (captchaToken) payload.captcha_token = captchaToken;
+      const data = await api.post('/api/auth/register', payload);
       return onAuthenticated(data);
     },
     [onAuthenticated]

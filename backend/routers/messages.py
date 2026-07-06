@@ -7,7 +7,9 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from core.abuse_enforcement import is_abuse_rate_limited, is_user_blocked
 from core.abuse_policy import msg_rate_limiter
+from core.new_account_policy import enforce_new_account_dm
 from core.ids import new_message_id
 from core.message_fanout import fanout_message, fanout_message_deleted, fanout_message_edited
 from core.message_lifecycle_policy import (
@@ -119,7 +121,16 @@ async def send_message(
         raise HTTPException(status_code=400, detail=ttl_detail)
 
     db = get_database()
+    if await is_abuse_rate_limited(db, user_id):
+        raise HTTPException(status_code=429, detail="abuse_rate_limited")
+
     conv = await _require_participant(db, conversation_id, user_id)
+    await enforce_new_account_dm(db, user_id, conv)
+
+    if conv.get("type") == "direct":
+        others = [p for p in conv.get("participants", []) if p != user_id]
+        if others and await is_user_blocked(db, others[0], user_id):
+            raise HTTPException(status_code=403, detail="blocked_by_recipient")
 
     now = datetime.now(timezone.utc)
     if body.disappearing_seconds:

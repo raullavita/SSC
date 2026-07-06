@@ -1,6 +1,8 @@
 /** Website-only (supersecurechat.com landing). Not shown in installed Android/PC app. */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { getCaptchaConfig } from '../lib/captcha';
+import TurnstileWidget from './TurnstileWidget';
 import styles from './SiteFeedbackPanel.module.css';
 
 const GITHUB_ISSUES = 'https://github.com/raullavita/SSC/issues/new/choose';
@@ -41,6 +43,9 @@ export default function SiteFeedbackPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [captchaConfig, setCaptchaConfig] = useState({ required: false, siteKey: null });
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileRef = useRef(null);
   const [form, setForm] = useState({
     display_name: '',
     rating: '5',
@@ -64,6 +69,7 @@ export default function SiteFeedbackPanel() {
 
   useEffect(() => {
     loadFeedback();
+    getCaptchaConfig().then(setCaptchaConfig);
   }, [loadFeedback]);
 
   async function onSubmit(e) {
@@ -72,11 +78,16 @@ export default function SiteFeedbackPanel() {
     setError(null);
     setSuccess(null);
     try {
+      if (captchaConfig.required && !captchaToken) {
+        setError('Complete the security check before submitting.');
+        return;
+      }
       const payload = {
         display_name: form.display_name.trim() || undefined,
         category: form.category,
         platform: form.platform,
         message: form.message.trim(),
+        captcha_token: captchaToken || undefined,
       };
       if (form.category === 'review') {
         payload.rating = Number(form.rating);
@@ -92,6 +103,8 @@ export default function SiteFeedbackPanel() {
       }
     } catch (err) {
       setError(err.body?.detail || err.message || 'Could not send feedback');
+      turnstileRef.current?.reset();
+      setCaptchaToken('');
     } finally {
       setSubmitting(false);
     }
@@ -179,6 +192,13 @@ export default function SiteFeedbackPanel() {
             />
           </label>
 
+          {captchaConfig.siteKey && (
+            <TurnstileWidget
+              ref={turnstileRef}
+              siteKey={captchaConfig.siteKey}
+              onToken={setCaptchaToken}
+            />
+          )}
           {error && (
             <p className={styles.error} role="alert">
               {String(error)}

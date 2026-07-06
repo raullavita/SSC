@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { isImageAttachment, isVoiceAttachment } from '../../chat/attachments';
+import {
+  isImageAttachment,
+  isPdfAttachment,
+  isVoiceAttachment,
+  needsDownloadWarning,
+} from '../../chat/attachments';
 import { canDeleteForEveryone, canEditMessage } from '../../chat/messageActions';
 import { QUICK_REACTION_EMOJI } from '../../chat/reactionEmojis';
 import { fetchPreviewsForText } from '../../lib/linkPreview';
@@ -31,6 +36,8 @@ function AttachmentContent({ attachment, downloadFile }) {
   const [blobUrl, setBlobUrl] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [downloadConfirmed, setDownloadConfirmed] = useState(false);
+  const showWarning = needsDownloadWarning(attachment);
 
   useEffect(() => {
     let revoked = false;
@@ -74,6 +81,35 @@ function AttachmentContent({ attachment, downloadFile }) {
 
   if (isImageAttachment(attachment)) {
     return <img className={styles.imagePreview} src={blobUrl} alt={attachment.name || 'Image'} />;
+  }
+
+  if (isPdfAttachment(attachment)) {
+    return (
+      <a className={styles.fileLink} href={blobUrl} download={attachment.name || 'document.pdf'}>
+        <span>📄</span>
+        <span>
+          {attachment.name || 'PDF'} ({formatSize(attachment.size)})
+        </span>
+      </a>
+    );
+  }
+
+  if (showWarning && !downloadConfirmed) {
+    return (
+      <div className={styles.fileWarning}>
+        <p>
+          Unknown or unsupported file type ({attachment.mime || 'unknown'}). Download only if you
+          trust the sender.
+        </p>
+        <button
+          type="button"
+          className={styles.fileWarningBtn}
+          onClick={() => setDownloadConfirmed(true)}
+        >
+          Download {attachment.name || 'file'} ({formatSize(attachment.size)})
+        </button>
+      </div>
+    );
   }
 
   return (

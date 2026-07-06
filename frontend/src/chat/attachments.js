@@ -44,3 +44,20 @@ export function isImageAttachment(attachment) {
   const mime = attachment?.mime || '';
   return mime.startsWith('image/');
 }
+
+export function isPdfAttachment(attachment) {
+  const mime = attachment?.mime || '';
+  return mime === 'application/pdf';
+}
+
+export function isSafeAttachmentPreview(attachment) {
+  return (
+    isVoiceAttachment(attachment) ||
+    isImageAttachment(attachment) ||
+    isPdfAttachment(attachment)
+  );
+}
+
+export function needsDownloadWarning(attachment) {
+  return !isSafeAttachmentPreview(attachment);
+}

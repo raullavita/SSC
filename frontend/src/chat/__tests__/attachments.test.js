@@ -2,6 +2,8 @@ import {
   parseAttachmentText,
   isVoiceAttachment,
   isImageAttachment,
+  isPdfAttachment,
+  needsDownloadWarning,
   sendAttachmentMessage,
 } from '../attachments';
 
@@ -47,11 +49,18 @@ describe('attachments', () => {
   });
 
   describe('isVoiceAttachment / isImageAttachment', () => {
-    it('detects voice and image mime types', () => {
+    it('detects voice, image, and pdf mime types', () => {
       expect(isVoiceAttachment({ mime: 'audio/ogg' })).toBe(true);
       expect(isVoiceAttachment({ mime: 'image/png' })).toBe(false);
       expect(isImageAttachment({ mime: 'image/jpeg' })).toBe(true);
       expect(isImageAttachment({ mime: 'application/pdf' })).toBe(false);
+      expect(isPdfAttachment({ mime: 'application/pdf' })).toBe(true);
+    });
+
+    it('warns on unknown attachment types', () => {
+      expect(needsDownloadWarning({ mime: 'application/zip' })).toBe(true);
+      expect(needsDownloadWarning({ mime: 'image/png' })).toBe(false);
+      expect(needsDownloadWarning({ mime: 'application/pdf' })).toBe(false);
     });
   });
 
