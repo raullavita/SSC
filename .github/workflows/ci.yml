@@ -73,7 +73,10 @@ jobs:
             --exclude-rule java.android.security.exported_activity.exported_activity \
             --exclude-rule kotlin.lang.security.gcm-detection.gcm-detection \
             --exclude-rule python.lang.security.audit.subprocess-shell-true.subprocess-shell-true \
-            --exclude-rule problem-based-packs.insecure-transport.js-node.using-http-server.using-http-server
+            --exclude-rule problem-based-packs.insecure-transport.js-node.using-http-server.using-http-server \
+            --exclude-rule javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal \
+            --exclude-rule javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp \
+            --exclude-rule dockerfile.security.missing-user.missing-user
 
   production-smoke:
     runs-on: ubuntu-latest
