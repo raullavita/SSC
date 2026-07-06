@@ -3,22 +3,40 @@ const { app, BrowserWindow, ipcMain, session } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const fs = require('fs');
 const path = require('path');
-const { getSession, wipeLocalData } = require('./libsignalSession');
-const { getGroupSenderKeySession } = require('./groupSenderKeySession');
+
+const compatMode = fs.existsSync(path.join(__dirname, 'SSC_COMPAT_MODE'));
+
+let getSession;
+let wipeLocalData;
+let getGroupSenderKeySession;
 
 let mainWindow = null;
 let libsignalAvailable = false;
 let libsignalLoadError = '';
-try {
-  require('@signalapp/libsignal-client');
-  libsignalAvailable = true;
-} catch (err) {
-  libsignalAvailable = false;
-  libsignalLoadError = err?.message || String(err);
-  console.error(
-    '[ssc] libsignal-client failed to load — Windows Smart App Control often blocks unsigned .node files.',
-    libsignalLoadError,
-  );
+
+if (compatMode) {
+  libsignalLoadError = 'sac_compat_mode_native_crypto_disabled';
+  console.warn('[ssc] SAC compat build — native libsignal is not loaded (Smart App Control workaround).');
+} else {
+  ({ getSession, wipeLocalData } = require('./libsignalSession'));
+  ({ getGroupSenderKeySession } = require('./groupSenderKeySession'));
+  try {
+    require('@signalapp/libsignal-client');
+    libsignalAvailable = true;
+  } catch (err) {
+    libsignalAvailable = false;
+    libsignalLoadError = err?.message || String(err);
+    console.error(
+      '[ssc] libsignal-client failed to load — Windows Smart App Control often blocks unsigned .node files.',
+      libsignalLoadError,
+    );
+  }
+}
+
+function requireLibsignal() {
+  if (!libsignalAvailable) {
+    throw new Error(libsignalLoadError || 'libsignal_unavailable');
+  }
 }
 
 function writeStartupDiagnostics() {
@@ -31,6 +49,7 @@ function writeStartupDiagnostics() {
           at: new Date().toISOString(),
           libsignalAvailable,
           libsignalLoadError: libsignalLoadError || null,
+          compatMode,
           packaged: app.isPackaged,
           version: app.getVersion(),
         },
@@ -50,82 +69,98 @@ function registerCryptoIpc() {
   ipcMain.handle('ssc-crypto:diagnostics', () => ({
     libsignalAvailable,
     libsignalLoadError: libsignalLoadError || null,
+    compatMode,
     version: app.getVersion(),
     packaged: app.isPackaged,
   }));
 
   ipcMain.handle('ssc-crypto:configure', (_evt, opts) => {
+    requireLibsignal();
     const s = getSession(app.getPath('userData'));
     s.configure(opts || {});
     return { ok: true };
   });
 
   ipcMain.handle('ssc-crypto:generatePreKeyBundle', async () => {
+    requireLibsignal();
     const s = getSession(app.getPath('userData'));
     return s.generatePreKeyBundle();
   });
 
   ipcMain.handle('ssc-crypto:establishSession', async (_evt, { peerId, deviceId, bundle }) => {
+    requireLibsignal();
     const s = getSession(app.getPath('userData'));
     return s.establishSession(peerId, deviceId, bundle);
   });
 
   ipcMain.handle('ssc-crypto:encryptMessage', async (_evt, { plaintext, peerId, deviceId }) => {
+    requireLibsignal();
     const s = getSession(app.getPath('userData'));
     return s.encryptMessage(plaintext, peerId, deviceId);
   });
 
   ipcMain.handle('ssc-crypto:decryptMessage', async (_evt, { ciphertext, peerId, deviceId }) => {
+    requireLibsignal();
     const s = getSession(app.getPath('userData'));
     return s.decryptMessage(ciphertext, peerId, deviceId);
   });
 
   ipcMain.handle('ssc-crypto:encryptBytes', async (_evt, { buffer }) => {
+    requireLibsignal();
     const s = getSession(app.getPath('userData'));
     return s.encryptBytes(buffer);
   });
 
   ipcMain.handle('ssc-crypto:computeSafetyNumber', async (_evt, { peerId, peerIdentityKey }) => {
+    requireLibsignal();
     const s = getSession(app.getPath('userData'));
     return s.computeSafetyNumber(peerId, peerIdentityKey);
   });
 
   ipcMain.handle('ssc-crypto:wipeLocalData', async () => {
+    if (!libsignalAvailable) return { ok: true, skipped: true };
     return wipeLocalData(app.getPath('userData'));
   });
 
   ipcMain.handle('ssc-group-keys:configure', (_evt, opts) => {
+    requireLibsignal();
     const s = getGroupSenderKeySession(app.getPath('userData'));
     s.configure(opts || {});
     return { ok: true };
   });
 
   ipcMain.handle('ssc-group-keys:getDistributionState', (_evt, { groupId }) => {
+    requireLibsignal();
     const s = getGroupSenderKeySession(app.getPath('userData'));
     return s.getDistributionState(groupId);
   });
 
   ipcMain.handle('ssc-group-keys:createDistribution', async (_evt, { groupId }) => {
+    requireLibsignal();
     const s = getGroupSenderKeySession(app.getPath('userData'));
     return s.createDistributionMessage(groupId);
   });
 
   ipcMain.handle('ssc-group-keys:markDistributionSent', (_evt, { groupId }) => {
+    requireLibsignal();
     const s = getGroupSenderKeySession(app.getPath('userData'));
     return s.markDistributionSent(groupId);
   });
 
   ipcMain.handle('ssc-group-keys:processDistribution', async (_evt, { senderId, deviceId, ciphertext }) => {
+    requireLibsignal();
     const s = getGroupSenderKeySession(app.getPath('userData'));
     return s.processDistribution(senderId, deviceId, ciphertext);
   });
 
   ipcMain.handle('ssc-group-keys:encrypt', async (_evt, { groupId, plaintext }) => {
+    requireLibsignal();
     const s = getGroupSenderKeySession(app.getPath('userData'));
     return { ciphertext: await s.encryptGroupPlaintext(groupId, plaintext) };
   });
 
   ipcMain.handle('ssc-group-keys:decrypt', async (_evt, { senderId, deviceId, ciphertext }) => {
+    requireLibsignal();
     const s = getGroupSenderKeySession(app.getPath('userData'));
     return { plaintext: await s.decryptGroupCiphertext(senderId, deviceId, ciphertext) };
   });
