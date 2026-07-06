@@ -1,4 +1,4 @@
-# SSC Android APK build — bundles the installed-app UI (same shell as Electron)
+# SSC Android APK build - bundles the installed-app UI (same shell as Electron)
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $Version = "0.3.1"
@@ -8,7 +8,7 @@ $signingLoaded = & "$PSScriptRoot\load_android_signing.ps1"
 if ($signingLoaded -and $env:SSC_ANDROID_KEYSTORE) {
     Write-Host "Release signing: $($env:SSC_ANDROID_KEYSTORE)"
 } else {
-    Write-Host "WARN: No release keystore — using debug keystore (fine for dev, not for releases)."
+    Write-Host "WARN: No release keystore - using debug keystore (fine for dev, not for releases)."
     Write-Host "      Run .\scripts\create_android_keystore.ps1 first."
 }
 
@@ -57,4 +57,4 @@ if ($srcApk.FullName -ne (Resolve-Path $destApk -ErrorAction SilentlyContinue)) 
     Copy-Item $srcApk.FullName $destApk -Force
 }
 $sizeMb = [math]::Round((Get-Item $destApk).Length / 1MB, 1)
-Write-Host "APK output: $destApk ($sizeMb MB)"
+Write-Host "APK output: $destApk - $sizeMb megabytes"
