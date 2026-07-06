@@ -54,10 +54,12 @@ python backend/scripts/run_engine13_gate.py
 
 ## Pull requests
 
+- **`main` is protected** — you cannot push directly. Open a PR and wait for CI (`backend`, `frontend`, `secrets-check`) plus **one approving review** before merge.
 - Keep PRs focused (one feature or fix).
-- Backend: `pytest tests/ -q` must pass.
+- Backend: `ruff check .` and `pytest tests/ -q` must pass.
 - Frontend: `yarn test:ci` must pass.
 - No production secrets or home IPs in the diff.
+- Maintainers run release builds and hosting deploys — contributors do not upload APK/EXE assets.
 
 ## Feedback & reviews
 
