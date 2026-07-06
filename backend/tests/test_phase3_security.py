@@ -9,7 +9,6 @@ import pytest
 from core.captcha import captcha_required, verify_captcha
 from core.device_attestation import (
     build_test_attestation_token,
-    require_device_attestation,
     verify_attestation_token,
 )
 from core.password_crypto import hash_password, legacy_pbkdf2_hash, needs_rehash, verify_password

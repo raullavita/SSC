@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
+
+from core.oauth_state import clear_oauth_states_for_tests, consume_oauth_state, store_oauth_state
+from core.rate_limit import RateLimiter
+from core.startup_gates import validate_production_startup
 
 
 @pytest.fixture(autouse=True)
@@ -13,12 +19,6 @@ def _no_redis_in_phase1_tests(monkeypatch):
     monkeypatch.setattr("core.oauth_state.get_redis", _no_redis)
     monkeypatch.setattr("core.rate_limit.get_redis", _no_redis)
     monkeypatch.setattr("db.get_redis", _no_redis)
-
-from types import SimpleNamespace
-
-from core.oauth_state import clear_oauth_states_for_tests, consume_oauth_state, store_oauth_state
-from core.rate_limit import RateLimiter
-from core.startup_gates import validate_production_startup
 
 
 def _prod_settings(*, jwt_secret: str, cors_origins: list[str]):
