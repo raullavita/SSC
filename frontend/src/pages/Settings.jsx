@@ -6,6 +6,9 @@ import { executePanicWipe } from '../lib/panicWipe';
 import { api } from '../lib/api';
 import { inviteWebUrl } from '../lib/inviteLink';
 import { needsUsernameSetup } from '../lib/onboarding';
+import AbuseReportPanel from '../components/AbuseReportPanel';
+import BackupPanel from '../components/BackupPanel';
+import RecoveryPanel from '../components/RecoveryPanel';
 import styles from './Settings.module.css';
 
 export default function Settings() {
@@ -123,7 +126,9 @@ export default function Settings() {
             <Link to="/link-device" className={styles.linkBtn}>
               Link another device
             </Link>
-            <p className={styles.hint}>Recovery keys, backups, and reports are in the web admin for now.</p>
+            <RecoveryPanel onMessage={setMessage} />
+            <BackupPanel userId={user.id} onMessage={setMessage} />
+            <AbuseReportPanel onMessage={setMessage} />
           </div>
         )}
       </section>
