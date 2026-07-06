@@ -50,7 +50,7 @@ export function isPdfAttachment(attachment) {
   return mime === 'application/pdf';
 }
 
-export function isSafeAttachmentPreview(attachment) {
+function isSafeAttachmentPreview(attachment) {
   return (
     isVoiceAttachment(attachment) ||
     isImageAttachment(attachment) ||

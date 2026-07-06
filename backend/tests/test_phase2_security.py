@@ -48,12 +48,12 @@ def test_recovery_legacy_sha256_migration():
 def test_min_client_version_defaults(monkeypatch):
     monkeypatch.delenv("SSC_MIN_CLIENT_BUILD", raising=False)
     monkeypatch.delenv("SSC_MIN_CLIENT_VERSION", raising=False)
-    assert min_client_version() == "0.3.0"
-    assert min_client_build() == 8
+    assert min_client_version() == "0.3.1"
+    assert min_client_build() == 9
 
 
 def test_client_meets_minimum_current_build():
-    identity = parse_client_header("electron/0.3.0/8")
+    identity = parse_client_header("electron/0.3.1/9")
     assert identity is not None
     ok, detail = client_meets_minimum(identity)
     assert ok is True

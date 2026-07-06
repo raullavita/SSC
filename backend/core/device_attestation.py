@@ -10,6 +10,7 @@ import time
 
 ATTESTATION_HEADER = "X-SSC-Device-Attest"
 _TEST_TOKEN = "ssc-attest-test-v1"
+_DESKTOP_PLATFORMS = frozenset({"electron", "windows", "mac", "desktop"})
 
 
 def require_device_attestation() -> bool:
@@ -24,7 +25,12 @@ def attestation_configured() -> bool:
     return bool(
         os.getenv("SSC_PLAY_INTEGRITY_SECRET", "").strip()
         or os.getenv("SSC_DEVICECHECK_SECRET", "").strip()
+        or os.getenv("SSC_DESKTOP_ATTEST_SECRET", "").strip()
     )
+
+
+def _desktop_attest_secret() -> str:
+    return os.getenv("SSC_DESKTOP_ATTEST_SECRET", "").strip()
 
 
 def verify_attestation_token(platform: str, token: str | None) -> tuple[bool, str]:
@@ -43,6 +49,8 @@ def verify_attestation_token(platform: str, token: str | None) -> tuple[bool, st
         return _verify_hmac_token(value, os.getenv("SSC_PLAY_INTEGRITY_SECRET", ""), "android")
     if plat == "ios":
         return _verify_hmac_token(value, os.getenv("SSC_DEVICECHECK_SECRET", ""), "ios")
+    if plat in _DESKTOP_PLATFORMS:
+        return _verify_hmac_token(value, _desktop_attest_secret(), plat)
     return False, "device_attest_platform_unknown"
 
 
@@ -68,11 +76,15 @@ def _verify_hmac_token(token: str, secret: str, platform: str) -> tuple[bool, st
 
 def build_test_attestation_token(platform: str) -> str:
     """Dev/test helper — HMAC attestation when secret is set."""
-    secret = (
-        os.getenv("SSC_PLAY_INTEGRITY_SECRET", "")
-        if platform == "android"
-        else os.getenv("SSC_DEVICECHECK_SECRET", "")
-    )
+    plat = platform.lower()
+    if plat == "android":
+        secret = os.getenv("SSC_PLAY_INTEGRITY_SECRET", "")
+    elif plat == "ios":
+        secret = os.getenv("SSC_DEVICECHECK_SECRET", "")
+    elif plat in _DESKTOP_PLATFORMS:
+        secret = _desktop_attest_secret()
+    else:
+        secret = ""
     if not secret:
         return _TEST_TOKEN
     ts = int(time.time())

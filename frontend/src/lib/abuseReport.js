@@ -20,10 +20,12 @@ export async function submitAbuseReport({
   });
 }
 
+/** Standalone block API — Settings report panel uses submitAbuseReport({ alsoBlock: true }) instead. */
 export async function blockUser(targetUserId) {
   return api.post('/api/abuse/block', { target_user_id: targetUserId });
 }
 
+/** List blocks for a future Settings block-list panel; not wired in UI yet. */
 export async function listBlockedUsers() {
   return api.get('/api/abuse/blocks');
 }

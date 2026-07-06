@@ -1,5 +1,6 @@
 /**
  * Group E2EE — libsignal sender keys (Step 2) with dev fallback for CRA tests.
+ * Production builds: requiresProductionCrypto() + assertGroupLibsignalRuntime() block dev XOR path.
  */
 
 import { api } from '../lib/api';

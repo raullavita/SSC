@@ -20,7 +20,7 @@ object ApiClient {
     const val CLIENT_HEADER = "X-SSC-Client"
     const val NATIVE_BRIDGE_HEADER = "X-SSC-Native-Bridge"
     const val NATIVE_BRIDGE_VALUE = "v1"
-    const val CLIENT_VALUE = "android/0.3.0/8"
+    const val CLIENT_VALUE = "android/0.3.1/9"
     const val SHELL_FEATURES = "splash_screen,deep_links,pull_to_refresh,offline_retry,file_chooser,edge_to_edge"
 
     fun attachInstalledClientHeaders(conn: HttpURLConnection) {
