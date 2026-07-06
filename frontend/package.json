@@ -1,6 +1,6 @@
 {
   "name": "ssc-frontend",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "scripts": {
     "start": "craco start",
@@ -8,6 +8,7 @@
     "test": "craco test",
     "test:ci": "craco test --watchAll=false --passWithNoTests",
     "knip": "knip --config knip.json",
+    "install:local": "yarn install --ignore-engines",
     "eject": "react-scripts eject"
   },
   "dependencies": {

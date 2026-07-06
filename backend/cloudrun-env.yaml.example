@@ -32,3 +32,12 @@ SSC_NEW_ACCOUNT_DM_WINDOW_SEC: "3600"
 SSC_ABUSE_REPORT_THRESHOLD: "3"
 SSC_ABUSE_REPORT_WINDOW_HOURS: "24"
 SSC_ABUSE_RATE_LIMIT_HOURS: "24"
+
+# Device attestation — defaults true in production when unset.
+# Short-term unblock (no paid Play Integrity / DeviceCheck yet): SSC_REQUIRE_DEVICE_ATTEST=false
+# Long-term: set SSC_DESKTOP_ATTEST_SECRET + SSC_PLAY_INTEGRITY_SECRET + SSC_DEVICECHECK_SECRET, then true.
+SSC_REQUIRE_DEVICE_ATTEST: "false"
+# Desktop attestation (free HMAC — Electron/Windows/Mac; required when SSC_REQUIRE_DEVICE_ATTEST=true)
+SSC_DESKTOP_ATTEST_SECRET: "REPLACE_WITH_ROTATED_DESKTOP_ATTEST_SECRET"
+# Dev crypto fallbacks (groupSenderKeysDev XOR) are blocked in production client builds via
+# REACT_APP_SSC_REQUIRE_LIBCRYPTO=true in build_android.ps1 / build_electron.ps1 — not a server toggle.

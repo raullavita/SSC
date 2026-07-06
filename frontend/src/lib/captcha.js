@@ -19,7 +19,3 @@ export async function getCaptchaConfig() {
   }
   return cached;
 }
-
-export function resetCaptchaConfigCache() {
-  cached = null;
-}

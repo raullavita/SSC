@@ -9,7 +9,7 @@ async function wsSubscribeTokenRequired() {
     return true;
   }
   try {
-    const cfg = await api.get('/config');
+    const cfg = await api.get('/api/config');
     cachedRequired = Boolean(cfg.ws_subscribe_token_required);
   } catch {
     cachedRequired = false;
@@ -18,7 +18,7 @@ async function wsSubscribeTokenRequired() {
 }
 
 async function fetchWsSubscribeToken(topic) {
-  const data = await api.get(`/ws/subscribe-token?topic=${encodeURIComponent(topic)}`);
+  const data = await api.get(`/api/ws/subscribe-token?topic=${encodeURIComponent(topic)}`);
   return data.subscribe_token;
 }
 

@@ -1,8 +1,8 @@
 # SSC Android APK build — bundles the installed-app UI (same shell as Electron)
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
-$Version = "0.3.0"
-$Build = "8"
+$Version = "0.3.1"
+$Build = "9"
 
 $signingLoaded = & "$PSScriptRoot\load_android_signing.ps1"
 if ($signingLoaded -and $env:SSC_ANDROID_KEYSTORE) {

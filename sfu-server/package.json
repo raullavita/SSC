@@ -1,6 +1,6 @@
 {
   "name": "ssc-sfu-server",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "description": "mediasoup SFU scaffold for SSC group calls (Engine 10)",
   "main": "server.js",

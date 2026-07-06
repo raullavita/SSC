@@ -5,6 +5,26 @@ All notable changes to SSC (Super Secure Chat) are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 SSC is open source under [AGPL-3.0](LICENSE); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for libsignal attribution.
 
+## [0.3.1] - 2026-07-06
+
+### Added
+
+- **Desktop attestation (free HMAC)** — `SSC_DESKTOP_ATTEST_SECRET` for Electron/Windows/Mac; Electron preload token generator
+- **Smoke test installed-client probes** — `/api/config` and `/api/auth/login` with `X-SSC-Client` + attest headers
+- **Knip in CI** — unused export checks on every push/PR
+- **`yarn install:local`** / `scripts/install_frontend.ps1` — Node 20 `--ignore-engines` helper
+
+### Fixed
+
+- **wsSubscribe.js** — `/api/config` and `/api/ws/subscribe-token` paths (was missing `/api` prefix)
+- **iOS crypto bridge** — synced `__sscBridge` persistence with Android
+- **Knip dead exports** — `isSafeAttachmentPreview`, `resetCaptchaConfigCache` cleaned up
+
+### Changed
+
+- Version **0.3.1 (build 9)** across API health, clients, and build scripts
+- Roadmap: D1 CAPTCHA partial (prod off until Turnstile keys); B9 knip complete with CI
+
 ## [0.3.0] - 2026-07-05
 
 ### Added

@@ -54,6 +54,8 @@ def isolate_external_services(monkeypatch):
     monkeypatch.setenv("SSC_REQUIRE_DEVICE_ATTEST", "false")
     monkeypatch.setenv("SSC_REQUIRE_WS_SUBSCRIBE_TOKEN", "false")
     monkeypatch.setenv("SSC_CAPTCHA_REQUIRED", "false")
+    # Tests use assorted legacy X-SSC-Client headers; production min comes from release_policy.
+    monkeypatch.setenv("SSC_MIN_CLIENT_VERSION", "0.3.0")
     monkeypatch.setenv("SSC_MIN_CLIENT_BUILD", "1")
 
     monkeypatch.setattr("db.probe_mongo", _stub_mongo_probe)

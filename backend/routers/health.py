@@ -6,6 +6,7 @@ from fastapi import APIRouter
 
 from config import get_settings
 from core.firebase_init import firebase_ready
+from core.release_policy import RELEASE_VERSION
 from core.sfu_policy import SFU_ENABLED, SFU_WS_URL
 from db import probe_mongo, probe_redis
 
@@ -36,10 +37,10 @@ async def health() -> dict:
             "enabled": SFU_ENABLED,
             "ws_url": SFU_WS_URL if SFU_ENABLED else None,
         },
-        "version": "0.3.0",
+        "version": RELEASE_VERSION,
     }
 
 
 @router.get("/")
 async def root() -> dict:
-    return {"name": "SSC - Super Secure Chat", "version": "0.3.0"}
+    return {"name": "SSC - Super Secure Chat", "version": RELEASE_VERSION}

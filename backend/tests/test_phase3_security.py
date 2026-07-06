@@ -89,6 +89,26 @@ def test_device_attest_hmac_token(monkeypatch):
     assert detail == ""
 
 
+def test_device_attest_desktop_electron_hmac(monkeypatch):
+    monkeypatch.setenv("SSC_REQUIRE_DEVICE_ATTEST", "true")
+    monkeypatch.setenv("SSC_ENV", "production")
+    monkeypatch.setenv("SSC_DESKTOP_ATTEST_SECRET", "desktop-secret-key")
+    token = build_test_attestation_token("electron")
+    ok, detail = verify_attestation_token("electron", token)
+    assert ok is True
+    assert detail == ""
+
+
+def test_device_attest_desktop_platforms(monkeypatch):
+    monkeypatch.setenv("SSC_REQUIRE_DEVICE_ATTEST", "true")
+    monkeypatch.setenv("SSC_ENV", "production")
+    monkeypatch.setenv("SSC_DESKTOP_ATTEST_SECRET", "desktop-secret-key")
+    for platform in ("windows", "mac", "desktop"):
+        token = build_test_attestation_token(platform)
+        ok, detail = verify_attestation_token(platform, token)
+        assert ok is True, f"{platform}: {detail}"
+
+
 def test_sfu_hmac_sign_and_verify():
     body = json.dumps({"room_id": "r1", "join_token": "jt"}).encode()
     headers = sign_sfu_request("POST", "/internal/rooms", body)

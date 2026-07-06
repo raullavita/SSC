@@ -4,8 +4,8 @@
  */
 
 const PLATFORM = process.env.REACT_APP_SSC_PLATFORM || 'electron';
-const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.0';
-const BUILD = process.env.REACT_APP_SSC_BUILD || '8';
+const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.1';
+const BUILD = process.env.REACT_APP_SSC_BUILD || '9';
 
 const ALLOWED = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
 
@@ -39,8 +39,13 @@ function getNativeBridgeHeader() {
 }
 
 function getDeviceAttestHeader() {
-  if (typeof window !== 'undefined' && window.__SSC_DEVICE_ATTEST) {
-    return String(window.__SSC_DEVICE_ATTEST);
+  if (typeof window === 'undefined') return null;
+  const attest = window.__SSC_DEVICE_ATTEST;
+  if (typeof attest === 'function') {
+    return String(attest());
+  }
+  if (attest) {
+    return String(attest);
   }
   return null;
 }

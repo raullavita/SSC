@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
+from core.release_policy import RELEASE_VERSION
 from core.firebase_init import ensure_firebase
 from core.lifespan import bootstrap_database
 from core.rate_limit import require_redis_for_production_rate_limits
@@ -45,7 +46,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title="SSC - Super Secure Chat",
-        version="0.3.0",
+        version=RELEASE_VERSION,
         lifespan=lifespan,
     )
     app.state.enforce_installed_client = settings.enforce_installed_client
