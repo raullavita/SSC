@@ -35,6 +35,10 @@ auth_rate_limiter = RateLimiter("auth", AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_SEC)
 feedback_rate_limiter = RateLimiter("feedback", FEEDBACK_RATE_LIMIT, FEEDBACK_RATE_WINDOW_SEC)
 file_rate_limiter = RateLimiter("file", MAX_FILES_PER_HOUR, 3600)
 
+PREKEY_FETCH_LIMIT = int(os.getenv("SSC_PREKEY_FETCH_LIMIT", "30"))
+PREKEY_FETCH_WINDOW_SEC = int(os.getenv("SSC_PREKEY_FETCH_WINDOW_SEC", "60"))
+prekey_fetch_limiter = RateLimiter("prekey_fetch", PREKEY_FETCH_LIMIT, PREKEY_FETCH_WINDOW_SEC)
+
 
 def file_magic_blocked(data: bytes) -> bool:
     if not data:

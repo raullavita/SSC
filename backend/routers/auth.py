@@ -166,7 +166,7 @@ async def google_callback(
     try:
         profile = await exchange_code_for_profile(code)
         user = await _find_or_create_google_user(profile)
-        oauth_code = issue_oauth_code(user["_id"])
+        oauth_code = await issue_oauth_code(user["_id"])
         return RedirectResponse(f"{frontend_url()}/auth/google?oauth_code={oauth_code}")
     except ValueError:
         return RedirectResponse(f"{frontend_url()}/auth/google?error=oauth_failed")
@@ -178,7 +178,7 @@ async def google_exchange(
     response: Response,
     _client: str = Depends(get_client_header),
 ) -> dict:
-    user_id = consume_oauth_code(body.oauth_code)
+    user_id = await consume_oauth_code(body.oauth_code)
     if not user_id:
         raise HTTPException(status_code=400, detail="invalid_oauth_code")
     db = get_database()

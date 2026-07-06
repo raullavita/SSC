@@ -6,6 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const { randomBytes } = require('crypto');
+const { FileJsonStore, readSecureText, writeSecureText } = require('./secureFileStore');
 const {
   IdentityKeyPair,
   PublicKey,
@@ -46,25 +47,6 @@ function randomRegistrationId() {
   return Math.floor(Math.random() * 16380) + 1;
 }
 
-class FileJsonStore {
-  constructor(dir, filename) {
-    this.file = path.join(dir, filename);
-    this.data = {};
-    if (fs.existsSync(this.file)) {
-      try {
-        this.data = JSON.parse(fs.readFileSync(this.file, 'utf8'));
-      } catch {
-        this.data = {};
-      }
-    }
-  }
-
-  save() {
-    fs.mkdirSync(path.dirname(this.file), { recursive: true });
-    fs.writeFileSync(this.file, JSON.stringify(this.data));
-  }
-}
-
 class SscSessionStore extends SessionStore {
   constructor(store) {
     super();
@@ -102,7 +84,7 @@ class SscIdentityStore extends IdentityKeyStore {
     this.trusted = {};
     if (fs.existsSync(this.trustedFile)) {
       try {
-        this.trusted = JSON.parse(fs.readFileSync(this.trustedFile, 'utf8'));
+        this.trusted = JSON.parse(readSecureText(this.trustedFile));
       } catch {
         this.trusted = {};
       }
@@ -112,7 +94,7 @@ class SscIdentityStore extends IdentityKeyStore {
   _loadPair() {
     if (this._pair) return this._pair;
     if (fs.existsSync(this.identityFile)) {
-      const doc = JSON.parse(fs.readFileSync(this.identityFile, 'utf8'));
+      const doc = JSON.parse(readSecureText(this.identityFile));
       this._pair = IdentityKeyPair.deserialize(b64decode(doc.identityKeyPair));
       this.meta.registrationId = doc.registrationId;
       this.meta.deviceId = doc.deviceId;
@@ -122,8 +104,7 @@ class SscIdentityStore extends IdentityKeyStore {
     this._pair = IdentityKeyPair.generate();
     this.meta.registrationId = randomRegistrationId();
     if (!this.meta.deviceId) this.meta.deviceId = '1';
-    fs.mkdirSync(path.dirname(this.identityFile), { recursive: true });
-    fs.writeFileSync(
+    writeSecureText(
       this.identityFile,
       JSON.stringify({
         identityKeyPair: b64encode(this._pair.serialize()),
@@ -152,7 +133,7 @@ class SscIdentityStore extends IdentityKeyStore {
     const k = name.toString();
     const prev = this.trusted[k];
     this.trusted[k] = b64encode(key.serialize());
-    fs.writeFileSync(this.trustedFile, JSON.stringify(this.trusted));
+    writeSecureText(this.trustedFile, JSON.stringify(this.trusted));
     return prev ? IdentityChange.ReplacedExisting : IdentityChange.NewOrUnchanged;
   }
 

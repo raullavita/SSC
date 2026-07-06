@@ -15,6 +15,7 @@ const pkg = require('./package.json');
 const CLIENT_VALUE = `electron/${pkg.version}/8`;
 
 contextBridge.exposeInMainWorld('__SSC_ELECTRON_CLIENT', CLIENT_VALUE);
+contextBridge.exposeInMainWorld('__SSC_NATIVE_BRIDGE', 'v1');
 
 contextBridge.exposeInMainWorld('sscCrypto', {
   get available() {

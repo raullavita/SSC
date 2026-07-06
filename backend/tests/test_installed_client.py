@@ -11,7 +11,8 @@ from core.installed_client_policy import (
 )
 from server import create_app
 
-VALID_HEADER = "android/0.1.0/1"
+VALID_HEADER = "android/0.3.0/8"
+NATIVE_BRIDGE_HEADER = {"X-SSC-Native-Bridge": "v1"}
 
 
 def test_parse_valid_header():
@@ -67,10 +68,26 @@ async def test_config_blocked_without_header(enforced_client):
 async def test_config_allowed_with_header(enforced_client):
     response = await enforced_client.get(
         "/api/config",
-        headers={"X-SSC-Client": VALID_HEADER},
+        headers={"X-SSC-Client": VALID_HEADER, **NATIVE_BRIDGE_HEADER},
     )
     assert response.status_code == 200
     assert response.json()["installed_client_required"] is True
+
+
+def test_native_bridge_required_in_production(monkeypatch):
+    monkeypatch.setenv("SSC_ENV", "production")
+    monkeypatch.setenv("SSC_REQUIRE_NATIVE_BRIDGE", "true")
+    ok, detail = validate_request("/api/config", VALID_HEADER, native_bridge=None)
+    assert ok is False
+    assert detail == "native_bridge_required"
+    ok2, _ = validate_request("/api/config", VALID_HEADER, native_bridge="v1")
+    assert ok2 is True
+
+
+def test_outdated_client_rejected():
+    ok, detail = validate_request("/api/config", "android/0.1.0/1", native_bridge="v1")
+    assert ok is False
+    assert detail == "installed_client_outdated"
 
 
 @pytest.mark.asyncio

@@ -10,3 +10,4 @@ pytest==9.0.3
 pytest-asyncio==1.4.0
 email-validator==2.3.0
 firebase-admin==6.9.0
+argon2-cffi==25.1.0

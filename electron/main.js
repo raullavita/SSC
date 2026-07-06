@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const crypto = require('crypto');
+const { app, BrowserWindow, ipcMain, session } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const fs = require('fs');
 const path = require('path');
@@ -139,6 +140,43 @@ function navigateInstalledRoute(route) {
 }
 
 const API_HOST = (process.env.SSC_API_HOST || 'api.supersecurechat.com').toLowerCase();
+
+const PINNED_HOSTS = new Set([
+  API_HOST,
+  'www.supersecurechat.com',
+  'supersecurechat.com',
+  'sfu.supersecurechat.com',
+]);
+
+const PINNED_SPKI_HASHES = new Set([
+  'sha256/aW6xgPeCioys0l73e6c6E4GRjmUx7Yqf8tw2DCUgqQs=',
+  'sha256/C5+lpZ7tcVwmwQIMcRtPjsQt3MRxqt72RCZ3PqFyjx0=',
+]);
+
+function certificateSpkiPin(cert) {
+  if (!cert?.data) return null;
+  const der = Buffer.isBuffer(cert.data) ? cert.data : Buffer.from(cert.data);
+  const x509 = new crypto.X509Certificate(der);
+  const spki = x509.publicKey.export({ type: 'spki', format: 'der' });
+  return `sha256/${crypto.createHash('sha256').update(spki).digest('base64')}`;
+}
+
+function attachCertificatePinning() {
+  if (process.env.SSC_DISABLE_CERT_PINNING === '1') return;
+  session.defaultSession.setCertificateVerifyProc((request, callback) => {
+    const hostname = (request.hostname || '').toLowerCase();
+    if (!PINNED_HOSTS.has(hostname)) {
+      callback(0);
+      return;
+    }
+    const pin = certificateSpkiPin(request.certificate);
+    if (pin && PINNED_SPKI_HASHES.has(pin)) {
+      callback(0);
+      return;
+    }
+    callback(-2);
+  });
+}
 
 function isOAuthFinishUrl(url) {
   try {
@@ -281,6 +319,7 @@ ipcMain.handle('ssc-update:install', () => {
 });
 
 app.whenReady().then(() => {
+  attachCertificatePinning();
   registerCryptoIpc();
   const win = createWindow();
   registerAutoUpdater(win);

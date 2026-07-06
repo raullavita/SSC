@@ -9,9 +9,11 @@ describe('InstalledClientGate', () => {
     delete window.sscCrypto;
     delete window.__SSC_ELECTRON_CLIENT;
     delete window.__SSC_ANDROID_CLIENT;
+    delete window.__SSC_NATIVE_BRIDGE;
   });
 
   it('renders children when libsignal is present in production crypto mode', () => {
+    window.__SSC_NATIVE_BRIDGE = 'v1';
     window.sscCrypto = { encryptMessage: () => {}, decryptMessage: () => {} };
     process.env = {
       ...originalEnv,
@@ -26,7 +28,8 @@ describe('InstalledClientGate', () => {
     expect(screen.getByText('chat-ui')).toBeInTheDocument();
   });
 
-  it('allows electron shell when platform is electron even before libsignal warms up', () => {
+  it('requires native bridge attestation in production crypto mode', () => {
+    window.sscCrypto = { encryptMessage: () => {}, decryptMessage: () => {} };
     process.env = {
       ...originalEnv,
       REACT_APP_SSC_REQUIRE_LIBCRYPTO: 'true',
@@ -38,11 +41,13 @@ describe('InstalledClientGate', () => {
         <span>chat-ui</span>
       </InstalledClientGate>
     );
-    expect(screen.getByText('chat-ui')).toBeInTheDocument();
+    expect(screen.queryByText('chat-ui')).not.toBeInTheDocument();
   });
 
-  it('allows electron shell via runtime client marker', () => {
-    window.__SSC_ELECTRON_CLIENT = 'electron/0.3.0/4';
+  it('allows installed shell with native bridge and libsignal', () => {
+    window.__SSC_NATIVE_BRIDGE = 'v1';
+    window.__SSC_ELECTRON_CLIENT = 'electron/0.3.0/8';
+    window.sscCrypto = { encryptMessage: () => {}, decryptMessage: () => {} };
     process.env = {
       ...originalEnv,
       REACT_APP_SSC_REQUIRE_LIBCRYPTO: 'true',
