@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import SiteFeedbackPanel from '../components/SiteFeedbackPanel';
 import { api } from '../lib/api';
 import styles from './Landing.module.css';
 
@@ -8,6 +9,7 @@ const RELEASE_BASE =
   process.env.REACT_APP_SSC_RELEASE_URL ||
   'https://github.com/raullavita/SSC/releases/latest/download';
 const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.0';
+const BUILD = process.env.REACT_APP_SSC_BUILD || '8';
 const GITHUB_REPO = 'https://github.com/raullavita/SSC';
 const LIBSIGNAL_REPO = 'https://github.com/signalapp/libsignal';
 
@@ -31,6 +33,8 @@ function LandingPublic() {
           <a href="#security">Security</a>
           <a href="#open-source">Open source</a>
           <a href="#download">Download</a>
+          <a href="#feedback">Reviews</a>
+          <a href="#contribute">Contribute</a>
           <a className={styles.navCta} href={GITHUB_REPO} target="_blank" rel="noopener noreferrer">
             GitHub
           </a>
@@ -38,7 +42,9 @@ function LandingPublic() {
       </nav>
 
       <header className={styles.hero}>
-        <p className={styles.badge}>v{VERSION} — install-only messenger</p>
+        <p className={styles.badge}>
+          v{VERSION} (build {BUILD}) — install-only messenger
+        </p>
         <h1 className={styles.title}>Messaging you can verify.</h1>
         <p className={styles.tagline}>
           Super Secure Chat is end-to-end encrypted messaging for installed Android and Windows
@@ -251,16 +257,63 @@ function LandingPublic() {
           </tbody>
         </table>
         <p className={styles.lead}>
-          Contributions welcome — look for <strong>help wanted</strong> issues on GitHub. See{' '}
-          <a href={`${GITHUB_REPO}/blob/main/CONTRIBUTING.md`}>CONTRIBUTING.md</a>.
+          Contributions welcome — pick a <strong>help wanted</strong> issue, open one focused PR.
+          See <a href={`${GITHUB_REPO}/blob/main/CONTRIBUTING.md`}>CONTRIBUTING.md</a>.
         </p>
-        <a className={styles.primaryBtn} href={GITHUB_REPO} target="_blank" rel="noopener noreferrer">
+      </section>
+
+      <section id="contribute" className={styles.section}>
+        <h2 className={styles.sectionTitle}>Contribute</h2>
+        <p className={styles.lead}>
+          SSC is AGPL-3.0 open source. You do not need permission to fork — but for upstream
+          merges, please read the contribution policy first.
+        </p>
+        <div className={styles.grid}>
+          <article className={styles.card}>
+            <h3>Good first issues</h3>
+            <p>
+              Tests, docs, and client polish. Commenting does <strong>not</strong> reserve an issue
+              — open a PR when ready.
+            </p>
+            <a
+              className={styles.secondaryBtn}
+              href={`${GITHUB_REPO}/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Browse help wanted
+            </a>
+          </article>
+          <article className={styles.card}>
+            <h3>Report bugs</h3>
+            <p>
+              Use GitHub Issues for reproducible bugs (Windows, Android, or API). Include steps
+              and build number — no secrets or message content.
+            </p>
+            <a
+              className={styles.secondaryBtn}
+              href={`${GITHUB_REPO}/issues/new/choose`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open an issue
+            </a>
+          </article>
+        </div>
+        <a
+          className={styles.primaryBtn}
+          href={GITHUB_REPO}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           Star &amp; contribute on GitHub
         </a>
       </section>
 
       <section id="download" className={styles.section}>
-        <h2 className={styles.sectionTitle}>Download v{VERSION}</h2>
+        <h2 className={styles.sectionTitle}>
+          Download v{VERSION} (build {BUILD})
+        </h2>
         <p className={styles.lead}>
           Install the app to sign up and chat. Builds are published on GitHub Releases.
         </p>
@@ -295,8 +348,15 @@ function LandingPublic() {
         <p className={styles.muted}>
           <a href={`${GITHUB_REPO}/releases`}>All releases on GitHub</a>
           {' · '}
+          Android testers: Firebase App Distribution (SSC Installed)
+          {' · '}
           API: <a href="https://api.supersecurechat.com/api/health">api.supersecurechat.com</a>
         </p>
+      </section>
+
+      <section id="feedback" className={styles.section}>
+        <h2 className={styles.sectionTitle}>Reviews &amp; feedback</h2>
+        <SiteFeedbackPanel />
       </section>
 
       <footer className={styles.footer}>

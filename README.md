@@ -82,9 +82,22 @@ yarn start
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Good first tasks: tests, docs, Android/Electron polish.
+See [CONTRIBUTING.md](CONTRIBUTING.md). **Help wanted** issues are open — tests, docs, Android/Windows polish.
+
+1. Pick an [open help-wanted issue](https://github.com/raullavita/SSC/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+2. Fork → one focused PR against `main`
+3. Ensure `pytest` and `yarn test:ci` pass
+
+Commenting on an issue does **not** reserve it. All external PRs are reviewed before merge.
 
 **Do not** post production secrets, API keys, or personal emails in issues or PRs.
+
+## Reviews & feedback
+
+Installed SSC? Tell us what works and what does not:
+
+- **Website:** https://www.supersecurechat.com — **Reviews & feedback** section
+- **GitHub:** [Issues](https://github.com/raullavita/SSC/issues/new/choose) for bugs and feature requests
 
 ## Security
 

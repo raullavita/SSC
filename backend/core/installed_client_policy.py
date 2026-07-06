@@ -63,6 +63,8 @@ def is_exempt_path(path: str) -> bool:
         return True
     if normalized.startswith("/api/auth/google/"):
         return True
+    if normalized.startswith("/api/public/"):
+        return True
     return normalized == "/api/health"
 
 

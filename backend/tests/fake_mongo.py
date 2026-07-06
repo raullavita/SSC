@@ -11,6 +11,11 @@ class FakeCursor:
         self._items = items
         self._sort_key: str | None = None
         self._sort_dir = 1
+        self._limit: int | None = None
+
+    def limit(self, n: int) -> FakeCursor:
+        self._limit = n
+        return self
 
     def sort(self, key: str, direction: int = 1) -> FakeCursor:
         self._sort_key = key
@@ -21,6 +26,8 @@ class FakeCursor:
         items = list(self._items)
         if self._sort_key:
             items.sort(key=lambda d: d.get(self._sort_key), reverse=self._sort_dir < 0)
+        if self._limit is not None:
+            items = items[: self._limit]
         self._iter = iter(items)
         return self
 
