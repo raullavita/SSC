@@ -2,7 +2,6 @@
  * Electron preload — IPC bridge to main-process libsignal (Engine 11).
  */
 
-const crypto = require('crypto');
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('sscUpdater', {
@@ -15,19 +14,9 @@ const pkg = require('./package.json');
 
 const CLIENT_VALUE = `electron/${pkg.version}/9`;
 
-function buildDesktopAttestToken() {
-  const secret = (process.env.SSC_DESKTOP_ATTEST_SECRET || '').trim();
-  if (!secret) {
-    return 'ssc-attest-test-v1';
-  }
-  const ts = Math.floor(Date.now() / 1000);
-  const sig = crypto.createHmac('sha256', secret).update(`electron:${ts}`).digest('hex');
-  return `${ts}.${sig}`;
-}
-
 contextBridge.exposeInMainWorld('__SSC_ELECTRON_CLIENT', CLIENT_VALUE);
 contextBridge.exposeInMainWorld('__SSC_NATIVE_BRIDGE', 'v1');
-contextBridge.exposeInMainWorld('__SSC_DEVICE_ATTEST', () => buildDesktopAttestToken());
+contextBridge.exposeInMainWorld('__SSC_DEVICE_ATTEST', () => 'ssc-attest-test-v1');
 // Chromium Translator API is used in-renderer when available (see onDevice.js).
 contextBridge.exposeInMainWorld('__SSC_ELECTRON_TRANSLATE', 'browser_translator');
 
