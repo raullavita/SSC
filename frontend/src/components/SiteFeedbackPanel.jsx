@@ -1,3 +1,4 @@
+/** Website-only (supersecurechat.com landing). Not shown in installed Android/PC app. */
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import styles from './SiteFeedbackPanel.module.css';

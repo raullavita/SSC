@@ -21,6 +21,19 @@ class SscNativeBridge(
     }
 
     @JavascriptInterface
+    fun fetchApi(url: String, method: String, headersJson: String, body: String, callbackId: String) {
+        executor.execute {
+            try {
+                val apiBase = BuildConfig.SSC_API_URL
+                val result = SscApiBridge.fetch(url, method, headersJson, body.ifBlank { null }, apiBase)
+                deliver(callbackId, result.getBoolean("ok"), result)
+            } catch (error: Throwable) {
+                deliver(callbackId, false, error.message ?: "ssc_api_error")
+            }
+        }
+    }
+
+    @JavascriptInterface
     fun invoke(method: String, callbackId: String, argsJson: String) {
         executor.execute {
             try {
