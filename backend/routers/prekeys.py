@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field
 
 from config import get_settings
 from core.abuse_policy import prekey_fetch_limiter
+from core.abuse_enforcement import is_abuse_rate_limited
+from core.prekey_policy import prekey_fetch_allowed
 from core.pqxdh_policy import validate_kyber_prekey
 from core.signal_policy import (
     FORBIDDEN_PREKEY_FIELDS,
@@ -93,6 +95,10 @@ async def fetch_prekey_bundle(
     if not await prekey_fetch_limiter.allow(f"prekey_fetch:{viewer}:{target_user_id}:{device_id}"):
         raise HTTPException(status_code=429, detail="prekey_fetch_rate_limited")
     db = get_database()
+    if await is_abuse_rate_limited(db, viewer):
+        raise HTTPException(status_code=429, detail="abuse_rate_limited")
+    if not await prekey_fetch_allowed(db, viewer, target_user_id):
+        raise HTTPException(status_code=403, detail="prekey_fetch_not_allowed")
     doc_id = f"{target_user_id}:{device_id}"
     doc = await db.prekeys.find_one({"_id": doc_id})
     if not doc:
@@ -109,6 +115,10 @@ async def list_user_prekey_devices(
     if not await prekey_fetch_limiter.allow(f"prekey_list:{viewer}:{target_user_id}"):
         raise HTTPException(status_code=429, detail="prekey_fetch_rate_limited")
     db = get_database()
+    if await is_abuse_rate_limited(db, viewer):
+        raise HTTPException(status_code=429, detail="abuse_rate_limited")
+    if not await prekey_fetch_allowed(db, viewer, target_user_id):
+        raise HTTPException(status_code=403, detail="prekey_fetch_not_allowed")
     cursor = db.prekeys.find({"user_id": target_user_id})
     devices = [public_prekey_bundle(doc) async for doc in cursor]
     return {"user_id": target_user_id, "devices": devices}

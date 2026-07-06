@@ -14,6 +14,8 @@ from core.ids import direct_conversation_key, new_conversation_id
 from core.group_policy import public_group_conversation
 from core.metadata_policy import public_conversation
 from core.retention_policy import default_expires_at
+from core.abuse_enforcement import is_abuse_rate_limited
+from core.new_account_policy import enforce_new_account_dm
 from db import get_database
 from deps import get_client_header, get_current_user_id
 
@@ -76,9 +78,18 @@ async def create_conversation(
         raise HTTPException(status_code=400, detail="cannot_chat_with_self")
 
     db = get_database()
+    if await is_abuse_rate_limited(db, user_id):
+        raise HTTPException(status_code=429, detail="abuse_rate_limited")
+
     peer = await db.users.find_one({"_id": body.participant_id})
     if not peer:
         raise HTTPException(status_code=404, detail="participant_not_found")
+
+    await enforce_new_account_dm(
+        db,
+        user_id,
+        {"type": "direct", "participants": [user_id, body.participant_id]},
+    )
 
     key = direct_conversation_key(user_id, body.participant_id)
     existing = await db.conversations.find_one({"direct_key": key})

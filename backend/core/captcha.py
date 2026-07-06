@@ -18,6 +18,20 @@ def captcha_configured() -> bool:
     return bool(os.getenv("SSC_TURNSTILE_SECRET", "").strip())
 
 
+def turnstile_site_key() -> str | None:
+    key = os.getenv("SSC_TURNSTILE_SITE_KEY", "").strip()
+    return key or None
+
+
+def captcha_public_config() -> dict:
+    required = captcha_required()
+    site_key = turnstile_site_key()
+    return {
+        "captcha_required": required,
+        "turnstile_site_key": site_key if required and site_key else None,
+    }
+
+
 async def verify_captcha(token: str | None, remote_ip: str | None = None) -> tuple[bool, str]:
     if not captcha_required():
         return True, ""

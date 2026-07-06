@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import TurnstileWidget from '../components/TurnstileWidget';
+import { getCaptchaConfig } from '../lib/captcha';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
 import AuthSplash from '../components/AuthSplash';
@@ -16,6 +18,13 @@ export default function RecoveryLogin() {
   const [step, setStep] = useState('verify');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [captchaConfig, setCaptchaConfig] = useState({ required: false, siteKey: null });
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileRef = useRef(null);
+
+  useEffect(() => {
+    getCaptchaConfig().then(setCaptchaConfig);
+  }, []);
 
   if (loading) return <AuthSplash />;
   if (user) return <Navigate to="/chat" replace />;
@@ -25,14 +34,21 @@ export default function RecoveryLogin() {
     setBusy(true);
     setError(null);
     try {
+      if (captchaConfig.required && !captchaToken) {
+        setError('Complete the security check before continuing.');
+        return;
+      }
       const data = await api.post('/api/auth/recovery/verify', {
         email,
         recovery_passphrase: passphrase,
+        captcha_token: captchaToken || undefined,
       });
       setRecoveryToken(data.recovery_token);
       setStep('reset');
     } catch (err) {
       setError(err.body?.detail || err.message || 'Recovery verification failed');
+      turnstileRef.current?.reset();
+      setCaptchaToken('');
     } finally {
       setBusy(false);
     }
@@ -88,6 +104,13 @@ export default function RecoveryLogin() {
               autoComplete="off"
             />
           </label>
+          {captchaConfig.siteKey && (
+            <TurnstileWidget
+              ref={turnstileRef}
+              siteKey={captchaConfig.siteKey}
+              onToken={setCaptchaToken}
+            />
+          )}
           {error && (
             <p className={styles.error} role="alert">
               {String(error)}

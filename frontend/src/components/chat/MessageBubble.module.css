@@ -100,6 +100,34 @@
   text-decoration: underline;
 }
 
+.fileWarning {
+  font-size: 0.8rem;
+  color: #e9edef;
+  background: rgba(233, 168, 68, 0.12);
+  border: 1px solid rgba(233, 168, 68, 0.35);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+}
+
+.fileWarning p {
+  margin: 0 0 0.5rem;
+  color: #f0c674;
+}
+
+.fileWarningBtn {
+  background: #202c33;
+  color: #e9edef;
+  border: 1px solid #3b4a54;
+  border-radius: 4px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.fileWarningBtn:hover {
+  background: #2a3942;
+}
+
 .loading {
   font-size: 0.8rem;
   color: #8696a0;

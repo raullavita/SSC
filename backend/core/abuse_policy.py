@@ -40,6 +40,19 @@ PREKEY_FETCH_WINDOW_SEC = int(os.getenv("SSC_PREKEY_FETCH_WINDOW_SEC", "60"))
 prekey_fetch_limiter = RateLimiter("prekey_fetch", PREKEY_FETCH_LIMIT, PREKEY_FETCH_WINDOW_SEC)
 
 
+ALLOWED_MIME_PREFIXES: tuple[str, ...] = ("image/", "audio/")
+ALLOWED_MIME_EXACT: frozenset[str] = frozenset({"application/pdf"})
+
+
+def mime_hint_allowed(mime: str | None) -> bool:
+    hint = (mime or "").strip().lower()
+    if not hint:
+        return False
+    if hint in ALLOWED_MIME_EXACT:
+        return True
+    return any(hint.startswith(prefix) for prefix in ALLOWED_MIME_PREFIXES)
+
+
 def file_magic_blocked(data: bytes) -> bool:
     if not data:
         return False
@@ -47,6 +60,14 @@ def file_magic_blocked(data: bytes) -> bool:
         if data.startswith(magic):
             return True
     return False
+
+
+def file_upload_allowed(mime_hint: str, data: bytes) -> tuple[bool, str]:
+    if not mime_hint_allowed(mime_hint):
+        return False, "file_mime_not_allowed"
+    if file_magic_blocked(data[:8]):
+        return False, "file_type_blocked"
+    return True, ""
 
 
 def spam_score_heuristic(text_sample: str) -> int:

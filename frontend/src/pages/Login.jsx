@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import TurnstileWidget from '../components/TurnstileWidget';
+import { getCaptchaConfig } from '../lib/captcha';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
 import AuthSplash from '../components/AuthSplash';
@@ -19,7 +21,14 @@ export default function Login() {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [captchaConfig, setCaptchaConfig] = useState({ required: false, siteKey: null });
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileRef = useRef(null);
   const installed = isInstalledApp();
+
+  useEffect(() => {
+    getCaptchaConfig().then(setCaptchaConfig);
+  }, []);
 
   if (loading) return <AuthSplash />;
   if (user) return <Navigate to={postAuthPath(user, nextParam || '/chat')} replace />;
@@ -33,11 +42,22 @@ export default function Login() {
       if (mode === 'login') {
         authed = await login(email, password);
       } else {
-        authed = await register(email, password, displayName || email.split('@')[0]);
+        if (captchaConfig.required && !captchaToken) {
+          setError('Complete the security check before registering.');
+          return;
+        }
+        authed = await register(
+          email,
+          password,
+          displayName || email.split('@')[0],
+          captchaToken || null
+        );
       }
       navigate(postAuthPath(authed, nextParam || '/chat'));
     } catch (err) {
       setError(err.body?.detail || err.message || 'Auth failed');
+      turnstileRef.current?.reset();
+      setCaptchaToken('');
     } finally {
       setBusy(false);
     }
@@ -136,6 +156,13 @@ export default function Login() {
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
           />
         </label>
+        {mode === 'register' && captchaConfig.siteKey && (
+          <TurnstileWidget
+            ref={turnstileRef}
+            siteKey={captchaConfig.siteKey}
+            onToken={setCaptchaToken}
+          />
+        )}
         {error && (
           <p className={styles.error} role="alert">
             {String(error)}

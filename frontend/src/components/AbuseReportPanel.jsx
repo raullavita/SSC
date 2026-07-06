@@ -7,6 +7,7 @@ export default function AbuseReportPanel({ onMessage }) {
   const [conversationId, setConversationId] = useState('');
   const [reason, setReason] = useState('');
   const [sampleText, setSampleText] = useState('');
+  const [alsoBlock, setAlsoBlock] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function handleSubmit(event) {
@@ -22,12 +23,12 @@ export default function AbuseReportPanel({ onMessage }) {
         conversationId: conversationId.trim() || null,
         reason: reason.trim(),
         sampleText: sampleText.trim(),
+        alsoBlock,
       });
-      onMessage?.(
-        result?.ok
-          ? 'Report submitted. SSC stores metadata only — no message content on the server.'
-          : 'Report could not be submitted.'
-      );
+      const parts = ['Report submitted. SSC stores metadata only — no message content on the server.'];
+      if (result?.blocked) parts.push('User blocked on your account.');
+      if (result?.rate_limited) parts.push('Server applied a temporary rate limit on the reported user.');
+      onMessage?.(result?.ok ? parts.join(' ') : 'Report could not be submitted.');
       setReason('');
       setSampleText('');
     } catch (err) {
@@ -80,6 +81,16 @@ export default function AbuseReportPanel({ onMessage }) {
           placeholder="Paste sample if reporting spam patterns"
           rows={3}
         />
+      </label>
+      <label className={styles.rowStack}>
+        <span>
+          <input
+            type="checkbox"
+            checked={alsoBlock}
+            onChange={(e) => setAlsoBlock(e.target.checked)}
+          />{' '}
+          Also block this user (they cannot message you)
+        </span>
       </label>
       <button type="submit" className={styles.button} disabled={busy}>
         {busy ? 'Submitting…' : 'Submit report'}
