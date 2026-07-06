@@ -49,6 +49,25 @@ jobs:
       - name: Phase 1 release build policy (libsignal required)
         shell: pwsh
         run: ./scripts/verify_phase1_build_policy.ps1
+      - name: Phase 2 security build policy
+        shell: pwsh
+        run: ./scripts/verify_phase2_build_policy.ps1
+      - name: Phase 3 security build policy
+        shell: pwsh
+        run: ./scripts/verify_phase3_build_policy.ps1
+
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install semgrep
+      - name: Semgrep OSS scan (fail on ERROR severity)
+        run: |
+          semgrep scan --config auto --error backend frontend/src electron android/app/src/main sfu-server \
+            --exclude-rule generic.secrets.security.detected-generic-secret
 
   production-smoke:
     runs-on: ubuntu-latest

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, wsAuthPayload, wsUrl } from '../lib/api';
+import { buildSubscribePayload } from '../lib/wsSubscribe';
 import { indexReadsByMessage } from '../lib/readReceipts';
 
 function applyReadReceipt(setReadByMessage, payload) {
@@ -65,11 +66,11 @@ export function useReadReceipts(conversationId, messages, { wsToken, userId, ena
 
     const ws = new WebSocket(wsUrl());
 
-    ws.onopen = () => {
+    ws.onopen = async () => {
       const auth = wsAuthPayload(wsToken);
       if (auth) ws.send(auth);
       for (const topic of topics) {
-        ws.send(JSON.stringify({ type: 'subscribe', topic }));
+        ws.send(await buildSubscribePayload(topic));
       }
     };
 

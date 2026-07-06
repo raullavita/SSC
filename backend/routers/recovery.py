@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, EmailStr, Field
 
+from core.captcha import verify_captcha
 from core.passwords import hash_password
 from core.recovery_crypto import hash_recovery_passphrase, needs_rehash, verify_recovery_passphrase
 from core.recovery_policy import RECOVERY_KEY_MAX_LEN, RECOVERY_KEY_MIN_LEN
@@ -28,6 +29,7 @@ class RecoverySetupBody(BaseModel):
 class RecoveryVerifyBody(BaseModel):
     email: EmailStr
     recovery_passphrase: str = Field(min_length=RECOVERY_KEY_MIN_LEN, max_length=RECOVERY_KEY_MAX_LEN)
+    captcha_token: str | None = Field(default=None, max_length=4096)
 
 
 class RecoveryResetBody(BaseModel):
@@ -88,8 +90,14 @@ async def setup_recovery(
 @router.post("/verify")
 async def verify_recovery(
     body: RecoveryVerifyBody,
+    request: Request,
     _client: str = Depends(get_client_header),
 ) -> dict:
+    client_ip = request.client.host if request.client else None
+    captcha_ok, captcha_detail = await verify_captcha(body.captcha_token, client_ip)
+    if not captcha_ok:
+        raise HTTPException(status_code=400, detail=captcha_detail)
+
     db = get_database()
     user = await db.users.find_one({"email": body.email.lower()})
     if not user:

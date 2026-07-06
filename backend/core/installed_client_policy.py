@@ -86,6 +86,7 @@ def validate_request(
     header_value: str | None,
     *,
     native_bridge: str | None = None,
+    device_attest: str | None = None,
 ) -> tuple[bool, str]:
     if not path.startswith("/api"):
         return True, ""
@@ -104,6 +105,12 @@ def validate_request(
         bridge = (native_bridge or "").strip()
         if bridge != NATIVE_BRIDGE_VALUE:
             return False, "native_bridge_required"
+    from core.device_attestation import require_device_attestation, verify_attestation_token
+
+    if require_device_attestation():
+        ok, detail = verify_attestation_token(identity.platform, device_attest)
+        if not ok:
+            return False, detail
     return True, ""
 
 

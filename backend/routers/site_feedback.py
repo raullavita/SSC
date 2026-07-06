@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from core.captcha import verify_captcha
 from core.site_feedback_policy import (
     PUBLIC_LIST_LIMIT,
     REJECT_SPAM_THRESHOLD,
@@ -25,6 +26,7 @@ class SubmitFeedbackBody(BaseModel):
     category: str = Field(default="review", max_length=16)
     platform: str | None = Field(default=None, max_length=16)
     message: str = Field(min_length=10, max_length=2000)
+    captcha_token: str | None = Field(default=None, max_length=4096)
 
 
 @router.get("/feedback")
@@ -41,6 +43,11 @@ async def list_public_feedback() -> dict:
 
 @router.post("/feedback")
 async def submit_feedback(body: SubmitFeedbackBody, request: Request) -> dict:
+    client_ip = request.client.host if request.client else None
+    captcha_ok, captcha_detail = await verify_captcha(body.captcha_token, client_ip)
+    if not captcha_ok:
+        raise HTTPException(status_code=400, detail=captcha_detail)
+
     err = validate_feedback_message(body.message)
     if err:
         raise HTTPException(status_code=400, detail=err)

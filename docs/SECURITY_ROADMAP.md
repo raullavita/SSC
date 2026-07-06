@@ -15,7 +15,7 @@ This document is the master plan from the red-team audit. Work proceeds phase by
 | Ciphertext-only server relay | JWT/OAuth/rate-limit weaknesses |
 | httpOnly session cookies | Keys on disk unencrypted (Phase 2) |
 | Install-only client charter | No certificate pinning (Phase 2) |
-| Panic wipe + retention charters | iOS crypto stub (Phase 3) |
+| Panic wipe + retention charters | — |
 | Phase 2 encrypted stores + pinning | — |
 
 ---
@@ -113,16 +113,28 @@ See GitHub issues #54–#75 and security issues opened from this audit.
 
 ## Phase 3 — Fortress mode (ongoing)
 
-| # | Task | Closes |
-|---|------|--------|
-| 3.1 | iOS libsignal-swift native bridge | C8 |
-| 3.2 | Play Integrity / DeviceCheck attestation | C5 |
-| 3.3 | Short-lived WS subscribe tokens | C10 |
-| 3.4 | Argon2id passwords + pepper rotation | — |
-| 3.5 | ZAP/Semgrep fail CI on high findings | — |
-| 3.6 | CAPTCHA on public feedback + recovery | — |
-| 3.7 | SFU mTLS or stronger internal auth | H1 |
-| 3.8 | Threat-model tests in engine gates | — |
+| # | Task | Closes | Status |
+|---|------|--------|--------|
+| 3.1 | iOS libsignal-swift native bridge | C8 | **Done** |
+| 3.2 | Play Integrity / DeviceCheck attestation | C5 | **Done** |
+| 3.3 | Short-lived WS subscribe tokens | C10 | **Done** |
+| 3.4 | Argon2id passwords + pepper rotation | — | **Done** |
+| 3.5 | ZAP/Semgrep fail CI on high findings | — | **Done** |
+| 3.6 | CAPTCHA on public feedback + recovery | — | **Done** |
+| 3.7 | SFU mTLS or stronger internal auth | H1 | **Done** |
+| 3.8 | Threat-model tests in engine gates | — | **Done** |
+
+**Phase 3 exit criteria** (verified 2026-07-06)
+
+- [x] iOS `LibsignalSession` + Keychain `SscSecureStore` + native bridge invoke
+- [x] Android `SscDeviceAttest` + iOS `SscDeviceAttest`; API enforces when `SSC_REQUIRE_DEVICE_ATTEST=true`
+- [x] WS subscribe requires short-lived token in production (`ws_subscribe_tokens.py`)
+- [x] Login passwords use Argon2id with PBKDF2 migration + pepper rotation env
+- [x] Semgrep `--error` job in CI; ZAP baseline fails on high alerts
+- [x] Turnstile CAPTCHA on `/public/feedback` + `/auth/recovery/verify` when `SSC_CAPTCHA_REQUIRED=true`
+- [x] SFU internal HMAC signing (`sfu_internal_auth.py` + `internalAuth.js`)
+- [x] `backend/scripts/run_engine_threat_gate.py` + `test_phase3_security.py`
+- [x] `scripts/verify_phase3_build_policy.ps1`
 
 ---
 
@@ -163,6 +175,13 @@ cd backend
 .\venv\Scripts\python.exe -m pytest tests/test_phase2_security.py -q
 cd ..
 .\scripts\verify_phase2_build_policy.ps1
+
+# Phase 3 threat gate + build policy
+cd backend
+.\venv\Scripts\python.exe -m pytest tests/test_phase3_security.py -q
+.\venv\Scripts\python.exe scripts/run_engine_threat_gate.py
+cd ..
+.\scripts\verify_phase3_build_policy.ps1
 ```
 
 ---

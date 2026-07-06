@@ -70,7 +70,13 @@ class InstalledClientMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         header_value = request.headers.get(INSTALLED_CLIENT_HEADER)
         native_bridge = request.headers.get("X-SSC-Native-Bridge")
-        ok, detail = validate_request(path, header_value, native_bridge=native_bridge)
+        device_attest = request.headers.get("X-SSC-Device-Attest")
+        ok, detail = validate_request(
+            path,
+            header_value,
+            native_bridge=native_bridge,
+            device_attest=device_attest,
+        )
         if not ok:
             return JSONResponse(status_code=403, content={"detail": detail})
         return await call_next(request)

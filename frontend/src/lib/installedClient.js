@@ -50,6 +50,13 @@ export function getNativeBridgeHeader() {
   return null;
 }
 
+export function getDeviceAttestHeader() {
+  if (typeof window !== 'undefined' && window.__SSC_DEVICE_ATTEST) {
+    return String(window.__SSC_DEVICE_ATTEST);
+  }
+  return null;
+}
+
 export function getInstalledClientHeaders(extra = {}) {
   const headers = {
     'X-SSC-Client': getInstalledClientHeader(),
@@ -58,6 +65,10 @@ export function getInstalledClientHeaders(extra = {}) {
   const bridge = getNativeBridgeHeader();
   if (bridge) {
     headers['X-SSC-Native-Bridge'] = bridge;
+  }
+  const attest = getDeviceAttestHeader();
+  if (attest) {
+    headers['X-SSC-Device-Attest'] = attest;
   }
   return headers;
 }

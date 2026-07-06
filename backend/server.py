@@ -59,6 +59,8 @@ def create_app() -> FastAPI:
             "Content-Type",
             "Authorization",
             "X-SSC-Client",
+            "X-SSC-Native-Bridge",
+            "X-SSC-Device-Attest",
             "Accept",
             "Origin",
         ],

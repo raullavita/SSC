@@ -22,7 +22,7 @@ from core.ids import new_user_id
 from core.last_seen import default_privacy_settings
 from core.oauth_exchange import consume_oauth_code, issue_oauth_code
 from core.oauth_state import consume_oauth_state, store_oauth_state
-from core.passwords import hash_password, verify_password
+from core.passwords import hash_password, needs_rehash, verify_password
 from core.session_cookie import clear_session_cookie, read_session_cookie
 from core.session_issue import issue_user_session
 from core.token_revocation import revoke_session
@@ -136,8 +136,15 @@ async def login(
 ) -> dict:
     db = get_database()
     user = await db.users.find_one({"email": body.email.lower()})
-    if not user or not verify_password(body.password, user.get("password_hash", "")):
+    stored_hash = user.get("password_hash", "") if user else ""
+    if not user or not verify_password(body.password, stored_hash):
         raise HTTPException(status_code=401, detail="invalid_credentials")
+
+    if needs_rehash(stored_hash):
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"password_hash": hash_password(body.password), "password_algo": "argon2id"}},
+        )
 
     return await _issue_auth_response(user, response)
 

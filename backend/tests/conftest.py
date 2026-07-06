@@ -47,6 +47,9 @@ def isolate_external_services(monkeypatch):
     clear_memory_tokens_for_tests()
 
     monkeypatch.setenv("SSC_REQUIRE_NATIVE_BRIDGE", "false")
+    monkeypatch.setenv("SSC_REQUIRE_DEVICE_ATTEST", "false")
+    monkeypatch.setenv("SSC_REQUIRE_WS_SUBSCRIBE_TOKEN", "false")
+    monkeypatch.setenv("SSC_CAPTCHA_REQUIRED", "false")
     monkeypatch.setenv("SSC_MIN_CLIENT_BUILD", "1")
 
     monkeypatch.setattr("db.probe_mongo", _stub_mongo_probe)
