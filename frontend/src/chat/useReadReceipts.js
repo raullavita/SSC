@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, wsUrl } from '../lib/api';
+import { api, wsAuthPayload, wsUrl } from '../lib/api';
 import { indexReadsByMessage } from '../lib/readReceipts';
 
 function applyReadReceipt(setReadByMessage, payload) {
@@ -58,14 +58,16 @@ export function useReadReceipts(conversationId, messages, { wsToken, userId, ena
   }, [conversationId, enabled, messages.length, markRead]);
 
   useEffect(() => {
-    if (!enabled || !wsToken || !userId) return undefined;
+    if (!enabled || !userId) return undefined;
 
     const topics = [`user:${userId}`];
     if (conversationId) topics.push(`conversation:${conversationId}`);
 
-    const ws = new WebSocket(wsUrl(wsToken));
+    const ws = new WebSocket(wsUrl());
 
     ws.onopen = () => {
+      const auth = wsAuthPayload(wsToken);
+      if (auth) ws.send(auth);
       for (const topic of topics) {
         ws.send(JSON.stringify({ type: 'subscribe', topic }));
       }

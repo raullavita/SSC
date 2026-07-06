@@ -99,7 +99,7 @@ async def add_reaction(
     user_id: str = Depends(get_current_user_id),
     _client: str = Depends(get_client_header),
 ) -> dict:
-    if not msg_rate_limiter.allow(f"rx:{user_id}"):
+    if not await msg_rate_limiter.allow(f"rx:{user_id}"):
         raise HTTPException(status_code=429, detail="reaction_rate_limited")
 
     protocol = body.protocol or SIGNAL_PROTOCOL_REACTION

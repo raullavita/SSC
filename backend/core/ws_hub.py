@@ -23,6 +23,9 @@ class WsHub:
 
     async def connect(self, websocket: WebSocket, user_id: str) -> None:
         await websocket.accept()
+        await self.register(websocket, user_id)
+
+    async def register(self, websocket: WebSocket, user_id: str) -> None:
         async with self._lock:
             self._user_sockets.setdefault(user_id, set()).add(websocket)
 

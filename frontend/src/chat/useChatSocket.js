@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { wsUrl } from '../lib/api';
+import { wsAuthPayload, wsUrl } from '../lib/api';
 
 export function useChatSocket({ enabled, topic, onEvent, wsToken }) {
   const socketRef = useRef(null);
@@ -7,12 +7,14 @@ export function useChatSocket({ enabled, topic, onEvent, wsToken }) {
   onEventRef.current = onEvent;
 
   useEffect(() => {
-    if (!enabled || !topic || !wsToken) return undefined;
+    if (!enabled || !topic) return undefined;
 
-    const ws = new WebSocket(wsUrl(wsToken));
+    const ws = new WebSocket(wsUrl());
     socketRef.current = ws;
 
     ws.onopen = () => {
+      const auth = wsAuthPayload(wsToken);
+      if (auth) ws.send(auth);
       ws.send(JSON.stringify({ type: 'subscribe', topic }));
     };
 

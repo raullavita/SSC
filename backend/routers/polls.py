@@ -65,7 +65,7 @@ async def create_poll(
     user_id: str = Depends(get_current_user_id),
     _client: str = Depends(get_client_header),
 ) -> dict:
-    if not msg_rate_limiter.allow(f"poll:{user_id}"):
+    if not await msg_rate_limiter.allow(f"poll:{user_id}"):
         raise HTTPException(status_code=429, detail="poll_rate_limited")
 
     ok, detail = validate_option_count(body.option_count)

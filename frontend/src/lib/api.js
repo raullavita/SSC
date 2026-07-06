@@ -67,12 +67,14 @@ export const api = {
   delete: (path, options) => apiJson(path, { ...options, method: 'DELETE' }),
 };
 
-export function wsUrl(wsToken) {
+/** WebSocket URL — auth via httpOnly cookie or first-frame { type: 'auth' } (no query token). */
+export function wsUrl() {
   const base = API_BASE || `${window.location.protocol}//${window.location.host}`;
   const wsBase = base.replace(/^http/, 'ws');
-  const url = `${wsBase}/api/ws`;
-  if (wsToken) {
-    return `${url}?token=${encodeURIComponent(wsToken)}`;
-  }
-  return url;
+  return `${wsBase}/api/ws`;
+}
+
+export function wsAuthPayload(wsToken) {
+  if (!wsToken) return null;
+  return JSON.stringify({ type: 'auth', token: wsToken });
 }

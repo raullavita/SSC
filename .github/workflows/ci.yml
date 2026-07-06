@@ -46,6 +46,9 @@ jobs:
       - name: Validate no secrets in git
         shell: pwsh
         run: ./scripts/validate_secrets.ps1
+      - name: Phase 1 release build policy (libsignal required)
+        shell: pwsh
+        run: ./scripts/verify_phase1_build_policy.ps1
 
   production-smoke:
     runs-on: ubuntu-latest
