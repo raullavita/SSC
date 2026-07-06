@@ -5,7 +5,7 @@ from __future__ import annotations
 from html import escape
 
 from fastapi import APIRouter, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 
 router = APIRouter(tags=["oauth-finish"])
 

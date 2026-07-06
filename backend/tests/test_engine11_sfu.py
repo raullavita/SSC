@@ -47,6 +47,5 @@ def test_engine11_sfu_wired():
 
 
 def test_engine11_sfu_signaling_ready():
-    from core.sfu_policy import engine11_sfu_signaling_ready
 
     assert engine11_sfu_signaling_ready() is True
