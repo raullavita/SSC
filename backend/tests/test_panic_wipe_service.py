@@ -65,7 +65,6 @@ async def test_panic_wipe_deletes_user_row():
 @pytest.mark.asyncio
 async def test_panic_wipe_detaches_from_conversations_not_bulk_messages():
     db = MagicMock()
-    conv_id = "conv-1"
     conversations = _mock_collection(0)
     conversations.find = MagicMock(return_value=_async_iter([]))
     conversations.update_many = AsyncMock(return_value=MagicMock(modified_count=1))

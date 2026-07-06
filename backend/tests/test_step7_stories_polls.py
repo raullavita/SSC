@@ -8,7 +8,6 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from core.session_policy import SESSION_COOKIE_NAME
 from core.story_policy import engine7_stories_ready, public_story
 from core.poll_policy import engine7_polls_ready, public_poll, validate_option_count
 from server import create_app

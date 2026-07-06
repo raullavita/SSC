@@ -66,7 +66,7 @@ async def test_friend_request_accept_creates_conversation(monkeypatch):
             "/api/auth/register",
             json={"email": "b@example.com", "password": "password123", "display_name": "B"},
         )
-        a_id = reg_a.json()["user"]["id"]
+        reg_a.json()["user"]["id"]
         b_id = reg_b.json()["user"]["id"]
 
         created = await client.post(

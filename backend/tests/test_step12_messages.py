@@ -66,7 +66,7 @@ async def test_edit_message_within_window(monkeypatch):
             "/api/auth/register",
             json={"email": "bob@example.com", "password": "password123", "display_name": "Bob"},
         )
-        alice_id = reg_a.json()["user"]["id"]
+        reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
 
         conv = await client.post(
