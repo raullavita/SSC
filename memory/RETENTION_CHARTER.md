@@ -55,6 +55,7 @@ Client panic wipe also clears local `ssc_*` storage, search indexes, and Electro
 | `call_sessions` | WebRTC call session metadata | 24h `expires_at` + panic wipe |
 | `friend_requests` | Pending contact requests | 24h `expires_at` + panic wipe |
 | `beta_feedback` | In-app beta feedback | Until panic wipe |
+| `site_feedback` | Public website reviews & feedback | Retained (not user-linked) |
 | `recovery_keys` | Account recovery key hashes | Until panic wipe |
 
 ## Gate
