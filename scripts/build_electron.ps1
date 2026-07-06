@@ -33,8 +33,8 @@ Pop-Location
 $installer = Get-ChildItem "$Root\electron\dist\SSC-Setup-*.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 $portable = Get-ChildItem "$Root\electron\dist\SSC-*-portable*.exe" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($installer -and $installer.Length -gt 10MB) {
-  Copy-Item $installer.FullName "$env:USERPROFILE\Desktop\SSC-Setup-latest.exe" -Force
-  Write-Host "Installer copied to Desktop\SSC-Setup-latest.exe"
+  Copy-Item $installer.FullName "$env:USERPROFILE\Desktop\SSC-Setup-0.3.1.exe" -Force
+  Write-Host "Installer copied to Desktop\SSC-Setup-0.3.1.exe"
 }
 if ($portable) {
   Copy-Item $portable.FullName "$env:USERPROFILE\Desktop\SSC-Portable-latest.exe" -Force

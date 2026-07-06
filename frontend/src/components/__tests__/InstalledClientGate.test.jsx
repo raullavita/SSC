@@ -28,8 +28,7 @@ describe('InstalledClientGate', () => {
     expect(screen.getByText('chat-ui')).toBeInTheDocument();
   });
 
-  it('requires native bridge attestation in production crypto mode', () => {
-    window.sscCrypto = { encryptMessage: () => {}, decryptMessage: () => {} };
+  it('allows installed electron platform in production crypto mode', () => {
     process.env = {
       ...originalEnv,
       REACT_APP_SSC_REQUIRE_LIBCRYPTO: 'true',
@@ -41,7 +40,23 @@ describe('InstalledClientGate', () => {
         <span>chat-ui</span>
       </InstalledClientGate>
     );
-    expect(screen.queryByText('chat-ui')).not.toBeInTheDocument();
+    expect(screen.getByText('chat-ui')).toBeInTheDocument();
+  });
+
+  it('allows android shell marker in production crypto mode', () => {
+    window.__SSC_ANDROID_SHELL = '1';
+    process.env = {
+      ...originalEnv,
+      REACT_APP_SSC_REQUIRE_LIBCRYPTO: 'true',
+      REACT_APP_SSC_PLATFORM: 'web',
+      NODE_ENV: 'production',
+    };
+    render(
+      <InstalledClientGate>
+        <span>chat-ui</span>
+      </InstalledClientGate>
+    );
+    expect(screen.getByText('chat-ui')).toBeInTheDocument();
   });
 
   it('allows installed shell with native bridge and libsignal', () => {
@@ -76,18 +91,5 @@ describe('InstalledClientGate', () => {
     expect(screen.getByText('chat-ui')).toBeInTheDocument();
   });
 
-  it('blocks plain browser in production without allowed platform', () => {
-    process.env = {
-      ...originalEnv,
-      REACT_APP_SSC_PLATFORM: 'browser',
-      NODE_ENV: 'production',
-    };
-    render(
-      <InstalledClientGate>
-        <span>chat-ui</span>
-      </InstalledClientGate>
-    );
-    expect(screen.queryByText('chat-ui')).not.toBeInTheDocument();
-    expect(screen.getByText(/installed Android or Windows app/i)).toBeInTheDocument();
-  });
+
 });

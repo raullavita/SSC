@@ -33,6 +33,19 @@ if (Test-Path $assetsDir) {
 New-Item -ItemType Directory -Path $assetsDir -Force | Out-Null
 Copy-Item "$Root\frontend\build\*" $assetsDir -Recurse -Force
 
+Write-Host "Injecting Android shell bootstrap + native bridges into index.html..."
+Copy-Item "$Root\android\app\src\main\assets\ssc_crypto_bridge.js" $assetsDir -Force
+Copy-Item "$Root\android\app\src\main\assets\ssc_translate_bridge.js" $assetsDir -Force
+$indexPath = Join-Path $assetsDir "index.html"
+$indexHtml = Get-Content $indexPath -Raw
+$bootstrap = @"
+<script>window.__SSC_ANDROID_CLIENT='android/$Version/$Build';window.__SSC_ANDROID_SHELL='1';window.__SSC_NATIVE_BRIDGE='v1';</script><script src="./ssc_crypto_bridge.js"></script><script src="./ssc_translate_bridge.js"></script>
+"@
+if ($indexHtml -notmatch 'ssc_crypto_bridge\.js') {
+    $indexHtml = $indexHtml -replace '<script defer="defer"', ($bootstrap + '<script defer="defer"')
+    Set-Content -Path $indexPath -Value $indexHtml -NoNewline -Encoding UTF8
+}
+
 Write-Host "Assembling Android release APK..."
 Push-Location "$Root\android"
 if (Test-Path ".\gradlew.bat") {

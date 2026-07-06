@@ -12,6 +12,7 @@ files:
   - preload.js
   - libsignalSession.js
   - groupSenderKeySession.js
+  - secureFileStore.js
   - package.json
 extraResources:
   - from: ../frontend/build
