@@ -10,6 +10,9 @@ final class MainViewController: UIViewController, WKNavigationDelegate, WKUIDele
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(red: 0.04, green: 0.08, blue: 0.10, alpha: 1)
+        if let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            SscCryptoService.shared.bind(filesDir: docs)
+        }
         configureWebView()
         configureOfflineBanner()
         loadHome()
@@ -19,7 +22,16 @@ final class MainViewController: UIViewController, WKNavigationDelegate, WKUIDele
         let config = webView.configuration
         config.preferences.javaScriptEnabled = true
         config.allowsInlineMediaPlayback = true
+        config.preferences.setValue(false, forKey: "allowFileAccessFromFileURLs")
         config.userContentController.add(self, name: "sscBridge")
+        let bridgeBootstrap = """
+        window.__sscBridge = window.__sscBridge || {};
+        window.__sscBridge.invoke = function(method, id, payload) {
+          window.webkit.messageHandlers.sscBridge.postMessage({method: method, id: id, payload: payload});
+        };
+        """
+        let script = WKUserScript(source: bridgeBootstrap, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        config.userContentController.addUserScript(script)
         webView.navigationDelegate = self
         webView.uiDelegate = self
         webView.translatesAutoresizingMaskIntoConstraints = false
@@ -70,10 +82,13 @@ final class MainViewController: UIViewController, WKNavigationDelegate, WKUIDele
     }
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        let attest = SscDeviceAttest.currentToken() ?? ""
         let script = """
-        window.__SSC_IOS_CLIENT='ios/0.3.0/3';
+        window.__SSC_IOS_CLIENT='\(ApiClient.clientHeaderValue)';
         window.__SSC_IOS_SHELL='1';
-        window.__SSC_IOS_FEATURES='splash_screen,deep_links,pull_to_refresh,offline_retry,file_chooser,edge_to_edge';
+        window.__SSC_IOS_FEATURES='\(ApiClient.shellFeatures)';
+        window.__SSC_NATIVE_BRIDGE='\(ApiClient.nativeBridgeValue)';
+        window.__SSC_DEVICE_ATTEST='\(attest)';
         """
         webView.evaluateJavaScript(script, completionHandler: nil)
     }
@@ -96,7 +111,7 @@ final class MainViewController: UIViewController, WKNavigationDelegate, WKUIDele
         if let url = navigationAction.request.url,
            ApiClient.shouldAttachClientHeader(url: url) {
             var request = navigationAction.request
-            request.setValue(ApiClient.clientHeaderValue, forHTTPHeaderField: ApiClient.clientHeaderName)
+            ApiClient.attachHeaders(to: &request)
             webView.load(request)
             decisionHandler(.cancel)
             return
@@ -109,6 +124,7 @@ final class MainViewController: UIViewController, WKNavigationDelegate, WKUIDele
               let body = message.body as? [String: Any],
               let method = body["method"] as? String,
               let callbackId = body["id"] as? String else { return }
-        SscNativeBridge.handle(method: method, callbackId: callbackId, payload: body["payload"] as? String ?? "{}", webView: webView)
+        let payload = (body["payload"] as? String) ?? "{}"
+        SscNativeBridge.handle(method: method, callbackId: callbackId, payload: payload, webView: webView)
     }
 }

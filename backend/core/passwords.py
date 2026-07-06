@@ -1,23 +1,7 @@
-"""Password hashing — Engine 3."""
+"""Password hashing — Engine 3 / Phase 3 Argon2id."""
 
 from __future__ import annotations
 
-import hashlib
-import secrets
+from core.password_crypto import hash_password, needs_rehash, verify_password
 
-
-def hash_password(password: str) -> str:
-    salt = secrets.token_hex(16)
-    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 120_000)
-    return f"pbkdf2_sha256${salt}${digest.hex()}"
-
-
-def verify_password(password: str, stored: str) -> bool:
-    try:
-        algo, salt, digest_hex = stored.split("$", 2)
-        if algo != "pbkdf2_sha256":
-            return False
-        digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 120_000)
-        return secrets.compare_digest(digest.hex(), digest_hex)
-    except ValueError:
-        return False
+__all__ = ["hash_password", "verify_password", "needs_rehash"]

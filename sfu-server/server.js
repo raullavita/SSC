@@ -7,6 +7,7 @@ const http = require('http');
 const mediasoup = require('mediasoup');
 const { RoomManager } = require('./roomManager');
 const { attachWebSocket } = require('./wsHandler');
+const { verifyInternalAuth } = require('./internalAuth');
 
 const PORT = Number(process.env.SFU_PORT || 4443);
 const INTERNAL_SECRET = process.env.SFU_INTERNAL_SECRET || 'ssc-sfu-dev-secret';
@@ -27,26 +28,13 @@ async function createWorker() {
   return worker;
 }
 
-function readJson(req) {
+function readBodyBuffer(req) {
   return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
-    });
-    req.on('end', () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (e) {
-        reject(e);
-      }
-    });
+    const chunks = [];
+    req.on('data', (chunk) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
-}
-
-function internalAuth(req) {
-  const header = req.headers['x-ssc-sfu-secret'];
-  return header === INTERNAL_SECRET;
 }
 
 const server = http.createServer(async (req, res) => {
@@ -64,13 +52,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && req.url === '/internal/rooms') {
-    if (!internalAuth(req)) {
+    const bodyBuf = await readBodyBuffer(req);
+    if (!verifyInternalAuth(req, 'POST', '/internal/rooms', bodyBuf)) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'unauthorized' }));
       return;
     }
     try {
-      const body = await readJson(req);
+      const body = bodyBuf.length ? JSON.parse(bodyBuf.toString('utf8')) : {};
       const room = await roomManager.createRoom(body.room_id, body.join_token);
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true, room_id: room.roomId }));
@@ -82,12 +71,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'DELETE' && req.url?.startsWith('/internal/rooms/')) {
-    if (!internalAuth(req)) {
+    const path = req.url.split('?')[0];
+    if (!verifyInternalAuth(req, 'DELETE', path, Buffer.alloc(0))) {
       res.writeHead(401, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'unauthorized' }));
       return;
     }
-    const roomId = decodeURIComponent(req.url.split('/').pop());
+    const roomId = decodeURIComponent(path.split('/').pop());
     const deleted = roomManager.deleteRoom(roomId);
     res.writeHead(deleted ? 200 : 404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: deleted, room_id: roomId }));

@@ -12,6 +12,11 @@ from core.auth_tokens import decode_access_token
 from core.session_policy import SESSION_COOKIE_NAME
 from core.token_revocation import is_session_revoked
 from core.ws_hub import ws_hub
+from core.ws_subscribe_tokens import (
+    consume_subscribe_token,
+    validate_topic_for_user,
+    ws_subscribe_token_required,
+)
 
 router = APIRouter(tags=["websocket"])
 
@@ -99,13 +104,18 @@ async def websocket_endpoint(
 
             if data.get("type") == "subscribe":
                 topic = data.get("topic")
-                if isinstance(topic, str) and (
-                    topic.startswith("conversation:") or topic == f"user:{user_id}"
-                ):
-                    await ws_hub.subscribe(websocket, topic)
-                    await websocket.send_text(json.dumps({"type": "subscribed", "topic": topic}))
-                else:
+                if not isinstance(topic, str) or not validate_topic_for_user(topic, user_id):
                     await websocket.send_text(json.dumps({"type": "error", "detail": "invalid_topic"}))
+                    continue
+                if ws_subscribe_token_required():
+                    sub_token = data.get("subscribe_token")
+                    if not await consume_subscribe_token(sub_token, user_id, topic):
+                        await websocket.send_text(
+                            json.dumps({"type": "error", "detail": "subscribe_token_invalid"})
+                        )
+                        continue
+                await ws_hub.subscribe(websocket, topic)
+                await websocket.send_text(json.dumps({"type": "subscribed", "topic": topic}))
     except WebSocketDisconnect:
         pass
     finally:

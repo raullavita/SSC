@@ -26,6 +26,7 @@ object ApiClient {
     fun attachInstalledClientHeaders(conn: HttpURLConnection) {
         conn.setRequestProperty(CLIENT_HEADER, CLIENT_VALUE)
         conn.setRequestProperty(NATIVE_BRIDGE_HEADER, NATIVE_BRIDGE_VALUE)
+        SscDeviceAttest.currentToken()?.let { conn.setRequestProperty(SscDeviceAttest.HEADER, it) }
     }
 
     fun webViewClient(
@@ -135,6 +136,7 @@ object ApiClient {
                     window.__SSC_ANDROID_SHELL='1';
                     window.__SSC_ANDROID_FEATURES='$SHELL_FEATURES';
                     window.__SSC_NATIVE_BRIDGE='$NATIVE_BRIDGE_VALUE';
+                    window.__SSC_DEVICE_ATTEST='${SscDeviceAttest.currentToken() ?: ""}';
                     """.trimIndent(),
                     null,
                 )

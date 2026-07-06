@@ -34,6 +34,7 @@ from routers.translation import router as translation_router
 from routers.typing import router as typing_router
 from routers.users import router as users_router
 from routers.ws import router as ws_router
+from routers.ws_tokens import router as ws_tokens_router
 
 
 def include_routers(app: FastAPI) -> None:
@@ -68,3 +69,4 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(push_router, prefix=prefix)
     app.include_router(panic_router, prefix=prefix)
     app.include_router(ws_router, prefix=prefix)
+    app.include_router(ws_tokens_router, prefix=prefix)
