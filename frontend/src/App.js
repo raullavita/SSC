@@ -1,6 +1,7 @@
 import { Navigate, Routes, Route } from 'react-router-dom';
 import CryptoRuntimeGate from './components/CryptoRuntimeGate';
 import InstalledClientGate from './components/InstalledClientGate';
+import SacCompatBanner from './components/SacCompatBanner';
 import InstalledAppEntry from './components/InstalledAppEntry';
 import { AuthProvider } from './context/AuthContext';
 import { isInstalledApp, isMarketingWebOnly } from './lib/appMode';
@@ -40,6 +41,7 @@ export default function App() {
 
   return (
     <AuthProvider>
+      <SacCompatBanner />
       <CryptoRuntimeGate>
       <InstalledClientGate>
         <Routes>

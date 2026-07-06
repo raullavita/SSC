@@ -13,6 +13,7 @@ files:
   - libsignalSession.js
   - groupSenderKeySession.js
   - secureFileStore.js
+  - SSC_COMPAT_MODE
   - package.json
 extraResources:
   - from: ../frontend/build

@@ -21,6 +21,7 @@ yarn build
 Pop-Location
 
 Write-Host "Installing Electron deps..."
+Remove-Item "$Root\electron\SSC_COMPAT_MODE" -Force -ErrorAction SilentlyContinue
 Push-Location "$Root\electron"
 npm install
 $env:SSC_PROD_FILE = "$Root\frontend\build\index.html"
