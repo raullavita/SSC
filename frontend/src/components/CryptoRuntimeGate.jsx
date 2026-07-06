@@ -51,13 +51,21 @@ export default function CryptoRuntimeGate({ children }) {
   }
 
   if (state === 'blocked') {
+    const preloadMissing = typeof window !== 'undefined' && !window.sscCrypto;
     return (
       <div className={styles.screen}>
         <h1>Encryption engine blocked</h1>
-        <p>
-          Windows Smart App Control blocked SSC&apos;s unsigned encryption module
-          (<code>libsignal-client</code>). The app cannot run securely without it.
-        </p>
+        {preloadMissing ? (
+          <p>
+            SSC could not start its secure bridge (preload script failed). Reinstall from the
+            latest NSIS installer, or rebuild after the preload fix is applied.
+          </p>
+        ) : (
+          <p>
+            Windows Smart App Control blocked SSC&apos;s unsigned encryption module
+            (<code>libsignal-client</code>). The app cannot run securely without it.
+          </p>
+        )}
         <p className={styles.muted}>
           Fix options: turn off Smart App Control in Windows Security → App &amp; browser
           control, or install a properly Authenticode-signed SSC build once signing is enabled

@@ -330,6 +330,16 @@ ipcMain.handle('ssc-update:install', () => {
   return { ok: true };
 });
 
+ipcMain.handle('ssc-desktop:attest-token', () => {
+  const secret = (process.env.SSC_DESKTOP_ATTEST_SECRET || '').trim();
+  if (!secret) {
+    return 'ssc-attest-test-v1';
+  }
+  const ts = Math.floor(Date.now() / 1000);
+  const sig = crypto.createHmac('sha256', secret).update(`electron:${ts}`).digest('hex');
+  return `${ts}.${sig}`;
+});
+
 app.whenReady().then(() => {
   attachCertificatePinning();
   registerCryptoIpc();
