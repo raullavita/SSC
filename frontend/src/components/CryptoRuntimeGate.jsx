@@ -67,8 +67,8 @@ export default function CryptoRuntimeGate({ children }) {
         <h1>Encryption engine blocked</h1>
         {preloadMissing ? (
           <p>
-            SSC secure bridge did not load (old install or broken preload). Close the app and run
-            the latest installer: <strong>SSC-Setup-0.3.1-v4.exe</strong> on your Desktop.
+            SSC secure bridge did not load. Close the app completely and reinstall from{' '}
+            <strong>SSC-Setup-0.3.1.exe</strong> on your Desktop or the website download page.
           </p>
         ) : (
           <p>

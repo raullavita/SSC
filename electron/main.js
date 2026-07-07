@@ -366,10 +366,14 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
   });
 
   attachOAuthNavigationHandlers(win);
+  win.webContents.on('preload-error', (_event, preloadPath, error) => {
+    console.error('[ssc] preload-error', preloadPath, error?.message || error);
+  });
   win.webContents.on('did-fail-load', (_event, code, description, url) => {
     console.error('[ssc] did-fail-load', code, description, url);
   });
