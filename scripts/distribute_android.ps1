@@ -9,18 +9,23 @@ param(
     [string]$PackageName = "com.supersecurechat.app",
     [string]$TesterGroup = "ssc-testers",
     [string]$Testers = "raullavita1988@gmail.com,smashmaxxx@gmail.com,velvetnightshub@gmail.com",
-    [string]$ReleaseNotes = "SSC v0.3.1 build 9 - Google OAuth return fix (tap button after sign-in), Windows NSIS installer fix."
+    [string]$ReleaseNotes = "SSC v0.3.1 build 10 - Native Android (Kotlin/Compose), encrypted 1:1 chat, emulator Kyber fix, x86_64 support for testing."
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 
 if (-not $ApkPath) {
-    $ApkPath = Join-Path $Root "android\app\build\outputs\apk\release\SSC-0.3.1.apk"
+    $candidates = @(
+        (Join-Path $Root "dist\SSC-0.3.1.apk"),
+        (Join-Path $Root "android\app\build\outputs\apk\release\SSC-0.3.1.apk"),
+        (Join-Path $Root "android\app\build\outputs\apk\release\app-release.apk")
+    )
+    $ApkPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 }
 
-if (-not (Test-Path $ApkPath)) {
-    throw "APK not found: $ApkPath - run .\scripts\build_android.ps1 first"
+if (-not $ApkPath -or -not (Test-Path $ApkPath)) {
+    throw "APK not found - run .\scripts\build_android_native.ps1 first"
 }
 
 $sizeMb = [math]::Round((Get-Item $ApkPath).Length / 1MB, 1)

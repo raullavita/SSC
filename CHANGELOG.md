@@ -7,6 +7,16 @@ SSC is open source under [AGPL-3.0](LICENSE); see [THIRD_PARTY_NOTICES.md](THIRD
 
 ## [0.3.1] - 2026-07-06
 
+### Added (build 10)
+
+- **Native Android client** — Kotlin + Jetpack Compose (no WebView): login, chats, encrypted 1:1 messaging, WebSocket realtime
+- **Firebase App Distribution** — native APK for phone testers (`scripts/distribute_android.ps1`)
+
+### Fixed (build 10)
+
+- **Android emulator encryption** — bundle x86_64/x86 libsignal JNI so Kyber prekeys work on PC emulators
+- **Chats screen after login** — crypto init no longer blocks conversation list; clearer encryption errors
+
 ### Added
 
 - **Desktop attestation (free HMAC)** — `SSC_DESKTOP_ATTEST_SECRET` for Electron/Windows/Mac; Electron preload token generator

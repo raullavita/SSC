@@ -5,7 +5,9 @@
         <domain includeSubdomains="true">www.supersecurechat.com</domain>
         <domain includeSubdomains="true">supersecurechat.com</domain>
         <domain includeSubdomains="true">sfu.supersecurechat.com</domain>
-        <pin-set expiration="2027-07-06">
+        <!-- SPKI SHA-256 pins (not cert hashes). Leaf: api.supersecurechat.com, Jul 2026 -->
+        <pin-set expiration="2027-12-31">
+            <pin digest="SHA-256">BPXdoCCsA5W+UqtMi/95FqG81W6cuYOAMg+KUnMw4BI=</pin>
             <pin digest="SHA-256">aW6xgPeCioys0l73e6c6E4GRjmUx7Yqf8tw2DCUgqQs=</pin>
             <pin digest="SHA-256">C5+lpZ7tcVwmwQIMcRtPjsQt3MRxqt72RCZ3PqFyjx0=</pin>
         </pin-set>
