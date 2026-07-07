@@ -1,11 +1,12 @@
-# SSC Electron local build — Engine 11 (no cloud deploy)
-#
-# Optional Authenticode signing (reduces SmartScreen warnings):
-#   $env:CSC_LINK = "C:\path\to\codesign.pfx"   # or base64-encoded PFX
-#   $env:CSC_KEY_PASSWORD = "cert-password"
-# electron-builder signs automatically when CSC_* is set.
+# SSC Electron local build — unsigned (no Authenticode / CSC signing).
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
+
+# Never sign — avoids signtool failures and keeps builds reproducible on dev machines.
+Remove-Item Env:CSC_LINK -ErrorAction SilentlyContinue
+Remove-Item Env:WIN_CSC_LINK -ErrorAction SilentlyContinue
+Remove-Item Env:CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
+$env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
 
 Write-Host "Building frontend..."
 Push-Location "$Root\frontend"
@@ -25,13 +26,7 @@ Remove-Item "$Root\electron\SSC_COMPAT_MODE" -Force -ErrorAction SilentlyContinu
 Push-Location "$Root\electron"
 npm install
 $env:SSC_PROD_FILE = "$Root\frontend\build\index.html"
-if ($env:CSC_LINK -or $env:WIN_CSC_LINK) {
-    Write-Host "Authenticode signing enabled (CSC_LINK set) - required for Windows Smart App Control."
-} else {
-    $env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
-    Write-Host "WARN: Building UNSIGNED - Windows Smart App Control will block libsignal-client.node."
-    Write-Host "      Set CSC_LINK + CSC_KEY_PASSWORD before build, or run .\scripts\setup_windows_codesign.ps1"
-}
+Write-Host "Building UNSIGNED Electron installer (signing disabled)."
 npm run dist
 Pop-Location
 
@@ -40,17 +35,17 @@ $installer = Get-ChildItem "$Root\electron\dist\SSC-Setup-*.exe" -ErrorAction Si
   Sort-Object LastWriteTime -Descending |
   Select-Object -First 1
 if ($installer -and $installer.Length -gt 10MB) {
+  New-Item -ItemType Directory -Force -Path "$Root\dist" | Out-Null
+  Copy-Item $installer.FullName "$Root\dist\SSC-Setup-0.3.1.exe" -Force
   $desktopInstaller = "$env:USERPROFILE\Desktop\SSC-Setup-0.3.1.exe"
   try {
     Copy-Item $installer.FullName $desktopInstaller -Force
-    Write-Host "NSIS installer copied to Desktop\SSC-Setup-0.3.1.exe ($([math]::Round($installer.Length/1MB,1)) MB)"
+    Write-Host "Installer: $desktopInstaller ($([math]::Round($installer.Length/1MB,1)) MB)"
   } catch {
-    $alt = "$env:USERPROFILE\Desktop\SSC-Setup-0.3.1-v2.exe"
-    Copy-Item $installer.FullName $alt -Force
-    Write-Host "Desktop copy locked - wrote $alt instead. Close the running SSC app and rename if needed."
+    Write-Host "Installer built at $($installer.FullName) (Desktop copy locked)"
   }
 } else {
-  Write-Host "WARN: NSIS installer not found - check electron\dist for SSC-Setup-0.3.1.exe"
+  throw "NSIS installer not found in electron\dist"
 }
 
-Write-Host "Electron installer artifacts in electron\dist"
+Write-Host "Electron build complete (unsigned)."

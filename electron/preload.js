@@ -4,15 +4,18 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Must not require() local files here — Electron 20+ sandboxes preload by default and
+// only allows built-in modules, so require('./package.json') crashes before sscCrypto loads.
+const SSC_VERSION = '0.3.1';
+const SSC_BUILD = '10';
+const CLIENT_VALUE = `electron/${SSC_VERSION}/${SSC_BUILD}`;
+
 contextBridge.exposeInMainWorld('sscUpdater', {
   onStatus: (cb) => {
     ipcRenderer.on('ssc-update', (_evt, payload) => cb(payload));
   },
   installUpdate: () => ipcRenderer.invoke('ssc-update:install'),
 });
-const pkg = require('./package.json');
-
-const CLIENT_VALUE = `electron/${pkg.version}/9`;
 
 contextBridge.exposeInMainWorld('__SSC_ELECTRON_CLIENT', CLIENT_VALUE);
 contextBridge.exposeInMainWorld('__SSC_NATIVE_BRIDGE', 'v1');

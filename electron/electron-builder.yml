@@ -1,6 +1,5 @@
 appId: com.supersecurechat.desktop
 productName: Super Secure Chat
-afterSign: scripts/afterSign.js
 publish:
   provider: github
   owner: raullavita
@@ -21,6 +20,7 @@ extraResources:
     filter:
       - "**/*"
 win:
+  signAndEditExecutable: false
   target:
     - nsis
 mac:
