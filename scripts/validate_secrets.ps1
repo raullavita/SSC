@@ -37,7 +37,8 @@ try {
         @{ name = "mongodb+srv credentials"; regex = $mongoSrvScheme + '[^:]+:[^@\s"]+@' },
         @{ name = "JWT secret literal"; regex = 'JWT_SECRET:\s*"[A-Za-z0-9_\-]{32,}"' },
         @{ name = "Upstash rediss URL"; regex = $redisTlsScheme + '[^@\s"]+@' },
-        @{ name = "Firebase private key"; regex = '"private_key":\s*"-----BEGIN' }
+        @{ name = "Firebase private key"; regex = '"private_key":\s*"-----BEGIN' },
+        @{ name = "Firebase/Google API key"; regex = 'AIzaSy[A-Za-z0-9_\-]{20,}' }
     )
 
     $scanExclude = @(
