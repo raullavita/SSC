@@ -11,7 +11,7 @@ from core.installed_client_policy import (
 )
 from server import create_app
 
-VALID_HEADER = "android/0.3.1/9"
+VALID_HEADER = "android/0.3.1/10"
 NATIVE_BRIDGE_HEADER = {"X-SSC-Native-Bridge": "v1"}
 
 

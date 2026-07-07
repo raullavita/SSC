@@ -53,7 +53,7 @@ def test_min_client_version_defaults(monkeypatch):
 
 
 def test_client_meets_minimum_current_build():
-    identity = parse_client_header("electron/0.3.1/9")
+    identity = parse_client_header("electron/0.3.1/10")
     assert identity is not None
     ok, detail = client_meets_minimum(identity)
     assert ok is True

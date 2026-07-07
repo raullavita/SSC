@@ -24,11 +24,11 @@ def test_release_constants():
     assert RELEASE_VERSION == "0.3.1"
     assert RELEASE_BUILD == "9"
     assert RELEASE_TAG == "v0.3.1"
-    assert RELEASE_LABEL == "v0.3.1 (build 9)"
+    assert RELEASE_LABEL == "v0.3.1 (build 10)"
     assert ELECTRON_ARTIFACT == "SSC-Setup-0.3.1.exe"
     assert ANDROID_ARTIFACT == "SSC-0.3.1.apk"
-    assert ELECTRON_CLIENT_HEADER == "electron/0.3.1/9"
-    assert ANDROID_CLIENT_HEADER == "android/0.3.1/9"
+    assert ELECTRON_CLIENT_HEADER == "electron/0.3.1/10"
+    assert ANDROID_CLIENT_HEADER == "android/0.3.1/10"
     assert GITHUB_RELEASE_DOWNLOAD_BASE.endswith("/releases/download/v0.3.1")
     assert step18_release_ready()
 

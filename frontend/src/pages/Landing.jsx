@@ -336,7 +336,7 @@ function LandingPublic() {
           <div className={styles.platform}>
             <div className={styles.platformIcon}>📱</div>
             <strong>Android</strong>
-            <span>Release APK (WebView + libsignal-android)</span>
+            <span>Native Android app (Kotlin + libsignal-android)</span>
             <a
               className={styles.downloadBtn}
               href={`${RELEASE_BASE}/SSC-${VERSION}.apk`}
@@ -344,7 +344,7 @@ function LandingPublic() {
             >
               Download APK
             </a>
-            <span className={styles.muted}>Build locally: scripts/build_android.ps1</span>
+            <span className={styles.muted}>Build locally: scripts/build_android_native.ps1 · Firebase testers</span>
           </div>
         </div>
         <p className={styles.muted}>
