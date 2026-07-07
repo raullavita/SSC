@@ -40,12 +40,16 @@ def check() -> bool:
             ok = False
 
     if is_production:
-        from core.deploy_policy import production_env_valid  # noqa: PLC0415
+        try:
+            from core.deploy_policy import production_env_valid  # noqa: PLC0415
 
-        prod_ok, missing = production_env_valid(dict(os.environ))
-        for item in missing:
-            print(f"FAIL: production — {item}")
-        ok = ok and prod_ok
+            prod_ok, missing = production_env_valid(dict(os.environ))
+            for item in missing:
+                print(f"FAIL: production — {item}")
+            ok = ok and prod_ok
+        except Exception as exc:  # noqa: BLE001 — readiness check, never crash
+            print(f"FAIL: production validation raised {exc!r}")
+            ok = False
         for key, label in PRODUCTION_EXTRA:
             if os.getenv(key, "").strip():
                 print(f"PASS: {key} set (production)")

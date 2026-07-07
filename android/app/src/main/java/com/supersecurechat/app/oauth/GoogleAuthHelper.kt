@@ -7,7 +7,8 @@ import androidx.browser.customtabs.CustomTabsIntent
 import com.supersecurechat.app.BuildConfig
 
 object GoogleAuthHelper {
-    private const val API_HOST = "api.supersecurechat.com"
+    private fun apiHost(): String =
+        android.net.Uri.parse(BuildConfig.SSC_API_URL).host ?: "api.supersecurechat.com"
 
     fun googleStartUrl(): String =
         "${BuildConfig.SSC_API_URL.trimEnd('/')}/api/auth/google/start"
@@ -36,7 +37,7 @@ object GoogleAuthHelper {
     fun isOAuthFinishUrl(url: String): Boolean {
         return try {
             val uri = Uri.parse(url)
-            uri.host.equals(API_HOST, ignoreCase = true) &&
+            uri.host.equals(apiHost(), ignoreCase = true) &&
                 uri.path == "/auth/google" &&
                 (uri.getQueryParameter("oauth_code") != null || uri.getQueryParameter("error") != null)
         } catch (_: Exception) {

@@ -20,7 +20,7 @@ GOOGLE_APPLICATION_CREDENTIALS: "/secrets/firebase/key"
 GOOGLE_CLIENT_ID: "WEB_CLIENT_ID.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET: "GOCSPX-REPLACE_ME"
 GOOGLE_REDIRECT_URI: "https://api.supersecurechat.com/api/auth/google/callback"
-FRONTEND_URL: "https://api.supersecurechat.com"
+FRONTEND_URL: "https://www.supersecurechat.com"
 
 # Tier D — security & abuse (enabled by default once deployed)
 SSC_CAPTCHA_REQUIRED: "true"

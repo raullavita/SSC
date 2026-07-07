@@ -20,8 +20,9 @@ async def register_push_token(
         "platform": platform,
         "updated_at": datetime.now(timezone.utc),
     }
+    await db.push_tokens.delete_many({"token": token, "user_id": {"$ne": user_id}})
     await db.push_tokens.update_one(
-        {"user_id": user_id, "token": token},
+        {"token": token},
         {"$set": doc},
         upsert=True,
     )

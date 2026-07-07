@@ -30,6 +30,11 @@ def issue_access_token(user_id: str, jti: str | None = None) -> str:
 def decode_access_token(token: str) -> dict[str, Any] | None:
     settings = get_settings()
     try:
-        return jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
     except jwt.PyJWTError:
         return None
+    if payload.get("type") != SESSION_JWT_TYPE:
+        return None
+    if not payload.get("sub") or not payload.get("jti"):
+        return None
+    return payload

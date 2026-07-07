@@ -20,16 +20,29 @@ def _require_subscribe_token() -> bool:
     return raw in ("1", "true", "yes", "on")
 
 
-def validate_topic_for_user(topic: str, user_id: str) -> bool:
+async def _user_in_conversation(conversation_id: str, user_id: str) -> bool:
+    from db import get_database
+
+    doc = await get_database().conversations.find_one(
+        {"_id": conversation_id, "participants": user_id},
+        {"_id": 1},
+    )
+    return doc is not None
+
+
+async def validate_topic_for_user(topic: str, user_id: str) -> bool:
     if not _TOPIC_RE.match(topic):
         return False
     if topic == f"user:{user_id}":
         return True
-    return topic.startswith("conversation:")
+    if topic.startswith("conversation:"):
+        conversation_id = topic.split(":", 1)[1]
+        return await _user_in_conversation(conversation_id, user_id)
+    return False
 
 
 async def issue_subscribe_token(user_id: str, topic: str) -> str:
-    if not validate_topic_for_user(topic, user_id):
+    if not await validate_topic_for_user(topic, user_id):
         raise ValueError("ws_subscribe_topic_forbidden")
     return await issue_token(
         _NAMESPACE,

@@ -111,6 +111,12 @@ function registerCryptoIpc() {
     return s.encryptBytes(buffer);
   });
 
+  ipcMain.handle('ssc-crypto:decryptBytes', async (_evt, { ciphertext }) => {
+    requireLibsignal();
+    const s = getSession(app.getPath('userData'));
+    return s.decryptBytes(ciphertext);
+  });
+
   ipcMain.handle('ssc-crypto:computeSafetyNumber', async (_evt, { peerId, peerIdentityKey }) => {
     requireLibsignal();
     const s = getSession(app.getPath('userData'));
@@ -182,18 +188,23 @@ function resolvePackagedIndex() {
 function routeFromDeepLink(rawUrl) {
   if (!rawUrl || !rawUrl.startsWith('ssc://')) return '/';
   try {
-    const parsed = new URL(rawUrl.replace('ssc://', 'https://ssc.local/'));
-    const host = (parsed.hostname || '').toLowerCase();
+    const withoutScheme = rawUrl.slice('ssc://'.length);
+    const slashIdx = withoutScheme.indexOf('/');
+    const host = (slashIdx >= 0 ? withoutScheme.slice(0, slashIdx) : withoutScheme).toLowerCase();
+    const rest = slashIdx >= 0 ? withoutScheme.slice(slashIdx) : '';
+    const qIdx = rest.indexOf('?');
+    const pathPart = qIdx >= 0 ? rest.slice(0, qIdx) : rest;
+    const query = qIdx >= 0 ? rest.slice(qIdx) : '';
+
     if (host === 'auth') {
-      const query = parsed.search || '';
       return `/auth/google${query}`;
     }
     if (host === 'link-device') {
-      return `/link-device${parsed.search || ''}`;
+      return `/link-device${query}`;
     }
     if (host === 'add') {
-      const username = parsed.pathname.replace(/^\//, '').trim();
-      return username ? `/add/${username}` : '/';
+      const username = pathPart.replace(/^\//, '').trim();
+      return username ? `/add/${username}${query}` : '/';
     }
   } catch {
     return '/';
@@ -236,10 +247,15 @@ function attachCertificatePinning() {
   session.defaultSession.setCertificateVerifyProc((request, callback) => {
     const hostname = (request.hostname || '').toLowerCase();
     if (!PINNED_HOSTS.has(hostname)) {
-      callback(0);
+      callback(-3);
       return;
     }
-    const pin = certificateSpkiPin(request.certificate);
+    let pin = null;
+    try {
+      pin = certificateSpkiPin(request.certificate);
+    } catch (err) {
+      console.error('[ssc] spki pin computation failed', err?.message || err);
+    }
     if (pin && PINNED_SPKI_HASHES.has(pin)) {
       callback(0);
       return;
@@ -437,6 +453,9 @@ ipcMain.handle('ssc-shell:open-oauth', async (_evt, url) => {
 ipcMain.handle('ssc-desktop:attest-token', () => {
   const secret = (process.env.SSC_DESKTOP_ATTEST_SECRET || '').trim();
   if (!secret) {
+    if (app.isPackaged) {
+      throw new Error('ssc_desktop_attest_secret_missing');
+    }
     return 'ssc-attest-test-v1';
   }
   const ts = Math.floor(Date.now() / 1000);

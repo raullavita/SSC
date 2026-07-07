@@ -1,6 +1,7 @@
 package com.supersecurechat.app
 
 import android.util.Base64
+import com.supersecurechat.app.BuildConfig
 import java.nio.charset.StandardCharsets
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -13,7 +14,10 @@ object SscDeviceAttest {
     const val HEADER = "X-SSC-Device-Attest"
 
     fun currentToken(): String? {
-        val secret = System.getenv("SSC_PLAY_INTEGRITY_SECRET") ?: return "ssc-attest-test-v1"
+        val secret = System.getenv("SSC_PLAY_INTEGRITY_SECRET")
+        if (secret.isNullOrBlank()) {
+            return if (BuildConfig.DEBUG) "ssc-attest-test-v1" else null
+        }
         val ts = (System.currentTimeMillis() / 1000L)
         val sig = hmacSha256(secret, "android:$ts")
         return "$ts.$sig"

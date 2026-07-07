@@ -26,6 +26,10 @@ def build_android_web_path(host: str, path: str = "", query: str = "") -> str:
         return f"/link-device{query}" if query else "/link-device"
     if host == "add" and path:
         return f"/add/{path}"
+    if host == "auth":
+        if path:
+            return f"/auth/{path}{query}" if query else f"/auth/{path}"
+        return f"/auth{query}" if query else "/auth"
     return "/"
 
 

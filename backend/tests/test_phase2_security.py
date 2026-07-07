@@ -49,7 +49,7 @@ def test_min_client_version_defaults(monkeypatch):
     monkeypatch.delenv("SSC_MIN_CLIENT_BUILD", raising=False)
     monkeypatch.delenv("SSC_MIN_CLIENT_VERSION", raising=False)
     assert min_client_version() == "0.3.1"
-    assert min_client_build() == 9
+    assert min_client_build() == 10
 
 
 def test_client_meets_minimum_current_build():

@@ -15,7 +15,6 @@ from core.poll_policy import (
     SIGNAL_PROTOCOL_POLL,
     public_poll,
     validate_option_count,
-    validate_option_index,
 )
 from core.read_receipts import increment_unread
 from core.retention_policy import default_expires_at
@@ -35,7 +34,6 @@ class CreatePollBody(BaseModel):
 
 
 class CastVoteBody(BaseModel):
-    option_index: int = Field(ge=0)
     ciphertext: str = Field(min_length=1)
     protocol: str = Field(default=SIGNAL_PROTOCOL_POLL)
 
@@ -47,14 +45,9 @@ async def _require_participant(db, conversation_id: str, user_id: str) -> dict:
     return doc
 
 
-async def _poll_tallies(db, poll_id: str, option_count: int) -> dict[str, int]:
-    tallies = {str(i): 0 for i in range(option_count)}
-    cursor = db.message_poll_votes.find({"poll_id": poll_id})
-    async for vote in cursor:
-        idx = vote.get("option_index")
-        if idx is not None and 0 <= int(idx) < option_count:
-            tallies[str(int(idx))] += 1
-    return tallies
+async def _poll_tallies(_db, poll_id: str, option_count: int) -> dict[str, int]:
+    # Tallies are derived client-side from encrypted votes — server stores ciphertext only.
+    return {str(i): 0 for i in range(option_count)}
 
 
 @router.post("/conversations/{conversation_id}/polls")
@@ -156,8 +149,8 @@ async def get_poll(
         "poll": public_poll(poll),
         "tallies": tallies,
     }
-    if viewer_vote is not None:
-        out["viewer_vote"] = int(viewer_vote.get("option_index", 0))
+    if viewer_vote is not None and viewer_vote.get("ciphertext"):
+        out["viewer_vote_ciphertext"] = viewer_vote["ciphertext"]
     return out
 
 
@@ -176,9 +169,6 @@ async def cast_vote(
         raise HTTPException(status_code=404, detail="poll_not_found")
 
     option_count = int(poll.get("option_count", 0))
-    ok, detail = validate_option_index(body.option_index, option_count)
-    if not ok:
-        raise HTTPException(status_code=400, detail=detail)
 
     protocol = body.protocol or SIGNAL_PROTOCOL_POLL
     ok, detail = validate_signal_ciphertext(body.ciphertext, protocol)
@@ -192,7 +182,6 @@ async def cast_vote(
         "poll_id": poll_id,
         "conversation_id": conversation_id,
         "user_id": user_id,
-        "option_index": body.option_index,
         "ciphertext": body.ciphertext,
         "protocol": protocol,
         "created_at": now,
@@ -203,6 +192,6 @@ async def cast_vote(
     tallies = await _poll_tallies(db, poll_id, option_count)
     return {
         "ok": True,
-        "viewer_vote": body.option_index,
+        "viewer_vote_ciphertext": body.ciphertext,
         "tallies": tallies,
     }

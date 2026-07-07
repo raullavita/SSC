@@ -73,7 +73,7 @@ export default function AbuseReportPanel({ onMessage }) {
         />
       </label>
       <label className={styles.rowStack}>
-        <span>Sample text for spam scoring (optional, local only)</span>
+        <span>Sample text for spam scoring (optional — sent to server with report)</span>
         <textarea
           className={styles.textarea}
           value={sampleText}

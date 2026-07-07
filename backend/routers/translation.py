@@ -41,6 +41,8 @@ async def translate_text(
         raise HTTPException(status_code=400, detail="unsupported_target_language")
     if body.source != "auto" and body.source not in SUPPORTED_LANGUAGES:
         raise HTTPException(status_code=400, detail="unsupported_source_language")
+    if not LIBRETRANSLATE_URL:
+        raise HTTPException(status_code=503, detail="translation_not_configured")
 
     settings = get_settings()
     api_key = settings.libretranslate_api_key

@@ -5,10 +5,27 @@
 const fs = require('fs');
 const path = require('path');
 
+const SAFE_ENTRY_RE = /^[A-Za-z0-9._-]+$/;
+
+function safeChildPath(rootDir, entryName) {
+  const name = String(entryName || '');
+  if (!SAFE_ENTRY_RE.test(name)) {
+    return null;
+  }
+  const rootResolved = path.resolve(rootDir);
+  const resolved = path.resolve(rootResolved, name);
+  const prefix = rootResolved.endsWith(path.sep) ? rootResolved : `${rootResolved}${path.sep}`;
+  if (resolved !== rootResolved && !resolved.startsWith(prefix)) {
+    return null;
+  }
+  return resolved;
+}
+
 function collectFiles(rootDir, extensions, out = []) {
   if (!fs.existsSync(rootDir)) return out;
   for (const entry of fs.readdirSync(rootDir, { withFileTypes: true })) {
-    const full = path.join(rootDir, entry.name);
+    const full = safeChildPath(rootDir, entry.name);
+    if (!full) continue;
     if (entry.isDirectory()) {
       collectFiles(full, extensions, out);
       continue;

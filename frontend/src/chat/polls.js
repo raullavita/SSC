@@ -3,7 +3,7 @@
  */
 
 import { api } from '../lib/api';
-import { encryptMessage } from '../signal/signalBridge';
+import { decryptMessage, encryptMessage } from '../signal/signalBridge';
 
 const POLL_PROTOCOL = 'signal_v1_poll';
 
@@ -37,11 +37,17 @@ export async function fetchPoll(conversationId, pollId) {
   return api.get(`/api/conversations/${conversationId}/polls/${pollId}`);
 }
 
+export async function decryptPollVoteIndex(ciphertext, { peerId }) {
+  if (!ciphertext) return null;
+  const plain = await decryptMessage(ciphertext, { peerId });
+  const parsed = JSON.parse(plain);
+  return typeof parsed.option_index === 'number' ? parsed.option_index : null;
+}
+
 export async function castPollVote(conversationId, pollId, { optionIndex, peerId }) {
   const payload = JSON.stringify({ option_index: optionIndex });
   const { ciphertext } = await encryptMessage(payload, { peerId });
   return api.post(`/api/conversations/${conversationId}/polls/${pollId}/votes`, {
-    option_index: optionIndex,
     ciphertext,
     protocol: POLL_PROTOCOL,
   });

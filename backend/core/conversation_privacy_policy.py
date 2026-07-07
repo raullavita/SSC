@@ -47,11 +47,11 @@ def effective_typing_visible(
     global_settings: dict[str, Any] | None,
     meta: dict[str, Any] | None,
 ) -> bool:
-    _ = global_settings
     meta = meta or {}
     if "privacy_typing_visible" in meta:
         return bool(meta["privacy_typing_visible"])
-    return DEFAULT_TYPING_VISIBLE
+    settings = global_settings or default_privacy_settings()
+    return bool(settings.get("typing_visible", DEFAULT_TYPING_VISIBLE))
 
 
 def effective_last_seen_visible(

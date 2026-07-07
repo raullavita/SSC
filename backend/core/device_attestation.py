@@ -42,7 +42,11 @@ def verify_attestation_token(platform: str, token: str | None) -> tuple[bool, st
     value = token.strip()
     plat = platform.lower()
 
-    if value == _TEST_TOKEN and os.getenv("SSC_ENV", "").lower() != "production":
+    if value == _TEST_TOKEN:
+        from config import get_settings
+
+        if get_settings().is_production or os.getenv("SSC_ENV", "").strip().lower() == "production":
+            return False, "device_attest_invalid"
         return True, ""
 
     if plat == "android":

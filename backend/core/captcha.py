@@ -49,7 +49,7 @@ async def verify_captcha(token: str | None, remote_ip: str | None = None) -> tup
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.post(_TURNSTILE_VERIFY_URL, data=payload)
         data = resp.json()
-    except httpx.HTTPError:
+    except (httpx.HTTPError, ValueError):
         return False, "captcha_unreachable"
 
     if data.get("success"):

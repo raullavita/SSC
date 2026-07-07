@@ -158,6 +158,11 @@ async def send_message(
         source = await db.messages.find_one({"_id": body.forwarded_from})
         if not source:
             raise HTTPException(status_code=400, detail="forwarded_from_not_found")
+        source_conv = await db.conversations.find_one(
+            {"_id": source["conversation_id"], "participants": user_id}
+        )
+        if not source_conv:
+            raise HTTPException(status_code=403, detail="forwarded_from_not_allowed")
         forwarded_from = body.forwarded_from
 
     doc = mark_sealed(

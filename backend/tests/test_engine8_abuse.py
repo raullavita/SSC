@@ -42,3 +42,11 @@ def test_file_upload_blocks_pe_magic_even_with_image_mime():
     allowed, detail = file_upload_allowed("image/png", b"MZ\x90\x00")
     assert allowed is False
     assert detail == "file_type_blocked"
+
+
+def test_file_upload_rejects_oversized_payload():
+    from core.abuse_policy import MAX_FILE_BYTES
+
+    allowed, detail = file_upload_allowed("image/png", b"x" * (MAX_FILE_BYTES + 1))
+    assert allowed is False
+    assert detail == "file_too_large"

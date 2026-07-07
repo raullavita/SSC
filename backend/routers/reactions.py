@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from core.abuse_policy import msg_rate_limiter
@@ -36,6 +36,7 @@ async def _require_participant(db, conversation_id: str, user_id: str) -> dict:
 @router.get("/conversations/{conversation_id}/reactions")
 async def list_conversation_reactions(
     conversation_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
     user_id: str = Depends(get_current_user_id),
     _client: str = Depends(get_client_header),
 ) -> dict:
@@ -50,7 +51,7 @@ async def list_conversation_reactions(
                 {"expires_at": None},
             ],
         }
-    ).sort("created_at", 1)
+    ).sort("created_at", 1).limit(limit)
     items = []
     async for doc in cursor:
         row = public_reaction(doc, viewer_id=user_id)
@@ -63,6 +64,7 @@ async def list_conversation_reactions(
 async def list_message_reactions(
     conversation_id: str,
     message_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
     user_id: str = Depends(get_current_user_id),
     _client: str = Depends(get_client_header),
 ) -> dict:
@@ -82,7 +84,7 @@ async def list_message_reactions(
                 {"expires_at": None},
             ],
         }
-    )
+    ).sort("created_at", 1).limit(limit)
     items = []
     async for doc in cursor:
         row = public_reaction(doc, viewer_id=user_id)

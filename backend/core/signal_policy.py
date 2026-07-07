@@ -29,6 +29,7 @@ MAX_SIGNAL_CIPHERTEXT_BYTES = 512 * 1024
 
 PREKEY_PUBLIC_FIELDS: frozenset[str] = frozenset(
     {
+        "_id",
         "user_id",
         "device_id",
         "registration_id",
@@ -123,7 +124,7 @@ def validate_signal_ciphertext(ciphertext: str, protocol: str) -> tuple[bool, st
 
 def scrub_prekey_bundle(payload: dict[str, Any]) -> dict[str, Any]:
     """Strip any private/session fields before persistence or response."""
-    return {k: v for k, v in payload.items() if k not in FORBIDDEN_PREKEY_FIELDS}
+    return {k: v for k, v in payload.items() if k in PREKEY_PUBLIC_FIELDS}
 
 
 def public_prekey_bundle(doc: dict[str, Any]) -> dict[str, Any]:

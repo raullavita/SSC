@@ -36,6 +36,8 @@ def validate_username(raw: str) -> str | None:
         return "username_length"
     if not USERNAME_RE.match(username):
         return "username_invalid"
+    if username.startswith("u_"):
+        return "username_reserved"
     if username in RESERVED_USERNAMES:
         return "username_reserved"
     return None

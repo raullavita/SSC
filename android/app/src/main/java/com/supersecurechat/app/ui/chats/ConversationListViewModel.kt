@@ -18,6 +18,7 @@ data class ConversationListUiState(
     val conversations: List<Conversation> = emptyList(),
     val displayName: String? = null,
     val error: String? = null,
+    val cryptoWarning: String? = null,
     val newChatTarget: String = "",
     val isCreatingChat: Boolean = false,
     val navigateToChatId: String? = null,
@@ -55,20 +56,21 @@ class ConversationListViewModel(
                 return@launch
             }
             val cryptoWarning = chatSessionManager.cryptoInitError?.let { mapError(it) }
+            _uiState.value = _uiState.value.copy(cryptoWarning = cryptoWarning)
             observeRealtime()
-            refresh(cryptoWarning)
+            refresh()
         }
     }
 
-    fun refresh(cryptoWarning: String? = null) {
+    fun refresh() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = cryptoWarning)
+            val cryptoWarning = _uiState.value.cryptoWarning
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             runCatching { conversationRepository.listConversations() }
                 .onSuccess { list ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         conversations = list,
-                        error = cryptoWarning,
                     )
                 }
                 .onFailure { error ->
@@ -77,7 +79,8 @@ class ConversationListViewModel(
                     } else {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            error = cryptoWarning ?: mapError(error),
+                            error = mapError(error),
+                            cryptoWarning = cryptoWarning,
                         )
                     }
                 }
@@ -108,10 +111,15 @@ class ConversationListViewModel(
                     navigateToChatId = conversation.id,
                 )
             }.onFailure { error ->
-                _uiState.value = _uiState.value.copy(
-                    isCreatingChat = false,
-                    error = mapError(error),
-                )
+                if (isSessionError(error)) {
+                    _uiState.value = _uiState.value.copy(isCreatingChat = false)
+                    handleSessionExpired()
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isCreatingChat = false,
+                        error = mapError(error),
+                    )
+                }
             }
         }
     }

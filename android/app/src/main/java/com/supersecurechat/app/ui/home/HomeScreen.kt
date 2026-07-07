@@ -34,7 +34,7 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        displayName = authRepository.refreshCurrentUser()?.displayName
+        displayName = runCatching { authRepository.refreshCurrentUser()?.displayName }.getOrNull()
     }
 
     Column(
@@ -66,7 +66,7 @@ fun HomeScreen(
             onClick = {
                 isLoggingOut = true
                 scope.launch {
-                    authRepository.logout()
+                    runCatching { authRepository.logout() }
                     isLoggingOut = false
                     onLoggedOut()
                 }

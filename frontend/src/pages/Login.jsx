@@ -67,22 +67,21 @@ export default function Login() {
   async function onGoogle() {
     setBusy(true);
     setError(null);
+    setGooglePending(false);
     try {
       const data = await promptGoogleSignIn();
       if (data) {
         const authed = await loginWithGoogle(data);
         navigate(postAuthPath(authed, nextParam || '/chat'));
-        setBusy(false);
         return;
       }
-      if (installed && window.__SSC_ELECTRON_CLIENT) {
+      if (isInstalledApp()) {
         setGooglePending(true);
-        setError(null);
-        setBusy(false);
         return;
       }
     } catch (err) {
       setError(err.body?.detail || err.message || 'Google sign-in failed');
+    } finally {
       setBusy(false);
     }
   }

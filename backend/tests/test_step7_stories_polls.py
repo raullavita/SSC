@@ -162,15 +162,15 @@ async def test_poll_create_and_vote(step7_env):
         vote = await bc.post(
             f"/api/conversations/{conv_id}/polls/{poll_id}/votes",
             json={
-                "option_index": 1,
                 "ciphertext": VALID_B64,
                 "protocol": "signal_v1_poll",
             },
             headers=CLIENT,
         )
         assert vote.status_code == 200
-        assert vote.json()["viewer_vote"] == 1
-        assert vote.json()["tallies"]["1"] == 1
+        assert vote.json()["viewer_vote_ciphertext"] == VALID_B64
+        assert vote.json()["tallies"]["0"] == 0
+        assert vote.json()["tallies"]["1"] == 0
 
 
 @pytest.mark.asyncio

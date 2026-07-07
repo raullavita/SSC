@@ -3,7 +3,8 @@
  * @see https://github.com/versatica/mediasoup
  */
 
-const http = require('http');
+const fs = require('fs');
+const https = require('https');
 const mediasoup = require('mediasoup');
 const { RoomManager } = require('./roomManager');
 const { attachWebSocket } = require('./wsHandler');
@@ -37,7 +38,25 @@ function readBodyBuffer(req) {
   });
 }
 
-const server = http.createServer(async (req, res) => {
+function createAppServer() {
+  const tlsKey = process.env.SFU_TLS_KEY;
+  const tlsCert = process.env.SFU_TLS_CERT;
+  if (tlsKey && tlsCert && fs.existsSync(tlsKey) && fs.existsSync(tlsCert)) {
+    return https.createServer(
+      {
+        key: fs.readFileSync(tlsKey),
+        cert: fs.readFileSync(tlsCert),
+      },
+      requestHandler
+    );
+  }
+  if (process.env.SFU_ALLOW_HTTP === '1' || process.env.NODE_ENV !== 'production') {
+    return require('./devHttp').createDevServer(requestHandler);
+  }
+  throw new Error('SFU requires TLS in production (set SFU_TLS_KEY/SFU_TLS_CERT or SFU_ALLOW_HTTP=1 for dev)');
+}
+
+async function requestHandler(req, res) {
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
@@ -86,7 +105,9 @@ const server = http.createServer(async (req, res) => {
 
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('SSC SFU — connect via WebSocket + mediasoup-client\n');
-});
+}
+
+const server = createAppServer();
 
 async function main() {
   await createWorker();

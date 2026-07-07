@@ -1,7 +1,17 @@
 version: 2
 updates:
+  - package-ecosystem: github-actions
+    directory: /
+    cooldown:
+      default-days: 7
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+
   - package-ecosystem: pip
     directory: /backend
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     # Security-only: avoid auto-opening major bumps (redis 8, firebase-admin 7, etc.).
@@ -12,6 +22,8 @@ updates:
 
   - package-ecosystem: npm
     directory: /frontend
+    cooldown:
+      default-days: 7
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

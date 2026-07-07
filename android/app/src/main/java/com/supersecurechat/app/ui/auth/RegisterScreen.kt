@@ -51,6 +51,7 @@ fun RegisterScreen(
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var showPassword by rememberSaveable { mutableStateOf(false) }
+    var captchaToken by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState.user) {
         if (uiState.user != null) {
@@ -134,11 +135,23 @@ fun RegisterScreen(
                 imeAction = ImeAction.Done,
             ),
             keyboardActions = KeyboardActions(
-                onDone = { viewModel.register(email, password, displayName) },
+                onDone = { viewModel.register(email, password, displayName, captchaToken) },
             ),
             modifier = Modifier.fillMaxWidth(),
             enabled = !uiState.isLoading,
         )
+
+        if (uiState.captchaRequired && !uiState.turnstileSiteKey.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            TurnstileCaptcha(
+                siteKey = uiState.turnstileSiteKey!!,
+                onToken = { token ->
+                    captchaToken = token
+                    viewModel.clearError()
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         uiState.error?.let { error ->
             Spacer(modifier = Modifier.height(12.dp))
@@ -152,7 +165,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
         Button(
-            onClick = { viewModel.register(email, password, displayName) },
+            onClick = { viewModel.register(email, password, displayName, captchaToken) },
             enabled = !uiState.isLoading,
             modifier = Modifier.fillMaxWidth(),
         ) {

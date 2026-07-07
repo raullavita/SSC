@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from core.rate_limit import RateLimiter
@@ -17,16 +18,17 @@ abuse_report_limiter = RateLimiter("abuse_report", 10, 3600)
 async def record_user_block(db, blocker_id: str, blocked_id: str) -> None:
     doc_id = f"block:{blocker_id}:{blocked_id}"
     now = datetime.now(timezone.utc)
-    existing = await db.user_blocks.find_one({"_id": doc_id})
-    if existing:
-        return
-    await db.user_blocks.insert_one(
+    await db.user_blocks.update_one(
+        {"_id": doc_id},
         {
-            "_id": doc_id,
-            "blocker_id": blocker_id,
-            "blocked_id": blocked_id,
-            "created_at": now,
-        }
+            "$setOnInsert": {
+                "_id": doc_id,
+                "blocker_id": blocker_id,
+                "blocked_id": blocked_id,
+                "created_at": now,
+            }
+        },
+        upsert=True,
     )
 
 
@@ -93,7 +95,7 @@ async def process_abuse_report(
     also_block: bool,
 ) -> dict:
     now = datetime.now(timezone.utc)
-    doc_id = f"report-{reporter_id}-{target_user_id}-{int(now.timestamp())}"
+    doc_id = f"report-{reporter_id}-{target_user_id}-{secrets.token_urlsafe(12)}"
     doc = {
         "_id": doc_id,
         "reporter_id": reporter_id,

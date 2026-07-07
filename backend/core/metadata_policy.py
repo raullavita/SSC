@@ -69,6 +69,8 @@ def public_conversation(
         "peer_id": peer,
         "updated_at": updated,
     }
+    if doc.get("group_id") is not None:
+        out["group_id"] = doc["group_id"]
     if meta:
         out["pinned"] = bool(meta.get("pinned"))
         out["muted"] = bool(meta.get("muted"))

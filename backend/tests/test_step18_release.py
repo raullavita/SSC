@@ -22,7 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 
 def test_release_constants():
     assert RELEASE_VERSION == "0.3.1"
-    assert RELEASE_BUILD == "9"
+    assert RELEASE_BUILD == "10"
     assert RELEASE_TAG == "v0.3.1"
     assert RELEASE_LABEL == "v0.3.1 (build 10)"
     assert ELECTRON_ARTIFACT == "SSC-Setup-0.3.1.exe"
@@ -47,10 +47,21 @@ def test_release_checklist_exists():
 
 def test_version_alignment():
     gradle = (REPO / "android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
-    api_client = (
-        REPO / "android" / "app" / "src" / "main" / "java" / "com" / "supersecurechat" / "app" / "ApiClient.kt"
+    http_client = (
+        REPO
+        / "android"
+        / "app"
+        / "src"
+        / "main"
+        / "java"
+        / "com"
+        / "supersecurechat"
+        / "app"
+        / "data"
+        / "api"
+        / "SscHttpClient.kt"
     ).read_text(encoding="utf-8")
     health = (REPO / "backend" / "routers" / "health.py").read_text(encoding="utf-8")
     assert f'versionName = "{RELEASE_VERSION}"' in gradle
-    assert ANDROID_CLIENT_HEADER in api_client
+    assert ANDROID_CLIENT_HEADER in http_client
     assert "RELEASE_VERSION" in health

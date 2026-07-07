@@ -22,7 +22,7 @@ export function isInstalledApp() {
 }
 
 export function appVersionLabel() {
-  const version = process.env.REACT_APP_SSC_VERSION || '0.3.0';
+  const version = process.env.REACT_APP_SSC_VERSION || '0.3.1';
   const build = process.env.REACT_APP_SSC_BUILD || '0';
   return `v${version} (build ${build})`;
 }

@@ -13,7 +13,8 @@ $forbiddenTracked = @(
     "backend/cloudrun-env.yaml",
     "atlas-credentials.env",
     "ssc-firebase-key.json",
-    "google-services.json"
+    "google-services.json",
+    "google-services-web.json"
 )
 
 Push-Location $Root

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
 import { parseAttachmentText } from './attachments';
-import { castPollVote, createPoll, fetchPoll, parsePollText } from './polls';
+import { castPollVote, createPoll, decryptPollVoteIndex, fetchPoll, parsePollText } from './polls';
 import { parseReactionText } from './reactions';
 import { useDisappearingMessages } from './useDisappearingMessages';
 import {
@@ -111,9 +111,17 @@ export function useChatMessages(
         pollRows.map(async (m) => {
           try {
             const data = await fetchPoll(conversationId, m.poll_id);
+            let viewerVote = null;
+            if (data.viewer_vote_ciphertext && peerId) {
+              try {
+                viewerVote = await decryptPollVoteIndex(data.viewer_vote_ciphertext, { peerId });
+              } catch {
+                viewerVote = null;
+              }
+            }
             meta[m.poll_id] = {
               tallies: data.tallies || {},
-              viewerVote: data.viewer_vote ?? null,
+              viewerVote,
             };
           } catch {
             meta[m.poll_id] = { tallies: {}, viewerVote: null };
@@ -333,11 +341,19 @@ export function useChatMessages(
         optionIndex,
         peerId,
       });
+      let viewerVote = optionIndex;
+      if (data.viewer_vote_ciphertext && peerId) {
+        try {
+          viewerVote = await decryptPollVoteIndex(data.viewer_vote_ciphertext, { peerId });
+        } catch {
+          viewerVote = optionIndex;
+        }
+      }
       setPollMeta((prev) => ({
         ...prev,
         [pollId]: {
           tallies: data.tallies || {},
-          viewerVote: data.viewer_vote ?? optionIndex,
+          viewerVote,
         },
       }));
     },

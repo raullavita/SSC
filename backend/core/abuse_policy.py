@@ -63,6 +63,8 @@ def file_magic_blocked(data: bytes) -> bool:
 
 
 def file_upload_allowed(mime_hint: str, data: bytes) -> tuple[bool, str]:
+    if len(data) > MAX_FILE_BYTES:
+        return False, "file_too_large"
     if not mime_hint_allowed(mime_hint):
         return False, "file_mime_not_allowed"
     if file_magic_blocked(data[:8]):

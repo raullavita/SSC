@@ -20,7 +20,9 @@ data class AuthResponse(
 data class LoginRequest(
     val email: String,
     val password: String,
-)
+) {
+    override fun toString(): String = "LoginRequest(email=$email, password=***)"
+}
 
 @Serializable
 data class RegisterRequest(
@@ -28,7 +30,10 @@ data class RegisterRequest(
     val password: String,
     @SerialName("display_name") val displayName: String,
     @SerialName("captcha_token") val captchaToken: String? = null,
-)
+) {
+    override fun toString(): String =
+        "RegisterRequest(email=$email, password=***, displayName=$displayName)"
+}
 
 @Serializable
 data class GoogleExchangeRequest(

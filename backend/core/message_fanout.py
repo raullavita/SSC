@@ -96,11 +96,12 @@ async def fanout_message_deleted(
     }
     if scope == "everyone" and doc:
         base["message"] = public_message(doc, viewer_id=None)
-    await ws_hub.publish(f"conversation:{conversation_id}", scrub_payload(base))
 
     if scope == "me":
         await ws_hub.publish(f"user:{actor_id}", scrub_payload(base))
         return
+
+    await ws_hub.publish(f"conversation:{conversation_id}", scrub_payload(base))
 
     for uid in participants:
         user_payload = dict(base)

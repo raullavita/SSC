@@ -6,9 +6,10 @@
 const fs = require('fs');
 const path = require('path');
 const { randomBytes } = require('crypto');
-const { FileJsonStore, readSecureText, writeSecureText } = require('./secureFileStore');
+const { FileJsonStore, readSecureText, writeSecureText, resolveUnderRoot } = require('./secureFileStore');
 const {
   IdentityKeyPair,
+  PrivateKey,
   PublicKey,
   PreKeyRecord,
   SignedPreKeyRecord,
@@ -78,8 +79,8 @@ class SscIdentityStore extends IdentityKeyStore {
   constructor(dir, meta) {
     super();
     this.meta = meta;
-    this.identityFile = path.join(dir, 'identity.json');
-    this.trustedFile = path.join(dir, 'trusted.json');
+    this.identityFile = resolveUnderRoot(dir, 'identity.json');
+    this.trustedFile = resolveUnderRoot(dir, 'trusted.json');
     this._pair = null;
     this.trusted = {};
     if (fs.existsSync(this.trustedFile)) {
@@ -216,16 +217,53 @@ class SscKyberPreKeyStore extends KyberPreKeyStore {
 
 class LibsignalSession {
   constructor(userDataPath) {
-    this.root = path.join(userDataPath, 'ssc-signal');
+    this.root = resolveUnderRoot(userDataPath, 'ssc-signal');
     this.meta = { registrationId: null, deviceId: '1', localUserId: null };
     this.sessionStore = new SscSessionStore(new FileJsonStore(this.root, 'sessions.json'));
     this.identityStore = new SscIdentityStore(this.root, this.meta);
     this.preKeyStore = new SscPreKeyStore(new FileJsonStore(this.root, 'prekeys.json'));
     this.signedPreKeyStore = new SscSignedPreKeyStore(new FileJsonStore(this.root, 'signed_prekeys.json'));
     this.kyberPreKeyStore = new SscKyberPreKeyStore(new FileJsonStore(this.root, 'kyber_prekeys.json'));
-    this._signedPreKeyId = 1;
-    this._kyberPreKeyId = 1;
-    this._nextPreKeyId = 1;
+    this._counterStore = new FileJsonStore(this.root, 'prekey_counters.json');
+    this._loadPreKeyCounters();
+  }
+
+  _maxStoredId(store) {
+    const ids = Object.keys(store.data || {})
+      .map((k) => Number(k))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    return ids.length ? Math.max(...ids) : 0;
+  }
+
+  _loadPreKeyCounters() {
+    const saved = this._counterStore.data || {};
+    this._signedPreKeyId = Math.max(saved.signedPreKeyId || 0, this._maxStoredId(this.signedPreKeyStore.store)) + 1;
+    this._kyberPreKeyId = Math.max(saved.kyberPreKeyId || 0, this._maxStoredId(this.kyberPreKeyStore.store)) + 1;
+    this._nextPreKeyId = Math.max(saved.nextPreKeyId || 0, this._maxStoredId(this.preKeyStore.store)) + 1;
+  }
+
+  _savePreKeyCounters() {
+    this._counterStore.data = {
+      signedPreKeyId: this._signedPreKeyId,
+      kyberPreKeyId: this._kyberPreKeyId,
+      nextPreKeyId: this._nextPreKeyId,
+    };
+    this._counterStore.save();
+  }
+
+  _fileDekPath() {
+    return path.join(this.root, 'file_dek.json');
+  }
+
+  _getFileEncryptionKey() {
+    const dekFile = this._fileDekPath();
+    if (fs.existsSync(dekFile)) {
+      const doc = JSON.parse(readSecureText(dekFile));
+      return b64decode(doc.key);
+    }
+    const key = randomBytes(32);
+    writeSecureText(dekFile, JSON.stringify({ key: b64encode(key) }));
+    return key;
   }
 
   configure({ deviceId, localUserId } = {}) {
@@ -248,17 +286,20 @@ class LibsignalSession {
     const deviceId = Number(this.meta.deviceId) || 1;
 
     const signedId = this._signedPreKeyId++;
+    const signedPrivate = PrivateKey.generate();
+    const signedPublic = signedPrivate.getPublicKey();
     const signedPreKey = SignedPreKeyRecord.new(
       signedId,
       Date.now(),
-      identity.publicKey,
-      identity.privateKey,
-      identity.privateKey.sign(identity.publicKey.serialize())
+      signedPublic,
+      signedPrivate,
+      identity.privateKey.sign(signedPublic.serialize())
     );
     await this.signedPreKeyStore.saveSignedPreKey(signedId, signedPreKey);
 
     const preKeyId = this._nextPreKeyId++;
-    const preKey = PreKeyRecord.new(preKeyId, identity.publicKey, identity.privateKey);
+    const preKeyPrivate = PrivateKey.generate();
+    const preKey = PreKeyRecord.new(preKeyId, preKeyPrivate.getPublicKey(), preKeyPrivate);
     await this.preKeyStore.savePreKey(preKeyId, preKey);
 
     const kyberId = this._kyberPreKeyId++;
@@ -266,6 +307,7 @@ class LibsignalSession {
     const kyberSig = identity.privateKey.sign(kyberPair.getPublicKey().serialize());
     const kyberRecord = KyberPreKeyRecord.new(kyberId, Date.now(), kyberPair, kyberSig);
     await this.kyberPreKeyStore.saveKyberPreKey(kyberId, kyberRecord);
+    this._savePreKeyCounters();
 
     return {
       registrationId,
@@ -392,7 +434,7 @@ class LibsignalSession {
     const localUser = this.meta.localUserId || 'ssc-local';
     const localId = new TextEncoder().encode(localUser);
     const remoteId = new TextEncoder().encode(peerId);
-    const fp = Fingerprint.new(5200, 2, localId, pair.publicKey, remoteId, remoteKey);
+    const fp = Fingerprint.new(2, 5200, localId, pair.publicKey, remoteId, remoteKey);
     return {
       displayable: fp.displayableFingerprint().toString(),
       localUser,
@@ -402,19 +444,33 @@ class LibsignalSession {
 
   async encryptBytes(arrayBuffer) {
     const bytes = new Uint8Array(arrayBuffer);
-    const identity = await this.identityStore.getIdentityKeyPair();
+    const key = this._getFileEncryptionKey();
     const nonce = new Uint8Array(randomBytes(12));
     const { Aes256GcmSiv } = require('@signalapp/libsignal-client');
-    const keyMaterial = identity.privateKey.sign(bytes.slice(0, Math.min(bytes.length, 32)));
-    const cipher = Aes256GcmSiv.new(keyMaterial.slice(0, 32));
+    const cipher = Aes256GcmSiv.new(key);
     const ciphertext = cipher.encrypt(bytes, nonce, new Uint8Array(0));
     const payload = JSON.stringify({
-      v: 1,
+      v: 2,
       type: 'ssc_file',
       nonce: b64encode(nonce),
       data: b64encode(ciphertext),
     });
     return { ciphertext: b64encode(Buffer.from(payload, 'utf8')) };
+  }
+
+  async decryptBytes(ciphertextB64) {
+    const outer = JSON.parse(Buffer.from(b64decode(ciphertextB64)).toString('utf8'));
+    if (outer?.type !== 'ssc_file' || !outer.nonce || !outer.data) {
+      throw new Error('ssc_file_invalid_envelope');
+    }
+    const key = this._getFileEncryptionKey();
+    const { Aes256GcmSiv } = require('@signalapp/libsignal-client');
+    const cipher = Aes256GcmSiv.new(key);
+    const plain = cipher.decrypt(b64decode(outer.data), b64decode(outer.nonce), new Uint8Array(0));
+    const plainBuf = Buffer.from(plain);
+    return {
+      buffer: plainBuf.buffer.slice(plainBuf.byteOffset, plainBuf.byteOffset + plainBuf.byteLength),
+    };
   }
 }
 
@@ -429,7 +485,7 @@ function getSession(userDataPath) {
 
 function wipeLocalData(userDataPath) {
   const { wipeGroupSenderKeyData } = require('./groupSenderKeySession');
-  const root = path.join(userDataPath, 'ssc-signal');
+  const root = resolveUnderRoot(userDataPath, 'ssc-signal');
   if (fs.existsSync(root)) {
     fs.rmSync(root, { recursive: true, force: true });
   }

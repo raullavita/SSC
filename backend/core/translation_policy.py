@@ -5,9 +5,7 @@ from __future__ import annotations
 import os
 
 # Self-hosted LibreTranslate default; override via env.
-LIBRETRANSLATE_URL = os.getenv(
-    "LIBRETRANSLATE_URL", "https://libretranslate.com"
-).rstrip("/")
+LIBRETRANSLATE_URL = os.getenv("LIBRETRANSLATE_URL", "").rstrip("/")
 
 SUPPORTED_LANGUAGES: frozenset[str] = frozenset(
     {

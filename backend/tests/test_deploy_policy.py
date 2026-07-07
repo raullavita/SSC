@@ -34,7 +34,11 @@ def test_production_env_rejects_dev_jwt():
     assert any("JWT_SECRET" in m for m in missing)
 
 
-def test_deploy_policy_constants():
+def test_deploy_policy_constants(monkeypatch):
+    monkeypatch.setenv("MONGO_URL", "mongodb://localhost")
+    monkeypatch.setenv("JWT_SECRET", "super-secret-production-key-32chars")
+    monkeypatch.setenv("REDIS_URL", "redis://localhost:6379")
+    monkeypatch.setenv("SSC_ENV", "production")
     assert PRODUCTION_API_HOST == "api.supersecurechat.com"
     assert CLOUD_RUN_SERVICE == "ssc-api"
     assert engine10_deploy_policy_ready() is True

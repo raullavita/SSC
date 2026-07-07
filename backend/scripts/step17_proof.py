@@ -119,7 +119,7 @@ def main() -> int:
         cwd=REPO_ROOT / "frontend",
         capture_output=True,
         text=True,
-        shell=True,
+        shell=False,
     )
     checks.append(
         {

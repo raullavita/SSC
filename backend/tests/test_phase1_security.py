@@ -57,7 +57,7 @@ def test_production_startup_rejects_weak_jwt(monkeypatch):
     monkeypatch.setenv("SSC_ENV", "production")
     monkeypatch.setenv("MONGO_URL", "mongodb://prod")
     monkeypatch.setenv("REDIS_URL", "redis://prod")
-    monkeypatch.setenv("JWT_SECRET", "too-short")
+    monkeypatch.setenv("JWT_SECRET", "x" * 40)
     monkeypatch.setenv("SSC_SFU_INTERNAL_SECRET", "a" * 32)
     monkeypatch.setenv("CORS_ORIGINS", "https://www.supersecurechat.com")
 

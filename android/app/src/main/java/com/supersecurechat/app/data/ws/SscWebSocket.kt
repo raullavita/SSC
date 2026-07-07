@@ -73,7 +73,7 @@ class SscWebSocket(
         return try {
             val body = http.get("/api/ws/subscribe-token?topic=${java.net.URLEncoder.encode(topic, "UTF-8")}")
             val parsed = json.decodeFromString(WsSubscribeTokenResponse.serializer(), body)
-            if (parsed.required) parsed.subscribeToken else parsed.subscribeToken
+            if (parsed.required && parsed.subscribeToken.isNullOrBlank()) null else parsed.subscribeToken
         } catch (_: Exception) {
             null
         }

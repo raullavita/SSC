@@ -29,12 +29,55 @@ class LibsignalSession(filesDir: File) {
     val meta = SscSessionMeta()
     private val sessionStore = SscSessionStore(SscFileJsonStore(File(root, "sessions.json")))
     private val identityStore = SscIdentityStore(root, meta)
-    private val preKeyStore = SscPreKeyStore(SscFileJsonStore(File(root, "prekeys.json")))
-    private val signedPreKeyStore = SscSignedPreKeyStore(SscFileJsonStore(File(root, "signed_prekeys.json")))
-    private val kyberPreKeyStore = SscKyberPreKeyStore(SscFileJsonStore(File(root, "kyber_prekeys.json")))
+    private val preKeysFile = SscFileJsonStore(File(root, "prekeys.json"))
+    private val signedPreKeysFile = SscFileJsonStore(File(root, "signed_prekeys.json"))
+    private val kyberPreKeysFile = SscFileJsonStore(File(root, "kyber_prekeys.json"))
+    private val preKeyStore = SscPreKeyStore(preKeysFile)
+    private val signedPreKeyStore = SscSignedPreKeyStore(signedPreKeysFile)
+    private val kyberPreKeyStore = SscKyberPreKeyStore(kyberPreKeysFile)
+    private val counterStore = SscFileJsonStore(File(root, "prekey_counters.json"))
+    private val dekFile = File(root, "file_dek.json")
     private var signedPreKeyId = 1
     private var kyberPreKeyId = 1
     private var nextPreKeyId = 1
+
+    init {
+        loadPreKeyCounters()
+    }
+
+    private fun maxStoredId(store: SscFileJsonStore): Int {
+        var max = 0
+        val keys = store.data.keys()
+        while (keys.hasNext()) {
+            val id = keys.next().toIntOrNull() ?: continue
+            if (id > max) max = id
+        }
+        return max
+    }
+
+    private fun loadPreKeyCounters() {
+        val saved = counterStore.data
+        signedPreKeyId = maxOf(saved.optInt("signedPreKeyId", 0), maxStoredId(signedPreKeysFile)) + 1
+        kyberPreKeyId = maxOf(saved.optInt("kyberPreKeyId", 0), maxStoredId(kyberPreKeysFile)) + 1
+        nextPreKeyId = maxOf(saved.optInt("nextPreKeyId", 0), maxStoredId(preKeysFile)) + 1
+    }
+
+    private fun savePreKeyCounters() {
+        counterStore.data.put("signedPreKeyId", signedPreKeyId)
+        counterStore.data.put("kyberPreKeyId", kyberPreKeyId)
+        counterStore.data.put("nextPreKeyId", nextPreKeyId)
+        counterStore.save()
+    }
+
+    private fun fileEncryptionKey(): ByteArray {
+        if (dekFile.exists()) {
+            val doc = JSONObject(SscSecureStore.readText(dekFile))
+            return B64.decode(doc.getString("key"))
+        }
+        val key = ByteArray(32).also { SecureRandom().nextBytes(it) }
+        SscSecureStore.writeText(dekFile, JSONObject().put("key", B64.encode(key)).toString())
+        return key
+    }
 
     fun configure(opts: JSONObject) {
         opts.optString("deviceId", "").takeIf { it.isNotEmpty() }?.let { meta.deviceId = it }
@@ -85,6 +128,7 @@ class LibsignalSession(filesDir: File) {
         val kyberSig = identity.privateKey.calculateSignature(kyberPair.publicKey.serialize())
         val kyberRecord = KyberPreKeyRecord(kyberId, System.currentTimeMillis(), kyberPair, kyberSig)
         kyberPreKeyStore.storeKyberPreKey(kyberId, kyberRecord)
+        savePreKeyCounters()
 
         return JSONObject()
             .put("registrationId", registrationId)
@@ -220,17 +264,28 @@ class LibsignalSession(filesDir: File) {
 
     fun encryptBytes(bufferB64: String): JSONObject {
         val bytes = B64.decode(bufferB64)
-        val identity = identityStore.identityKeyPair
-        val sample = bytes.copyOfRange(0, minOf(bytes.size, 32))
-        val keyMaterial = identity.privateKey.calculateSignature(sample)
-        val cipher = Aes256GcmSiv(keyMaterial.copyOfRange(0, 32))
+        val cipher = Aes256GcmSiv(fileEncryptionKey())
         val nonce = ByteArray(12).also { SecureRandom().nextBytes(it) }
         val ciphertext = cipher.encrypt(bytes, nonce, ByteArray(0))
         val payload = JSONObject()
-            .put("v", 1)
+            .put("v", 2)
             .put("type", "ssc_file")
             .put("nonce", B64.encode(nonce))
             .put("data", B64.encode(ciphertext))
         return JSONObject().put("ciphertext", B64.encode(payload.toString().toByteArray(Charsets.UTF_8)))
+    }
+
+    fun decryptBytes(ciphertextB64: String): JSONObject {
+        val outer = JSONObject(String(B64.decode(ciphertextB64), Charsets.UTF_8))
+        if (outer.optString("type") != "ssc_file" || !outer.has("nonce") || !outer.has("data")) {
+            throw IllegalArgumentException("ssc_file_invalid_envelope")
+        }
+        val cipher = Aes256GcmSiv(fileEncryptionKey())
+        val plain = cipher.decrypt(
+            B64.decode(outer.getString("data")),
+            B64.decode(outer.getString("nonce")),
+            ByteArray(0),
+        )
+        return JSONObject().put("buffer", B64.encode(plain))
     }
 }
