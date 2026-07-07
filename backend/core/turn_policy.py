@@ -83,4 +83,6 @@ def build_ice_servers(user_id: str) -> dict[str, Any]:
 
 
 def turn_policy_ready() -> bool:
-    return bool(STUN_URIS) or (TURN_ENABLED and bool(TURN_SECRET) and bool(TURN_URIS))
+    if TURN_ENABLED:
+        return bool(TURN_SECRET) and bool(TURN_URIS)
+    return bool(STUN_URIS)

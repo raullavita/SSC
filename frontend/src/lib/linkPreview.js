@@ -32,13 +32,15 @@ function hostnameFromUrl(url) {
 }
 
 function metaContent(html, key) {
-  const patterns = [
-    new RegExp(`<meta[^>]+(?:property|name)=["']${key}["'][^>]+content=["']([^"']+)["']`, 'i'),
-    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${key}["']`, 'i'),
-  ];
-  for (const pattern of patterns) {
-    const match = html.match(pattern);
-    if (match?.[1]) return match[1].trim();
+  const keyLower = String(key).toLowerCase();
+  for (const match of html.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = match[0];
+    const tagLower = tag.toLowerCase();
+    const namesKey =
+      tagLower.includes(`property="${keyLower}"`) || tagLower.includes(`name="${keyLower}"`);
+    if (!namesKey) continue;
+    const contentMatch = tag.match(/\bcontent=["']([^"']+)["']/i);
+    if (contentMatch?.[1]) return contentMatch[1].trim();
   }
   return null;
 }

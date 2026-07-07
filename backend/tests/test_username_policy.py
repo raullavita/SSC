@@ -20,6 +20,7 @@ def test_validate_username_rules():
     assert validate_username("ab") == "username_length"
     assert validate_username("1bad") == "username_invalid"
     assert validate_username("admin") == "username_reserved"
+    assert validate_username("u_alice") == "username_reserved"
     assert validate_username("alice") is None
 
 

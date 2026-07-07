@@ -35,12 +35,6 @@ async function loadLibsignal() {
 }
 
 export async function registerDeviceAndPrekeys({ deviceId, deviceName, platform }) {
-  await api.post('/api/devices', {
-    device_id: deviceId,
-    name: deviceName,
-    platform,
-  });
-
   const lib = await loadLibsignal();
   assertLibsignalRuntime('register_prekeys');
   if (!lib?.generatePreKeyBundle) {
@@ -51,6 +45,12 @@ export async function registerDeviceAndPrekeys({ deviceId, deviceName, platform 
   }
 
   const bundle = await lib.generatePreKeyBundle();
+
+  await api.post('/api/devices', {
+    device_id: deviceId,
+    name: deviceName,
+    platform,
+  });
   await api.put('/api/prekeys/bundle', {
     device_id: deviceId,
     registration_id: bundle.registrationId,

@@ -45,8 +45,9 @@ class AuthViewModel(
             _uiState.value = _uiState.value.copy(error = "Enter email and password")
             return
         }
+        if (_uiState.value.isLoading) return
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             runCatching { authRepository.login(email, password) }
                 .onSuccess { user ->
                     _uiState.value = _uiState.value.copy(isLoading = false, user = user)
@@ -60,7 +61,7 @@ class AuthViewModel(
         }
     }
 
-    fun register(email: String, password: String, displayName: String) {
+    fun register(email: String, password: String, displayName: String, captchaToken: String? = null) {
         if (email.isBlank() || password.isBlank() || displayName.isBlank()) {
             _uiState.value = _uiState.value.copy(error = "Fill in all fields")
             return
@@ -69,15 +70,14 @@ class AuthViewModel(
             _uiState.value = _uiState.value.copy(error = "Password must be at least 8 characters")
             return
         }
-        if (_uiState.value.captchaRequired) {
-            _uiState.value = _uiState.value.copy(
-                error = "Registration requires a security check — enable in a future update",
-            )
+        if (_uiState.value.captchaRequired && captchaToken.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(error = "Complete the security check to register")
             return
         }
+        if (_uiState.value.isLoading) return
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-            runCatching { authRepository.register(email, password, displayName) }
+            runCatching { authRepository.register(email, password, displayName, captchaToken) }
                 .onSuccess { user ->
                     _uiState.value = _uiState.value.copy(isLoading = false, user = user)
                 }
@@ -91,8 +91,9 @@ class AuthViewModel(
     }
 
     fun completeGoogleOAuth(oauthCode: String) {
+        if (_uiState.value.isLoading) return
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             runCatching { authRepository.exchangeGoogleOAuthCode(oauthCode) }
                 .onSuccess { user ->
                     _uiState.value = _uiState.value.copy(isLoading = false, user = user)

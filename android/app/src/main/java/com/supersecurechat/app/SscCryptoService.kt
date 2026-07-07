@@ -57,6 +57,7 @@ object SscCryptoService {
                 args.optString("deviceId", "1"),
             )
             "encryptBytes" -> libsignal().encryptBytes(args.getString("buffer"))
+            "decryptBytes" -> libsignal().decryptBytes(args.getString("ciphertext"))
             "computeSafetyNumber" -> libsignal().computeSafetyNumber(
                 args.getString("peerId"),
                 args.getString("peerIdentityKey"),

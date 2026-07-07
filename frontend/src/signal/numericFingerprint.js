@@ -2,7 +2,7 @@
  * Dev/browser numeric fingerprint — mirrors libsignal version 5200 layout.
  */
 
-const VERSION = 5200;
+const VERSION = 2;
 const ITERATIONS = 5200;
 
 function b64ToBytes(b64) {

@@ -52,10 +52,20 @@ async def test_ws_subscribe_token_single_use():
     assert await consume_subscribe_token(token, "u1", "user:u1") is False
 
 
-def test_ws_subscribe_topic_validation():
-    assert validate_topic_for_user("user:u1", "u1") is True
-    assert validate_topic_for_user("user:u2", "u1") is False
-    assert validate_topic_for_user("conversation:c1", "u1") is True
+@pytest.mark.asyncio
+async def test_ws_subscribe_topic_validation(monkeypatch):
+    from tests.fake_mongo import FakeDatabase
+
+    fake_db = FakeDatabase()
+    monkeypatch.setattr("db.get_database", lambda: fake_db)
+    await fake_db.conversations.insert_one(
+        {"_id": "c1", "type": "direct", "participants": ["u1", "u2"]}
+    )
+    assert await validate_topic_for_user("user:u1", "u1") is True
+    assert await validate_topic_for_user("user:u2", "u1") is False
+    assert await validate_topic_for_user("conversation:c1", "u1") is True
+    assert await validate_topic_for_user("conversation:c1", "u9") is False
+    assert await validate_topic_for_user("conversation:c_missing", "u1") is False
 
 
 @pytest.mark.asyncio

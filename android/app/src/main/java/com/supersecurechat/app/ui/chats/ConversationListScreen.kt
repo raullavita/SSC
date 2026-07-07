@@ -92,7 +92,14 @@ fun ConversationListScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            Row(
+            uiState.cryptoWarning?.let { warning ->
+                Text(
+                    text = warning,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            } ?: Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),

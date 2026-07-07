@@ -9,6 +9,25 @@ const { safeStorage } = require('electron');
 const ENC_PREFIX = 'SSCENC1:';
 const PLAIN_PREFIX = 'SSCPLAIN:';
 
+function resolveUnderRoot(rootDir, ...segments) {
+  const base = path.resolve(String(rootDir || ''));
+  const safeSegments = segments.map((segment) => {
+    const value = String(segment || '');
+    if (!value || value === '.' || value.includes('..') || path.isAbsolute(value)) {
+      throw new Error('invalid_path_segment');
+    }
+    if (value.includes('/') || value.includes('\\')) {
+      throw new Error('invalid_path_segment');
+    }
+    return value;
+  });
+  const resolved = path.resolve(base, ...safeSegments);
+  if (resolved !== base && !resolved.startsWith(`${base}${path.sep}`)) {
+    throw new Error('path_outside_root');
+  }
+  return resolved;
+}
+
 function readSecureText(file) {
   if (!fs.existsSync(file)) return '';
   const raw = fs.readFileSync(file, 'utf8');
@@ -29,15 +48,21 @@ function writeSecureText(file, plaintext) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   if (safeStorage.isEncryptionAvailable()) {
     const encrypted = safeStorage.encryptString(plaintext);
-    fs.writeFileSync(file, ENC_PREFIX + encrypted.toString('base64'));
+    fs.writeFileSync(file, ENC_PREFIX + encrypted.toString('base64'), { mode: 0o600 });
     return;
   }
-  fs.writeFileSync(file, PLAIN_PREFIX + plaintext);
+  if (process.env.SSC_ALLOW_PLAINTEXT_STORE !== '1') {
+    throw new Error('ssc_safe_storage_unavailable');
+  }
+  fs.writeFileSync(file, PLAIN_PREFIX + plaintext, { mode: 0o600 });
 }
 
 class FileJsonStore {
   constructor(dir, filename) {
-    this.file = path.join(dir, filename);
+    if (filename.includes('..') || path.isAbsolute(filename)) {
+      throw new Error('invalid_store_filename');
+    }
+    this.file = resolveUnderRoot(dir, filename);
     this.data = {};
     if (fs.existsSync(this.file)) {
       try {
@@ -53,4 +78,4 @@ class FileJsonStore {
   }
 }
 
-module.exports = { FileJsonStore, readSecureText, writeSecureText };
+module.exports = { FileJsonStore, readSecureText, writeSecureText, resolveUnderRoot };

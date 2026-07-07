@@ -21,6 +21,20 @@ class CreateFriendRequestBody(BaseModel):
     note: str = Field(default="", max_length=200)
 
 
+def _request_is_active(doc: dict | None, now: datetime | None = None) -> bool:
+    if not doc or doc.get("status") != "pending":
+        return False
+    expires_at = doc.get("expires_at")
+    if expires_at is None:
+        return True
+    check_at = now or datetime.now(timezone.utc)
+    if isinstance(expires_at, datetime):
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return expires_at > check_at
+    return True
+
+
 def _public_request(doc: dict) -> dict:
     return {
         "id": doc["_id"],
@@ -98,6 +112,7 @@ async def create_friend_request(
     if existing_conv:
         raise HTTPException(status_code=409, detail="already_contacts")
 
+    now = datetime.now(timezone.utc)
     pending = await db.friend_requests.find_one(
         {
             "from_user_id": user_id,
@@ -105,10 +120,9 @@ async def create_friend_request(
             "status": "pending",
         }
     )
-    if pending:
+    if _request_is_active(pending, now):
         return {"request": _public_request(pending), "existing": True}
 
-    now = datetime.now(timezone.utc)
     doc = {
         "_id": new_friend_request_id(),
         "from_user_id": user_id,
@@ -134,12 +148,12 @@ async def accept_friend_request(
 ) -> dict:
     db = get_database()
     req = await db.friend_requests.find_one({"_id": request_id})
-    if not req or req.get("status") != "pending":
+    now = datetime.now(timezone.utc)
+    if not _request_is_active(req, now):
         raise HTTPException(status_code=404, detail="request_not_found")
     if req["to_user_id"] != user_id:
         raise HTTPException(status_code=403, detail="not_request_recipient")
 
-    now = datetime.now(timezone.utc)
     conv_id = new_conversation_id()
     await db.conversations.insert_one(
         {
@@ -173,12 +187,12 @@ async def decline_friend_request(
 ) -> dict:
     db = get_database()
     req = await db.friend_requests.find_one({"_id": request_id})
-    if not req or req.get("status") != "pending":
+    now = datetime.now(timezone.utc)
+    if not _request_is_active(req, now):
         raise HTTPException(status_code=404, detail="request_not_found")
     if req["to_user_id"] != user_id:
         raise HTTPException(status_code=403, detail="not_request_recipient")
 
-    now = datetime.now(timezone.utc)
     await db.friend_requests.update_one(
         {"_id": request_id},
         {"$set": {"status": "declined", "declined_at": now}},

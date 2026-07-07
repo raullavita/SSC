@@ -32,6 +32,10 @@ async def create_group(
     user_id: str = Depends(get_current_user_id),
     _client: str = Depends(get_client_header),
 ) -> dict:
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="group_name_required")
+
     members = sorted(set(body.member_ids + [user_id]))
     if len(members) < MIN_GROUP_MEMBERS:
         raise HTTPException(status_code=400, detail="group_too_small")
@@ -49,7 +53,7 @@ async def create_group(
     group_id = new_group_id()
     group_doc = {
         "_id": group_id,
-        "name": body.name.strip(),
+        "name": name,
         "owner_id": user_id,
         "member_ids": members,
         "created_at": now,
@@ -129,14 +133,21 @@ async def add_group_members(
 
     members = list(group.get("member_ids", []))
     now = datetime.now(timezone.utc)
-    added = []
+    to_add: list[str] = []
     for mid in body.member_ids:
         if mid in members:
             continue
         peer = await db.users.find_one({"_id": mid})
         if not peer:
             raise HTTPException(status_code=404, detail=f"member_not_found:{mid}")
+        to_add.append(mid)
         members.append(mid)
+
+    if len(members) > MAX_GROUP_MEMBERS:
+        raise HTTPException(status_code=400, detail="group_too_large")
+
+    added = []
+    for mid in to_add:
         added.append(mid)
         await db.group_members.insert_one(
             {
@@ -147,9 +158,6 @@ async def add_group_members(
                 "joined_at": now,
             }
         )
-
-    if len(members) > MAX_GROUP_MEMBERS:
-        raise HTTPException(status_code=400, detail="group_too_large")
 
     await db.groups.update_one({"_id": group_id}, {"$set": {"member_ids": sorted(members)}})
     await db.conversations.update_one(

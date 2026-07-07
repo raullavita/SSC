@@ -19,11 +19,18 @@ def _min_version() -> str:
 
 
 def _min_build() -> int:
-    return int(os.getenv("SSC_MIN_CLIENT_BUILD", RELEASE_BUILD))
+    raw = str(os.getenv("SSC_MIN_CLIENT_BUILD", RELEASE_BUILD)).strip()
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise ValueError("SSC_MIN_CLIENT_BUILD must be an integer") from exc
 
 
 def _version_parts() -> tuple[int, ...]:
-    return tuple(int(x) for x in _min_version().split("."))
+    parts = _parse_version(_min_version())
+    if parts is None:
+        raise ValueError("SSC_MIN_CLIENT_VERSION must use MAJOR.MINOR.PATCH format")
+    return parts
 
 
 def min_client_version() -> str:

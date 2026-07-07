@@ -100,11 +100,9 @@ async def verify_recovery(
 
     db = get_database()
     user = await db.users.find_one({"email": body.email.lower()})
-    if not user:
-        raise HTTPException(status_code=404, detail="user_not_found")
-    stored = await db.recovery_keys.find_one({"user_id": user["_id"]})
-    if not stored:
-        raise HTTPException(status_code=404, detail="recovery_not_configured")
+    stored = await db.recovery_keys.find_one({"user_id": user["_id"]}) if user else None
+    if not user or not stored:
+        raise HTTPException(status_code=403, detail="recovery_invalid")
 
     if not verify_recovery_passphrase(body.recovery_passphrase, stored["recovery_hash"]):
         raise HTTPException(status_code=403, detail="recovery_invalid")

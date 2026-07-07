@@ -9,8 +9,8 @@ CLIENT_BACKUP_KEY_PREFIX = "ssc_"
 
 FORBIDDEN_BACKUP_KEY_FRAGMENTS = frozenset(
     {
-        "access_token",
-        "refresh_token",
+        "accesstoken",
+        "refreshtoken",
         "jwt",
     }
 )
@@ -19,8 +19,8 @@ FORBIDDEN_BACKUP_KEY_FRAGMENTS = frozenset(
 def is_backup_key_allowed(key: str) -> bool:
     if not key or not key.lower().startswith(CLIENT_BACKUP_KEY_PREFIX):
         return False
-    lower = key.lower()
-    return not any(fragment in lower for fragment in FORBIDDEN_BACKUP_KEY_FRAGMENTS)
+    normalized = "".join(ch for ch in key.lower() if ch.isalnum())
+    return not any(fragment in normalized for fragment in FORBIDDEN_BACKUP_KEY_FRAGMENTS)
 
 
 def step16_backup_ready() -> bool:

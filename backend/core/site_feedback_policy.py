@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from core.abuse_policy import spam_score_heuristic
 
@@ -49,7 +50,7 @@ def build_feedback_doc(
     spam = spam_score_heuristic(message)
     published = spam <= PUBLIC_SPAM_THRESHOLD
     return {
-        "_id": f"fb_{int(now.timestamp() * 1000)}",
+        "_id": f"fb_{uuid4().hex}",
         "display_name": (display_name or "SSC user")[:MAX_DISPLAY_NAME],
         "rating": rating,
         "category": category,

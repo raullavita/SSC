@@ -18,7 +18,9 @@ class PersistentCookieJar(context: Context) : CookieJar {
         val host = url.host
         val existing = cache.getOrPut(host) { mutableListOf() }
         cookies.forEach { newCookie ->
-            existing.removeAll { it.name == newCookie.name && it.domain == newCookie.domain }
+            existing.removeAll {
+                it.name == newCookie.name && it.domain == newCookie.domain && it.path == newCookie.path
+            }
             if (!newCookie.expiresAt.isExpired()) {
                 existing.add(newCookie)
             }

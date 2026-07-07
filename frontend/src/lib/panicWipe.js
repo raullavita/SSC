@@ -50,11 +50,18 @@ async function clearNativeCryptoStore() {
 }
 
 export async function executePanicWipe() {
-  const result = await api.post('/api/panic/wipe', {});
+  let result = null;
+  let serverError = null;
+  try {
+    result = await api.post('/api/panic/wipe', {});
+  } catch (err) {
+    serverError = err;
+  }
   await clearNativeCryptoStore();
   clearLocalClientData();
   if (!clientFootprintClean()) {
     console.warn('[ssc] panic wipe completed but localStorage footprint still has violations');
   }
+  if (serverError) throw serverError;
   return result;
 }

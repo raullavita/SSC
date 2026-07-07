@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const { randomUUID } = require('crypto');
-const { FileJsonStore } = require('./secureFileStore');
+const { FileJsonStore, resolveUnderRoot } = require('./secureFileStore');
 const {
   ProtocolAddress,
   SenderKeyRecord,
@@ -47,7 +47,7 @@ class SscSenderKeyStore extends SenderKeyStore {
 
 class GroupSenderKeySession {
   constructor(userDataPath) {
-    this.root = path.join(userDataPath, 'ssc-signal');
+    this.root = resolveUnderRoot(userDataPath, 'ssc-signal');
     this.meta = { localUserId: null, deviceId: '1' };
     this.metaStore = new FileJsonStore(this.root, 'sender_key_meta.json');
     this.senderKeyStore = new SscSenderKeyStore(new FileJsonStore(this.root, 'sender_keys.json'));
@@ -59,7 +59,10 @@ class GroupSenderKeySession {
   }
 
   localAddress() {
-    const userId = this.meta.localUserId || 'ssc-local';
+    const userId = this.meta.localUserId;
+    if (!userId) {
+      throw new Error('GroupSenderKeySession: localUserId not configured');
+    }
     return ProtocolAddress.new(userId, Number(this.meta.deviceId) || 1);
   }
 
@@ -146,15 +149,20 @@ function getGroupSenderKeySession(userDataPath) {
 }
 
 function wipeGroupSenderKeyData(userDataPath) {
-  const root = path.join(userDataPath, 'ssc-signal');
+  const root = resolveUnderRoot(userDataPath, 'ssc-signal');
+  const errors = [];
   for (const name of ['sender_keys.json', 'sender_key_meta.json']) {
-    const file = path.join(root, name);
-    if (fs.existsSync(file)) {
+    const file = resolveUnderRoot(root, name);
+    if (!fs.existsSync(file)) continue;
+    try {
       fs.rmSync(file, { force: true });
+    } catch (err) {
+      errors.push({ file: name, error: err?.message || String(err) });
+      console.error('[ssc] group key wipe failed', name, err?.message || err);
     }
   }
   session = null;
-  return { ok: true };
+  return errors.length ? { ok: false, errors } : { ok: true };
 }
 
 module.exports = {

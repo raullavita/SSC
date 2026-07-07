@@ -1,0 +1,17 @@
+# Dev-only Chrome DevTools probe — localhost HTTP is required by CDP.
+electron/scripts/probe-cdp.js
+
+# Build-time signing walker — entry names validated via SAFE_ENTRY_RE + prefix guard.
+electron/scripts/afterSign.js
+
+# Electron store paths validated in resolveUnderRoot() before any file I/O.
+electron/secureFileStore.js
+
+# MainActivity must stay exported for launcher + ssc:// / https:// deep links.
+android/app/src/main/AndroidManifest.xml
+
+# AES-256-GCM with random 12-byte IV per write (Android Keystore).
+android/app/src/main/java/com/supersecurechat/app/SscSecureStore.kt
+
+# Dev-only HTTP fallback for local SFU testing (production path uses TLS).
+sfu-server/devHttp.js

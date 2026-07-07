@@ -104,7 +104,7 @@ async def websocket_endpoint(
 
             if data.get("type") == "subscribe":
                 topic = data.get("topic")
-                if not isinstance(topic, str) or not validate_topic_for_user(topic, user_id):
+                if not isinstance(topic, str) or not await validate_topic_for_user(topic, user_id):
                     await websocket.send_text(json.dumps({"type": "error", "detail": "invalid_topic"}))
                     continue
                 if ws_subscribe_token_required():

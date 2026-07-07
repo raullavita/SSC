@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import sys
 import time
-import urllib.request
 from pathlib import Path
+from urllib.parse import urlparse
+
+import httpx
 
 try:
     import websocket  # type: ignore
@@ -20,6 +22,12 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "audit-reports" / "app-screenshots"
 OUT.mkdir(parents=True, exist_ok=True)
 CDP_HOST = "http://127.0.0.1:9222"
+
+
+def _assert_local_cdp(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost"}:
+        raise RuntimeError("CDP host must be localhost HTTP")
 
 
 class Cdp:
@@ -45,8 +53,9 @@ class Cdp:
 
 
 def get_page_ws() -> str:
-    with urllib.request.urlopen(f"{CDP_HOST}/json/list", timeout=5) as resp:
-        pages = json.loads(resp.read().decode())
+    _assert_local_cdp(CDP_HOST)
+    with httpx.Client(timeout=5.0) as client:
+        pages = client.get(f"{CDP_HOST}/json/list").json()
     for page in pages:
         if page.get("type") == "page":
             return page["webSocketDebuggerUrl"]
@@ -62,7 +71,6 @@ def snapshot(cdp: Cdp, name: str) -> dict:
     vh = int(viewport.get("clientHeight", 800))
 
     cdp.call("Page.captureScreenshot", {"format": "png", "fromSurface": True})
-    # re-call properly
     shot = cdp.call("Page.captureScreenshot", {"format": "png", "fromSurface": True})
     png = shot.get("data", "")
     if png:
@@ -123,8 +131,9 @@ def main() -> int:
     try:
         cdp.call("Page.enable")
         cdp.call("Runtime.enable")
-        with urllib.request.urlopen(f"{CDP_HOST}/json/list", timeout=5) as resp:
-            page_url = json.loads(resp.read().decode())[0]["url"]
+        _assert_local_cdp(CDP_HOST)
+        with httpx.Client(timeout=5.0) as client:
+            page_url = client.get(f"{CDP_HOST}/json/list").json()[0]["url"]
         reports = [
             snapshot(cdp, "ssc-landing"),
             navigate(cdp, "#/login", "ssc-login", page_url),

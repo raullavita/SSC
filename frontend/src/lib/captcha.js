@@ -14,8 +14,8 @@ export async function getCaptchaConfig() {
       required: Boolean(config.captcha_required),
       siteKey: config.turnstile_site_key || null,
     };
+    return cached;
   } catch {
-    cached = { required: false, siteKey: null };
+    return { required: false, siteKey: null };
   }
-  return cached;
 }

@@ -111,6 +111,8 @@ async def end_sfu_room(
     )
     if not conv:
         raise HTTPException(status_code=403, detail="not_a_conversation_participant")
+    if session.get("host_id") != user_id:
+        raise HTTPException(status_code=403, detail="not_sfu_room_host")
 
     ok, detail = await delete_sfu_room(room_id)
     now = datetime.now(timezone.utc)

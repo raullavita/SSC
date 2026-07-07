@@ -21,6 +21,8 @@ async def test_send_typing_publishes_ws():
     mock_db.conversations.find_one = AsyncMock(
         return_value={"_id": "c_test", "participants": ["u_a", "u_b"]}
     )
+    mock_db.users.find_one = AsyncMock(return_value={"privacy_settings": {}})
+    mock_db.conversation_meta.find_one = AsyncMock(return_value=None)
 
     with (
         patch("routers.typing.get_database", return_value=mock_db),

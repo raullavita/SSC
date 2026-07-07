@@ -1,5 +1,6 @@
 package com.supersecurechat.app.data.repository
 
+import com.supersecurechat.app.data.api.ApiException
 import com.supersecurechat.app.data.api.SscHttpClient
 import com.supersecurechat.app.data.model.Conversation
 import com.supersecurechat.app.data.model.ConversationResponse
@@ -7,6 +8,9 @@ import com.supersecurechat.app.data.model.ConversationsResponse
 import com.supersecurechat.app.data.model.CreateConversationRequest
 import com.supersecurechat.app.data.model.UserLookupResponse
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import java.net.URLEncoder
 
 class ConversationRepository(
     private val http: SscHttpClient,
@@ -38,22 +42,23 @@ class ConversationRepository(
     suspend fun lookupUser(target: String): String? {
         val trimmed = target.trim()
         if (trimmed.isBlank()) return null
+        val encoded = URLEncoder.encode(trimmed, "UTF-8")
+        val path = if (trimmed.startsWith("u_") || trimmed.length > 20) {
+            "/api/users/lookup/$encoded"
+        } else {
+            "/api/users/by-username/$encoded"
+        }
         return try {
-            val path = if (trimmed.startsWith("u_") || trimmed.length > 20) {
-                "/api/users/lookup/$trimmed"
-            } else {
-                "/api/users/by-username/$trimmed"
-            }
             val body = http.get(path)
             json.decodeFromString(UserLookupResponse.serializer(), body).user.id
-        } catch (_: Exception) {
-            null
+        } catch (e: ApiException) {
+            if (e.statusCode == 404) null else throw e
         }
     }
 
     suspend fun markRead(conversationId: String, lastMessageId: String? = null) {
         val payload = if (lastMessageId != null) {
-            """{"last_message_id":"$lastMessageId"}"""
+            buildJsonObject { put("last_message_id", lastMessageId) }.toString()
         } else {
             "{}"
         }

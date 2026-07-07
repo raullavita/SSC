@@ -18,6 +18,13 @@ class PrivacyPatch(BaseModel):
     push_rich_labels: bool | None = None
 
 
+def _merged_privacy_settings(user: dict | None) -> dict:
+    return {
+        **default_privacy_settings(),
+        **((user or {}).get("privacy_settings") or {}),
+    }
+
+
 @router.get("")
 async def get_privacy(
     user_id: str = Depends(get_current_user_id),
@@ -25,7 +32,7 @@ async def get_privacy(
 ) -> dict:
     db = get_database()
     user = await db.users.find_one({"_id": user_id}, {"privacy_settings": 1})
-    settings = (user or {}).get("privacy_settings") or default_privacy_settings()
+    settings = _merged_privacy_settings(user)
     return {"privacy_settings": settings}
 
 
@@ -37,12 +44,17 @@ async def patch_privacy(
 ) -> dict:
     db = get_database()
     user = await db.users.find_one({"_id": user_id}, {"privacy_settings": 1})
-    settings = dict((user or {}).get("privacy_settings") or default_privacy_settings())
+    settings = _merged_privacy_settings(user)
+    updates: dict[str, object] = {}
     if body.last_seen_visible is not None:
         settings["last_seen_visible"] = body.last_seen_visible
+        updates["privacy_settings.last_seen_visible"] = body.last_seen_visible
     if body.read_receipts is not None:
         settings["read_receipts"] = body.read_receipts
+        updates["privacy_settings.read_receipts"] = body.read_receipts
     if body.push_rich_labels is not None:
         settings["push_rich_labels"] = body.push_rich_labels
-    await db.users.update_one({"_id": user_id}, {"$set": {"privacy_settings": settings}})
+        updates["privacy_settings.push_rich_labels"] = body.push_rich_labels
+    if updates:
+        await db.users.update_one({"_id": user_id}, {"$set": updates})
     return {"privacy_settings": settings}

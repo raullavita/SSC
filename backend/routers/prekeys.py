@@ -77,11 +77,7 @@ async def upload_prekey_bundle(
             "updated_at": datetime.now(timezone.utc),
         }
     )
-    existing = await db.prekeys.find_one({"_id": doc_id})
-    if existing:
-        await db.prekeys.update_one({"_id": doc_id}, {"$set": doc})
-    else:
-        await db.prekeys.insert_one(doc)
+    await db.prekeys.replace_one({"_id": doc_id}, doc, upsert=True)
     return {"ok": True, "bundle": public_prekey_bundle(doc)}
 
 
