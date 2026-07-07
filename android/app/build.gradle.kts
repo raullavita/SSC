@@ -19,6 +19,7 @@ android {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
         buildConfigField("String", "SSC_API_URL", "\"https://api.supersecurechat.com\"")
+        buildConfigField("String", "SSC_BUNDLED_ENTRY_URL", "\"file:///android_asset/www/index.html\"")
     }
 
     buildFeatures {

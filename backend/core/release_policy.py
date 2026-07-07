@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 RELEASE_VERSION = "0.3.1"
-RELEASE_BUILD = "10"
+RELEASE_BUILD = "9"       # minimum accepted client build (used as server-side floor)
+CURRENT_BUILD = "10"      # latest released build shipped in client binaries
 RELEASE_TAG = f"v{RELEASE_VERSION}"
-RELEASE_LABEL = f"v{RELEASE_VERSION} (build {RELEASE_BUILD})"
+RELEASE_LABEL = f"v{RELEASE_VERSION} (build {CURRENT_BUILD})"
 ELECTRON_ARTIFACT = f"SSC-Setup-{RELEASE_VERSION}.exe"
 ANDROID_ARTIFACT = f"SSC-{RELEASE_VERSION}.apk"
-ELECTRON_CLIENT_HEADER = f"electron/{RELEASE_VERSION}/{RELEASE_BUILD}"
-ANDROID_CLIENT_HEADER = f"android/{RELEASE_VERSION}/{RELEASE_BUILD}"
+ELECTRON_CLIENT_HEADER = f"electron/{RELEASE_VERSION}/{CURRENT_BUILD}"
+ANDROID_CLIENT_HEADER = f"android/{RELEASE_VERSION}/{CURRENT_BUILD}"
 GITHUB_RELEASE_DOWNLOAD_BASE = (
     f"https://github.com/raullavita/SSC/releases/download/{RELEASE_TAG}"
 )
