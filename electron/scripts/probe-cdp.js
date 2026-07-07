@@ -1,7 +1,7 @@
 const http = require('http');
 const WebSocket = require('ws');
 
-http.get('http://127.0.0.1:9222/json/list', (res) => {
+http.get('http://127.0.0.1:9222/json/list', (res) => { // nosemgrep: problem-based-packs.insecure-transport.js-node.http-request.http-request
   let data = '';
   res.on('data', (chunk) => {
     data += chunk;
