@@ -81,12 +81,14 @@ class FakeCollection:
             new_doc = {**query, **update["$set"]}
             self.docs.append(new_doc)
 
-    async def delete_many(self, query: dict) -> Any:
+    async def delete_one(self, query: dict) -> Any:
         before = len(self.docs)
         self.docs = [d for d in self.docs if not _matches(d, query)]
         deleted = before - len(self.docs)
-        result = type("R", (), {"deleted_count": deleted})()
-        return result
+        return type("R", (), {"deleted_count": deleted})()
+
+    async def delete_many(self, query: dict) -> Any:
+        return await self.delete_one(query)
 
     async def count_documents(self, query: dict) -> int:
         return len([d for d in self.docs if _matches(d, query)])
