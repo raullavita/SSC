@@ -1,4 +1,4 @@
-# SSC — rebuild installed clients (one UI: React bundle in Electron + Android WebView).
+# SSC - rebuild installed clients (one UI: React bundle in Electron + Android WebView).
 #
 # Usage:
 #   .\scripts\rebuild_clients.ps1                    # prod API, both platforms
@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 
-Write-Host "SSC client rebuild — shared React UI (v0.3.1 build 10)"
+Write-Host "SSC client rebuild - shared React UI (v0.3.1 build 10)"
 if ($env:REACT_APP_API_URL) {
     Write-Host "API override: $($env:REACT_APP_API_URL)"
 } else {
@@ -26,30 +26,34 @@ $buildElectron = -not $AndroidOnly
 $buildAndroid = -not $ElectronOnly
 
 if ($buildElectron) {
-    Write-Host "`n=== Electron (Windows) ==="
+    Write-Host ""
+    Write-Host "=== Electron (Windows) ==="
     & "$PSScriptRoot\build_electron.ps1"
 }
 
 if ($buildAndroid) {
-    Write-Host "`n=== Android (WebView APK) ==="
+    Write-Host ""
+    Write-Host "=== Android (WebView APK) ==="
     & "$PSScriptRoot\build_android.ps1"
 }
 
 if (-not $SkipSmoke) {
-    Write-Host "`n=== Production smoke (API + web) ==="
+    Write-Host ""
+    Write-Host "=== Production smoke (API + web) ==="
     $smokeArgs = @()
     if ($buildElectron) {
-        $exe = Get-ChildItem "$Root\electron\dist\SSC-Setup-*.exe" -ErrorAction SilentlyContinue |
+        $exe = Get-ChildItem (Join-Path $Root "electron/dist/SSC-Setup-*.exe") -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
         if ($exe) { $smokeArgs += "-ExePath"; $smokeArgs += $exe.FullName }
     }
     if ($buildAndroid) {
-        $apk = "$Root\android\app\build\outputs\apk\release\SSC-0.3.1.apk"
+        $apk = Join-Path $Root "android/app/build/outputs/apk/release/SSC-0.3.1.apk"
         if (Test-Path $apk) { $smokeArgs += "-ApkPath"; $smokeArgs += $apk }
     }
     & "$PSScriptRoot\release_smoke_test.ps1" @smokeArgs
 }
 
-Write-Host "`nDone. Install:"
-if ($buildElectron) { Write-Host "  Laptop: electron\dist\SSC-Setup-0.3.1.exe" }
-if ($buildAndroid) { Write-Host "  Phone:  android\app\build\outputs\apk\release\SSC-0.3.1.apk" }
+Write-Host ""
+Write-Host "Done. Install:"
+if ($buildElectron) { Write-Host "  Laptop: electron/dist/SSC-Setup-0.3.1.exe" }
+if ($buildAndroid) { Write-Host "  Phone:  android/app/build/outputs/apk/release/SSC-0.3.1.apk" }
