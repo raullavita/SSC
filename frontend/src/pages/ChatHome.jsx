@@ -43,6 +43,7 @@ import {
 import { fetchLanguages, translateText, TranslationError } from '../lib/translation';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 import { searchMessages } from '../search/messageIndex';
+import { getInstalledClientHeader } from '../lib/installedClient';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import { getPeerTrust } from '../lib/trustStore';
 import { isInstalledApp } from '../lib/appMode';
@@ -344,8 +345,11 @@ export default function ChatHome() {
       registerDeviceAndPrekeys({
         deviceId: '1',
         deviceName: 'SSC Client',
-        platform: 'electron',
-      }).catch(() => {});
+        platform: getInstalledClientHeader().split('/')[0] || 'electron',
+        localUserId: user.id,
+      }).catch((err) => {
+        console.warn('[ssc] prekey registration failed', err?.message || err);
+      });
       fetchLanguages()
         .then(setLanguages)
         .catch(() => {});

@@ -128,17 +128,29 @@ def scrub_prekey_bundle(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def public_prekey_bundle(doc: dict[str, Any]) -> dict[str, Any]:
+    signed_pub = doc.get("signed_prekey")
+    signed_id = doc.get("signed_prekey_id")
+    signed_sig = doc.get("signed_prekey_signature")
+    signed_prekey: dict[str, Any] | str | None = signed_pub
+    if isinstance(signed_pub, str) and signed_pub:
+        signed_prekey = {
+            "key_id": signed_id,
+            "public_key": signed_pub,
+            "signature": signed_sig,
+        }
     out = {
         "user_id": doc.get("user_id"),
         "device_id": doc.get("device_id"),
         "registration_id": doc.get("registration_id"),
         "identity_key": doc.get("identity_key"),
-        "signed_prekey": doc.get("signed_prekey"),
-        "signed_prekey_id": doc.get("signed_prekey_id"),
-        "signed_prekey_signature": doc.get("signed_prekey_signature"),
+        "signed_prekey": signed_prekey,
         "prekeys": doc.get("prekeys", []),
         "updated_at": doc.get("updated_at"),
     }
+    if signed_id is not None:
+        out["signed_prekey_id"] = signed_id
+    if signed_sig:
+        out["signed_prekey_signature"] = signed_sig
     if doc.get("kyber_prekey"):
         out["kyber_prekey"] = doc["kyber_prekey"]
     return out

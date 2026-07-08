@@ -164,9 +164,18 @@ class LibsignalSession(filesDir: File) {
             ?: peerBundle.optJSONArray("preKeys")
             ?: JSONArray()
         val firstPreKey = if (prekeys.length() > 0) prekeys.getJSONObject(0) else null
-        val signed = peerBundle.optJSONObject("signed_prekey")
+        var signed = peerBundle.optJSONObject("signed_prekey")
             ?: peerBundle.optJSONObject("signedPreKey")
-            ?: throw IllegalArgumentException("signed_prekey_required")
+        if (signed == null) {
+            val signedPub = peerBundle.optString("signed_prekey", "")
+            if (signedPub.isNotEmpty()) {
+                signed = JSONObject()
+                    .put("key_id", peerBundle.optInt("signed_prekey_id", 1))
+                    .put("public_key", signedPub)
+                    .put("signature", peerBundle.optString("signed_prekey_signature", ""))
+            }
+        }
+        if (signed == null) throw IllegalArgumentException("signed_prekey_required")
         val kyber = peerBundle.optJSONObject("kyber_prekey")
             ?: peerBundle.optJSONObject("kyberPreKey")
             ?: throw IllegalArgumentException("kyber_prekey_required")

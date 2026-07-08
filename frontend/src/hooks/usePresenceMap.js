@@ -7,18 +7,24 @@ export function usePresenceMap(peerIds = [], { scopedPeerId, scopedConversationI
   const refresh = useCallback(async () => {
     const unique = [...new Set(peerIds.filter(Boolean))];
     if (!unique.length) return;
-    const entries = await Promise.all(
-      unique.map(async (id) => {
-        try {
-          const data = await fetchPresence(id, {
-            conversationId: id === scopedPeerId ? scopedConversationId : undefined,
-          });
-          return [id, formatPresenceBucket(data.bucket)];
-        } catch {
-          return [id, ''];
-        }
-      })
-    );
+    const entries = [];
+    const batchSize = 3;
+    for (let i = 0; i < unique.length; i += batchSize) {
+      const batch = unique.slice(i, i + batchSize);
+      const batchEntries = await Promise.all(
+        batch.map(async (id) => {
+          try {
+            const data = await fetchPresence(id, {
+              conversationId: id === scopedPeerId ? scopedConversationId : undefined,
+            });
+            return [id, formatPresenceBucket(data.bucket)];
+          } catch {
+            return [id, ''];
+          }
+        })
+      );
+      entries.push(...batchEntries);
+    }
     setMap(Object.fromEntries(entries));
   }, [peerIds, scopedPeerId, scopedConversationId]);
 

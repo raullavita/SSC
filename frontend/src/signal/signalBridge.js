@@ -15,6 +15,7 @@ import {
 } from './envelope';
 
 let libsignalModule = null;
+let configuredLocalUserId = null;
 
 async function loadLibsignal() {
   if (libsignalModule) return libsignalModule;
@@ -34,9 +35,22 @@ async function loadLibsignal() {
   }
 }
 
-export async function registerDeviceAndPrekeys({ deviceId, deviceName, platform }) {
+async function configureLocalIdentity(lib, { localUserId, deviceId = '1' } = {}) {
+  const userId = localUserId || configuredLocalUserId;
+  if (!lib?.configure || !userId) return;
+  configuredLocalUserId = userId;
+  await lib.configure({ localUserId: userId, deviceId });
+}
+
+export async function registerDeviceAndPrekeys({
+  deviceId,
+  deviceName,
+  platform,
+  localUserId,
+}) {
   const lib = await loadLibsignal();
   assertLibsignalRuntime('register_prekeys');
+  await configureLocalIdentity(lib, { localUserId, deviceId });
   if (!lib?.generatePreKeyBundle) {
     if (requiresProductionCrypto()) {
       throw new Error('libsignal_required:prekeys');
@@ -65,13 +79,15 @@ export async function registerDeviceAndPrekeys({ deviceId, deviceName, platform 
 async function ensurePeerSession(peerId, deviceId = '1') {
   const lib = await loadLibsignal();
   if (!lib?.establishSession || !peerId) return;
+  await configureLocalIdentity(lib, { deviceId: '1' });
   try {
     const data = await api.get(`/api/prekeys/users/${peerId}/devices/${deviceId}`);
     const bundle = data.bundle || data;
     await lib.establishSession(peerId, deviceId, bundle);
-  } catch {
+  } catch (err) {
     if (requiresProductionCrypto()) {
-      throw new Error('libsignal_session_setup_failed');
+      const detail = err?.body?.detail || err?.message || 'unknown';
+      throw new Error(`libsignal_session_setup_failed:${detail}`);
     }
   }
 }

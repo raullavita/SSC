@@ -335,10 +335,20 @@ class LibsignalSession {
     const deviceId = Number(peerBundle.device_id || peerBundle.deviceId || 1);
     const prekeys = peerBundle.prekeys || peerBundle.preKeys || [];
     const firstPreKey = prekeys[0] || null;
-    const signed = peerBundle.signed_prekey || peerBundle.signedPreKey;
+    let signed = peerBundle.signed_prekey || peerBundle.signedPreKey;
     const kyber = peerBundle.kyber_prekey || peerBundle.kyberPreKey;
 
     const identityKey = PublicKey.deserialize(b64decode(peerBundle.identity_key || peerBundle.identityKey));
+    if (typeof signed === 'string') {
+      signed = {
+        key_id: peerBundle.signed_prekey_id,
+        public_key: signed,
+        signature: peerBundle.signed_prekey_signature,
+      };
+    }
+    if (!signed || typeof signed !== 'object') {
+      throw new Error('signed_prekey_required');
+    }
     const signedPub = PublicKey.deserialize(b64decode(signed.public_key || signed.publicKey));
     const signedSig = b64decode(signed.signature || signed.signed_prekey_signature);
 

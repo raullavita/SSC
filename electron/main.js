@@ -447,6 +447,45 @@ ipcMain.handle('ssc-update:install', () => {
   return { ok: true };
 });
 
+const FETCH_MAX_CONCURRENT = 4;
+let fetchInFlight = 0;
+const fetchWaitQueue = [];
+
+function drainFetchQueue() {
+  while (fetchInFlight < FETCH_MAX_CONCURRENT && fetchWaitQueue.length > 0) {
+    const job = fetchWaitQueue.shift();
+    fetchInFlight += 1;
+    Promise.resolve()
+      .then(job.run)
+      .then(job.resolve, job.reject)
+      .finally(() => {
+        fetchInFlight -= 1;
+        drainFetchQueue();
+      });
+  }
+}
+
+function enqueueFetch(run) {
+  return new Promise((resolve, reject) => {
+    fetchWaitQueue.push({ run, resolve, reject });
+    drainFetchQueue();
+  });
+}
+
+async function performShellFetch(url, method, headers, body) {
+  const response = await session.defaultSession.fetch(url, {
+    method,
+    headers,
+    body: body != null && body !== '' ? body : undefined,
+  });
+  const text = await response.text();
+  return {
+    status: response.status,
+    ok: response.ok,
+    body: text,
+  };
+}
+
 ipcMain.handle('ssc-shell:open-oauth', async (_evt, url) => {
   if (typeof url !== 'string' || !url.startsWith('http')) {
     throw new Error('invalid_oauth_url');
@@ -480,23 +519,22 @@ ipcMain.handle('ssc-shell:fetch-api', async (_evt, payload) => {
       throw new Error('invalid_fetch_headers');
     }
   }
-  let response;
-  try {
-    response = await session.defaultSession.fetch(url, {
-      method,
-      headers,
-      body: body != null && body !== '' ? body : undefined,
-    });
-  } catch (err) {
-    console.error('[ssc] fetch-api failed', hostname, err?.message || err);
-    throw err;
+
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await enqueueFetch(() => performShellFetch(url, method, headers, body));
+    } catch (err) {
+      const message = String(err?.message || err);
+      const retryable = /ERR_INSUFFICIENT_RESOURCES|ERR_FAILED|fetch failed/i.test(message);
+      if (!retryable || attempt === maxAttempts) {
+        console.error('[ssc] fetch-api failed', hostname, message);
+        throw err;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150 * attempt));
+    }
   }
-  const text = await response.text();
-  return {
-    status: response.status,
-    ok: response.ok,
-    body: text,
-  };
+  throw new Error('fetch_failed');
 });
 
 ipcMain.handle('ssc-desktop:attest-token', () => {
