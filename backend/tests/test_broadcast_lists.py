@@ -5,7 +5,6 @@ from __future__ import annotations
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from core.session_policy import SESSION_COOKIE_NAME
 from server import create_app
 from tests.fake_mongo import FakeDatabase
 from tests.test_engine3_messaging import CLIENT, _patch_db
@@ -37,7 +36,7 @@ async def _register(transport, email: str, name: str):
 
 
 async def test_broadcast_list_crud(broadcast_env):
-    fake_db, transport = broadcast_env
+    _, transport = broadcast_env
     owner_body, owner_cookies = await _register(transport, "owner@example.com", "Owner")
     peer_body, _ = await _register(transport, "peer@example.com", "Peer")
     owner_id = owner_body["user"]["id"]
