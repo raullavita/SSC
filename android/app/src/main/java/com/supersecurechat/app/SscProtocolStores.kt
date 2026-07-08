@@ -83,7 +83,7 @@ class SscIdentityStore(
             pair = IdentityKeyPair(B64.decode(doc.getString("identityKeyPair")))
             meta.registrationId = doc.getInt("registrationId")
             meta.deviceId = doc.optString("deviceId", meta.deviceId)
-            meta.localUserId = doc.optString("localUserId", "").takeIf { it.isNotEmpty() }
+            meta.localUserId = doc.optString("localUserId", null)
             return pair!!
         }
         val generated = IdentityKeyPair.generate()

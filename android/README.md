@@ -5,7 +5,7 @@ Installed Android client — polished WebView shell with native `libsignal-andro
 ## Stack
 
 - **WebView** loads the **bundled React app** from `assets/www/` (same installed UI as Windows Electron — sign-in on launch, not the marketing site)
-- **`X-SSC-Client: android/0.3.0/4`** injected on all `/api/` requests from the WebView
+- **`X-SSC-Client: android/0.3.1/10`** injected on all `/api/` requests from the WebView
 - **`window.sscCrypto`** exposed via `SscNativeBridge` + `assets/ssc_crypto_bridge.js` — API matches Electron `preload.js`
 - **`window.sscTranslate`** exposed via `SscNativeBridge` + `assets/ssc_translate_bridge.js` — ML Kit on-device translation (no text leaves device)
 - **libsignal-android 0.96.4** — file-backed stores under `filesDir/ssc-signal/` (sessions, prekeys, sender keys)
@@ -45,7 +45,9 @@ Injected globals for the web app:
 .\scripts\build_android.ps1
 ```
 
-This builds the React bundle (`REACT_APP_SSC_PLATFORM=android`, `LANDING_ONLY=false`), copies it into `app/src/main/assets/www/`, then runs Gradle → `SSC-0.3.0.apk`.
+This builds the React bundle (`REACT_APP_SSC_PLATFORM=android`, `LANDING_ONLY=false`), copies it into `app/src/main/assets/www/`, then runs Gradle → `SSC-0.3.1.apk`.
+
+**Architecture:** One React installed-client UI (shared with Electron). Android is a thin native shell (WebView + libsignal bridges + OAuth). There is no separate native chat UI.
 
 ## Firebase App Distribution (testers)
 

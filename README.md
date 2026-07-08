@@ -73,6 +73,16 @@ yarn start
 - UI: http://localhost:3000  
 - API health: http://localhost:8000/api/health
 
+## Client architecture (one UI)
+
+| Platform | Shell | UI |
+|----------|-------|-----|
+| Windows / macOS | Electron | Shared React installed-client bundle |
+| Android | WebView + native bridges | **Same** React bundle (`assets/www/`) |
+| Website | Firebase Hosting | Landing + downloads only (no web chat) |
+
+Native code on mobile/desktop is limited to crypto (libsignal), OAuth, push hooks, and device APIs — not a second chat UI.
+
 ## Build installed clients
 
 ```powershell

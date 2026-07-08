@@ -1,0 +1,181 @@
+package com.supersecurechat.app
+
+import android.app.Activity
+import android.content.Context
+import android.net.Uri
+import android.webkit.CookieManager
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import java.net.HttpURLConnection
+import java.net.URL
+
+/**
+ * Injects X-SSC-Client on API requests and loads the native crypto bridge (Engine 11 / Step 5).
+ * Step 17: shell feature flags + offline detection callbacks.
+ */
+object ApiClient {
+    const val CLIENT_HEADER = "X-SSC-Client"
+    const val NATIVE_BRIDGE_HEADER = "X-SSC-Native-Bridge"
+    const val NATIVE_BRIDGE_VALUE = "v1"
+    const val CLIENT_VALUE = "android/0.3.1/9"
+    const val SHELL_FEATURES = "splash_screen,deep_links,pull_to_refresh,offline_retry,file_chooser,edge_to_edge"
+
+    fun attachInstalledClientHeaders(conn: HttpURLConnection) {
+        conn.setRequestProperty(CLIENT_HEADER, CLIENT_VALUE)
+        conn.setRequestProperty(NATIVE_BRIDGE_HEADER, NATIVE_BRIDGE_VALUE)
+        SscDeviceAttest.currentToken()?.let { conn.setRequestProperty(SscDeviceAttest.HEADER, it) }
+    }
+
+    fun webViewClient(
+        activity: Activity,
+        baseUrl: String,
+        webView: WebView,
+        onPageFinished: (() -> Unit)? = null,
+        onLoadError: (() -> Unit)? = null,
+        onLoadSuccess: (() -> Unit)? = null,
+    ): WebViewClient =
+        object : WebViewClient() {
+            private var bridgeInjected = false
+
+            @Deprecated("Deprecated in Java")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                return handleUrlLoading(view, url)
+            }
+
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?,
+            ): Boolean {
+                if (request == null) return false
+                return handleUrlLoading(view, request.url?.toString())
+            }
+
+            private fun handleUrlLoading(view: WebView?, url: String?): Boolean {
+                val target = url ?: return false
+                if (SscOAuthLauncher.isOAuthStart(target) || SscOAuthLauncher.isGoogleAccounts(target)) {
+                    SscOAuthLauncher.launchCustomTab(activity, target)
+                    return true
+                }
+                if (SscOAuthLauncher.isOAuthFinish(target)) {
+                    val webUrl = SscDeepLink.resolveUri(Uri.parse(target), baseUrl)
+                    view?.loadUrl(webUrl)
+                    return true
+                }
+                return false
+            }
+
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                request: WebResourceRequest?,
+            ): WebResourceResponse? {
+                if (request?.isForMainFrame == true) {
+                    return super.shouldInterceptRequest(view, request)
+                }
+                val url = request?.url?.toString() ?: return super.shouldInterceptRequest(view, request)
+                if (!url.contains("/api/")) {
+                    return super.shouldInterceptRequest(view, request)
+                }
+                // WebView does not expose POST/PATCH bodies here — let the native stack handle them.
+                val method = request.method?.uppercase() ?: "GET"
+                if (method != "GET" && method != "HEAD") {
+                    return super.shouldInterceptRequest(view, request)
+                }
+                return try {
+                    val cookieManager = CookieManager.getInstance()
+                    val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+                        requestMethod = request.method
+                        instanceFollowRedirects = true
+                        attachInstalledClientHeaders(this)
+                        cookieManager.getCookie(url)?.takeIf { it.isNotBlank() }?.let { cookie ->
+                            setRequestProperty("Cookie", cookie)
+                        }
+                        request.requestHeaders.forEach { (k, v) ->
+                            if (!k.equals(CLIENT_HEADER, ignoreCase = true)) {
+                                setRequestProperty(k, v)
+                            }
+                        }
+                    }
+                    conn.connect()
+                    conn.headerFields.forEach { (key, values) ->
+                        if (key.equals("Set-Cookie", ignoreCase = true)) {
+                            values.forEach { cookieManager.setCookie(url, it) }
+                        }
+                    }
+                    cookieManager.flush()
+                    val code = conn.responseCode
+                    val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                    val mime = conn.contentType?.substringBefore(";") ?: "application/json"
+                    val responseHeaders = conn.headerFields
+                        .filterKeys { it != null }
+                        .mapKeys { it.key!! }
+                        .mapValues { (_, values) -> values.joinToString(", ") }
+                    WebResourceResponse(
+                        mime,
+                        conn.contentEncoding ?: "utf-8",
+                        code,
+                        "OK",
+                        responseHeaders,
+                        stream,
+                    )
+                } catch (_: Exception) {
+                    super.shouldInterceptRequest(view, request)
+                }
+            }
+
+            override fun onPageStarted(
+                view: WebView?,
+                url: String?,
+                favicon: android.graphics.Bitmap?,
+            ) {
+                view?.evaluateJavascript(
+                    """
+                    window.__SSC_ANDROID_CLIENT='$CLIENT_VALUE';
+                    window.__SSC_ANDROID_SHELL='1';
+                    window.__SSC_ANDROID_FEATURES='$SHELL_FEATURES';
+                    window.__SSC_NATIVE_BRIDGE='$NATIVE_BRIDGE_VALUE';
+                    window.__SSC_DEVICE_ATTEST='${SscDeviceAttest.currentToken() ?: ""}';
+                    """.trimIndent(),
+                    null,
+                )
+                super.onPageStarted(view, url, favicon)
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                if (!bridgeInjected) {
+                    bridgeInjected = true
+                    injectBridgeScript(activity, view)
+                }
+                onLoadSuccess?.invoke()
+                onPageFinished?.invoke()
+                super.onPageFinished(view, url)
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?,
+            ) {
+                if (request?.isForMainFrame == true) {
+                    onLoadError?.invoke()
+                }
+                super.onReceivedError(view, request, error)
+            }
+        }
+
+    private fun injectBridgeScript(context: Context, view: WebView?) {
+        if (view == null) return
+        for (asset in listOf("ssc_crypto_bridge.js", "ssc_translate_bridge.js")) {
+            try {
+                val script = context.assets.open(asset)
+                    .bufferedReader()
+                    .use { it.readText() }
+                view.evaluateJavascript(script, null)
+            } catch (_: Exception) {
+                // Bridge asset missing — WebView still loads; cryptoPolicy will hard-fail in production.
+            }
+        }
+    }
+}

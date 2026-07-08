@@ -18,7 +18,7 @@ $env:REACT_APP_SSC_REQUIRE_LIBCRYPTO = "true"
 $env:PUBLIC_URL = "."
 $env:REACT_APP_API_URL = $(if ($env:REACT_APP_API_URL) { $env:REACT_APP_API_URL } else { "https://api.supersecurechat.com" })
 $env:REACT_APP_GOOGLE_CLIENT_ID = $(if ($env:REACT_APP_GOOGLE_CLIENT_ID) { $env:REACT_APP_GOOGLE_CLIENT_ID } else { "814078411789-o3t5krp2mvoi32rkaug6jmegtb8t1ihf.apps.googleusercontent.com" })
-npm run build
+yarn build
 Pop-Location
 
 Write-Host "Installing Electron deps..."
