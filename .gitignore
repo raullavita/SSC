@@ -11,6 +11,7 @@ __pycache__/
 .env
 .env.*
 !.env.example
+!.env.production.example
 android/signing.local.env
 *.jks
 *.keystore
