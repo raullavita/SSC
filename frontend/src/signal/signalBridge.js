@@ -17,6 +17,35 @@ import {
 let libsignalModule = null;
 let configuredLocalUserId = null;
 
+/** Electron/Android libsignal bundles use camelCase; API expects snake_case. */
+export function normalizePreKeyBundlePayload(deviceId, bundle) {
+  const signed = bundle.signedPreKey || bundle.signed_prekey || {};
+  const preKeys = bundle.preKeys || bundle.prekeys || [];
+  const kyber = bundle.kyberPreKey || bundle.kyber_prekey || null;
+  const payload = {
+    device_id: String(deviceId),
+    registration_id: bundle.registrationId ?? bundle.registration_id,
+    identity_key: bundle.identityKey ?? bundle.identity_key,
+    signed_prekey: {
+      key_id: signed.keyId ?? signed.key_id,
+      public_key: signed.publicKey ?? signed.public_key,
+      signature: signed.signature,
+    },
+    prekeys: preKeys.map((pk) => ({
+      key_id: pk.keyId ?? pk.key_id,
+      public_key: pk.publicKey ?? pk.public_key,
+    })),
+  };
+  if (kyber) {
+    payload.kyber_prekey = {
+      key_id: kyber.keyId ?? kyber.key_id,
+      public_key: kyber.publicKey ?? kyber.public_key,
+      signature: kyber.signature,
+    };
+  }
+  return payload;
+}
+
 async function loadLibsignal() {
   if (libsignalModule) return libsignalModule;
   if (typeof window !== 'undefined' && window.sscCrypto?.encryptMessage) {
@@ -65,20 +94,16 @@ export async function registerDeviceAndPrekeys({
     name: deviceName,
     platform,
   });
-  await api.put('/api/prekeys/bundle', {
-    device_id: deviceId,
-    registration_id: bundle.registrationId,
-    identity_key: bundle.identityKey,
-    signed_prekey: bundle.signedPreKey,
-    prekeys: bundle.preKeys,
-    kyber_prekey: bundle.kyberPreKey || null,
-  });
+  await api.put('/api/prekeys/bundle', normalizePreKeyBundlePayload(deviceId, bundle));
   return { deviceId, prekeysUploaded: true, mode: 'libsignal' };
 }
 
 async function ensurePeerSession(peerId, deviceId = '1') {
   const lib = await loadLibsignal();
-  if (!lib?.establishSession || !peerId) return;
+  if (!peerId) {
+    throw new Error('peer_id_required');
+  }
+  if (!lib?.establishSession) return;
   await configureLocalIdentity(lib, { deviceId: '1' });
   try {
     const data = await api.get(`/api/prekeys/users/${peerId}/devices/${deviceId}`);
@@ -87,6 +112,11 @@ async function ensurePeerSession(peerId, deviceId = '1') {
   } catch (err) {
     if (requiresProductionCrypto()) {
       const detail = err?.body?.detail || err?.message || 'unknown';
+      if (detail === 'prekey_bundle_not_found') {
+        throw new Error(
+          'contact_prekeys_missing: Ask them to open SSC once so their encryption keys can register.'
+        );
+      }
       throw new Error(`libsignal_session_setup_failed:${detail}`);
     }
   }

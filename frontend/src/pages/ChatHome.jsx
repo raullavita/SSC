@@ -348,7 +348,9 @@ export default function ChatHome() {
         platform: getInstalledClientHeader().split('/')[0] || 'electron',
         localUserId: user.id,
       }).catch((err) => {
-        console.warn('[ssc] prekey registration failed', err?.message || err);
+        const detail = err?.body?.detail || err?.message || 'prekey_registration_failed';
+        setListError(`Encryption setup failed (${detail}). Close and reopen SSC.`);
+        console.warn('[ssc] prekey registration failed', detail);
       });
       fetchLanguages()
         .then(setLanguages)
