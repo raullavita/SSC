@@ -58,6 +58,6 @@ if ($Keystore -and (Test-Path $Keystore)) {
         & keytool -list -v -keystore $debugKs -alias androiddebugkey -storepass android -keypass android 2>&1 |
             Select-String "SHA256:"
     } else {
-        Write-Host "  (debug.keystore not found — build Android once in Android Studio)"
+        Write-Host "  (debug.keystore not found - build Android once in Android Studio)"
     }
 }

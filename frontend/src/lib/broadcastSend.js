@@ -4,7 +4,8 @@
 
 import { api } from './api';
 import { getSealedSenderEnabled } from './chatPrefs';
-import { encryptMessage, encryptSealedMessage } from '../signal/signalBridge';
+import { encryptMessage } from '../signal/signalBridge';
+import { encryptSealedMessage } from '../signal/sealedSender';
 
 export async function sendBroadcastMessage({ text, recipientIds, disappearingSeconds }) {
   const trimmed = text?.trim();

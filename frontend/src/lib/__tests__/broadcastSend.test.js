@@ -1,6 +1,7 @@
 import { sendBroadcastMessage } from '../broadcastSend';
 import { api } from '../api';
-import { encryptMessage, encryptSealedMessage } from '../../signal/signalBridge';
+import { encryptMessage } from '../../signal/signalBridge';
+import { encryptSealedMessage } from '../../signal/sealedSender';
 import { getSealedSenderEnabled } from '../chatPrefs';
 
 jest.mock('../api', () => ({
@@ -11,6 +12,9 @@ jest.mock('../api', () => ({
 
 jest.mock('../../signal/signalBridge', () => ({
   encryptMessage: jest.fn(),
+}));
+
+jest.mock('../../signal/sealedSender', () => ({
   encryptSealedMessage: jest.fn(),
 }));
 

@@ -39,18 +39,18 @@ export default function SafetyVerifyModal({
     }
   }, [open, peerId]);
 
-  if (!open) return null;
-
   const displayable = safetyNumber?.displayable || '';
-  const groups = splitSafetyNumberGroups(displayable);
-  const qrPayload = buildSafetyQrPayload(peerId, displayable);
-  const status = trust?.status || 'default';
-  const isVerified = status === 'verified';
-
   const compareResult = useMemo(
     () => comparePastedSafetyValue(displayable, compareInput),
     [displayable, compareInput]
   );
+
+  if (!open) return null;
+
+  const groups = splitSafetyNumberGroups(displayable);
+  const qrPayload = buildSafetyQrPayload(peerId, displayable);
+  const status = trust?.status || 'default';
+  const isVerified = status === 'verified';
 
   const peerMismatch =
     compareResult.peerId && peerId && compareResult.peerId !== peerId;
