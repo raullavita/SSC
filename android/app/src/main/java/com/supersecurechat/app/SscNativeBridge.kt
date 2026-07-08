@@ -26,7 +26,20 @@ class SscNativeBridge(
             try {
                 val apiBase = BuildConfig.SSC_API_URL
                 val result = SscApiBridge.fetch(url, method, headersJson, body.ifBlank { null }, apiBase)
-                deliver(callbackId, result.getBoolean("ok"), result)
+                if (result.getBoolean("ok")) {
+                    deliver(callbackId, true, result)
+                } else {
+                    val detail = runCatching {
+                        val bodyText = result.optString("body", "")
+                        if (bodyText.isBlank()) {
+                            "http_${result.optInt("status", 0)}"
+                        } else {
+                            val parsed = JSONObject(bodyText)
+                            parsed.optString("detail", bodyText)
+                        }
+                    }.getOrElse { result.optString("body", "ssc_api_error") }
+                    deliver(callbackId, false, detail)
+                }
             } catch (error: Throwable) {
                 deliver(callbackId, false, error.message ?: "ssc_api_error")
             }

@@ -110,7 +110,10 @@ def _finish_html(
         status.textContent = 'Google sign-in complete';
         hint.innerHTML =
           '<a class="btn" id="open-ssc" href="' + intentLink + '">Open Super Secure Chat</a>' +
-          '<p class="muted">Tap the button to return to the app and finish sign-in.</p>';
+          '<p class="muted">Returning to SSC… tap the button if the app does not open.</p>';
+        setTimeout(function () {{
+          window.location.href = intentLink;
+        }}, 400);
         return;
       }}
 

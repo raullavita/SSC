@@ -130,6 +130,7 @@ object ApiClient {
                 url: String?,
                 favicon: android.graphics.Bitmap?,
             ) {
+                injectBridgeScript(activity, view)
                 view?.evaluateJavascript(
                     """
                     window.__SSC_ANDROID_CLIENT='$CLIENT_VALUE';
@@ -144,9 +145,9 @@ object ApiClient {
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
+                injectBridgeScript(activity, view)
                 if (!bridgeInjected) {
                     bridgeInjected = true
-                    injectBridgeScript(activity, view)
                 }
                 onLoadSuccess?.invoke()
                 onPageFinished?.invoke()

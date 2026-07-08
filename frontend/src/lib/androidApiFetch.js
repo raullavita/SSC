@@ -14,7 +14,22 @@ function bridgeCallback(id) {
     bridge._callbacks[id] = (ok, payload) => {
       if (prior) bridge._callback = prior;
       if (!ok) {
-        reject(new Error(typeof payload === 'string' ? payload : 'ssc_api_error'));
+        let message = 'ssc_api_error';
+        if (typeof payload === 'string') {
+          message = payload;
+        } else if (payload && typeof payload === 'object') {
+          const bodyText = payload.body || '';
+          try {
+            const parsed = JSON.parse(bodyText);
+            message = parsed.detail || parsed.message || bodyText || message;
+          } catch {
+            message = bodyText || message;
+          }
+          if (!message || message === 'ssc_api_error') {
+            message = `http_${payload.status || 0}`;
+          }
+        }
+        reject(new Error(message));
         return;
       }
       resolve(payload);

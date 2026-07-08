@@ -677,4 +677,29 @@
   .layout {
     grid-template-columns: 1fr;
   }
+
+  .layoutMobile .sidebar {
+    max-height: none;
+  }
+
+  .layoutMobileChat .sidebar {
+    display: none;
+  }
+
+  .layoutMobileChat .thread {
+    min-height: 100vh;
+  }
+
+  .mobileBack {
+    display: inline-block;
+    margin-right: 0.5rem;
+    margin-bottom: 0.35rem;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid var(--ssc-border, #2a3942);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--ssc-accent, #00a884);
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
 }

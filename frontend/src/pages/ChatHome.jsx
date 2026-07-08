@@ -46,7 +46,7 @@ import { searchMessages } from '../search/messageIndex';
 import { getInstalledClientHeader } from '../lib/installedClient';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import { getPeerTrust } from '../lib/trustStore';
-import { isInstalledApp } from '../lib/appMode';
+import { isAndroidShell, isInstalledApp } from '../lib/appMode';
 import { needsUsernameSetup } from '../lib/onboarding';
 import {
   bumpUnread,
@@ -602,8 +602,14 @@ export default function ChatHome() {
 
   const displayName = user.display_name || user.email?.split('@')[0] || user.id;
 
+  const mobileChat = isAndroidShell() && Boolean(activeId);
+
   return (
-    <div className={styles.layout}>
+    <div
+      className={`${styles.layout} ${isAndroidShell() ? styles.layoutMobile : ''} ${
+        mobileChat ? styles.layoutMobileChat : ''
+      }`}
+    >
       <aside className={styles.sidebar}>
         <header className={styles.sideTop}>
           <div className={styles.brandRow}>
@@ -755,6 +761,16 @@ export default function ChatHome() {
             <header className={styles.threadHeader}>
               <div className={styles.threadTitleRow}>
                 <div className={styles.threadTitle}>
+                  {mobileChat && (
+                    <button
+                      type="button"
+                      className={styles.mobileBack}
+                      onClick={() => setActiveId(null)}
+                      aria-label="Back to chats"
+                    >
+                      ← Chats
+                    </button>
+                  )}
                   <span>
                     Chat with <strong>{getThreadTitle()}</strong>
                   </span>

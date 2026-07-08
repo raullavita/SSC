@@ -26,3 +26,7 @@ export function appVersionLabel() {
   const build = process.env.REACT_APP_SSC_BUILD || '0';
   return `v${version} (build ${build})`;
 }
+
+export function isAndroidShell() {
+  return typeof window !== 'undefined' && window.__SSC_ANDROID_SHELL === '1';
+}
