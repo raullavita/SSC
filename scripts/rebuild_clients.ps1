@@ -64,15 +64,15 @@ if ($buildAndroid) {
 if (-not $SkipSmoke) {
     Write-Host ""
     Write-Host "=== Production smoke (API + web) ==="
-    $smokeArgs = @()
+    $smokeArgs = @{}
     if ($buildElectron) {
         $exe = Get-ChildItem (Join-Path $Root "electron/dist/SSC-Setup-*.exe") -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTime -Descending | Select-Object -First 1
-        if ($exe) { $smokeArgs += "-ExePath"; $smokeArgs += $exe.FullName }
+        if ($exe) { $smokeArgs.ExePath = $exe.FullName }
     }
     if ($buildAndroid) {
         $apk = Join-Path $Root "android/app/build/outputs/apk/release/SSC-0.3.1.apk"
-        if (Test-Path $apk) { $smokeArgs += "-ApkPath"; $smokeArgs += $apk }
+        if (Test-Path $apk) { $smokeArgs.ApkPath = $apk }
     }
     & "$PSScriptRoot\release_smoke_test.ps1" @smokeArgs
 }
