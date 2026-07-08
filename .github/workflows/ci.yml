@@ -38,6 +38,7 @@ jobs:
           cache-dependency-path: frontend/yarn.lock
       - run: yarn install --frozen-lockfile || yarn install
       - run: yarn test:ci
+      - run: yarn eslint src --max-warnings 20
       - run: yarn knip
       - run: npx --yes depcheck@1.4.7
 

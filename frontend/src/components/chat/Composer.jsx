@@ -29,6 +29,8 @@ export default function Composer({
   onFileClick,
   onFileSelected,
   onCreatePoll,
+  broadcastLists = [],
+  onBroadcastSend,
   disabled = false,
 }) {
   const fileInputRef = useRef(null);
@@ -132,6 +134,30 @@ export default function Composer({
           >
             📊 Poll
           </button>
+        )}
+        {onBroadcastSend && broadcastLists.length > 0 && (
+          <select
+            className={styles.select}
+            defaultValue=""
+            disabled={disabled || !draft.trim()}
+            aria-label="Broadcast list"
+            title="Send to broadcast list"
+            onChange={(e) => {
+              const listId = e.target.value;
+              if (!listId) return;
+              onBroadcastSend(listId);
+              e.target.value = '';
+            }}
+          >
+            <option value="" disabled>
+              📣 Broadcast
+            </option>
+            {broadcastLists.map((list) => (
+              <option key={list.id} value={list.id}>
+                {list.name} ({list.recipient_ids.length})
+              </option>
+            ))}
+          </select>
         )}
       </div>
 

@@ -21,12 +21,15 @@ CALL_PUBLIC_FIELDS: frozenset[str] = frozenset(
         "video",
         "status",
         "created_at",
+        "group_call",
+        "mode",
+        "participant_ids",
     }
 )
 
 
 def public_call_session(doc: dict[str, Any]) -> dict[str, Any]:
-    return {
+    out = {
         "id": doc["_id"],
         "conversation_id": doc.get("conversation_id"),
         "caller_id": doc.get("caller_id"),
@@ -36,6 +39,11 @@ def public_call_session(doc: dict[str, Any]) -> dict[str, Any]:
         "status": doc.get("status", "ringing"),
         "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
     }
+    if doc.get("group_call"):
+        out["group_call"] = True
+        out["mode"] = doc.get("mode", "mesh")
+        out["participant_ids"] = list(doc.get("participant_ids") or [])
+    return out
 
 
 def validate_signaling_envelope(ciphertext: str, protocol: str) -> tuple[bool, str]:

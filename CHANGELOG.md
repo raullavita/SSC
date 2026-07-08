@@ -9,7 +9,7 @@ SSC is open source under [AGPL-3.0](LICENSE); see [THIRD_PARTY_NOTICES.md](THIRD
 
 ### Added (build 10)
 
-- **Native Android client** — Kotlin + Jetpack Compose (no WebView): login, chats, encrypted 1:1 messaging, WebSocket realtime
+- **Native Android client** — Kotlin WebView shell with bundled React UI and native `libsignal-android` bridge: login, chats, encrypted 1:1 messaging, WebSocket realtime
 - **Firebase App Distribution** — native APK for phone testers (`scripts/distribute_android.ps1`)
 
 ### Fixed (build 10)

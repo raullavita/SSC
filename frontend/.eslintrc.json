@@ -1,0 +1,29 @@
+{
+  "extends": ["react-app", "react-app/jest"],
+  "root": true,
+  "env": {
+    "browser": true,
+    "node": true,
+    "es2020": true
+  },
+  "globals": {
+    "globalThis": "readonly",
+    "Translator": "readonly",
+    "LanguageDetector": "readonly"
+  },
+  "rules": {
+    "react-hooks/exhaustive-deps": "warn",
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
+  },
+  "overrides": [
+    {
+      "files": ["**/__tests__/**", "**/*.test.js"],
+      "rules": {
+        "testing-library/no-container": "off",
+        "testing-library/no-node-access": "off",
+        "jest/no-conditional-expect": "off",
+        "import/first": "off"
+      }
+    }
+  ]
+}

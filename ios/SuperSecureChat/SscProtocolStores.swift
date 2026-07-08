@@ -190,7 +190,82 @@ final class SscKyberPreKeyStore: KyberPreKeyStore {
 }
 
 enum SscPreKeyBundleParser {
+    private static func b64(_ value: Any?) throws -> Data {
+        guard let str = value as? String, !str.isEmpty, let data = Data(base64Encoded: str) else {
+            throw SignalError.invalidArgument("invalid_base64")
+        }
+        return data
+    }
+
+    private static func uint32(_ dict: [String: Any], keys: [String], defaultValue: UInt32 = 0) -> UInt32 {
+        for key in keys {
+            if let n = dict[key] as? UInt32 { return n }
+            if let n = dict[key] as? Int, n >= 0 { return UInt32(n) }
+            if let n = dict[key] as? NSNumber { return n.uint32Value }
+        }
+        return defaultValue
+    }
+
+    private static func nestedDict(_ bundle: [String: Any], keys: [String]) -> [String: Any]? {
+        for key in keys {
+            if let d = bundle[key] as? [String: Any] { return d }
+        }
+        return nil
+    }
+
     static func parse(_ bundle: [String: Any]) throws -> PreKeyBundle {
-        throw NSError(domain: "ssc", code: 10, userInfo: [NSLocalizedDescriptionKey: "bundle_parser_todo"])
+        let deviceId = uint32(bundle, keys: ["device_id", "deviceId"], defaultValue: 1)
+        let registrationId = uint32(bundle, keys: ["registration_id", "registrationId"])
+
+        let identity = try IdentityKey(bytes: try b64(bundle["identity_key"] ?? bundle["identityKey"]))
+
+        guard let signed = nestedDict(bundle, keys: ["signed_prekey", "signedPreKey"]) else {
+            throw SignalError.invalidArgument("signed_prekey_required")
+        }
+        guard let kyber = nestedDict(bundle, keys: ["kyber_prekey", "kyberPreKey"]) else {
+            throw SignalError.invalidArgument("kyber_prekey_required")
+        }
+
+        let signedPub = try PublicKey(try b64(signed["public_key"] ?? signed["publicKey"]))
+        let signedSig = try b64(signed["signature"] ?? signed["signed_prekey_signature"])
+        let signedId = uint32(signed, keys: ["key_id", "keyId", "signed_prekey_id"], defaultValue: 1)
+
+        let kyberPub = try KEMPublicKey(bytes: try b64(kyber["public_key"] ?? kyber["publicKey"]))
+        let kyberSig = try b64(kyber["signature"])
+        let kyberId = uint32(kyber, keys: ["key_id", "keyId"])
+
+        let prekeys = (bundle["prekeys"] ?? bundle["preKeys"]) as? [[String: Any]]
+        if let first = prekeys?.first,
+           let preKeyB64 = first["public_key"] ?? first["publicKey"],
+           let preKeyStr = preKeyB64 as? String,
+           !preKeyStr.isEmpty {
+            let preKeyId = uint32(first, keys: ["key_id", "keyId"])
+            let preKeyPub = try PublicKey(try b64(preKeyStr))
+            return try PreKeyBundle(
+                registrationId: registrationId,
+                deviceId: deviceId,
+                prekeyId: preKeyId,
+                prekey: preKeyPub,
+                signedPrekeyId: signedId,
+                signedPrekey: signedPub,
+                signedPrekeySignature: signedSig,
+                identity: identity,
+                kyberPrekeyId: kyberId,
+                kyberPrekey: kyberPub,
+                kyberPrekeySignature: kyberSig
+            )
+        }
+
+        return try PreKeyBundle(
+            registrationId: registrationId,
+            deviceId: deviceId,
+            signedPrekeyId: signedId,
+            signedPrekey: signedPub,
+            signedPrekeySignature: signedSig,
+            identity: identity,
+            kyberPrekeyId: kyberId,
+            kyberPrekey: kyberPub,
+            kyberPrekeySignature: kyberSig
+        )
     }
 }

@@ -33,6 +33,8 @@ import { useVoiceMessage } from '../chat/useVoiceMessage';
 import { useAuth } from '../context/AuthContext';
 import { usePresenceMap } from '../hooks/usePresenceMap';
 import { api } from '../lib/api';
+import { listBroadcastLists } from '../lib/broadcastLists';
+import { sendBroadcastMessage } from '../lib/broadcastSend';
 import {
   getAutoTranslateEnabled,
   getPreferredLanguage,
@@ -83,6 +85,7 @@ export default function ChatHome() {
   const [showPollForm, setShowPollForm] = useState(false);
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
+  const [broadcastLists, setBroadcastLists] = useState([]);
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
 
@@ -307,13 +310,18 @@ export default function ChatHome() {
     status: groupCallStatus,
     callOpen: groupCallOpen,
     startGroupCall,
+    answerGroupCall,
+    declineGroupCall,
     endGroupCall,
     error: groupCallError,
     mode: groupCallMode,
   } = useGroupCall({
     conversationId: activeId,
     participantCount: groupParticipantCount,
+    participantIds: active?.participants || [],
     userId: user?.id,
+    wsToken,
+    enabled: Boolean(user && active && isGroup),
   });
 
   const searchHits = useMemo(() => {
@@ -340,6 +348,9 @@ export default function ChatHome() {
       }).catch(() => {});
       fetchLanguages()
         .then(setLanguages)
+        .catch(() => {});
+      listBroadcastLists()
+        .then(setBroadcastLists)
         .catch(() => {});
       api
         .get('/api/privacy')
@@ -453,6 +464,33 @@ export default function ChatHome() {
         });
         setReplyTo(null);
       }
+    } catch (err) {
+      setDraft(text);
+      setListError(err.message);
+    }
+  }
+
+  async function onBroadcastSend(listId) {
+    if (!listId || !draft.trim()) return;
+    const list = broadcastLists.find((item) => item.id === listId);
+    if (!list?.recipient_ids?.length) {
+      setListError('Broadcast list has no recipients');
+      return;
+    }
+    const text = draft;
+    setDraft('');
+    onDraftChange('');
+    setTranslatedPreview('');
+    try {
+      const result = await sendBroadcastMessage({
+        text,
+        recipientIds: list.recipient_ids,
+        disappearingSeconds: disappearingSeconds || undefined,
+      });
+      if (result.failed > 0) {
+        setListError(`Broadcast sent to ${result.sent}; ${result.failed} failed`);
+      }
+      await loadConversations();
     } catch (err) {
       setDraft(text);
       setListError(err.message);
@@ -969,6 +1007,8 @@ export default function ChatHome() {
               uploading={uploading}
               onFileSelected={onFileSelected}
               onCreatePoll={!isGroup && active?.peer_id ? () => setShowPollForm(true) : undefined}
+              broadcastLists={broadcastLists}
+              onBroadcastSend={broadcastLists.length ? onBroadcastSend : undefined}
             />
           </>
         )}
@@ -995,9 +1035,9 @@ export default function ChatHome() {
         isVideo={Boolean(activeCall?.video) || groupRemoteStreams.length > 0}
         localStream={groupCallOpen ? groupLocalStream : localStream}
         remoteStream={groupCallOpen ? groupRemoteStreams[0] || null : remoteStream}
-        errorMessage={groupCallOpen ? null : callErrorMessage}
-        onAnswer={answerCall}
-        onDecline={declineCall}
+        errorMessage={groupCallOpen ? groupCallError : callErrorMessage}
+        onAnswer={groupCallOpen ? answerGroupCall : answerCall}
+        onDecline={groupCallOpen ? declineGroupCall : declineCall}
         onEnd={groupCallOpen ? endGroupCall : endCall}
       />
     </div>

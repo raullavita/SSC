@@ -16,6 +16,7 @@ REPORT_DIR = ROOT / "audit-reports"
 
 ROUTER_PREFIXES = {
     "abuse": "/api/abuse",
+    "broadcast_lists": "/api/broadcast_lists",
     "auth": "/api/auth",
     "calls": "/api/calls",
     "config": "/api",
@@ -65,9 +66,9 @@ KNOWN_UNWIRED_INTENTIONAL = {
 
 POLICY_ONLY_FEATURES = [
     {
-        "name": "Broadcast lists",
-        "location": "backend/core/retention_policy.py",
-        "detail": "Mongo collection policy only ÔÇö no router or UI",
+        "name": "Broadcast list management UI",
+        "location": "frontend/src/components/BroadcastListsPanel.jsx",
+        "detail": "Settings panel CRUD only; composer broadcast send is wired in ChatHome",
     },
     {
         "name": "Inside AI / smart replies",
@@ -85,9 +86,9 @@ POLICY_ONLY_FEATURES = [
         "detail": "No macOS build script or libsignal shell",
     },
     {
-        "name": "iOS libsignal native",
-        "location": "ios/SuperSecureChat/SscNativeBridge.swift",
-        "detail": "WKWebView shell with crypto stub",
+        "name": "iOS native build",
+        "location": "ios/SuperSecureChat.xcodeproj",
+        "detail": "Swift libsignal bridge + bundle parser implemented; requires Mac/Xcode to build IPA",
     },
     {
         "name": "Read receipts aggregate UI",

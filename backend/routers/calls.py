@@ -40,6 +40,7 @@ class SignalBody(BaseModel):
     signal_type: str = Field(min_length=3)
     ciphertext: str = Field(min_length=1)
     protocol: str = Field(default=SIGNAL_PROTOCOL_V1)
+    target_peer_id: str | None = Field(default=None, min_length=3)
 
 
 class EndCallBody(BaseModel):
@@ -85,6 +86,7 @@ async def start_call(
 
     now = datetime.now(timezone.utc)
     call_id = new_call_id()
+    is_group_call = conv.get("type") == "group" or body.group_call
     doc = {
         "_id": call_id,
         "conversation_id": body.conversation_id,
@@ -94,6 +96,8 @@ async def start_call(
         "video": body.video,
         "status": "ringing",
         "mode": "sfu" if use_sfu else "mesh",
+        "group_call": is_group_call,
+        "participant_ids": list(participants),
         "participant_count": len(participants),
         "created_at": now,
         "expires_at": default_expires_at(),
@@ -103,6 +107,7 @@ async def start_call(
     payload = {"type": "incoming_call", "call": public_call_session(doc)}
     if use_sfu:
         payload["sfu_required"] = True
+    if is_group_call or use_sfu:
         for pid in participants:
             if pid != user_id:
                 await ws_hub.publish(f"user:{pid}", payload)
@@ -129,6 +134,26 @@ async def relay_signal(
     call = await db.call_sessions.find_one({"_id": body.call_id})
     if not call:
         raise HTTPException(status_code=404, detail="call_not_found")
+
+    if call.get("group_call"):
+        allowed = set(call.get("participant_ids") or [])
+        if user_id not in allowed:
+            raise HTTPException(status_code=403, detail="not_a_call_participant")
+        target = body.target_peer_id
+        if not target or target not in allowed or target == user_id:
+            raise HTTPException(status_code=400, detail="target_peer_required_for_group_call")
+        await ws_hub.publish(
+            f"user:{target}",
+            {
+                "type": "call_signal",
+                "call_id": body.call_id,
+                "signal_type": body.signal_type,
+                "ciphertext": body.ciphertext,
+                "protocol": body.protocol,
+                "from": user_id,
+            },
+        )
+        return {"ok": True}
 
     participants = {call.get("caller_id"), call.get("callee_id")}
     if user_id not in participants:
@@ -164,26 +189,34 @@ async def end_call(
     if not call:
         raise HTTPException(status_code=404, detail="call_not_found")
 
-    participants = {call.get("caller_id"), call.get("callee_id")}
-    if user_id not in participants:
-        raise HTTPException(status_code=403, detail="not_a_call_participant")
+    if call.get("group_call"):
+        allowed = set(call.get("participant_ids") or [])
+        if user_id not in allowed:
+            raise HTTPException(status_code=403, detail="not_a_call_participant")
+        peers = [pid for pid in allowed if pid != user_id]
+    else:
+        participants = {call.get("caller_id"), call.get("callee_id")}
+        if user_id not in participants:
+            raise HTTPException(status_code=403, detail="not_a_call_participant")
+        peer = call["callee_id"] if user_id == call["caller_id"] else call["caller_id"]
+        peers = [peer]
 
-    peer = call["callee_id"] if user_id == call["caller_id"] else call["caller_id"]
     now = datetime.now(timezone.utc)
     await db.call_sessions.update_one(
         {"_id": call_id},
         {"$set": {"status": body.reason, "ended_at": now, "ended_by": user_id}},
     )
 
-    await ws_hub.publish(
-        f"user:{peer}",
-        {
-            "type": "call_ended",
-            "call_id": call_id,
-            "reason": body.reason,
-            "from": user_id,
-        },
-    )
+    for peer in peers:
+        await ws_hub.publish(
+            f"user:{peer}",
+            {
+                "type": "call_ended",
+                "call_id": call_id,
+                "reason": body.reason,
+                "from": user_id,
+            },
+        )
 
     conversation_id = call.get("conversation_id")
     if body.reason == "declined" and call.get("caller_id"):

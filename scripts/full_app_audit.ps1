@@ -97,6 +97,12 @@ if (-not $SkipTests) {
         yarn test:ci 2>&1 | Select-Object -Last 8
         Pop-Location
     } | Out-Null
+
+    Run-Step "Frontend ESLint" {
+        Push-Location (Join-Path $Root "frontend")
+        yarn eslint src --max-warnings 20 2>&1 | Select-Object -First 40
+        Pop-Location
+    } | Out-Null
 }
 
 Run-Step "Ruff (Python lint)" {

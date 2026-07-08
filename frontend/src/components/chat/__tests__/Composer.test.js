@@ -88,4 +88,21 @@ describe('Composer', () => {
     expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
     expect(screen.getByTitle('Voice message')).toBeDisabled();
   });
+
+  it('renders broadcast list selector when lists are provided', () => {
+    const onBroadcastSend = jest.fn();
+    render(
+      <Composer
+        {...defaultProps}
+        draft="hello"
+        broadcastLists={[{ id: 'bl_1', name: 'Team', recipient_ids: ['u1', 'u2'] }]}
+        onBroadcastSend={onBroadcastSend}
+      />
+    );
+
+    const select = screen.getByLabelText('Broadcast list');
+    expect(select).toBeInTheDocument();
+    fireEvent.change(select, { target: { value: 'bl_1' } });
+    expect(onBroadcastSend).toHaveBeenCalledWith('bl_1');
+  });
 });
