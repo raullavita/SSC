@@ -30,6 +30,7 @@ import ChatPreferencesSection, {
   loadChatPreferenceDefaults,
 } from '../components/settings/ChatPreferencesSection';
 import InviteQr from '../components/InviteQr';
+import BroadcastListsPanel from '../components/BroadcastListsPanel';
 import AbuseReportPanel from '../components/AbuseReportPanel';
 import BackupPanel from '../components/BackupPanel';
 import RecoveryPanel from '../components/RecoveryPanel';
@@ -320,6 +321,7 @@ export default function Settings() {
             <Link to="/link-device" className={styles.linkBtn}>
               Linked devices
             </Link>
+            <BroadcastListsPanel onMessage={setMessage} />
             <RecoveryPanel onMessage={setMessage} />
             <BackupPanel userId={user.id} onMessage={setMessage} />
             <AbuseReportPanel onMessage={setMessage} />

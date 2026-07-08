@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from config import get_settings
 from routers.abuse import router as abuse_router
+from routers.broadcast_lists import router as broadcast_lists_router
 from routers.auth import router as auth_router
 from routers.calls import router as calls_router
 from routers.config import router as config_router
@@ -53,6 +54,7 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(messages_router, prefix=prefix)
     app.include_router(reactions_router, prefix=prefix)
     app.include_router(friend_requests_router, prefix=prefix)
+    app.include_router(broadcast_lists_router, prefix=prefix)
     app.include_router(recovery_router, prefix=prefix)
     app.include_router(polls_router, prefix=prefix)
     app.include_router(stories_router, prefix=prefix)
