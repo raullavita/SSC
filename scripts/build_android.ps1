@@ -25,7 +25,7 @@ $env:REACT_APP_GOOGLE_CLIENT_ID = $(if ($env:REACT_APP_GOOGLE_CLIENT_ID) { $env:
 yarn build
 Pop-Location
 
-$assetsDir = "$Root\android\app\src\main\assets\www"
+$assetsDir = "$Root/android/app/src/main/assets/www"
 Write-Host "Syncing web bundle to Android assets..."
 if (Test-Path $assetsDir) {
     Remove-Item $assetsDir -Recurse -Force
@@ -34,8 +34,8 @@ New-Item -ItemType Directory -Path $assetsDir -Force | Out-Null
 Copy-Item "$Root\frontend\build\*" $assetsDir -Recurse -Force
 
 Write-Host "Injecting Android shell bootstrap + native bridges into index.html..."
-Copy-Item "$Root\android\app\src\main\assets\ssc_crypto_bridge.js" $assetsDir -Force
-Copy-Item "$Root\android\app\src\main\assets\ssc_translate_bridge.js" $assetsDir -Force
+Copy-Item "$Root/android/app/src/main/assets/ssc_crypto_bridge.js" $assetsDir -Force
+Copy-Item "$Root/android/app/src/main/assets/ssc_translate_bridge.js" $assetsDir -Force
 $indexPath = Join-Path $assetsDir "index.html"
 $indexHtml = Get-Content $indexPath -Raw
 $bootstrap = @"
