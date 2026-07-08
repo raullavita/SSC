@@ -37,6 +37,30 @@ if ($buildAndroid) {
     & "$PSScriptRoot\build_android.ps1"
 }
 
+$LatestBuilds = Join-Path $Root "latest-builds"
+New-Item -ItemType Directory -Force -Path $LatestBuilds | Out-Null
+
+Write-Host ""
+Write-Host "=== Copy to latest-builds ==="
+if ($buildElectron) {
+    $exe = Get-ChildItem (Join-Path $Root "electron/dist/SSC-Setup-*.exe") -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch 'portable' } |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1
+    if ($exe) {
+        Copy-Item $exe.FullName (Join-Path $LatestBuilds $exe.Name) -Force
+        Write-Host "  $($exe.Name) ($([math]::Round($exe.Length/1MB,1)) MB)"
+    }
+}
+if ($buildAndroid) {
+    $apk = Join-Path $Root "android/app/build/outputs/apk/release/SSC-0.3.1.apk"
+    if (Test-Path $apk) {
+        Copy-Item $apk (Join-Path $LatestBuilds "SSC-0.3.1.apk") -Force
+        $apkSize = (Get-Item $apk).Length
+        Write-Host "  SSC-0.3.1.apk ($([math]::Round($apkSize/1MB,1)) MB)"
+    }
+}
+
 if (-not $SkipSmoke) {
     Write-Host ""
     Write-Host "=== Production smoke (API + web) ==="
@@ -54,6 +78,6 @@ if (-not $SkipSmoke) {
 }
 
 Write-Host ""
-Write-Host "Done. Install:"
-if ($buildElectron) { Write-Host "  Laptop: electron/dist/SSC-Setup-0.3.1.exe" }
-if ($buildAndroid) { Write-Host "  Phone:  android/app/build/outputs/apk/release/SSC-0.3.1.apk" }
+Write-Host "Done. Latest builds:"
+if ($buildElectron) { Write-Host "  Laptop: latest-builds/SSC-Setup-0.3.1.exe" }
+if ($buildAndroid) { Write-Host "  Phone:  latest-builds/SSC-0.3.1.apk" }
