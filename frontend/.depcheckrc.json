@@ -1,0 +1,4 @@
+{
+  "ignores": ["webpack", "@testing-library/user-event"],
+  "ignorePatterns": ["build", "dist", "coverage"]
+}

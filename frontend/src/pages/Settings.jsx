@@ -29,6 +29,7 @@ import {
 import ChatPreferencesSection, {
   loadChatPreferenceDefaults,
 } from '../components/settings/ChatPreferencesSection';
+import InviteQr from '../components/InviteQr';
 import AbuseReportPanel from '../components/AbuseReportPanel';
 import BackupPanel from '../components/BackupPanel';
 import RecoveryPanel from '../components/RecoveryPanel';
@@ -137,9 +138,12 @@ export default function Settings() {
           {user.username && <span className={styles.handle}>@{user.username}</span>}
         </p>
         {user.username ? (
-          <button type="button" className={styles.logout} onClick={copyInvite}>
-            Copy invite link
-          </button>
+          <>
+            <button type="button" className={styles.logout} onClick={copyInvite}>
+              Copy invite link
+            </button>
+            <InviteQr username={user.username} />
+          </>
         ) : (
           <Link to="/setup-username" className={styles.linkBtn}>
             Set your @username

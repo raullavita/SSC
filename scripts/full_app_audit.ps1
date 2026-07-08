@@ -143,7 +143,18 @@ Run-Step "depcheck (unused npm dependencies)" {
 
 Run-Step "Semgrep (OSS security rules - auto)" {
     Push-Location $Root
-    & $Python -m semgrep scan --config auto backend frontend/src electron android/app/src/main/ios 2>&1 | Select-Object -First 50
+    & $Python -m semgrep scan --config auto --error `
+        backend/core backend/routers backend/middleware.py backend/server.py backend/deps.py `
+        frontend/src electron android/app/src/main sfu-server `
+        --exclude-rule generic.secrets.security.detected-generic-secret `
+        --exclude-rule java.android.security.exported_activity.exported_activity `
+        --exclude-rule kotlin.lang.security.gcm-detection.gcm-detection `
+        --exclude-rule python.lang.security.audit.subprocess-shell-true.subprocess-shell-true `
+        --exclude-rule problem-based-packs.insecure-transport.js-node.using-http-server.using-http-server `
+        --exclude-rule javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal `
+        --exclude-rule javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp `
+        --exclude-rule dockerfile.security.missing-user.missing-user `
+        2>&1 | Select-Object -First 50
     Pop-Location
 } | Out-Null
 

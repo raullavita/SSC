@@ -39,6 +39,7 @@ jobs:
       - run: yarn install --frozen-lockfile || yarn install
       - run: yarn test:ci
       - run: yarn knip
+      - run: npx --yes depcheck@1.4.7
 
   secrets-check:
     runs-on: ubuntu-latest
