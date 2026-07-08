@@ -19,6 +19,7 @@ from core.google_oauth import (
     verify_id_token,
 )
 from core.google_oauth import _frontend_url as frontend_url
+from core.google_oauth import _oauth_finish_url as oauth_finish_url
 from core.ids import new_user_id
 from core.last_seen import default_privacy_settings
 from core.oauth_exchange import consume_oauth_code, issue_oauth_code
@@ -157,12 +158,19 @@ async def login(
     return await _issue_auth_response(user, response)
 
 
+def _oauth_return_url(client: str) -> str:
+    if client == "installed":
+        return oauth_finish_url()
+    return f"{frontend_url()}/auth/google"
+
+
 @router.get("/google/start")
-async def google_start() -> RedirectResponse:
+async def google_start(client: str | None = Query(default=None)) -> RedirectResponse:
     if not google_oauth_configured():
         raise HTTPException(status_code=503, detail="google_oauth_not_configured")
     state = secrets.token_urlsafe(24)
-    await store_oauth_state(state)
+    oauth_client = "installed" if (client or "").strip().lower() == "installed" else "web"
+    await store_oauth_state(state, client=oauth_client)
     return RedirectResponse(build_google_auth_url(state), status_code=302)
 
 
@@ -173,18 +181,20 @@ async def google_callback(
     error: str | None = Query(default=None),
 ) -> RedirectResponse:
     if error:
-        return RedirectResponse(f"{frontend_url()}/auth/google?error={error}")
+        return RedirectResponse(f"{oauth_finish_url()}?error={error}")
     if not google_oauth_configured():
         raise HTTPException(status_code=503, detail="google_oauth_not_configured")
-    if not await consume_oauth_state(state):
-        return RedirectResponse(f"{frontend_url()}/auth/google?error=oauth_state_invalid")
+    oauth_client = await consume_oauth_state(state)
+    if not oauth_client:
+        return RedirectResponse(f"{oauth_finish_url()}?error=oauth_state_invalid")
+    return_url = _oauth_return_url(oauth_client)
     try:
         profile = await exchange_code_for_profile(code)
         user = await _find_or_create_google_user(profile)
         oauth_code = await issue_oauth_code(user["_id"])
-        return RedirectResponse(f"{frontend_url()}/auth/google?oauth_code={oauth_code}")
+        return RedirectResponse(f"{return_url}?oauth_code={oauth_code}")
     except ValueError:
-        return RedirectResponse(f"{frontend_url()}/auth/google?error=oauth_failed")
+        return RedirectResponse(f"{return_url}?error=oauth_failed")
 
 
 @router.post("/google/exchange")

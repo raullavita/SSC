@@ -33,15 +33,15 @@ def _prod_settings(*, jwt_secret: str, cors_origins: list[str]):
 async def test_oauth_state_single_use():
     clear_oauth_states_for_tests()
     await store_oauth_state("state-abc-123")
-    assert await consume_oauth_state("state-abc-123") is True
-    assert await consume_oauth_state("state-abc-123") is False
+    assert await consume_oauth_state("state-abc-123") == "web"
+    assert await consume_oauth_state("state-abc-123") is None
 
 
 @pytest.mark.asyncio
 async def test_oauth_state_rejects_missing():
     clear_oauth_states_for_tests()
-    assert await consume_oauth_state(None) is False
-    assert await consume_oauth_state("") is False
+    assert await consume_oauth_state(None) is None
+    assert await consume_oauth_state("") is None
 
 
 @pytest.mark.asyncio

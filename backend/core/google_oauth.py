@@ -24,10 +24,25 @@ def _frontend_url() -> str:
     return (os.getenv("FRONTEND_URL") or "http://localhost:3000").rstrip("/")
 
 
+def _oauth_finish_url() -> str:
+    explicit = (os.getenv("OAUTH_FINISH_URL") or "").strip().rstrip("/")
+    if explicit:
+        return explicit
+    redirect = _google_redirect_uri()
+    if redirect:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(redirect)
+        if parsed.scheme and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}/auth/google"
+    return f"{_frontend_url()}/auth/google"
+
+
 GOOGLE_CLIENT_ID = _google_client_id()
 GOOGLE_CLIENT_SECRET = _google_client_secret()
 GOOGLE_REDIRECT_URI = _google_redirect_uri()
 FRONTEND_URL = _frontend_url()
+OAUTH_FINISH_URL = _oauth_finish_url()
 
 
 def google_idtoken_configured() -> bool:

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { postAuthPath } from '../lib/onboarding';
 import styles from './Login.module.css';
@@ -39,7 +39,7 @@ export default function GoogleAuthCallback() {
       <div className={styles.page}>
         <h1>Google sign-in</h1>
         <p className={styles.error}>{String(error)}</p>
-        <a href="/login">← Back to sign in</a>
+        <Link to="/login">← Back to sign in</Link>
       </div>
     );
   }

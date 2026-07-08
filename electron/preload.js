@@ -27,6 +27,9 @@ contextBridge.exposeInMainWorld('sscShell', {
   openOAuth(url) {
     return ipcRenderer.invoke('ssc-shell:open-oauth', url);
   },
+  fetchApi(url, method, headersJson, body) {
+    return ipcRenderer.invoke('ssc-shell:fetch-api', { url, method, headersJson, body });
+  },
 });
 
 contextBridge.exposeInMainWorld('sscCrypto', {

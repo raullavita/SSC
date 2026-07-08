@@ -230,8 +230,12 @@ const PINNED_HOSTS = new Set([
 ]);
 
 const PINNED_SPKI_HASHES = new Set([
+  // Legacy pins (pre Jul 2026 cert rotation)
   'sha256/aW6xgPeCioys0l73e6c6E4GRjmUx7Yqf8tw2DCUgqQs=',
   'sha256/C5+lpZ7tcVwmwQIMcRtPjsQt3MRxqt72RCZ3PqFyjx0=',
+  // Current production pins (Google-managed certs, Jul 2026)
+  'sha256/BPXdoCCsA5W+UqtMi/95FqG81W6cuYOAMg+KUnMw4BI=', // api.supersecurechat.com
+  'sha256/F6jTih9VkkYZS8yuYqeU/4DUGehJ+niBGkkQ1yg8H3U=', // www.supersecurechat.com
 ]);
 
 function certificateSpkiPin(cert) {
@@ -260,6 +264,7 @@ function attachCertificatePinning() {
       callback(0);
       return;
     }
+    console.error('[ssc] cert pin rejected', hostname, pin || 'unknown');
     callback(-2);
   });
 }
@@ -448,6 +453,50 @@ ipcMain.handle('ssc-shell:open-oauth', async (_evt, url) => {
   }
   await shell.openExternal(url);
   return { ok: true };
+});
+
+ipcMain.handle('ssc-shell:fetch-api', async (_evt, payload) => {
+  const url = payload?.url;
+  const method = (payload?.method || 'GET').toUpperCase();
+  const headersJson = payload?.headersJson;
+  const body = payload?.body;
+  if (typeof url !== 'string' || !url.startsWith('https://')) {
+    throw new Error('invalid_fetch_url');
+  }
+  let hostname = '';
+  try {
+    hostname = new URL(url).hostname.toLowerCase();
+  } catch {
+    throw new Error('invalid_fetch_url');
+  }
+  if (!PINNED_HOSTS.has(hostname)) {
+    throw new Error('fetch_host_not_allowed');
+  }
+  let headers = {};
+  if (typeof headersJson === 'string' && headersJson.trim()) {
+    try {
+      headers = JSON.parse(headersJson);
+    } catch {
+      throw new Error('invalid_fetch_headers');
+    }
+  }
+  let response;
+  try {
+    response = await session.defaultSession.fetch(url, {
+      method,
+      headers,
+      body: body != null && body !== '' ? body : undefined,
+    });
+  } catch (err) {
+    console.error('[ssc] fetch-api failed', hostname, err?.message || err);
+    throw err;
+  }
+  const text = await response.text();
+  return {
+    status: response.status,
+    ok: response.ok,
+    body: text,
+  };
 });
 
 ipcMain.handle('ssc-desktop:attest-token', () => {

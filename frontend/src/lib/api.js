@@ -3,6 +3,7 @@
  */
 
 import { androidApiFetch, androidApiFetchEnabled } from './androidApiFetch';
+import { electronApiFetch, electronApiFetchEnabled } from './electronApiFetch';
 import { getInstalledClientHeaders } from './installedClient';
 
 const API_BASE = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
@@ -27,6 +28,9 @@ export async function apiFetch(path, options = {}) {
     headers,
     credentials: options.credentials ?? 'include',
   };
+  if (electronApiFetchEnabled() && url.includes('/api/')) {
+    return electronApiFetch(url, init);
+  }
   if (androidApiFetchEnabled() && url.includes('/api/')) {
     return androidApiFetch(url, init);
   }

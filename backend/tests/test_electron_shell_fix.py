@@ -17,6 +17,7 @@ def test_electron_main_loads_packaged_app():
     assert "completeOAuthFinishNavigation" in main
     assert "withoutScheme" in main
     assert "host === 'auth'" in main
+    assert "ssc-shell:fetch-api" in main
 
 
 def test_electron_preload_injects_client_header():
@@ -24,6 +25,8 @@ def test_electron_preload_injects_client_header():
     assert "__SSC_ELECTRON_CLIENT" in preload
     assert "CLIENT_VALUE" in preload
     assert "SSC_VERSION" in preload
+    assert "fetchApi" in preload
+    assert "ssc-shell:fetch-api" in preload
 
 
 def test_build_electron_uses_numeric_build():

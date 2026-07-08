@@ -44,7 +44,9 @@ function isElectronShell() {
 
 async function startGoogleRedirect() {
   const base = API_BASE || `${window.location.protocol}//${window.location.host}`;
-  const url = `${base}/api/auth/google/start`;
+  const installed = shouldUseGoogleRedirect();
+  const clientQuery = installed ? '?client=installed' : '';
+  const url = `${base}/api/auth/google/start${clientQuery}`;
   if (isElectronShell() && window.sscShell?.openOAuth) {
     await window.sscShell.openOAuth(url);
     return;
