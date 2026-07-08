@@ -84,4 +84,4 @@ def test_android_webview_shell_build():
     assert "android_asset/www/index.html" in gradle
     assert "versionCode = 10" in gradle
     assert "assets/www" in script
-    assert 'REACT_APP_SSC_BUILD = "10"' in script
+    assert '$Build = "10"' in script
