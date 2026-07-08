@@ -15,7 +15,7 @@
   "dependencies": {
     "@signalapp/libsignal-client": "0.96.4",
     "franc-min": "^6.2.0",
-    "mediasoup-client": "3.6.98",
+    "mediasoup-client": "3.21.0",
     "minisearch": "^7.2.0",
     "qrcode": "1.5.4",
     "react": "^18.3.1",
