@@ -49,6 +49,18 @@ This builds the React bundle (`REACT_APP_SSC_PLATFORM=android`, `LANDING_ONLY=fa
 
 **Architecture:** One React installed-client UI (shared with Electron). Android is a thin native shell (WebView + libsignal bridges + OAuth). There is no separate native chat UI.
 
+## Firebase project apps (super-chat-b0992)
+
+| Firebase nickname | Package / type | Use for SSC |
+|-------------------|----------------|-------------|
+| **SSC Installed** | `com.supersecurechat.app` | **Yes** — this APK (download from site / App Distribution) |
+| **SSC** | `chat.ssc.secure` | **No** — old package name; safe to ignore or delete in Firebase console |
+| **SSC Web** | Web app | Website / Hosting analytics only (not the installed Android app) |
+
+Copy `google-services.json` from Firebase (**SSC Installed** → download config) to `android/app/google-services.json` (gitignored). The file may list multiple Android clients; Gradle picks the entry matching `applicationId`.
+
+Push: FCM token is injected as `window.sscPushToken` so `pushRegister.js` can call `/api/push/register`.
+
 ## Firebase App Distribution (testers)
 
 ```powershell

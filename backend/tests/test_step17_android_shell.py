@@ -55,6 +55,19 @@ def test_main_activity_webview_shell_features():
     assert "SwipeRefreshLayout" in main
     assert "SscDeepLink" in main
     assert "__sscBridge" in main
+    assert "SscPushBridge" in main
+    assert "SscFirebasePush" in main
+
+
+def test_android_fcm_push_wiring():
+    manifest = (REPO / "android" / "app" / "src" / "main" / "AndroidManifest.xml").read_text(
+        encoding="utf-8"
+    )
+    gradle = (REPO / "android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
+    assert "SscFirebaseMessagingService" in manifest
+    assert "POST_NOTIFICATIONS" in manifest
+    assert "firebase-messaging" in gradle
+    assert (ANDROID_ROOT / "SscPushBridge.kt").is_file()
 
 
 def test_android_oauth_custom_tabs():
