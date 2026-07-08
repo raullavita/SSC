@@ -47,7 +47,7 @@ def test_release_checklist_exists():
 
 def test_version_alignment():
     gradle = (REPO / "android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
-    http_client = (
+    api_client = (
         REPO
         / "android"
         / "app"
@@ -57,11 +57,9 @@ def test_version_alignment():
         / "com"
         / "supersecurechat"
         / "app"
-        / "data"
-        / "api"
-        / "SscHttpClient.kt"
+        / "ApiClient.kt"
     ).read_text(encoding="utf-8")
     health = (REPO / "backend" / "routers" / "health.py").read_text(encoding="utf-8")
     assert f'versionName = "{RELEASE_VERSION}"' in gradle
-    assert ANDROID_CLIENT_HEADER in http_client
+    assert ANDROID_CLIENT_HEADER in api_client
     assert "RELEASE_VERSION" in health

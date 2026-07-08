@@ -40,9 +40,12 @@ def test_frontend_installed_shell_hash_router():
     assert "INSTALLED_SHELL_PLATFORMS" in index
 
 
-def test_android_native_shell_build():
+def test_android_webview_shell_build():
     gradle = (REPO / "android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
     script = (REPO / "scripts" / "build_android.ps1").read_text(encoding="utf-8")
     assert "com.supersecurechat.app" in gradle
+    assert "SSC_WEB_URL" in gradle
+    assert "android_asset/www/index.html" in gradle
     assert "versionCode = 10" in gradle
+    assert "assets/www" in script
     assert "assembleRelease" in script or "bundleRelease" in script

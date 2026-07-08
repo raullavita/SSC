@@ -1,4 +1,4 @@
-"""Step 17 — native Android Compose shell."""
+"""Step 17 — Android WebView shell (shared React UI with Electron)."""
 
 from __future__ import annotations
 
@@ -47,34 +47,41 @@ def test_manifest_deep_links_and_theme():
     assert "Theme.SSC" in manifest
 
 
-def test_main_activity_native_shell_features():
+def test_main_activity_webview_shell_features():
     main = (ANDROID_ROOT / "MainActivity.kt").read_text(encoding="utf-8")
-    assert "ComponentActivity" in main
+    assert "WebView" in main
     assert "installSplashScreen" in main
-    assert "enableEdgeToEdge" in main
-    assert "GoogleAuthHelper" in main
-    assert "SscNavGraph" in main
-    assert "consumeOAuthIntent" in main
+    assert "SscNativeBridge" in main
+    assert "SwipeRefreshLayout" in main
+    assert "SscDeepLink" in main
+    assert "__sscBridge" in main
 
 
 def test_android_oauth_custom_tabs():
-    helper = (ANDROID_ROOT / "oauth" / "GoogleAuthHelper.kt").read_text(encoding="utf-8")
-    http = (ANDROID_ROOT / "data" / "api" / "SscHttpClient.kt").read_text(encoding="utf-8")
-    assert "CustomTabsIntent" in helper
-    assert "parseOAuthCode" in helper
-    assert "android/0.3.1/10" in http
-    assert "X-SSC-Client" in http
+    launcher = (ANDROID_ROOT / "SscOAuthLauncher.kt").read_text(encoding="utf-8")
+    api = (ANDROID_ROOT / "ApiClient.kt").read_text(encoding="utf-8")
+    assert "CustomTabsIntent" in launcher
+    assert "isOAuthStart" in launcher
+    assert "android/0.3.1/10" in api
+    assert "X-SSC-Client" in api
 
 
-def test_android_oauth_deep_link_parsing():
-    helper = (ANDROID_ROOT / "oauth" / "GoogleAuthHelper.kt").read_text(encoding="utf-8")
-    assert '"ssc"' in helper
-    assert '"auth"' in helper
-    assert "oauth_code" in helper
+def test_android_native_bridge_and_assets():
+    bridge = (ANDROID_ROOT / "SscNativeBridge.kt").read_text(encoding="utf-8")
+    crypto_js = REPO / "android" / "app" / "src" / "main" / "assets" / "ssc_crypto_bridge.js"
+    layout = REPO / "android" / "app" / "src" / "main" / "res" / "layout" / "activity_main.xml"
+    assert "fetchApi" in bridge
+    assert "SscCryptoService" in bridge
+    assert crypto_js.is_file()
+    assert layout.is_file()
+    assert "WebView" in layout.read_text(encoding="utf-8")
 
 
-def test_android_native_compose_build():
+def test_android_webview_shell_build():
     gradle = (REPO / "android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
-    assert "compose = true" in gradle
-    assert "android_asset/www/index.html" not in gradle
+    script = (REPO / "scripts" / "build_android.ps1").read_text(encoding="utf-8")
+    assert "SSC_WEB_URL" in gradle
+    assert "android_asset/www/index.html" in gradle
     assert "versionCode = 10" in gradle
+    assert "assets/www" in script
+    assert 'REACT_APP_SSC_BUILD = "10"' in script

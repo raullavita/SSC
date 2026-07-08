@@ -86,8 +86,16 @@ Native code on mobile/desktop is limited to crypto (libsignal), OAuth, push hook
 ## Build installed clients
 
 ```powershell
-.\scripts\build_electron.ps1   # → electron\dist\SSC-Setup-*.exe
-.\scripts\build_android.ps1    # → android\app\build\outputs\apk\release\
+.\scripts\rebuild_clients.ps1   # Electron + Android (recommended)
+.\scripts\build_electron.ps1     # → electron\dist\SSC-Setup-0.3.1.exe
+.\scripts\build_android.ps1      # → android\app\build\outputs\apk\release\SSC-0.3.1.apk
+```
+
+Local API override:
+
+```powershell
+$env:REACT_APP_API_URL = "http://YOUR_LAN_IP:8000"
+.\scripts\rebuild_clients.ps1
 ```
 
 ## Contributing
