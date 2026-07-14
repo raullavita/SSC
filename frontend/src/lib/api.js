@@ -4,6 +4,7 @@
 
 import { androidApiFetch, androidApiFetchEnabled } from './androidApiFetch';
 import { electronApiFetch, electronApiFetchEnabled } from './electronApiFetch';
+import { getLocalDeviceId } from './deviceLink';
 import { getInstalledClientHeaders } from './installedClient';
 
 const API_BASE = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
@@ -17,7 +18,11 @@ function buildUrl(path) {
 }
 
 function authHeaders(extra = {}) {
-  return getInstalledClientHeaders(extra);
+  const deviceId = getLocalDeviceId();
+  return getInstalledClientHeaders({
+    'X-SSC-Device-Id': deviceId,
+    ...extra,
+  });
 }
 
 export async function apiFetch(path, options = {}) {
@@ -58,6 +63,13 @@ export const api = {
     apiJson(path, {
       ...options,
       method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
+      body: JSON.stringify(body),
+    }),
+  put: (path, body, options) =>
+    apiJson(path, {
+      ...options,
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
       body: JSON.stringify(body),
     }),

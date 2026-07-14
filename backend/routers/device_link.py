@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.ids import new_link_token_id
+from core.device_id_policy import allocate_linked_device_id, is_valid_device_id
 from core.multi_device_policy import (
     MAX_DEVICES_PER_USER,
     build_device_link_deep_link,
@@ -29,7 +30,7 @@ class CreateLinkBody(BaseModel):
 
 class ConfirmLinkBody(BaseModel):
     link_token: str = Field(min_length=16)
-    device_id: str = Field(min_length=1, max_length=64)
+    device_id: str | None = Field(default=None, min_length=1, max_length=64)
     name: str = Field(min_length=1, max_length=64)
     platform: str = Field(default="electron", max_length=32)
 
@@ -87,12 +88,18 @@ async def confirm_device_link(
     if count >= MAX_DEVICES_PER_USER:
         raise HTTPException(status_code=400, detail="device_limit_reached")
 
-    doc_id = f"{user_id}:{body.device_id}"
+    if body.device_id and not is_valid_device_id(body.device_id):
+        raise HTTPException(status_code=400, detail="device_id_must_be_numeric")
+    device_id = body.device_id or await allocate_linked_device_id(db, user_id)
+    if device_id == "1":
+        device_id = await allocate_linked_device_id(db, user_id)
+
+    doc_id = f"{user_id}:{device_id}"
     now = datetime.now(timezone.utc)
     device_doc = {
         "_id": doc_id,
         "user_id": user_id,
-        "device_id": body.device_id,
+        "device_id": device_id,
         "name": body.name.strip(),
         "platform": body.platform,
         "created_at": now,

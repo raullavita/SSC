@@ -44,6 +44,8 @@ import { fetchLanguages, translateText, TranslationError } from '../lib/translat
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 import { searchMessages } from '../search/messageIndex';
 import { getInstalledClientHeader } from '../lib/installedClient';
+import { getLocalDeviceId } from '../lib/deviceLink';
+import { handleDecryptRetryRequest } from '../signal/sesameRetry';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import { getPeerTrust } from '../lib/trustStore';
 import { isAndroidShell, isInstalledApp } from '../lib/appMode';
@@ -117,7 +119,14 @@ export default function ChatHome() {
   const isGroup = active?.type === 'group';
 
   const handleUserSync = useCallback(
-    (payload) => {
+    async (payload) => {
+      if (payload?.type === 'decrypt_retry_request' && user?.id) {
+        await handleDecryptRetryRequest(payload, {
+          localUserId: user.id,
+          localDeviceId: getLocalDeviceId(),
+        });
+        return;
+      }
       if (payload?.type !== 'sync_message' || !payload.conversation_id) return;
       const convId = payload.conversation_id;
       const updatedAt = payload.message?.created_at;
@@ -147,7 +156,7 @@ export default function ChatHome() {
         refreshActiveConversation();
       }
     },
-    [activeId, loadConversations, refreshActiveConversation]
+    [activeId, loadConversations, refreshActiveConversation, user?.id]
   );
 
   useUserConversationSync({
@@ -343,7 +352,7 @@ export default function ChatHome() {
       loadConversations();
       startPresenceHeartbeat();
       registerDeviceAndPrekeys({
-        deviceId: '1',
+        deviceId: getLocalDeviceId(),
         deviceName: 'SSC Client',
         platform: getInstalledClientHeader().split('/')[0] || 'electron',
         localUserId: user.id,

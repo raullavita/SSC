@@ -1,37 +1,16 @@
-import { useEffect, useRef } from 'react';
-import { wsAuthPayload, wsUrl } from '../lib/api';
-import { buildSubscribePayload } from '../lib/wsSubscribe';
+import { useRef } from 'react';
+import { useSyncSocket } from '../hooks/useSyncSocket';
 
-/**
- * Subscribe to user:* WS topic for cross-conversation sync (unread bumps).
- */
+/** Cross-conversation sync via unified socket. */
 export function useUserConversationSync({ userId, wsToken, enabled, onEvent }) {
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
 
-  useEffect(() => {
-    if (!enabled || !userId) return undefined;
-
-    const ws = new WebSocket(wsUrl());
-    const topic = `user:${userId}`;
-
-    ws.onopen = async () => {
-      const auth = wsAuthPayload(wsToken);
-      if (auth) ws.send(auth);
-      ws.send(await buildSubscribePayload(topic));
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        onEventRef.current?.(data?.payload || data);
-      } catch {
-        /* ignore */
-      }
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, [enabled, userId, wsToken]);
+  useSyncSocket({
+    userId: enabled && userId ? userId : null,
+    wsToken,
+    topics: enabled && userId ? [`user:${userId}`] : [],
+    enabled: Boolean(enabled && userId),
+    onEvent: (envelope) => onEventRef.current?.(envelope.payload),
+  });
 }

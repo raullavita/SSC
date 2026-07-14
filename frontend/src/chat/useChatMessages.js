@@ -19,7 +19,17 @@ import {
   isSenderKeyDistributionMessage,
 } from '../signal/groupSenderKeys';
 import { encryptSealedMessage } from '../signal/sealedSender';
-import { decryptMessage, encryptMessage } from '../signal/signalBridge';
+import { getLocalDeviceId } from '../lib/deviceLink';
+import { storeMessageRecord } from '../signal/messageRecords';
+import {
+  decryptWithRetry,
+  resolveCiphertext,
+} from '../signal/sesameRetry';
+import {
+  decryptMessage,
+  encryptMessage,
+  encryptMessageForRecipients,
+} from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
 
 function parseMessageContent(text, messageKind) {
@@ -93,7 +103,15 @@ export function useChatMessages(
           const row = await hydrateGroupMessage(m, { groupId });
           if (row) rows.push(row);
         } else {
-          const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+          const ct = resolveCiphertext(m, getLocalDeviceId());
+          const raw = await decryptWithRetry(
+            { ...m, ciphertext: ct },
+            {
+              peerId: m.sender_id,
+              localDeviceId: getLocalDeviceId(),
+              conversationId,
+            }
+          );
           const parsed = parseMessageContent(raw, m.message_kind);
           rows.push({
             ...m,
@@ -148,6 +166,7 @@ export function useChatMessages(
     enabled: Boolean(conversationId && enabled),
     topic: conversationId ? `conversation:${conversationId}` : null,
     wsToken,
+    userId,
     onEvent: async (data) => {
       onSocketEvent?.(data);
       const payload = data?.payload || data;
@@ -166,7 +185,15 @@ export function useChatMessages(
             const parsed = parseMessageContent(raw, m.message_kind);
             row = { ...m, text: parsed.text, reaction: null, attachment: parsed.attachment, poll: parsed.poll };
           } else {
-            const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+            const ct = resolveCiphertext(m, getLocalDeviceId());
+            const raw = await decryptWithRetry(
+              { ...m, ciphertext: ct },
+              {
+                peerId: m.sender_id,
+                localDeviceId: getLocalDeviceId(),
+                conversationId,
+              }
+            );
             const parsed = parseMessageContent(raw, m.message_kind);
             row = {
               ...m,
@@ -235,7 +262,15 @@ export function useChatMessages(
           }
           return;
         }
-        const raw = await decryptMessage(m.ciphertext, { peerId: m.sender_id });
+        const ct = resolveCiphertext(m, getLocalDeviceId());
+        const raw = await decryptWithRetry(
+          { ...m, ciphertext: ct },
+          {
+            peerId: m.sender_id,
+            localDeviceId: getLocalDeviceId(),
+            conversationId,
+          }
+        );
         const parsed = parseMessageContent(raw, m.message_kind);
         const row = {
           ...m,
@@ -286,7 +321,36 @@ export function useChatMessages(
       } else if (getSealedSenderEnabled()) {
         ({ ciphertext, protocol, sealed } = await encryptSealedMessage(text.trim(), { peerId }));
       } else {
-        ({ ciphertext, protocol } = await encryptMessage(text.trim(), { peerId }));
+        const encrypted = await encryptMessageForRecipients(text.trim(), {
+          peerId,
+          localUserId: userId,
+          localDeviceId: getLocalDeviceId(),
+          includeSelfDevices: true,
+        });
+        ciphertext = encrypted.ciphertext;
+        protocol = encrypted.protocol;
+        const body = {
+          ciphertext,
+          protocol,
+          device_ciphertexts: encrypted.device_ciphertexts,
+        };
+        if (disappearingSeconds) body.disappearing_seconds = disappearingSeconds;
+        if (replyTo) body.reply_to = replyTo;
+        const data = await api.post(`/api/conversations/${conversationId}/messages`, body);
+        const m = data.message;
+        storeMessageRecord(m.id, {
+          plaintext: text.trim(),
+          peerId,
+          conversationId,
+          deviceCiphertexts: encrypted.device_ciphertexts,
+        });
+        const row = { ...m, text: text.trim(), reaction: null, attachment: null };
+        setMessages((prev) => {
+          if (prev.some((x) => x.id === m.id)) return prev;
+          return [...prev, row];
+        });
+        indexMessage(conversationId, row);
+        return;
       }
       const body = { ciphertext, protocol };
       if (sealed) body.sealed = true;

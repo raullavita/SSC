@@ -63,6 +63,15 @@ function writeStartupDiagnostics() {
   }
 }
 
+function registerPushIpc() {
+  try {
+    const { getOrCreatePushToken } = require('./pushTokenStore');
+    ipcMain.handle('ssc-push:get-token', () => getOrCreatePushToken(app.getPath('userData')));
+  } catch (err) {
+    console.warn('[ssc] push IPC disabled', err?.message || err);
+  }
+}
+
 function registerCryptoIpc() {
   ipcMain.handle('ssc-crypto:available', () => libsignalAvailable);
 
@@ -85,6 +94,24 @@ function registerCryptoIpc() {
     requireLibsignal();
     const s = getSession(app.getPath('userData'));
     return s.generatePreKeyBundle();
+  });
+
+  ipcMain.handle('ssc-crypto:generatePreKeyBatch', async (_evt, { count } = {}) => {
+    requireLibsignal();
+    const s = getSession(app.getPath('userData'));
+    return s.generatePreKeyBatch(count || 50);
+  });
+
+  ipcMain.handle('ssc-crypto:generatePreKeyBatchOnly', async (_evt, { count } = {}) => {
+    requireLibsignal();
+    const s = getSession(app.getPath('userData'));
+    return s.generatePreKeyBatchOnly(count || 50);
+  });
+
+  ipcMain.handle('ssc-crypto:rotateSignedPreKey', async () => {
+    requireLibsignal();
+    const s = getSession(app.getPath('userData'));
+    return s.rotateSignedPreKey();
   });
 
   ipcMain.handle('ssc-crypto:establishSession', async (_evt, { peerId, deviceId, bundle }) => {
@@ -383,6 +410,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -397,6 +425,10 @@ function createWindow() {
   });
   win.webContents.on('did-fail-load', (_event, code, description, url) => {
     console.error('[ssc] did-fail-load', code, description, url);
+  });
+  win.once('ready-to-show', () => {
+    win.show();
+    win.focus();
   });
   loadWindow(win);
   mainWindow = win;
@@ -554,6 +586,7 @@ app.whenReady().then(() => {
   writeStartupDiagnostics();
   attachCertificatePinning();
   registerCryptoIpc();
+  registerPushIpc();
   const win = createWindow();
   registerAutoUpdater(win);
   const deepLink = process.argv.find((arg) => typeof arg === 'string' && arg.startsWith('ssc://'));

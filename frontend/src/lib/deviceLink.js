@@ -1,18 +1,43 @@
 /**
- * Multi-device link helpers — Step 15.
+ * Multi-device helpers — numeric device IDs for libsignal compatibility.
  */
 
 const DEVICE_ID_KEY = 'ssc_device_id';
+const LINKED_DEVICE_KEY = 'ssc_linked_device_id';
+export const PRIMARY_DEVICE_ID = '1';
 
+/** Primary installed client (Electron/Android main app) always uses device 1. */
+export function getPrimaryDeviceId() {
+  return PRIMARY_DEVICE_ID;
+}
+
+/** Local device id for crypto + API headers. */
 export function getLocalDeviceId() {
   try {
-    const existing = localStorage.getItem(DEVICE_ID_KEY);
-    if (existing) return existing;
-    const id = `dev-${Date.now().toString(36)}`;
-    localStorage.setItem(DEVICE_ID_KEY, id);
-    return id;
+    const linked = localStorage.getItem(LINKED_DEVICE_KEY);
+    if (linked && /^\d{1,4}$/.test(linked)) return linked;
+    return PRIMARY_DEVICE_ID;
   } catch {
-    return `dev-${Date.now().toString(36)}`;
+    return PRIMARY_DEVICE_ID;
+  }
+}
+
+export function setLinkedDeviceId(deviceId) {
+  if (!deviceId || !/^\d{1,4}$/.test(String(deviceId))) return;
+  try {
+    localStorage.setItem(LINKED_DEVICE_KEY, String(deviceId));
+    localStorage.setItem(DEVICE_ID_KEY, String(deviceId));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearLinkedDeviceId() {
+  try {
+    localStorage.removeItem(LINKED_DEVICE_KEY);
+    localStorage.removeItem(DEVICE_ID_KEY);
+  } catch {
+    /* ignore */
   }
 }
 

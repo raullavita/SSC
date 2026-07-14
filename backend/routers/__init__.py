@@ -19,6 +19,7 @@ from routers.groups import router as groups_router
 from routers.health import router as health_router
 from routers.oauth_finish import router as oauth_finish_router
 from routers.messages import router as messages_router
+from routers.sesame_retry import router as sesame_retry_router
 from routers.panic import router as panic_router
 from routers.polls import router as polls_router
 from routers.reactions import router as reactions_router
@@ -52,6 +53,7 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(groups_router, prefix=prefix)
     app.include_router(conversations_router, prefix=prefix)
     app.include_router(messages_router, prefix=prefix)
+    app.include_router(sesame_retry_router, prefix=prefix)
     app.include_router(reactions_router, prefix=prefix)
     app.include_router(friend_requests_router, prefix=prefix)
     app.include_router(broadcast_lists_router, prefix=prefix)

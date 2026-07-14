@@ -49,7 +49,7 @@ async def test_upload_and_fetch_prekey_bundle(e8_client):
     assert reg.status_code == 200
 
     bundle = {
-        "device_id": "dev1",
+        "device_id": "1",
         "registration_id": 12345,
         "identity_key": "aWRlbnRpdHkta2V5LWhlcmU=",
         "signed_prekey": {
@@ -65,7 +65,7 @@ async def test_upload_and_fetch_prekey_bundle(e8_client):
     assert len(db["prekeys"].docs) == 1
 
     user_id = reg.json()["user"]["id"]
-    fetch = await ac.get(f"/api/prekeys/users/{user_id}/devices/dev1", headers=CLIENT)
+    fetch = await ac.get(f"/api/prekeys/users/{user_id}/devices/1", headers=CLIENT)
     assert fetch.status_code == 200
     payload = fetch.json()["bundle"]
     assert payload["identity_key"] == bundle["identity_key"]

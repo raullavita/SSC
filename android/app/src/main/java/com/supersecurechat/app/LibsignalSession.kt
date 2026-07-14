@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.signal.libsignal.crypto.Aes256GcmSiv
 import org.signal.libsignal.protocol.IdentityKey
+import org.signal.libsignal.protocol.IdentityKeyPair
 import org.signal.libsignal.protocol.SessionBuilder
 import org.signal.libsignal.protocol.SessionCipher
 import org.signal.libsignal.protocol.SignalProtocolAddress
@@ -108,51 +109,113 @@ class LibsignalSession(filesDir: File) {
         )
     }
 
-    fun generatePreKeyBundle(): JSONObject {
+    fun generatePreKeyBundle(): JSONObject = generatePreKeyBatch(1)
+
+    fun generatePreKeyBatch(count: Int = 50): JSONObject {
         val identity = identityStore.identityKeyPair
         val registrationId = identityStore.localRegistrationId
-        val deviceId = meta.deviceId.toIntOrNull() ?: 1
+        val signedPreKey = createSignedPreKeyRecord(identity)
+        val preKeys = createPreKeyRecords(count)
+        val kyberRecord = createKyberRecord(identity)
+        savePreKeyCounters()
+        return bundlePayload(identity, registrationId, signedPreKey, preKeys, kyberRecord)
+    }
 
+    fun generatePreKeyBatchOnly(count: Int = 50): JSONObject {
+        val preKeys = createPreKeyRecords(count)
+        savePreKeyCounters()
+        val arr = JSONArray()
+        preKeys.forEach { preKey ->
+            arr.put(
+                JSONObject()
+                    .put("keyId", preKey.id)
+                    .put("publicKey", B64.encode(preKey.keyPair.publicKey.serialize())),
+            )
+        }
+        return JSONObject().put("preKeys", arr)
+    }
+
+    fun rotateSignedPreKey(): JSONObject {
+        val identity = identityStore.identityKeyPair
+        val signedPreKey = createSignedPreKeyRecord(identity)
+        val kyberRecord = createKyberRecord(identity)
+        savePreKeyCounters()
+        return JSONObject()
+            .put(
+                "signedPreKey",
+                JSONObject()
+                    .put("keyId", signedPreKey.id)
+                    .put("publicKey", B64.encode(signedPreKey.keyPair.publicKey.serialize()))
+                    .put("signature", B64.encode(signedPreKey.signature)),
+            )
+            .put(
+                "kyberPreKey",
+                JSONObject()
+                    .put("keyId", kyberRecord.id)
+                    .put("publicKey", B64.encode(kyberRecord.keyPair.publicKey.serialize()))
+                    .put("signature", B64.encode(kyberRecord.signature)),
+            )
+    }
+
+    private fun createSignedPreKeyRecord(identity: IdentityKeyPair): SignedPreKeyRecord {
         val signedId = signedPreKeyId++
         val signedKeyPair = ECKeyPair.generate()
         val signedSig = identity.privateKey.calculateSignature(signedKeyPair.publicKey.serialize())
         val signedPreKey = SignedPreKeyRecord(signedId, System.currentTimeMillis(), signedKeyPair, signedSig)
         signedPreKeyStore.storeSignedPreKey(signedId, signedPreKey)
+        return signedPreKey
+    }
 
-        val preKeyId = nextPreKeyId++
-        val preKey = PreKeyRecord(preKeyId, ECKeyPair.generate())
-        preKeyStore.storePreKey(preKeyId, preKey)
-
+    private fun createKyberRecord(identity: IdentityKeyPair): KyberPreKeyRecord {
         val kyberId = kyberPreKeyId++
         val kyberPair = KEMKeyPair.generate(KEMKeyType.KYBER_1024)
         val kyberSig = identity.privateKey.calculateSignature(kyberPair.publicKey.serialize())
         val kyberRecord = KyberPreKeyRecord(kyberId, System.currentTimeMillis(), kyberPair, kyberSig)
         kyberPreKeyStore.storeKyberPreKey(kyberId, kyberRecord)
-        savePreKeyCounters()
+        return kyberRecord
+    }
 
+    private fun createPreKeyRecords(count: Int): List<PreKeyRecord> {
+        val records = mutableListOf<PreKeyRecord>()
+        repeat(count) {
+            val preKeyId = nextPreKeyId++
+            val preKey = PreKeyRecord(preKeyId, ECKeyPair.generate())
+            preKeyStore.storePreKey(preKeyId, preKey)
+            records.add(preKey)
+        }
+        return records
+    }
+
+    private fun bundlePayload(
+        identity: IdentityKeyPair,
+        registrationId: Int,
+        signedPreKey: SignedPreKeyRecord,
+        preKeys: List<PreKeyRecord>,
+        kyberRecord: KyberPreKeyRecord,
+    ): JSONObject {
+        val preKeyArr = JSONArray()
+        preKeys.forEach { preKey ->
+            preKeyArr.put(
+                JSONObject()
+                    .put("keyId", preKey.id)
+                    .put("publicKey", B64.encode(preKey.keyPair.publicKey.serialize())),
+            )
+        }
         return JSONObject()
             .put("registrationId", registrationId)
             .put("identityKey", B64.encode(identity.publicKey.serialize()))
             .put(
                 "signedPreKey",
                 JSONObject()
-                    .put("keyId", signedId)
+                    .put("keyId", signedPreKey.id)
                     .put("publicKey", B64.encode(signedPreKey.keyPair.publicKey.serialize()))
                     .put("signature", B64.encode(signedPreKey.signature)),
             )
-            .put(
-                "preKeys",
-                JSONArray()
-                    .put(
-                        JSONObject()
-                            .put("keyId", preKeyId)
-                            .put("publicKey", B64.encode(preKey.keyPair.publicKey.serialize())),
-                    ),
-            )
+            .put("preKeys", preKeyArr)
             .put(
                 "kyberPreKey",
                 JSONObject()
-                    .put("keyId", kyberId)
+                    .put("keyId", kyberRecord.id)
                     .put("publicKey", B64.encode(kyberRecord.keyPair.publicKey.serialize()))
                     .put("signature", B64.encode(kyberRecord.signature)),
             )

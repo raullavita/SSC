@@ -7,7 +7,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Must not require() local files here — Electron 20+ sandboxes preload by default and
 // only allows built-in modules, so require('./package.json') crashes before sscCrypto loads.
 const SSC_VERSION = '0.3.1';
-const SSC_BUILD = '10';
+const SSC_BUILD = '12';
 const CLIENT_VALUE = `electron/${SSC_VERSION}/${SSC_BUILD}`;
 
 contextBridge.exposeInMainWorld('sscUpdater', {
@@ -32,6 +32,13 @@ contextBridge.exposeInMainWorld('sscShell', {
   },
 });
 
+contextBridge.exposeInMainWorld('sscPush', {
+  getToken() {
+    return ipcRenderer.invoke('ssc-push:get-token');
+  },
+  platform: 'electron',
+});
+
 contextBridge.exposeInMainWorld('sscCrypto', {
   get available() {
     return ipcRenderer.invoke('ssc-crypto:available');
@@ -49,6 +56,18 @@ contextBridge.exposeInMainWorld('sscCrypto', {
     return ipcRenderer.invoke('ssc-crypto:generatePreKeyBundle');
   },
 
+  async generatePreKeyBatch(count = 50) {
+    return ipcRenderer.invoke('ssc-crypto:generatePreKeyBatch', { count });
+  },
+
+  async generatePreKeyBatchOnly(count = 50) {
+    return ipcRenderer.invoke('ssc-crypto:generatePreKeyBatchOnly', { count });
+  },
+
+  async rotateSignedPreKey() {
+    return ipcRenderer.invoke('ssc-crypto:rotateSignedPreKey');
+  },
+
   async establishSession(peerId, deviceId, bundle) {
     return ipcRenderer.invoke('ssc-crypto:establishSession', { peerId, deviceId, bundle });
   },
@@ -63,6 +82,10 @@ contextBridge.exposeInMainWorld('sscCrypto', {
 
   async encryptBytes(arrayBuffer) {
     return ipcRenderer.invoke('ssc-crypto:encryptBytes', { buffer: arrayBuffer });
+  },
+
+  async decryptBytes(ciphertext) {
+    return ipcRenderer.invoke('ssc-crypto:decryptBytes', { ciphertext });
   },
 
   async computeSafetyNumber(peerId, peerIdentityKey) {

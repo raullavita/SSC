@@ -1,38 +1,18 @@
-import { useEffect, useRef } from 'react';
-import { wsAuthPayload, wsUrl } from '../lib/api';
-import { buildSubscribePayload } from '../lib/wsSubscribe';
+import { useRef } from 'react';
+import { useSyncSocket } from '../hooks/useSyncSocket';
 
-export function useChatSocket({ enabled, topic, onEvent, wsToken }) {
-  const socketRef = useRef(null);
+/** Conversation topic subscription via unified sync socket. */
+export function useChatSocket({ enabled, topic, onEvent, wsToken, userId }) {
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
 
-  useEffect(() => {
-    if (!enabled || !topic) return undefined;
+  useSyncSocket({
+    userId: enabled && userId ? userId : null,
+    wsToken,
+    topics: enabled && topic ? [topic] : [],
+    enabled: Boolean(enabled && topic && userId),
+    onEvent: (envelope) => onEventRef.current?.(envelope.raw),
+  });
 
-    const ws = new WebSocket(wsUrl());
-    socketRef.current = ws;
-
-    ws.onopen = async () => {
-      const auth = wsAuthPayload(wsToken);
-      if (auth) ws.send(auth);
-      ws.send(await buildSubscribePayload(topic));
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        onEventRef.current?.(data);
-      } catch {
-        /* ignore */
-      }
-    };
-
-    return () => {
-      ws.close();
-      socketRef.current = null;
-    };
-  }, [enabled, topic, wsToken]);
-
-  return socketRef;
+  return null;
 }

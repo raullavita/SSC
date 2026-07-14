@@ -4,8 +4,16 @@ from __future__ import annotations
 
 from typing import Any
 
+from core.device_ciphertext_policy import filter_message_doc_for_devices, participant_device_ids
 from core.metadata_policy import public_message, scrub_payload
 from core.ws_hub import ws_hub
+async def _viewer_message(doc: dict[str, Any], viewer_id: str) -> dict[str, Any]:
+    from db import get_database
+
+    db = get_database()
+    device_ids = await participant_device_ids(db, viewer_id)
+    filtered = filter_message_doc_for_devices(doc, device_ids)
+    return public_message(filtered, viewer_id=viewer_id)
 
 
 async def fanout_message(
@@ -26,7 +34,7 @@ async def fanout_message(
     )
 
     for uid in participants:
-        viewer_message = public_message(doc, viewer_id=uid)
+        viewer_message = await _viewer_message(doc, uid)
         await ws_hub.publish(
             f"user:{uid}",
             scrub_payload(
@@ -67,7 +75,7 @@ async def fanout_message_edited(
     payload = scrub_payload({"type": "message_edited", "message": message})
     await ws_hub.publish(f"conversation:{conversation_id}", payload)
     for uid in participants:
-        viewer_message = public_message(doc, viewer_id=uid)
+        viewer_message = await _viewer_message(doc, uid)
         await ws_hub.publish(
             f"user:{uid}",
             scrub_payload(
@@ -106,5 +114,5 @@ async def fanout_message_deleted(
     for uid in participants:
         user_payload = dict(base)
         if scope == "everyone" and doc:
-            user_payload["message"] = public_message(doc, viewer_id=uid)
+            user_payload["message"] = await _viewer_message(doc, uid)
         await ws_hub.publish(f"user:{uid}", scrub_payload(user_payload))

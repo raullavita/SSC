@@ -27,9 +27,10 @@ Add-Check "dockerfile_uvicorn" ($docker -match "uvicorn server:app") ""
 $firebase = Get-Content (Join-Path $Root "firebase.json") -Raw -ErrorAction SilentlyContinue
 Add-Check "firebase_hosting" ($firebase -match "hosting") ""
 
-$gcloud = Get-Command gcloud -ErrorAction SilentlyContinue
+. (Join-Path $PSScriptRoot "resolve_gcloud.ps1")
+$gcloudPath = Resolve-GcloudPath
 $firebaseCli = Get-Command firebase -ErrorAction SilentlyContinue
-Add-Check "gcloud_installed" ([bool]$gcloud) "optional for live deploy"
+Add-Check "gcloud_installed" ([bool]$gcloudPath) $(if ($gcloudPath) { $gcloudPath } else { "optional for live deploy" })
 Add-Check "firebase_cli_installed" ([bool]$firebaseCli) "optional for live deploy"
 
 $allRequired = $checks | Where-Object { $_.name -like "file:*" -or $_.name -eq "dockerfile_uvicorn" -or $_.name -eq "firebase_hosting" }

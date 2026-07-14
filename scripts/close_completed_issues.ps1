@@ -1,13 +1,13 @@
-# Close completed SSC help-wanted issues (skips #59 — assigned to contributor).
+# Close completed SSC help-wanted issues.
 # Requires: gh auth login  OR  GH_TOKEN / GITHUB_TOKEN with repo scope.
 #
 # Usage: .\scripts\close_completed_issues.ps1
 
 $ErrorActionPreference = "Stop"
 
-$Skip = @(59)
+$Skip = @()
 $Close = @(
-    1, 3, 54, 55, 56, 57, 58, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
+    1, 3, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70,
     71, 72, 73, 74, 75
 )
 
@@ -29,4 +29,4 @@ foreach ($n in $Close) {
     }
 }
 
-Write-Host "Done. Issue #59 left open for assigned contributor."
+Write-Host "Done."

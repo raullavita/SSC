@@ -3,7 +3,12 @@ import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import LinkedDevicesPanel from '../components/LinkedDevicesPanel';
 import { useAuth } from '../context/AuthContext';
 import { useMultiDevice } from '../devices/useMultiDevice';
-import { getLocalDeviceId, parseDeviceLinkToken, platformLabel } from '../lib/deviceLink';
+import {
+  getLocalDeviceId,
+  parseDeviceLinkToken,
+  platformLabel,
+  setLinkedDeviceId,
+} from '../lib/deviceLink';
 import { getInstalledClientHeader } from '../lib/installedClient';
 import { needsUsernameSetup } from '../lib/onboarding';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
@@ -59,11 +64,10 @@ export default function DeviceLink() {
   async function handleLinkDevice() {
     if (!token) return;
     setStatus('Linking device…');
-    const deviceId = getLocalDeviceId();
     const platform = detectPlatform();
     const result = await confirmLink({
       linkToken: token,
-      deviceId,
+      deviceId: null,
       name: deviceName.trim() || 'Linked device',
       platform,
     });
@@ -71,15 +75,19 @@ export default function DeviceLink() {
       setStatus('');
       return;
     }
+    const assignedDeviceId = result?.device?.id || getLocalDeviceId();
+    setLinkedDeviceId(assignedDeviceId);
     setStatus('Registering encryption keys…');
     try {
       await registerDeviceAndPrekeys({
-        deviceId,
+        deviceId: assignedDeviceId,
         deviceName: deviceName.trim() || 'Linked device',
         platform,
+        localUserId: user?.id,
       });
-    } catch {
-      /* prekeys optional in dev */
+    } catch (err) {
+      const detail = err?.body?.detail || err?.message || 'prekey_registration_failed';
+      setMessage(`Encryption setup failed: ${detail}`);
     }
     setDone(true);
     setStatus('');

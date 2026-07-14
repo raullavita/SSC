@@ -1,21 +1,26 @@
 /**
- * Signal crypto bridge — @signalapp/libsignal-client (Electron) with dev fallback (dev only).
+ * Signal crypto bridge — multi-device Sesame-style messaging.
  */
 
 import { api } from '../lib/api';
+import { getLocalDeviceId, getPrimaryDeviceId } from '../lib/deviceLink';
 import {
   assertLibsignalRuntime,
   requiresProductionCrypto,
 } from '../lib/cryptoPolicy';
-import { getInstalledClientHeader } from '../lib/installedClient';
+
 import {
   SIGNAL_PROTOCOL_V1,
   buildDevSignalEnvelope,
   parseDevSignalEnvelope,
 } from './envelope';
 
+const SIGNED_PREKEY_ROTATE_MS = 7 * 24 * 60 * 60 * 1000;
+const PREKEY_BATCH_COUNT = 50;
+
 let libsignalModule = null;
 let configuredLocalUserId = null;
+let configuredLocalDeviceId = getPrimaryDeviceId();
 
 /** Electron/Android libsignal bundles use camelCase; API expects snake_case. */
 export function normalizePreKeyBundlePayload(deviceId, bundle) {
@@ -46,6 +51,10 @@ export function normalizePreKeyBundlePayload(deviceId, bundle) {
   return payload;
 }
 
+function signedPrekeyRotationKey(deviceId) {
+  return `ssc_signed_prekey_rotated:${deviceId}`;
+}
+
 async function loadLibsignal() {
   if (libsignalModule) return libsignalModule;
   if (typeof window !== 'undefined' && window.sscCrypto?.encryptMessage) {
@@ -64,47 +73,27 @@ async function loadLibsignal() {
   }
 }
 
-async function configureLocalIdentity(lib, { localUserId, deviceId = '1' } = {}) {
+async function configureLocalIdentity(lib, { localUserId, deviceId } = {}) {
   const userId = localUserId || configuredLocalUserId;
+  const devId = deviceId || configuredLocalDeviceId || getLocalDeviceId();
   if (!lib?.configure || !userId) return;
   configuredLocalUserId = userId;
-  await lib.configure({ localUserId: userId, deviceId });
+  configuredLocalDeviceId = String(devId);
+  await lib.configure({ localUserId: userId, deviceId: configuredLocalDeviceId });
 }
 
-export async function registerDeviceAndPrekeys({
-  deviceId,
-  deviceName,
-  platform,
-  localUserId,
-}) {
-  const lib = await loadLibsignal();
-  assertLibsignalRuntime('register_prekeys');
-  await configureLocalIdentity(lib, { localUserId, deviceId });
-  if (!lib?.generatePreKeyBundle) {
-    if (requiresProductionCrypto()) {
-      throw new Error('libsignal_required:prekeys');
-    }
-    return { deviceId, prekeysUploaded: false, mode: 'dev' };
-  }
-
-  const bundle = await lib.generatePreKeyBundle();
-
-  await api.post('/api/devices', {
-    device_id: deviceId,
-    name: deviceName,
-    platform,
-  });
-  await api.put('/api/prekeys/bundle', normalizePreKeyBundlePayload(deviceId, bundle));
-  return { deviceId, prekeysUploaded: true, mode: 'libsignal' };
+export async function listPeerDevices(userId) {
+  if (!userId) return [];
+  const data = await api.get(`/api/prekeys/users/${userId}`);
+  return data.devices || [];
 }
 
-async function ensurePeerSession(peerId, deviceId = '1') {
+async function ensurePeerSession(peerId, deviceId, { localUserId, localDeviceId } = {}) {
   const lib = await loadLibsignal();
-  if (!peerId) {
-    throw new Error('peer_id_required');
-  }
+  if (!peerId) throw new Error('peer_id_required');
   if (!lib?.establishSession) return;
-  await configureLocalIdentity(lib, { deviceId: '1' });
+  await configureLocalIdentity(lib, { localUserId, deviceId: localDeviceId });
+
   try {
     const data = await api.get(`/api/prekeys/users/${peerId}/devices/${deviceId}`);
     const bundle = data.bundle || data;
@@ -122,10 +111,165 @@ async function ensurePeerSession(peerId, deviceId = '1') {
   }
 }
 
-export async function encryptMessage(plaintext, { peerId, deviceId = '1' } = {}) {
+export async function ensureAllPeerSessions(peerId, { localUserId, localDeviceId } = {}) {
+  const devices = await listPeerDevices(peerId);
+  const ids = devices.map((d) => String(d.device_id || d.deviceId || '1')).filter(Boolean);
+  if (!ids.length) {
+    await ensurePeerSession(peerId, '1', { localUserId, localDeviceId });
+    return ['1'];
+  }
+  for (const deviceId of ids) {
+    await ensurePeerSession(peerId, deviceId, { localUserId, localDeviceId });
+  }
+  return ids;
+}
+
+async function maybeReplenishPrekeys(lib, deviceId) {
+  try {
+    const status = await api.get(`/api/prekeys/status?device_id=${encodeURIComponent(deviceId)}`);
+    if (!status.prekeys_low) return;
+    const batch = lib.generatePreKeyBatchOnly
+      ? await lib.generatePreKeyBatchOnly(PREKEY_BATCH_COUNT)
+      : null;
+    if (!batch?.preKeys?.length) return;
+    await api.post('/api/prekeys/replenish', {
+      device_id: deviceId,
+      prekeys: batch.preKeys.map((pk) => ({
+        key_id: pk.keyId ?? pk.key_id,
+        public_key: pk.publicKey ?? pk.public_key,
+      })),
+    });
+  } catch (err) {
+    console.warn('[ssc] prekey replenish failed', err?.message || err);
+  }
+}
+
+async function maybeRotateSignedPreKey(lib, deviceId) {
+  const key = signedPrekeyRotationKey(deviceId);
+  let last = 0;
+  try {
+    last = Number(localStorage.getItem(key) || 0);
+  } catch {
+    last = 0;
+  }
+  if (Date.now() - last < SIGNED_PREKEY_ROTATE_MS) return;
+  if (!lib.rotateSignedPreKey) return;
+
+  try {
+    const rotated = await lib.rotateSignedPreKey();
+    const signed = rotated.signedPreKey || rotated.signed_prekey;
+    const kyber = rotated.kyberPreKey || rotated.kyber_prekey;
+    const body = {
+      device_id: deviceId,
+      signed_prekey: {
+        key_id: signed.keyId ?? signed.key_id,
+        public_key: signed.publicKey ?? signed.public_key,
+        signature: signed.signature,
+      },
+    };
+    if (kyber) {
+      body.kyber_prekey = {
+        key_id: kyber.keyId ?? kyber.key_id,
+        public_key: kyber.publicKey ?? kyber.public_key,
+        signature: kyber.signature,
+      };
+    }
+    await api.put('/api/prekeys/signed-prekey', body);
+    localStorage.setItem(key, String(Date.now()));
+  } catch (err) {
+    console.warn('[ssc] signed prekey rotation failed', err?.message || err);
+  }
+}
+
+export async function registerDeviceAndPrekeys({
+  deviceId: inputDeviceId,
+  deviceName,
+  platform,
+  localUserId,
+}) {
+  const deviceId = String(inputDeviceId || getLocalDeviceId());
+  const lib = await loadLibsignal();
+  assertLibsignalRuntime('register_prekeys');
+  await configureLocalIdentity(lib, { localUserId, deviceId });
+
+  if (!lib?.generatePreKeyBundle) {
+    if (requiresProductionCrypto()) {
+      throw new Error('libsignal_required:prekeys');
+    }
+    return { deviceId, prekeysUploaded: false, mode: 'dev' };
+  }
+
+  const bundle = lib.generatePreKeyBatch
+    ? await lib.generatePreKeyBatch(PREKEY_BATCH_COUNT)
+    : await lib.generatePreKeyBundle();
+
+  await api.post('/api/devices', {
+    device_id: deviceId,
+    name: deviceName,
+    platform,
+  });
+  const upload = await api.put('/api/prekeys/bundle', normalizePreKeyBundlePayload(deviceId, bundle));
+
+  await maybeRotateSignedPreKey(lib, deviceId);
+  if (upload?.prekeys_low) {
+    await maybeReplenishPrekeys(lib, deviceId);
+  }
+
+  return { deviceId, prekeysUploaded: true, mode: 'libsignal', prekeysRemaining: upload?.prekeys_remaining };
+}
+
+export async function encryptMessageForRecipients(
+  plaintext,
+  {
+    peerId,
+    localUserId,
+    localDeviceId = getLocalDeviceId(),
+    includeSelfDevices = true,
+    targetDeviceIds,
+  } = {}
+) {
+  const lib = await loadLibsignal();
+  if (!lib?.encryptMessage) {
+    assertLibsignalRuntime('encrypt');
+    const dev = buildDevSignalEnvelope(plaintext);
+    return { device_ciphertexts: { '1': dev.ciphertext }, protocol: SIGNAL_PROTOCOL_V1 };
+  }
+
+  await configureLocalIdentity(lib, { localUserId, deviceId: localDeviceId });
+
+  const deviceCiphertexts = {};
+  const peerDevices = targetDeviceIds?.length
+    ? targetDeviceIds.map(String)
+    : await ensureAllPeerSessions(peerId, { localUserId, localDeviceId });
+
+  for (const deviceId of peerDevices) {
+    const result = await lib.encryptMessage(plaintext, peerId, deviceId);
+    deviceCiphertexts[deviceId] = result.ciphertext;
+  }
+
+  if (includeSelfDevices && localUserId && localUserId !== peerId) {
+    const ownDevices = await listPeerDevices(localUserId);
+    for (const dev of ownDevices) {
+      const ownId = String(dev.device_id || dev.deviceId);
+      if (!ownId || ownId === String(localDeviceId)) continue;
+      await ensurePeerSession(localUserId, ownId, { localUserId, localDeviceId });
+      const result = await lib.encryptMessage(plaintext, localUserId, ownId);
+      deviceCiphertexts[ownId] = result.ciphertext;
+    }
+  }
+
+  const legacy = deviceCiphertexts[peerDevices[0]] || Object.values(deviceCiphertexts)[0];
+  return {
+    device_ciphertexts: deviceCiphertexts,
+    ciphertext: legacy,
+    protocol: SIGNAL_PROTOCOL_V1,
+  };
+}
+
+export async function encryptMessage(plaintext, { peerId, deviceId = '1', localUserId, localDeviceId } = {}) {
   const lib = await loadLibsignal();
   if (lib?.encryptMessage) {
-    await ensurePeerSession(peerId, deviceId);
+    await ensurePeerSession(peerId, deviceId, { localUserId, deviceId: localDeviceId });
     const result = await lib.encryptMessage(plaintext, peerId, deviceId);
     return { ciphertext: result.ciphertext, protocol: SIGNAL_PROTOCOL_V1 };
   }
@@ -133,10 +277,10 @@ export async function encryptMessage(plaintext, { peerId, deviceId = '1' } = {})
   return buildDevSignalEnvelope(plaintext);
 }
 
-export async function decryptMessage(ciphertext, { peerId } = {}) {
+export async function decryptMessage(ciphertext, { peerId, deviceId } = {}) {
   const lib = await loadLibsignal();
   if (lib?.decryptMessage) {
-    return lib.decryptMessage(ciphertext, peerId);
+    return lib.decryptMessage(ciphertext, peerId, deviceId);
   }
   if (requiresProductionCrypto()) {
     throw new Error('libsignal_required:decrypt');
@@ -195,5 +339,3 @@ export async function encryptFileBytes(arrayBuffer) {
   });
   return { ciphertext: btoa(payload), protocol: SIGNAL_PROTOCOL_V1 };
 }
-
-

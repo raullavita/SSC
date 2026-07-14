@@ -41,6 +41,9 @@ object SscCryptoService {
                 JSONObject().put("ok", true)
             }
             "generatePreKeyBundle" -> libsignal().generatePreKeyBundle()
+            "generatePreKeyBatch" -> libsignal().generatePreKeyBatch(args.optInt("count", 50))
+            "generatePreKeyBatchOnly" -> libsignal().generatePreKeyBatchOnly(args.optInt("count", 50))
+            "rotateSignedPreKey" -> libsignal().rotateSignedPreKey()
             "establishSession" -> libsignal().establishSession(
                 args.getString("peerId"),
                 args.optString("deviceId", "1"),

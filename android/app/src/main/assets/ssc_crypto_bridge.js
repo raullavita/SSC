@@ -51,6 +51,15 @@
     generatePreKeyBundle: function () {
       return invoke('generatePreKeyBundle', {});
     },
+    generatePreKeyBatch: function (count) {
+      return invoke('generatePreKeyBatch', { count: count || 50 });
+    },
+    generatePreKeyBatchOnly: function (count) {
+      return invoke('generatePreKeyBatchOnly', { count: count || 50 });
+    },
+    rotateSignedPreKey: function () {
+      return invoke('rotateSignedPreKey', {});
+    },
     establishSession: function (peerId, deviceId, bundle) {
       return invoke('establishSession', { peerId: peerId, deviceId: deviceId || '1', bundle: bundle });
     },
@@ -67,6 +76,16 @@
         binary += String.fromCharCode(bytes[i]);
       }
       return invoke('encryptBytes', { buffer: btoa(binary) });
+    },
+    decryptBytes: function (ciphertext) {
+      return invoke('decryptBytes', { ciphertext: ciphertext }).then(function (b64) {
+        var binary = atob(b64 || '');
+        var out = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i += 1) {
+          out[i] = binary.charCodeAt(i);
+        }
+        return out.buffer;
+      });
     },
     computeSafetyNumber: function (peerId, peerIdentityKey) {
       return invoke('computeSafetyNumber', { peerId: peerId, peerIdentityKey: peerIdentityKey });

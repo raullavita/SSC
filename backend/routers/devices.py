@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from core.device_id_policy import is_valid_device_id
 from core.multi_device_policy import public_linked_device
 from db import get_database
 from deps import get_client_header, get_current_user_id
@@ -26,6 +27,9 @@ async def register_device(
     user_id: str = Depends(get_current_user_id),
     _client: str = Depends(get_client_header),
 ) -> dict:
+    if not is_valid_device_id(body.device_id):
+        raise HTTPException(status_code=400, detail="device_id_must_be_numeric")
+
     db = get_database()
     doc_id = f"{user_id}:{body.device_id}"
     now = datetime.now(timezone.utc)

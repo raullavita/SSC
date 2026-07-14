@@ -42,6 +42,15 @@ async def get_current_user_id(
     return user_id
 
 
+def get_device_header(
+    x_ssc_device_id: str | None = Header(default=None, alias="X-SSC-Device-Id"),
+) -> str | None:
+    if not x_ssc_device_id:
+        return None
+    device_id = str(x_ssc_device_id).strip()
+    return device_id or None
+
+
 def get_client_header(
     x_ssc_client: str | None = Header(default=None, alias=INSTALLED_CLIENT_HEADER),
 ) -> str:

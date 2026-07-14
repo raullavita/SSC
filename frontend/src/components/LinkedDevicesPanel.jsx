@@ -84,8 +84,8 @@ export default function LinkedDevicesPanel({
             </button>
           </div>
           <p className={styles.hint}>
-            On the new device: scan the QR or open the link while logged in. Keys stay on your
-            devices — the server only relays encrypted messages.
+            On the new device: scan the QR or open the link (sign in on that device if prompted).
+            Keys stay on your devices — the server only relays encrypted messages.
           </p>
         </div>
       )}

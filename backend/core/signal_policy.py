@@ -156,5 +156,22 @@ def public_prekey_bundle(doc: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def public_prekey_device_summary(doc: dict[str, Any]) -> dict[str, Any]:
+    """Device metadata for peer discovery — never includes one-time prekeys."""
+    prekeys = doc.get("prekeys") or []
+    updated = doc.get("updated_at")
+    if hasattr(updated, "isoformat"):
+        updated = updated.isoformat()
+    return {
+        "user_id": doc.get("user_id"),
+        "device_id": doc.get("device_id"),
+        "registration_id": doc.get("registration_id"),
+        "prekeys_remaining": len(prekeys),
+        "prekeys_low": len(prekeys) < 5,
+        "has_signed_prekey": bool(doc.get("signed_prekey")),
+        "updated_at": updated,
+    }
+
+
 def engine8_signal_policy_ready() -> bool:
     return bool(SIGNAL_PROTOCOL_V1) and bool(PREKEY_PUBLIC_FIELDS)

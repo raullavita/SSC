@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from core.abuse_enforcement import is_abuse_rate_limited, is_user_blocked
 from core.abuse_policy import msg_rate_limiter
@@ -27,31 +27,45 @@ from core.smart_policy import validate_disappearing_seconds
 from core.sealed_sender_policy import mark_sealed
 from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.reaction_policy import SIGNAL_PROTOCOL_REACTION
+from core.device_ciphertext_policy import validate_send_ciphertexts
 from core.signal_policy import (
     GROUP_SENDER_KEY_DIST_PROTOCOL,
     SIGNAL_PROTOCOL_V1,
     validate_protocol_for_env,
-    validate_signal_ciphertext,
 )
 from db import get_database
-from deps import get_client_header, get_current_user_id
+from deps import get_client_header, get_current_user_id, get_device_header
 from push import notify_conversation_participants
 
 router = APIRouter(tags=["messages"])
 
 
 class SendMessageBody(BaseModel):
-    ciphertext: str = Field(min_length=1)
+    ciphertext: str | None = Field(default=None, min_length=1)
+    device_ciphertexts: dict[str, str] | None = None
     protocol: str = Field(default=SIGNAL_PROTOCOL_V1)
     sealed: bool = False
     disappearing_seconds: int | None = Field(default=None, ge=60, le=86_400)
     reply_to: str | None = Field(default=None, min_length=3, max_length=64)
     forwarded_from: str | None = Field(default=None, min_length=3, max_length=64)
 
+    @model_validator(mode="after")
+    def _require_ciphertext_payload(self):
+        if not self.ciphertext and not self.device_ciphertexts:
+            raise ValueError("ciphertext_or_device_ciphertexts_required")
+        return self
+
 
 class EditMessageBody(BaseModel):
-    ciphertext: str = Field(min_length=1)
+    ciphertext: str | None = Field(default=None, min_length=1)
+    device_ciphertexts: dict[str, str] | None = None
     protocol: str = Field(default=SIGNAL_PROTOCOL_V1)
+
+    @model_validator(mode="after")
+    def _require_edit_ciphertext(self):
+        if not self.ciphertext and not self.device_ciphertexts:
+            raise ValueError("ciphertext_or_device_ciphertexts_required")
+        return self
 
 
 async def _require_participant(db, conversation_id: str, user_id: str) -> dict:
@@ -72,6 +86,7 @@ async def list_messages(
     conversation_id: str,
     user_id: str = Depends(get_current_user_id),
     _client: str = Depends(get_client_header),
+    device_id: str | None = Depends(get_device_header),
 ) -> dict:
     db = get_database()
     await _require_participant(db, conversation_id, user_id)
@@ -90,7 +105,7 @@ async def list_messages(
     async for doc in cursor:
         if is_hidden_for_viewer(doc, user_id):
             continue
-        msg = public_message(doc, viewer_id=user_id)
+        msg = public_message(doc, viewer_id=user_id, viewer_device_id=device_id)
         if msg:
             items.append(msg)
     return {"messages": items}
@@ -112,7 +127,11 @@ async def send_message(
         protocol = "signal_v1_sealed"
     _enforce_protocol_policy(protocol)
 
-    ok, detail = validate_signal_ciphertext(body.ciphertext, protocol)
+    ok, detail = validate_send_ciphertexts(
+        ciphertext=body.ciphertext,
+        device_ciphertexts=body.device_ciphertexts,
+        protocol=protocol,
+    )
     if not ok:
         raise HTTPException(status_code=400, detail=detail)
 
@@ -165,12 +184,17 @@ async def send_message(
             raise HTTPException(status_code=403, detail="forwarded_from_not_allowed")
         forwarded_from = body.forwarded_from
 
+    legacy_ciphertext = body.ciphertext
+    if not legacy_ciphertext and body.device_ciphertexts:
+        legacy_ciphertext = next(iter(body.device_ciphertexts.values()))
+
     doc = mark_sealed(
         {
             "_id": new_message_id(),
             "conversation_id": conversation_id,
             "sender_id": user_id,
-            "ciphertext": body.ciphertext,
+            "ciphertext": legacy_ciphertext,
+            "device_ciphertexts": body.device_ciphertexts or {},
             "protocol": protocol,
             "message_kind": message_kind,
             "reply_to": body.reply_to,
@@ -223,7 +247,11 @@ async def edit_message(
     protocol = body.protocol or SIGNAL_PROTOCOL_V1
     _enforce_protocol_policy(protocol)
 
-    ok, detail = validate_signal_ciphertext(body.ciphertext, protocol)
+    ok, detail = validate_send_ciphertexts(
+        ciphertext=body.ciphertext,
+        device_ciphertexts=body.device_ciphertexts,
+        protocol=protocol,
+    )
     if not ok:
         raise HTTPException(status_code=400, detail=detail)
 
@@ -235,15 +263,21 @@ async def edit_message(
     if not allowed:
         raise HTTPException(status_code=403, detail=reason)
 
+    legacy_ciphertext = body.ciphertext
+    if not legacy_ciphertext and body.device_ciphertexts:
+        legacy_ciphertext = next(iter(body.device_ciphertexts.values()))
+
+    update_fields: dict = {
+        "ciphertext": legacy_ciphertext,
+        "protocol": protocol,
+        "edited_at": now,
+    }
+    if body.device_ciphertexts:
+        update_fields["device_ciphertexts"] = body.device_ciphertexts
+
     await db.messages.update_one(
         {"_id": message_id},
-        {
-            "$set": {
-                "ciphertext": body.ciphertext,
-                "protocol": protocol,
-                "edited_at": now,
-            }
-        },
+        {"$set": update_fields},
     )
     updated = await db.messages.find_one({"_id": message_id})
     participants = conv.get("participants", [])

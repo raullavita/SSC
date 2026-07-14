@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, wsAuthPayload, wsUrl } from '../lib/api';
-import { buildSubscribePayload } from '../lib/wsSubscribe';
+import { api } from '../lib/api';
+import { useSyncSocket } from '../hooks/useSyncSocket';
 import { indexReadsByMessage } from '../lib/readReceipts';
 
 function applyReadReceipt(setReadByMessage, payload) {
@@ -74,36 +74,19 @@ export function useReadReceipts(conversationId, messages, { wsToken, userId, ena
     }
   }, [conversationId, enabled, messages.length, markRead]);
 
-  useEffect(() => {
-    if (!enabled || !userId) return undefined;
-
-    const topics = [`user:${userId}`];
+  const topics = [];
+  if (enabled && userId) {
+    topics.push(`user:${userId}`);
     if (conversationId) topics.push(`conversation:${conversationId}`);
+  }
 
-    const ws = new WebSocket(wsUrl());
-
-    ws.onopen = async () => {
-      const auth = wsAuthPayload(wsToken);
-      if (auth) ws.send(auth);
-      for (const topic of topics) {
-        ws.send(await buildSubscribePayload(topic));
-      }
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        const payload = data?.payload || data;
-        applyReadReceipt(setReadByMessage, payload);
-      } catch {
-        /* ignore */
-      }
-    };
-
-    return () => {
-      ws.close();
-    };
-  }, [conversationId, enabled, userId, wsToken]);
+  useSyncSocket({
+    userId: enabled && userId ? userId : null,
+    wsToken,
+    topics,
+    enabled: Boolean(enabled && userId),
+    onEvent: (envelope) => applyReadReceipt(setReadByMessage, envelope.payload),
+  });
 
   return { readByMessage, markRead };
 }

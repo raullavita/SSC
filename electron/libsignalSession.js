@@ -309,25 +309,103 @@ class LibsignalSession {
     await this.kyberPreKeyStore.saveKyberPreKey(kyberId, kyberRecord);
     this._savePreKeyCounters();
 
+    return this._bundlePayload(identity, registrationId, signedPreKey, [preKey], kyberRecord);
+  }
+
+  async _createSignedPreKeyRecord(identity) {
+    const signedId = this._signedPreKeyId++;
+    const signedPrivate = PrivateKey.generate();
+    const signedPublic = signedPrivate.getPublicKey();
+    const signedPreKey = SignedPreKeyRecord.new(
+      signedId,
+      Date.now(),
+      signedPublic,
+      signedPrivate,
+      identity.privateKey.sign(signedPublic.serialize())
+    );
+    await this.signedPreKeyStore.saveSignedPreKey(signedId, signedPreKey);
+    return signedPreKey;
+  }
+
+  async _createKyberRecord(identity) {
+    const kyberId = this._kyberPreKeyId++;
+    const kyberPair = KEMKeyPair.generate();
+    const kyberSig = identity.privateKey.sign(kyberPair.getPublicKey().serialize());
+    const kyberRecord = KyberPreKeyRecord.new(kyberId, Date.now(), kyberPair, kyberSig);
+    await this.kyberPreKeyStore.saveKyberPreKey(kyberId, kyberRecord);
+    return kyberRecord;
+  }
+
+  async _createPreKeyRecords(count) {
+    const records = [];
+    for (let i = 0; i < count; i += 1) {
+      const preKeyId = this._nextPreKeyId++;
+      const preKeyPrivate = PrivateKey.generate();
+      const preKey = PreKeyRecord.new(preKeyId, preKeyPrivate.getPublicKey(), preKeyPrivate);
+      await this.preKeyStore.savePreKey(preKeyId, preKey);
+      records.push(preKey);
+    }
+    return records;
+  }
+
+  _bundlePayload(identity, registrationId, signedPreKey, preKeyRecords, kyberRecord) {
     return {
       registrationId,
       identityKey: b64encode(identity.publicKey.serialize()),
       signedPreKey: {
-        keyId: signedId,
+        keyId: signedPreKey.id(),
         publicKey: b64encode(signedPreKey.publicKey().serialize()),
         signature: b64encode(signedPreKey.signature()),
       },
-      preKeys: [
-        {
-          keyId: preKeyId,
-          publicKey: b64encode(preKey.publicKey().serialize()),
-        },
-      ],
+      preKeys: preKeyRecords.map((preKey) => ({
+        keyId: preKey.id(),
+        publicKey: b64encode(preKey.publicKey().serialize()),
+      })),
       kyberPreKey: {
-        keyId: kyberId,
+        keyId: kyberRecord.id(),
         publicKey: b64encode(kyberRecord.publicKey().serialize()),
         signature: b64encode(kyberRecord.signature()),
       },
+    };
+  }
+
+  async generatePreKeyBatch(count = 50) {
+    const identity = await this.identityStore.getIdentityKeyPair();
+    const registrationId = await this.identityStore.getLocalRegistrationId();
+    const signedPreKey = await this._createSignedPreKeyRecord(identity);
+    const preKeyRecords = await this._createPreKeyRecords(count);
+    const kyberRecord = await this._createKyberRecord(identity);
+    this._savePreKeyCounters();
+    return this._bundlePayload(identity, registrationId, signedPreKey, preKeyRecords, kyberRecord);
+  }
+
+  async rotateSignedPreKey() {
+    const identity = await this.identityStore.getIdentityKeyPair();
+    const signedPreKey = await this._createSignedPreKeyRecord(identity);
+    const kyberRecord = await this._createKyberRecord(identity);
+    this._savePreKeyCounters();
+    return {
+      signedPreKey: {
+        keyId: signedPreKey.id(),
+        publicKey: b64encode(signedPreKey.publicKey().serialize()),
+        signature: b64encode(signedPreKey.signature()),
+      },
+      kyberPreKey: {
+        keyId: kyberRecord.id(),
+        publicKey: b64encode(kyberRecord.publicKey().serialize()),
+        signature: b64encode(kyberRecord.signature()),
+      },
+    };
+  }
+
+  async generatePreKeyBatchOnly(count = 50) {
+    const preKeyRecords = await this._createPreKeyRecords(count);
+    this._savePreKeyCounters();
+    return {
+      preKeys: preKeyRecords.map((preKey) => ({
+        keyId: preKey.id(),
+        publicKey: b64encode(preKey.publicKey().serialize()),
+      })),
     };
   }
 

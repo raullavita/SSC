@@ -12,6 +12,7 @@ files:
   - libsignalSession.js
   - groupSenderKeySession.js
   - secureFileStore.js
+  - pushTokenStore.js
   - SSC_COMPAT_MODE
   - package.json
 extraResources:

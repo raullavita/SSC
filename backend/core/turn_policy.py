@@ -9,7 +9,16 @@ import os
 import time
 from typing import Any
 
-TURN_ENABLED = os.getenv("SSC_TURN_ENABLED", "false").lower() in ("1", "true", "yes")
+def _default_turn_enabled() -> str:
+    prod = os.getenv("SSC_ENV", "development") == "production"
+    return "true" if prod else "false"
+
+
+TURN_ENABLED = os.getenv("SSC_TURN_ENABLED", _default_turn_enabled()).lower() in (
+    "1",
+    "true",
+    "yes",
+)
 TURN_SECRET = (os.getenv("SSC_TURN_SECRET") or "").strip()
 TURN_REALM = (os.getenv("SSC_TURN_REALM") or "supersecurechat.com").strip()
 TURN_TTL_SECONDS = int(os.getenv("SSC_TURN_TTL_SECONDS", "86400"))

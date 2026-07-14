@@ -56,10 +56,46 @@ class FakeCollection:
     async def insert_one(self, doc: dict) -> None:
         self.docs.append(deepcopy(doc))
 
+    async def find_one_and_update(
+        self,
+        query: dict,
+        update: dict,
+        return_document: Any = None,
+        projection: dict | None = None,
+    ) -> dict | None:
+        _ = return_document, projection
+        for i, doc in enumerate(self.docs):
+            if _matches(doc, query):
+                before = deepcopy(doc)
+                merged = deepcopy(doc)
+                if "$pop" in update:
+                    for key, index in update["$pop"].items():
+                        current = list(merged.get(key) or [])
+                        if not current:
+                            return None
+                        if index == -1:
+                            current.pop(0)
+                        elif index == 1:
+                            current.pop()
+                        merged[key] = current
+                if "$set" in update:
+                    merged.update(update["$set"])
+                self.docs[i] = merged
+                return before
+        return None
+
     async def update_one(self, query: dict, update: dict, upsert: bool = False) -> None:
         for i, doc in enumerate(self.docs):
             if _matches(doc, query):
                 merged = deepcopy(doc)
+                if "$pop" in update:
+                    for key, index in update["$pop"].items():
+                        current = list(merged.get(key) or [])
+                        if index == -1 and current:
+                            current.pop(0)
+                        elif index == 1 and current:
+                            current.pop()
+                        merged[key] = current
                 if "$set" in update:
                     merged.update(update["$set"])
                 if "$addToSet" in update:
@@ -117,13 +153,28 @@ class FakeDatabase:
         return self[name]
 
 
+def _nested_value(doc: dict, path: str):
+    cur: Any = doc
+    for part in path.split("."):
+        if isinstance(cur, list):
+            if not part.isdigit():
+                return None
+            idx = int(part)
+            cur = cur[idx] if 0 <= idx < len(cur) else None
+        elif isinstance(cur, dict):
+            cur = cur.get(part)
+        else:
+            return None
+    return cur
+
+
 def _matches(doc: dict, query: dict) -> bool:
     for key, expected in query.items():
         if key == "$or":
             if not any(_matches(doc, clause) for clause in expected):
                 return False
             continue
-        value = doc.get(key)
+        value = _nested_value(doc, key) if "." in key else doc.get(key)
         if isinstance(expected, dict):
             if "$all" in expected:
                 items = value or []
@@ -143,7 +194,10 @@ def _matches(doc: dict, query: dict) -> bool:
                     return False
                 continue
             if "$exists" in expected:
-                exists = key in doc and doc.get(key) is not None
+                if "." in key:
+                    exists = _nested_value(doc, key) is not None
+                else:
+                    exists = key in doc and doc.get(key) is not None
                 if bool(expected["$exists"]) != exists:
                     return False
                 continue
