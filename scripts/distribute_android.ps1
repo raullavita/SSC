@@ -25,7 +25,7 @@ if (-not $ApkPath) {
 }
 
 if (-not $ApkPath -or -not (Test-Path $ApkPath)) {
-    throw "APK not found - run .\scripts\build_android_native.ps1 first"
+    throw "APK not found - run .\scripts\build_android.ps1 first"
 }
 
 $sizeMb = [math]::Round((Get-Item $ApkPath).Length / 1MB, 1)
