@@ -134,7 +134,12 @@ export function useSyncSocket({ userId, wsToken, topics = [], onEvent, enabled =
   useEffect(() => {
     if (!enabled || !userId) return undefined;
 
-    const listener = (envelope) => onEventRef.current?.(envelope);
+    const allowedTopics = new Set(topics);
+    const listener = (envelope) => {
+      const topic = envelope.topic;
+      if (allowedTopics.size && topic && !allowedTopics.has(topic)) return;
+      onEventRef.current?.(envelope);
+    };
     listeners.add(listener);
 
     let cancelled = false;

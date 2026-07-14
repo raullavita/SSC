@@ -55,6 +55,21 @@ def validate_production_startup(settings: Settings) -> None:
         if not origin.startswith("https://"):
             raise RuntimeError(f"production_cors_https_required: {origin}")
 
+    from core.captcha import captcha_required  # noqa: PLC0415
+    from core.device_attestation import attestation_configured, require_device_attestation  # noqa: PLC0415
+    from core.installed_client_policy import _require_native_bridge  # noqa: PLC0415
+
+    if captcha_required() and not (os.getenv("SSC_TURNSTILE_SECRET") or "").strip():
+        raise RuntimeError("production_captcha_secret_missing: SSC_TURNSTILE_SECRET required")
+
+    if require_device_attestation() and not attestation_configured():
+        raise RuntimeError(
+            "production_device_attest_not_configured: set SSC_DESKTOP_ATTEST_SECRET "
+            "and/or SSC_PLAY_INTEGRITY_SECRET and/or SSC_DEVICECHECK_SECRET"
+        )
+
+
+
 
 def engine_phase1_startup_gates_ready() -> bool:
     return MIN_JWT_SECRET_LEN >= 32 and MIN_SFU_SECRET_LEN >= 24

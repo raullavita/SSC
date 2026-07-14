@@ -19,6 +19,12 @@ android {
         }
         buildConfigField("String", "SSC_WEB_URL", "\"file:///android_asset/www/index.html\"")
         buildConfigField("String", "SSC_API_URL", "\"https://api.supersecurechat.com\"")
+        val attestSecret = (
+            project.findProperty("sscPlayIntegritySecret") as String?
+                ?: System.getenv("SSC_PLAY_INTEGRITY_SECRET")
+                ?: ""
+            ).replace("\"", "\\\"")
+        buildConfigField("String", "SSC_PLAY_INTEGRITY_SECRET", "\"$attestSecret\"")
     }
 
     buildFeatures {

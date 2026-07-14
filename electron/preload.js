@@ -19,7 +19,18 @@ contextBridge.exposeInMainWorld('sscUpdater', {
 
 contextBridge.exposeInMainWorld('__SSC_ELECTRON_CLIENT', CLIENT_VALUE);
 contextBridge.exposeInMainWorld('__SSC_NATIVE_BRIDGE', 'v1');
-contextBridge.exposeInMainWorld('__SSC_DEVICE_ATTEST', () => 'ssc-attest-test-v1');
+
+let attestCache = '';
+async function refreshAttestToken() {
+  try {
+    attestCache = await ipcRenderer.invoke('ssc-desktop:attest-token');
+  } catch {
+    attestCache = '';
+  }
+}
+refreshAttestToken();
+setInterval(refreshAttestToken, 50_000);
+contextBridge.exposeInMainWorld('__SSC_DEVICE_ATTEST', () => attestCache);
 // Chromium Translator API is used in-renderer when available (see onDevice.js).
 contextBridge.exposeInMainWorld('__SSC_ELECTRON_TRANSLATE', 'browser_translator');
 

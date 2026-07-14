@@ -14,7 +14,7 @@ object SscDeviceAttest {
     const val HEADER = "X-SSC-Device-Attest"
 
     fun currentToken(): String? {
-        val secret = System.getenv("SSC_PLAY_INTEGRITY_SECRET")
+        val secret = BuildConfig.SSC_PLAY_INTEGRITY_SECRET
         if (secret.isNullOrBlank()) {
             return if (BuildConfig.DEBUG) "ssc-attest-test-v1" else null
         }

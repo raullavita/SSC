@@ -70,6 +70,7 @@ class WsHub:
             try:
                 envelope = json.dumps({"topic": topic, "payload": payload})
                 await redis.publish(REDIS_WS_CHANNEL, envelope)
+                return
             except Exception:  # noqa: BLE001 — fall back when Redis unavailable
                 logger.warning("redis publish failed; using local fanout only")
         await self.publish_local(topic, payload)

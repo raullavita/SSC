@@ -38,7 +38,12 @@ async def test_device_link_flow(monkeypatch):
         )
         assert reg.status_code == 200
 
-        link = await ac.post("/api/devices/link", json={"device_name": "Phone"}, headers=CLIENT)
+        link = await ac.post(
+            "/api/devices/link",
+            json={"device_name": "Phone"},
+            headers=CLIENT,
+            cookies=reg.cookies,
+        )
         assert link.status_code == 200
         token = link.json()["link_token"]
 
@@ -46,12 +51,12 @@ async def test_device_link_flow(monkeypatch):
             "/api/devices/link/confirm",
             json={
                 "link_token": token,
-                "device_id": "dev-phone",
+                "device_id": "2",
                 "name": "Phone",
                 "platform": "android",
             },
             headers=CLIENT,
         )
         assert confirm.status_code == 200
-        assert confirm.json()["device"]["id"] == "dev-phone"
+        assert confirm.json()["device"]["id"] == "2"
         assert len(fake_db["devices"].docs) == 1

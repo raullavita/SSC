@@ -55,6 +55,13 @@ async def register_session(user_id: str, token: str, jti: str) -> None:
 
 
 async def is_session_revoked(jti: str) -> bool:
+    db = get_database()
+    doc = await db[SESSION_COLLECTION].find_one({"_id": jti})
+    if not doc:
+        return True
+    if doc.get("revoked"):
+        return True
+
     redis = await get_redis()
     if redis is not None:
         try:
@@ -66,11 +73,7 @@ async def is_session_revoked(jti: str) -> bool:
         except Exception as exc:
             logger.warning("redis session lookup failed for jti=%s: %s", jti, exc)
 
-    db = get_database()
-    doc = await db[SESSION_COLLECTION].find_one({"_id": jti})
-    if not doc:
-        return True
-    return bool(doc.get("revoked"))
+    return False
 
 
 async def revoke_session(jti: str) -> None:

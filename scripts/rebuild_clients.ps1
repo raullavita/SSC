@@ -15,7 +15,7 @@ param(
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 
-Write-Host "SSC client rebuild - shared React UI (v0.3.1 build 10)"
+Write-Host "SSC client rebuild - shared React UI (v0.3.1 build 12)"
 if ($env:REACT_APP_API_URL) {
     Write-Host "API override: $($env:REACT_APP_API_URL)"
 } else {

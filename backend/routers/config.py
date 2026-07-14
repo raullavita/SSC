@@ -6,9 +6,12 @@ from fastapi import APIRouter
 
 from core.captcha import captcha_public_config
 from core.client_version_policy import min_client_build, min_client_version
+from core.device_attestation import require_device_attestation
 from core.firebase_init import firebase_ready
+from core.installed_client_policy import _require_native_bridge
 from core.release_policy import RELEASE_BUILD, RELEASE_VERSION
 from core.sfu_policy import SFU_ENABLED, SFU_WS_URL
+from core.translation_policy import translation_enabled
 from core.ws_subscribe_tokens import ws_subscribe_token_required
 
 router = APIRouter(tags=["config"])
@@ -45,7 +48,9 @@ async def public_config() -> dict:
         "release_build": RELEASE_BUILD,
         "min_client_version": min_client_version(),
         "min_client_build": min_client_build(),
-        "native_bridge_required": True,
+        "native_bridge_required": _require_native_bridge(),
+        "device_attest_required": require_device_attestation(),
+        "translation_enabled": translation_enabled(),
         "ws_subscribe_token_required": ws_subscribe_token_required(),
         **captcha_public_config(),
     }

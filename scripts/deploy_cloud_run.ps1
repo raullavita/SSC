@@ -65,12 +65,24 @@ try {
         & $Gcloud @deployArgs
     } else {
         Write-Host "Deploying from source (Cloud Build - no local Docker required)..."
-        & $Gcloud run deploy $Service `
-            --source . `
-            --region $Region `
-            --project $Project `
-            --allow-unauthenticated `
-            --quiet
+        $deployArgs = @(
+            "run", "deploy", $Service,
+            "--source", ".",
+            "--region", $Region,
+            "--project", $Project,
+            "--allow-unauthenticated",
+            "--port", "8080",
+            "--quiet"
+        )
+        if (Test-Path $EnvFile) {
+            Write-Host "Applying env from $EnvFile"
+            $deployArgs += @("--env-vars-file", $EnvFile)
+        } else {
+            Write-Warning "No $EnvFile — deploy will use existing Cloud Run env only. Copy cloudrun-env.yaml.example to cloudrun-env.yaml."
+        }
+        $VpcConnector = if ($env:SSC_VPC_CONNECTOR) { $env:SSC_VPC_CONNECTOR } else { "ssc-connector" }
+        $deployArgs += @("--vpc-connector", $VpcConnector, "--vpc-egress", "all-traffic")
+        & $Gcloud @deployArgs
     }
     Write-Host "Cloud Run deploy complete."
 } finally {

@@ -35,5 +35,9 @@ SUPPORTED_LANGUAGES: frozenset[str] = frozenset(
 MAX_TRANSLATION_CHARS = int(os.getenv("SSC_MAX_TRANSLATION_CHARS", "4000"))
 
 
+def translation_enabled() -> bool:
+    return bool(LIBRETRANSLATE_URL)
+
+
 def engine8_translation_ready() -> bool:
-    return bool(LIBRETRANSLATE_URL) and bool(SUPPORTED_LANGUAGES)
+    return translation_enabled() and bool(SUPPORTED_LANGUAGES)

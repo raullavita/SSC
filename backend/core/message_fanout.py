@@ -16,13 +16,19 @@ async def _viewer_message(doc: dict[str, Any], viewer_id: str) -> dict[str, Any]
     return public_message(filtered, viewer_id=viewer_id)
 
 
+def _conversation_message(doc: dict[str, Any]) -> dict[str, Any]:
+    """Conversation topic: metadata only — never fan out per-device ciphertext maps."""
+    redacted = {k: v for k, v in doc.items() if k != "device_ciphertexts"}
+    return public_message(redacted, viewer_id=None)
+
+
 async def fanout_message(
     conversation_id: str,
     doc: dict[str, Any],
     participants: list[str],
     sender_id: str,
 ) -> None:
-    message = public_message(doc, viewer_id=None)
+    message = _conversation_message(doc)
     await ws_hub.publish(
         f"conversation:{conversation_id}",
         scrub_payload(
@@ -71,7 +77,7 @@ async def fanout_message_edited(
     doc: dict[str, Any],
     participants: list[str],
 ) -> None:
-    message = public_message(doc, viewer_id=None)
+    message = _conversation_message(doc)
     payload = scrub_payload({"type": "message_edited", "message": message})
     await ws_hub.publish(f"conversation:{conversation_id}", payload)
     for uid in participants:
@@ -103,7 +109,7 @@ async def fanout_message_deleted(
         "scope": scope,
     }
     if scope == "everyone" and doc:
-        base["message"] = public_message(doc, viewer_id=None)
+        base["message"] = _conversation_message(doc)
 
     if scope == "me":
         await ws_hub.publish(f"user:{actor_id}", scrub_payload(base))

@@ -16,6 +16,11 @@ async def test_fanout_omits_participants_from_conversation_topic(monkeypatch):
 
     monkeypatch.setattr("core.message_fanout.ws_hub.publish", fake_publish)
 
+    async def fake_device_ids(_db, _uid):
+        return ["1"]
+
+    monkeypatch.setattr("core.message_fanout.participant_device_ids", fake_device_ids)
+
     doc = {
         "_id": "m_1",
         "conversation_id": "c_1",
@@ -30,3 +35,4 @@ async def test_fanout_omits_participants_from_conversation_topic(monkeypatch):
     assert "participants" not in conv_payload
     assert conv_payload["type"] == "message"
     assert "message" in conv_payload
+    assert "device_ciphertexts" not in conv_payload.get("message", {})

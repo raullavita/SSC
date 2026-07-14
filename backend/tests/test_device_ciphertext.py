@@ -86,3 +86,39 @@ async def test_send_device_ciphertexts(env):
     items = listed.json()["messages"]
     assert items[0]["ciphertext"] == VALID_CT
     assert items[0].get("target_device_id") == "2"
+
+
+@pytest.mark.asyncio
+async def test_fanout_redacts_device_map_on_conversation_topic(env, monkeypatch):
+    from core.message_fanout import fanout_message
+
+    published: list[tuple[str, dict]] = []
+
+    async def fake_publish(topic: str, payload: dict) -> None:
+        published.append((topic, payload))
+
+    monkeypatch.setattr("core.message_fanout.ws_hub.publish", fake_publish)
+
+    async def fake_device_ids(_db, _uid):
+        return ["1", "2"]
+
+    monkeypatch.setattr("core.message_fanout.participant_device_ids", fake_device_ids)
+
+    doc = {
+        "_id": "m_2",
+        "conversation_id": "c_2",
+        "sender_id": "u_a",
+        "ciphertext": VALID_CT,
+        "device_ciphertexts": {"1": VALID_CT, "2": VALID_CT},
+        "protocol": "signal_v1",
+        "created_at": None,
+    }
+    await fanout_message("c_2", doc, ["u_a", "u_b"], "u_a")
+
+    conv = next(p for topic, p in published if topic == "conversation:c_2")
+    assert "device_ciphertexts" not in conv.get("message", {})
+
+    user_b = next(p for topic, p in published if topic == "user:u_b")
+    msg = user_b.get("message", {})
+    if "device_ciphertexts" in msg:
+        assert set(msg["device_ciphertexts"].keys()).issubset({"1", "2"})

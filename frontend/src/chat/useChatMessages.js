@@ -18,7 +18,7 @@ import {
   ingestSenderKeyDistribution,
   isSenderKeyDistributionMessage,
 } from '../signal/groupSenderKeys';
-import { encryptSealedMessage } from '../signal/sealedSender';
+import { encryptSealedMessageForRecipients } from '../signal/sealedSender';
 import { getLocalDeviceId } from '../lib/deviceLink';
 import { storeMessageRecord } from '../signal/messageRecords';
 import {
@@ -319,7 +319,37 @@ export function useChatMessages(
           memberIds,
         }));
       } else if (getSealedSenderEnabled()) {
-        ({ ciphertext, protocol, sealed } = await encryptSealedMessage(text.trim(), { peerId }));
+        const encrypted = await encryptSealedMessageForRecipients(text.trim(), {
+          peerId,
+          localUserId: userId,
+          localDeviceId: getLocalDeviceId(),
+          includeSelfDevices: true,
+        });
+        ciphertext = encrypted.ciphertext;
+        protocol = encrypted.protocol;
+        const body = {
+          ciphertext,
+          protocol,
+          device_ciphertexts: encrypted.device_ciphertexts,
+          sealed: true,
+        };
+        if (disappearingSeconds) body.disappearing_seconds = disappearingSeconds;
+        if (replyTo) body.reply_to = replyTo;
+        const data = await api.post(`/api/conversations/${conversationId}/messages`, body);
+        const m = data.message;
+        storeMessageRecord(m.id, {
+          plaintext: text.trim(),
+          peerId,
+          conversationId,
+          deviceCiphertexts: encrypted.device_ciphertexts,
+        });
+        const row = { ...m, text: text.trim(), reaction: null, attachment: null };
+        setMessages((prev) => {
+          if (prev.some((x) => x.id === m.id)) return prev;
+          return [...prev, row];
+        });
+        indexMessage(conversationId, row);
+        return;
       } else {
         const encrypted = await encryptMessageForRecipients(text.trim(), {
           peerId,

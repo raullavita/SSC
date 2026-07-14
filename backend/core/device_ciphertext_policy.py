@@ -51,8 +51,7 @@ def resolve_viewer_ciphertext(
             return device_map[viewer_device_id]
         return next(iter(device_map.values()), doc.get("ciphertext"))
 
-    for _device_id, blob in device_map.items():
-        return blob
+    # Non-senders must present X-SSC-Device-Id; never leak another device's blob.
     return doc.get("ciphertext")
 
 
@@ -69,9 +68,8 @@ def filter_device_ciphertexts_for_devices(
         return {}
     allowed = {str(d) for d in device_ids if d}
     if not allowed:
-        return dict(device_map)
-    filtered = {k: v for k, v in device_map.items() if str(k) in allowed}
-    return filtered if filtered else dict(device_map)
+        return {}
+    return {k: v for k, v in device_map.items() if str(k) in allowed}
 
 
 def filter_message_doc_for_devices(doc: dict, device_ids: list[str]) -> dict:

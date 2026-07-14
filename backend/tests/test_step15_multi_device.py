@@ -93,7 +93,7 @@ async def test_confirm_link_registers_device(monkeypatch):
             "/api/devices/link/confirm",
             json={
                 "link_token": token,
-                "device_id": "dev-tablet",
+                "device_id": "2",
                 "name": "Tablet",
                 "platform": "android",
             },
@@ -101,4 +101,5 @@ async def test_confirm_link_registers_device(monkeypatch):
         )
         assert confirm.status_code == 200
         assert confirm.json()["device"]["platform"] == "android"
+        assert confirm.json()["device"]["id"] == "2"
         assert len(fake_db["devices"].docs) == 1

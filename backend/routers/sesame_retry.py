@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.device_ciphertext_policy import validate_send_ciphertexts
+from core.retention_policy import default_expires_at
 from core.message_fanout import fanout_message_edited
 from core.metadata_policy import public_message, scrub_payload
 from core.signal_policy import SIGNAL_PROTOCOL_V1, validate_protocol_for_env
@@ -71,6 +72,7 @@ async def request_message_retry(
                 "requester_id": user_id,
                 "requester_device_id": body.requester_device_id,
                 "updated_at": now,
+                "expires_at": default_expires_at(hours=24 * 7),
             },
             "$inc": {"count": 1},
             "$setOnInsert": {"created_at": now},

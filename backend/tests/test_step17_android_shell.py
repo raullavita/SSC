@@ -75,7 +75,7 @@ def test_android_oauth_custom_tabs():
     api = (ANDROID_ROOT / "ApiClient.kt").read_text(encoding="utf-8")
     assert "CustomTabsIntent" in launcher
     assert "isOAuthStart" in launcher
-    assert "android/0.3.1/10" in api
+    assert "android/0.3.1/12" in api
     assert "X-SSC-Client" in api
 
 
@@ -95,6 +95,6 @@ def test_android_webview_shell_build():
     script = (REPO / "scripts" / "build_android.ps1").read_text(encoding="utf-8")
     assert "SSC_WEB_URL" in gradle
     assert "android_asset/www/index.html" in gradle
-    assert "versionCode = 10" in gradle
+    assert "versionCode = 12" in gradle
     assert "assets/www" in script
-    assert '$Build = "10"' in script
+    assert '$Build = "12"' in script

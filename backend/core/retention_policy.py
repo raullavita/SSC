@@ -191,6 +191,33 @@ COLLECTIONS: dict[str, CollectionPolicy] = {
         ttl_field="expires_at",
         panic_field="from_user_id",
     ),
+    "message_retries": CollectionPolicy(
+        name="message_retries",
+        purpose="Sesame decrypt retry counters per message/device",
+        mode="ttl_expires_at",
+        ttl_field="expires_at",
+        panic_field="requester_id",
+    ),
+    "user_blocks": CollectionPolicy(
+        name="user_blocks",
+        purpose="User block relationships",
+        mode="until_panic",
+        panic_field="blocker_id",
+    ),
+    "abuse_reports": CollectionPolicy(
+        name="abuse_reports",
+        purpose="Abuse report submissions",
+        mode="ttl_expires_at",
+        ttl_field="expires_at",
+        panic_field="reporter_id",
+    ),
+    "abuse_flags": CollectionPolicy(
+        name="abuse_flags",
+        purpose="Temporary abuse enforcement flags",
+        mode="ttl_expires_at",
+        ttl_field="expires_at",
+        panic_field="user_id",
+    ),
     "beta_feedback": CollectionPolicy(
         name="beta_feedback",
         purpose="In-app beta feedback submissions",

@@ -17,11 +17,13 @@ REQUIRED = [
 
 PRODUCTION_EXTRA = [
     ("REDIS_URL", "Redis required for production session validation"),
+    ("SSC_SFU_INTERNAL_SECRET", "SFU internal auth secret (startup gate)"),
 ]
 
 OPTIONAL = [
     ("REDIS_URL", "Redis for sessions, rate limits, WS fanout"),
     ("GOOGLE_APPLICATION_CREDENTIALS", "Firebase push (service account path)"),
+    ("LIBRETRANSLATE_URL", "LibreTranslate base URL (server translation proxy)"),
     ("LIBRETRANSLATE_API_KEY", "Translation API key (optional)"),
     ("SSC_SFU_WS_URL", "mediasoup SFU WebSocket URL"),
 ]
@@ -56,6 +58,21 @@ def check() -> bool:
             else:
                 print(f"FAIL: {key} missing — {label}")
                 ok = False
+
+    if is_production:
+        try:
+            from core.captcha import captcha_required  # noqa: PLC0415
+            from core.device_attestation import attestation_configured, require_device_attestation  # noqa: PLC0415
+
+            if captcha_required() and not os.getenv("SSC_TURNSTILE_SECRET", "").strip():
+                print("FAIL: SSC_TURNSTILE_SECRET missing — required when SSC_CAPTCHA_REQUIRED=true")
+                ok = False
+            if require_device_attestation() and not attestation_configured():
+                print("FAIL: device attestation secrets missing — required in production")
+                ok = False
+        except Exception as exc:  # noqa: BLE001
+            print(f"FAIL: production policy validation raised {exc!r}")
+            ok = False
 
     for key, label in OPTIONAL:
         value = os.getenv(key, "").strip()
