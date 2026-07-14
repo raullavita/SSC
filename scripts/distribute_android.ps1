@@ -9,7 +9,7 @@ param(
     [string]$PackageName = "com.supersecurechat.app",
     [string]$TesterGroup = "ssc-testers",
     [string]$Testers = "raullavita1988@gmail.com,smashmaxxx@gmail.com,velvetnightshub@gmail.com",
-    [string]$ReleaseNotes = "SSC v0.3.1 build 10 - Native Android (Kotlin/Compose), encrypted 1:1 chat, emulator Kyber fix, x86_64 support for testing."
+    [string]$ReleaseNotes = "SSC v0.3.1 build 12 - Android WebView shell with libsignal bridge, multi-device E2EE, Sesame retry."
 )
 
 $ErrorActionPreference = "Stop"

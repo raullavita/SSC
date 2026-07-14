@@ -14,7 +14,7 @@ try {
     $env:REACT_APP_SSC_PLATFORM = "electron"
     $env:REACT_APP_SSC_LANDING_ONLY = "false"
     $env:REACT_APP_SSC_VERSION = "0.3.1"
-    $env:REACT_APP_SSC_BUILD = "9"
+    $env:REACT_APP_SSC_BUILD = "12"
     $env:REACT_APP_SSC_REQUIRE_LIBCRYPTO = "false"
     $env:REACT_APP_SSC_SAC_COMPAT = "true"
     $env:PUBLIC_URL = "."

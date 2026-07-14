@@ -9,7 +9,7 @@ import { encryptMessageForRecipients } from './signalBridge';
 const MAX_LOCAL_RETRIES = 3;
 const retryInFlight = new Set();
 
-export async function requestDecryptRetry({ messageId, conversationId, requesterDeviceId }) {
+async function requestDecryptRetry({ messageId, conversationId, requesterDeviceId }) {
   return api.post('/api/messages/retry-request', {
     message_id: messageId,
     conversation_id: conversationId,

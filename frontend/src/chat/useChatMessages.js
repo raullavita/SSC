@@ -12,7 +12,6 @@ import {
 import { indexMessage, indexMessages, removeMessageFromIndex } from '../search/messageIndex';
 import { getSealedSenderEnabled } from '../lib/chatPrefs';
 import {
-  GROUP_SENDER_KEY_DIST_PROTOCOL,
   decryptGroupMessage,
   encryptGroupMessage,
   ingestSenderKeyDistribution,
@@ -25,11 +24,7 @@ import {
   decryptWithRetry,
   resolveCiphertext,
 } from '../signal/sesameRetry';
-import {
-  decryptMessage,
-  encryptMessage,
-  encryptMessageForRecipients,
-} from '../signal/signalBridge';
+import { encryptMessageForRecipients } from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
 
 function parseMessageContent(text, messageKind) {

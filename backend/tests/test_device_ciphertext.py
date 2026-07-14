@@ -53,7 +53,6 @@ async def test_send_device_ciphertexts(env):
         json={"email": "b@example.com", "password": "password123", "display_name": "B"},
         headers=CLIENT,
     )
-    a_id = reg_a.json()["user"]["id"]
     b_id = reg_b.json()["user"]["id"]
 
     conv = await ac.post(

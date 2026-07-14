@@ -3,6 +3,7 @@
  */
 
 import { api } from './api';
+import { clearLinkedDeviceId } from './deviceLink';
 import { clientFootprintClean } from './clientFootprintOrchestrator';
 import { clearIceServerCache } from '../calls/iceServers';
 import { clearAllIndexes } from '../search/messageIndex';
@@ -58,6 +59,7 @@ export async function executePanicWipe() {
     serverError = err;
   }
   await clearNativeCryptoStore();
+  clearLinkedDeviceId();
   clearLocalClientData();
   if (!clientFootprintClean()) {
     console.warn('[ssc] panic wipe completed but localStorage footprint still has violations');

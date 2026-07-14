@@ -1,7 +1,7 @@
 # Build native SSC Android APK (Kotlin + Jetpack Compose, no WebView).
 param(
     [string]$Version = "0.3.1",
-    [string]$Build = "10"
+    [string]$Build = "12"
 )
 
 $ErrorActionPreference = "Stop"

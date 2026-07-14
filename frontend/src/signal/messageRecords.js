@@ -36,6 +36,7 @@ export function storeMessageRecord(messageId, { plaintext, peerId, conversationI
   const entries = Object.entries(records).sort((a, b) => b[1].storedAt - a[1].storedAt);
   const trimmed = Object.fromEntries(entries.slice(0, MAX_RECORDS));
   save(trimmed);
+  pruneMessageRecords();
 }
 
 export function getMessageRecord(messageId) {
@@ -57,7 +58,7 @@ export function deleteMessageRecord(messageId) {
   save(records);
 }
 
-export function pruneMessageRecords() {
+function pruneMessageRecords() {
   const records = load();
   const now = Date.now();
   let changed = false;

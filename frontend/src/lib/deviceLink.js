@@ -4,7 +4,7 @@
 
 const DEVICE_ID_KEY = 'ssc_device_id';
 const LINKED_DEVICE_KEY = 'ssc_linked_device_id';
-export const PRIMARY_DEVICE_ID = '1';
+const PRIMARY_DEVICE_ID = '1';
 
 /** Primary installed client (Electron/Android main app) always uses device 1. */
 export function getPrimaryDeviceId() {

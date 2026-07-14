@@ -5,7 +5,7 @@ Installed Android client — polished WebView shell with native `libsignal-andro
 ## Stack
 
 - **WebView** loads the **bundled React app** from `assets/www/` (same installed UI as Windows Electron — sign-in on launch, not the marketing site)
-- **`X-SSC-Client: android/0.3.1/10`** injected on all `/api/` requests from the WebView
+- **`X-SSC-Client: android/0.3.1/12`** injected on all `/api/` requests from the WebView
 - **`window.sscCrypto`** exposed via `SscNativeBridge` + `assets/ssc_crypto_bridge.js` — API matches Electron `preload.js`
 - **`window.sscTranslate`** exposed via `SscNativeBridge` + `assets/ssc_translate_bridge.js` — ML Kit on-device translation (no text leaves device)
 - **libsignal-android 0.96.4** — file-backed stores under `filesDir/ssc-signal/` (sessions, prekeys, sender keys)

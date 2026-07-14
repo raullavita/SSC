@@ -49,7 +49,7 @@ def _bundle(device_id: str = "1", prekey_count: int = 3) -> dict:
             "signature": "c2lnbmF0dXJlLWhlcmU=",
         },
         "prekeys": [
-            {"key_id": i, "public_key": f"cHJla2V5LWhlcmUtaS5p"}
+            {"key_id": i, "public_key": "cHJla2V5LWhlcmUtaS5p"}
             for i in range(2, 2 + prekey_count)
         ],
         "kyber_prekey": {
@@ -73,7 +73,6 @@ async def test_fetch_consumes_one_prekey(env):
         json={"email": "bob@example.com", "password": "password123", "display_name": "Bob"},
         headers=CLIENT,
     )
-    alice_id = reg_a.json()["user"]["id"]
     bob_id = reg_b.json()["user"]["id"]
 
     up = await ac.put("/api/prekeys/bundle", json=_bundle("1", 3), headers=CLIENT, cookies=reg_b.cookies)
