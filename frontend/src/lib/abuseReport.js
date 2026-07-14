@@ -25,7 +25,15 @@ export async function blockUser(targetUserId) {
   return api.post('/api/abuse/block', { target_user_id: targetUserId });
 }
 
-/** List blocks for a future Settings block-list panel; not wired in UI yet. */
 export async function listBlockedUsers() {
   return api.get('/api/abuse/blocks');
+}
+
+export async function checkBlockedBy(targetUserId) {
+  const data = await api.get(`/api/abuse/blocked-by/${encodeURIComponent(targetUserId)}`);
+  return Boolean(data.blocked);
+}
+
+export async function unblockUser(targetUserId) {
+  return api.delete(`/api/abuse/block/${encodeURIComponent(targetUserId)}`);
 }

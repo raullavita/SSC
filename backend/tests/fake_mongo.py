@@ -113,8 +113,12 @@ class FakeCollection:
                         merged[key] = int(merged.get(key, 0)) + int(value)
                 self.docs[i] = merged
                 return
-        if upsert and "$set" in update:
-            new_doc = {**query, **update["$set"]}
+        if upsert:
+            new_doc = deepcopy(query)
+            if "$setOnInsert" in update:
+                new_doc.update(update["$setOnInsert"])
+            if "$set" in update:
+                new_doc.update(update["$set"])
             self.docs.append(new_doc)
 
     async def delete_one(self, query: dict) -> Any:

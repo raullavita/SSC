@@ -10,6 +10,7 @@ from core.abuse_enforcement import (
     is_user_blocked,
     process_abuse_report,
     record_user_block,
+    remove_user_block,
 )
 from core.abuse_policy import spam_score_heuristic
 from db import get_database
@@ -83,6 +84,19 @@ async def list_blocks(
         async for doc in cursor
     ]
     return {"blocks": items}
+
+
+@router.delete("/block/{target_user_id}")
+async def unblock_user(
+    target_user_id: str,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    db = get_database()
+    removed = await remove_user_block(db, user_id, target_user_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="block_not_found")
+    return {"ok": True, "unblocked_user_id": target_user_id}
 
 
 @router.get("/blocked-by/{target_user_id}")

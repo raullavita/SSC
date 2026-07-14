@@ -3,7 +3,8 @@ import { useGroupChat } from '../../chat/useGroupChat';
 import styles from './GroupPanel.module.css';
 
 export default function GroupPanel({ onGroupCreated }) {
-  const { groups, loadGroups, createGroup, loading, error } = useGroupChat();
+  const { groups, loadGroups, createGroup, leaveGroup, dissolveGroup, loading, error } =
+    useGroupChat();
   const [name, setName] = useState('');
   const [members, setMembers] = useState('');
   const [expanded, setExpanded] = useState(false);
@@ -57,8 +58,32 @@ export default function GroupPanel({ onGroupCreated }) {
           {groups.length > 0 && (
             <ul className={styles.list}>
               {groups.map((g) => (
-                <li key={g.id}>
-                  {g.name} ({g.member_count} members)
+                <li key={g.id} className={styles.groupRow}>
+                  <span>
+                    {g.name} ({g.member_count} members)
+                  </span>
+                  <span className={styles.groupActions}>
+                    <button
+                      type="button"
+                      className={styles.smallBtn}
+                      onClick={async () => {
+                        await leaveGroup(g.id);
+                        loadGroups();
+                      }}
+                    >
+                      Leave
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.smallBtn}
+                      onClick={async () => {
+                        await dissolveGroup(g.id);
+                        loadGroups();
+                      }}
+                    >
+                      Dissolve
+                    </button>
+                  </span>
                 </li>
               ))}
             </ul>

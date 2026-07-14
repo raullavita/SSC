@@ -45,5 +45,8 @@ async def ensure_username_index(db: AsyncIOMotorDatabase) -> None:
 
 async def bootstrap_database(db: AsyncIOMotorDatabase) -> None:
     """Startup hook: ensure TTL indexes exist."""
+    from core.prekey_stale import purge_stale_prekeys  # noqa: PLC0415
+
     await ensure_ttl_indexes(db)
     await ensure_username_index(db)
+    await purge_stale_prekeys(db)

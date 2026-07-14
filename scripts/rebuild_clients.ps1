@@ -16,6 +16,7 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 
 Write-Host "SSC client rebuild - shared React UI (v0.3.1 build 12)"
+Write-Host "Includes: Electron (Windows), Android APK. macOS: scripts/build_electron_macos.ps1"
 if ($env:REACT_APP_API_URL) {
     Write-Host "API override: $($env:REACT_APP_API_URL)"
 } else {

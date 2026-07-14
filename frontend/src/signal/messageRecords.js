@@ -58,6 +58,10 @@ export function deleteMessageRecord(messageId) {
   save(records);
 }
 
+export function runMessageRecordMaintenance() {
+  pruneMessageRecords();
+}
+
 function pruneMessageRecords() {
   const records = load();
   const now = Date.now();

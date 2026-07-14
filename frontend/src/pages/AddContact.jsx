@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
+import { checkBlockedBy } from '../lib/abuseReport';
 import { lookupPathForQuery, normalizeUsername } from '../lib/inviteLink';
 import styles from './AddContact.module.css';
 
@@ -29,6 +30,10 @@ export default function AddContact() {
         const lookup = await api.get(lookupPathForQuery(name));
         if (cancelled) return;
         const peer = lookup.user;
+        if (await checkBlockedBy(peer.id)) {
+          setError('You are blocked by this user');
+          return;
+        }
         setStatus(`Sending friend request to ${peer.display_name || peer.username || peer.id}…`);
         const result = await api.post('/api/friend_requests', { to_user_id: peer.id });
         if (cancelled) return;

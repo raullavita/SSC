@@ -43,6 +43,8 @@ ROUTER_PREFIXES = {
     "typing": "/api",
     "users": "/api/users",
     "ws": "/api/ws",
+    "ws_tokens": "/api/ws",
+    "sesame_retry": "/api/messages",
     "site_feedback": "/api/public",
     "oauth_finish": "",
 }
@@ -50,7 +52,7 @@ ROUTER_PREFIXES = {
 KNOWN_UNWIRED_INTENTIONAL = {
     "/api/smart/config": "Inside AI disabled by smart_policy charter",
     "/api/translation/translate": "Server translate exists; client uses opt-in local path too",
-    "/api/abuse/report": "Abuse report API — no Settings UI yet",
+    "/api/conversations/{conversation_id}/messages/{message_id}/reactions": "Conv-level reactions used in UI",
     "/api/auth/google/start": "OAuth redirect — browser navigation, not api.get",
     "/api/auth/google/callback": "OAuth callback ÔÇö browser redirect",
     "/api/health": "Health/monitoring only",

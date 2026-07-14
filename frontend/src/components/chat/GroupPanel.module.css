@@ -57,3 +57,25 @@
 .list li {
   padding: 0.2rem 0;
 }
+
+.groupRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.groupActions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.smallBtn {
+  border: none;
+  background: #2a3942;
+  color: #e9edef;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  cursor: pointer;
+}

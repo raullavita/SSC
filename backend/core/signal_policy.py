@@ -39,6 +39,7 @@ PREKEY_PUBLIC_FIELDS: frozenset[str] = frozenset(
         "signed_prekey_signature",
         "prekeys",
         "kyber_prekey",
+        "signed_prekey_rotated_at",
         "updated_at",
     }
 )

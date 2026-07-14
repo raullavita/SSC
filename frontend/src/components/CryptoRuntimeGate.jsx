@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { requiresProductionCrypto } from '../lib/cryptoPolicy';
 import styles from './InstalledClientGate.module.css';
 
-const ELECTRON_PLATFORMS = new Set(['electron', 'windows', 'mac']);
+const INSTALLED_PLATFORMS = new Set(['electron', 'windows', 'mac', 'android', 'ios']);
 
-function isElectronShell() {
-  if (typeof window !== 'undefined' && window.__SSC_ELECTRON_CLIENT) return true;
+function isInstalledCryptoShell() {
+  if (typeof window === 'undefined') return false;
+  if (window.__SSC_ELECTRON_CLIENT || window.__SSC_ANDROID_CLIENT || window.__SSC_IOS_CLIENT) {
+    return true;
+  }
   const platform = (process.env.REACT_APP_SSC_PLATFORM || '').trim().toLowerCase();
-  return ELECTRON_PLATFORMS.has(platform);
+  return INSTALLED_PLATFORMS.has(platform);
 }
 
 async function probeLibsignalRuntime() {
@@ -33,7 +36,7 @@ export default function CryptoRuntimeGate({ children }) {
     let cancelled = false;
 
     async function run() {
-      if (!requiresProductionCrypto() || !isElectronShell()) {
+      if (!requiresProductionCrypto() || !isInstalledCryptoShell()) {
         if (!cancelled) setState('ready');
         return;
       }
@@ -67,8 +70,13 @@ export default function CryptoRuntimeGate({ children }) {
         <h1>Encryption engine blocked</h1>
         {preloadMissing ? (
           <p>
-            SSC secure bridge did not load. Close the app completely and reinstall from{' '}
-            <strong>SSC-Setup-0.3.1.exe</strong> on your Desktop or the website download page.
+            SSC secure bridge did not load. Reinstall the latest SSC app from the website download
+            page.
+          </p>
+        ) : typeof window !== 'undefined' && window.__SSC_ANDROID_CLIENT ? (
+          <p>
+            Android libsignal bridge failed to load. Rebuild and reinstall the SSC APK — encrypted
+            chat cannot run without the native crypto module.
           </p>
         ) : (
           <p>

@@ -44,7 +44,9 @@ import { fetchLanguages, translateText, TranslationError } from '../lib/translat
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 import { searchMessages } from '../search/messageIndex';
 import { getInstalledClientHeader } from '../lib/installedClient';
+import { checkBlockedBy } from '../lib/abuseReport';
 import { getLocalDeviceId } from '../lib/deviceLink';
+import { runMessageRecordMaintenance } from '../signal/messageRecords';
 import { handleDecryptRetryRequest } from '../signal/sesameRetry';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import { getPeerTrust } from '../lib/trustStore';
@@ -96,6 +98,10 @@ export default function ChatHome() {
     const openId = location.state?.openConversationId;
     if (openId) setActiveId(openId);
   }, [location.state?.openConversationId]);
+
+  useEffect(() => {
+    runMessageRecordMaintenance();
+  }, []);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -441,6 +447,11 @@ export default function ChatHome() {
   async function startChat(participantId) {
     if (!participantId?.trim()) return;
     try {
+      const blocked = await checkBlockedBy(participantId.trim());
+      if (blocked) {
+        setListError('You are blocked by this user');
+        return;
+      }
       const data = await api.post('/api/conversations', {
         participant_id: participantId.trim(),
       });

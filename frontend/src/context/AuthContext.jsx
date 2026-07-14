@@ -39,6 +39,7 @@ export function AuthProvider({ children }) {
         }),
       ]);
       setUser(me?.user ?? me);
+      if (me?.ws_token) setWsToken(me.ws_token);
       warnFootprintViolations();
       startPresenceHeartbeat();
       registerPushTokenIfAvailable().catch(() => {});

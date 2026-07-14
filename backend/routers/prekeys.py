@@ -220,7 +220,8 @@ async def fetch_prekey_bundle(
     doc_id = f"{target_user_id}:{device_id}"
     bundle, detail = await consume_one_prekey(db, doc_id)
     if detail:
-        raise HTTPException(status_code=404, detail=detail)
+        status = 410 if detail == "prekeys_depleted" else 404
+        raise HTTPException(status_code=status, detail=detail)
     return {"bundle": bundle}
 
 

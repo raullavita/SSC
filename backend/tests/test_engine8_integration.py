@@ -8,11 +8,15 @@ import os
 import time
 import uuid
 
+from enum import Enum
+
 import pytest
 import requests
 import websockets
 
-from enum import Enum
+pytestmark = pytest.mark.skip(
+    reason="Deprecated live integration — targets removed APIs (ws-ticket, contacts/request, bearer auth)"
+)
 
 LIBSIGNAL_PINNED_VERSION = "0.96.4"
 

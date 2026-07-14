@@ -66,9 +66,12 @@ async def test_register_login_and_me(messaging_env):
         me = await ac.get("/api/auth/me", headers=CLIENT)
         assert me.status_code == 200
         me_body = me.json()
-        assert "email" not in me_body
-        assert me_body["id"] == reg["user"]["id"]
-        assert me_body["display_name"] == "Alice"
+        assert "user" in me_body
+        assert "ws_token" in me_body
+        user = me_body["user"]
+        assert "email" not in user
+        assert user["id"] == reg["user"]["id"]
+        assert user["display_name"] == "Alice"
 
 
 @pytest.mark.asyncio

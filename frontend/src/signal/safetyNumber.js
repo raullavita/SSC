@@ -24,7 +24,8 @@ export async function computeSafetyNumber(peerId, deviceId = '1', localUserId = 
     return { ...result, deviceId, mode: 'native' };
   }
 
-  const localId = localUserId || (await api.get('/api/auth/me')).id;
+  const me = await api.get('/api/auth/me');
+  const localId = localUserId || me?.user?.id || me?.id;
   const localKey = await fetchLocalIdentityKey(localId, deviceId);
   const displayable = await numericFingerprintDisplayable({
     localUserId: localId,

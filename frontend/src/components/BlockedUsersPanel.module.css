@@ -1,0 +1,50 @@
+.wrap {
+  margin-top: 1rem;
+}
+
+.title {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+
+.form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.input {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+}
+
+.btn {
+  padding: 0.4rem 0.75rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  color: #53bdeb;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+}

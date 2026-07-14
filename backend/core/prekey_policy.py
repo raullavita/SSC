@@ -26,4 +26,12 @@ async def prekey_fetch_allowed(db, viewer_id: str, target_user_id: str) -> bool:
             ],
         }
     )
-    return accepted is not None
+    if accepted:
+        return True
+
+    shared_group = await db.groups.find_one(
+        {
+            "member_ids": {"$all": [viewer_id, target_user_id]},
+        }
+    )
+    return shared_group is not None

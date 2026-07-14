@@ -230,12 +230,19 @@ async def google_idtoken(
 
 
 @router.get("/me")
-async def me(user_id: str = Depends(get_current_user_id)) -> dict:
+async def me(
+    request: Request,
+    user_id: str = Depends(get_current_user_id),
+) -> dict:
     db = get_database()
     user = await db.users.find_one({"_id": user_id})
     if not user:
         raise HTTPException(status_code=404, detail="user_not_found")
-    return _user_payload(user)
+    out: dict = {"user": _user_payload(user)}
+    token = read_session_cookie(request)
+    if token:
+        out["ws_token"] = token
+    return out
 
 
 @router.post("/logout")

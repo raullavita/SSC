@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
+import os
+
 SESSION_COOKIE_NAME = "ssc_session"
 SESSION_JWT_TYPE = "access"
 SESSION_COLLECTION = "sessions"
 
-# Native installed clients may still send Authorization for WS bootstrap only.
-ALLOW_BEARER_FALLBACK = True
+
+def allow_bearer_fallback() -> bool:
+    """Native clients may send Authorization when cookies are unavailable."""
+    raw = os.getenv("SSC_ALLOW_BEARER_FALLBACK", "true").strip().lower()
+    return raw in ("1", "true", "yes", "on")
+
+
+# Back-compat alias for imports.
+ALLOW_BEARER_FALLBACK = allow_bearer_fallback()
 
 
 def engine5_session_policy_ready() -> bool:

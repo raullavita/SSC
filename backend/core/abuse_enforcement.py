@@ -32,6 +32,12 @@ async def record_user_block(db, blocker_id: str, blocked_id: str) -> None:
     )
 
 
+async def remove_user_block(db, blocker_id: str, blocked_id: str) -> bool:
+    doc_id = f"block:{blocker_id}:{blocked_id}"
+    result = await db.user_blocks.delete_one({"_id": doc_id})
+    return bool(result.deleted_count)
+
+
 async def is_user_blocked(db, blocker_id: str, blocked_id: str) -> bool:
     doc_id = f"block:{blocker_id}:{blocked_id}"
     return (await db.user_blocks.find_one({"_id": doc_id})) is not None

@@ -7,7 +7,7 @@ from fastapi import Header, HTTPException, Request
 from core.auth_tokens import decode_access_token
 from core.installed_client_policy import INSTALLED_CLIENT_HEADER, parse_client_header
 from core.session_cookie import read_session_cookie
-from core.session_policy import ALLOW_BEARER_FALLBACK
+from core.session_policy import allow_bearer_fallback
 from core.token_revocation import is_session_revoked
 from db import get_database
 
@@ -16,7 +16,7 @@ async def _resolve_token(request: Request, authorization: str | None) -> str:
     cookie_token = read_session_cookie(request)
     if cookie_token:
         return cookie_token
-    if ALLOW_BEARER_FALLBACK and authorization and authorization.lower().startswith("bearer "):
+    if allow_bearer_fallback() and authorization and authorization.lower().startswith("bearer "):
         return authorization.split(" ", 1)[1].strip()
     raise HTTPException(status_code=401, detail="session_required")
 

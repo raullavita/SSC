@@ -36,6 +36,8 @@ async def consume_one_prekey(db, doc_id: str) -> tuple[dict[str, Any] | None, st
         return None, "prekey_bundle_not_found"
 
     remaining = len(doc.get("prekeys") or [])
+    if remaining == 0:
+        return None, "prekeys_depleted"
     bundle = public_prekey_bundle({**doc, "prekeys": []})
     bundle["prekeys_remaining"] = remaining
     bundle["prekeys_low"] = remaining < PREKEY_LOW_THRESHOLD

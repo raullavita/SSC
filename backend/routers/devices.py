@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.device_id_policy import is_valid_device_id
-from core.multi_device_policy import public_linked_device
+from core.multi_device_policy import MAX_DEVICES_PER_USER, public_linked_device
 from db import get_database
 from deps import get_client_header, get_current_user_id
 
@@ -43,6 +43,12 @@ async def register_device(
         "last_active": now,
     }
     existing = await db.devices.find_one({"_id": doc_id})
+    if not existing:
+        count = 0
+        async for _ in db.devices.find({"user_id": user_id}):
+            count += 1
+        if count >= MAX_DEVICES_PER_USER:
+            raise HTTPException(status_code=400, detail="device_limit_reached")
     if existing:
         await db.devices.update_one(
             {"_id": doc_id},

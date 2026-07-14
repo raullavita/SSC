@@ -49,5 +49,42 @@ export function useGroupChat() {
     }
   }, []);
 
-  return { groups, loadGroups, createGroup, addMembers, loading, error };
+  const leaveGroup = useCallback(async (groupId) => {
+    try {
+      return await api.post(`/api/groups/${groupId}/leave`, {});
+    } catch (e) {
+      setError(e.message || 'Failed to leave group');
+      return null;
+    }
+  }, []);
+
+  const removeMember = useCallback(async (groupId, memberId) => {
+    try {
+      return await api.delete(`/api/groups/${groupId}/members/${memberId}`);
+    } catch (e) {
+      setError(e.message || 'Failed to remove member');
+      return null;
+    }
+  }, []);
+
+  const dissolveGroup = useCallback(async (groupId) => {
+    try {
+      return await api.delete(`/api/groups/${groupId}`);
+    } catch (e) {
+      setError(e.message || 'Failed to dissolve group');
+      return null;
+    }
+  }, []);
+
+  return {
+    groups,
+    loadGroups,
+    createGroup,
+    addMembers,
+    leaveGroup,
+    removeMember,
+    dissolveGroup,
+    loading,
+    error,
+  };
 }

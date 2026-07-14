@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from core.group_membership import dissolve_group, leave_group, remove_group_member
 from core.group_policy import MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS, public_group
 from core.username_policy import public_user_lookup
 from core.ids import new_conversation_id, new_group_id
@@ -167,3 +168,59 @@ async def add_group_members(
 
     group["member_ids"] = sorted(members)
     return {"group": public_group(group, user_id), "added": added}
+
+
+@router.post("/{group_id}/leave")
+async def leave_group_endpoint(
+    group_id: str,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    db = get_database()
+    result = await leave_group(db, group_id, user_id)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    group = result.get("group")
+    return {
+        "ok": True,
+        "action": result["action"],
+        "dissolved": result.get("dissolved", False),
+        "group": public_group(group, user_id) if group else None,
+        "group_id": group_id if result.get("dissolved") else None,
+    }
+
+
+@router.delete("/{group_id}/members/{member_id}")
+async def remove_group_member_endpoint(
+    group_id: str,
+    member_id: str,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    db = get_database()
+    result = await remove_group_member(db, group_id, user_id, member_id)
+    if "error" in result:
+        status = 403 if result["error"] == "owner_only" else 400
+        raise HTTPException(status_code=status, detail=result["error"])
+    group = result.get("group")
+    return {
+        "ok": True,
+        "action": result["action"],
+        "dissolved": result.get("dissolved", False),
+        "removed_user_id": result.get("removed_user_id"),
+        "group": public_group(group, user_id) if group else None,
+    }
+
+
+@router.delete("/{group_id}")
+async def dissolve_group_endpoint(
+    group_id: str,
+    user_id: str = Depends(get_current_user_id),
+    _client: str = Depends(get_client_header),
+) -> dict:
+    db = get_database()
+    result = await dissolve_group(db, group_id, user_id)
+    if "error" in result:
+        status = 403 if result["error"] == "owner_only" else 404
+        raise HTTPException(status_code=status, detail=result["error"])
+    return {"ok": True, "dissolved": True, "group_id": group_id}

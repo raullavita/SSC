@@ -69,6 +69,19 @@ async def test_prekey_fetch_denied_without_relationship(td_env):
 
 
 @pytest.mark.asyncio
+async def test_prekey_fetch_allowed_for_group_members(td_env):
+    transport, db = td_env
+    reg_a, _ = await _register(transport, "ga@example.com", "GA")
+    reg_b, _ = await _register(transport, "gb@example.com", "GB")
+    alice_id = reg_a["user"]["id"]
+    bob_id = reg_b["user"]["id"]
+    await db.groups.insert_one(
+        {"_id": "g_test", "member_ids": [alice_id, bob_id], "owner_id": alice_id, "name": "G"}
+    )
+    assert await prekey_fetch_allowed(db, alice_id, bob_id) is True
+
+
+@pytest.mark.asyncio
 async def test_prekey_fetch_allowed_for_direct_conversation(td_env):
     transport, db = td_env
     alice, _alice_cookies = await _register(transport, "alice2@example.com", "Alice")

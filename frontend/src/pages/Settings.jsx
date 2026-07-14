@@ -32,6 +32,7 @@ import ChatPreferencesSection, {
 import InviteQr from '../components/InviteQr';
 import BroadcastListsPanel from '../components/BroadcastListsPanel';
 import AbuseReportPanel from '../components/AbuseReportPanel';
+import BlockedUsersPanel from '../components/BlockedUsersPanel';
 import BackupPanel from '../components/BackupPanel';
 import RecoveryPanel from '../components/RecoveryPanel';
 import styles from './Settings.module.css';
@@ -325,6 +326,7 @@ export default function Settings() {
             <RecoveryPanel onMessage={setMessage} />
             <BackupPanel userId={user.id} onMessage={setMessage} />
             <AbuseReportPanel onMessage={setMessage} />
+            <BlockedUsersPanel />
           </div>
         )}
       </section>
