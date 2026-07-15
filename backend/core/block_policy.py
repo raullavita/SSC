@@ -26,3 +26,11 @@ async def reachable_participants(db, actor_id: str, participant_ids: list[str]) 
         if not blocked:
             reachable.append(other_id)
     return reachable
+
+
+async def should_deliver_to_participant(db, sender_id: str, recipient_id: str) -> bool:
+    """Whether fanout/push should target recipient for content from sender."""
+    if sender_id == recipient_id:
+        return True
+    blocked, _ = await interaction_blocked(db, sender_id, recipient_id)
+    return not blocked

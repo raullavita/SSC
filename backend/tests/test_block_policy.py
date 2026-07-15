@@ -29,6 +29,7 @@ def _patch(monkeypatch, fake_db):
         "routers.prekeys",
         "routers.calls",
         "routers.conversations",
+        "routers.messages",
         "deps",
         "core.token_revocation",
     ):
@@ -151,3 +152,5 @@ async def test_group_call_skips_blocked_participants(monkeypatch):
     assert publish_mock.await_count == 1
     args, _kwargs = publish_mock.await_args
     assert args[0] == f"user:{c_id}"
+
+

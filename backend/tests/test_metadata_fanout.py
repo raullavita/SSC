@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from core.message_fanout import fanout_message
+from tests.fake_mongo import FakeDatabase
 
 
 @pytest.mark.asyncio
@@ -15,6 +16,7 @@ async def test_fanout_omits_participants_from_conversation_topic(monkeypatch):
         published.append((topic, payload))
 
     monkeypatch.setattr("core.message_fanout.ws_hub.publish", fake_publish)
+    monkeypatch.setattr("db.get_database", lambda: FakeDatabase())
 
     async def fake_device_ids(_db, _uid):
         return ["1"]

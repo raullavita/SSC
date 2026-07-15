@@ -40,7 +40,10 @@ async def remove_user_block(db, blocker_id: str, blocked_id: str) -> bool:
 
 async def is_user_blocked(db, blocker_id: str, blocked_id: str) -> bool:
     doc_id = f"block:{blocker_id}:{blocked_id}"
-    return (await db.user_blocks.find_one({"_id": doc_id})) is not None
+    collection = getattr(db, "user_blocks", None)
+    if collection is None:
+        return False
+    return (await collection.find_one({"_id": doc_id})) is not None
 
 
 async def count_distinct_reporters(db, target_user_id: str) -> int:

@@ -207,13 +207,13 @@ async def end_call(
         allowed = set(call.get("participant_ids") or [])
         if user_id not in allowed:
             raise HTTPException(status_code=403, detail="not_a_call_participant")
-        peers = [pid for pid in allowed if pid != user_id]
+        peers = await reachable_participants(db, user_id, list(allowed))
     else:
         participants = {call.get("caller_id"), call.get("callee_id")}
         if user_id not in participants:
             raise HTTPException(status_code=403, detail="not_a_call_participant")
         peer = call["callee_id"] if user_id == call["caller_id"] else call["caller_id"]
-        peers = [peer]
+        peers = await reachable_participants(db, user_id, [peer])
 
     now = datetime.now(timezone.utc)
     await db.call_sessions.update_one(

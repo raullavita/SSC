@@ -73,8 +73,14 @@ async def notify_conversation_participants(
     if skip_kinds and kind in skip_kinds:
         return []
     results = []
+    from core.block_policy import should_deliver_to_participant
+    from db import get_database
+
+    db = get_database()
     for uid in participant_ids:
         if uid == sender_id:
+            continue
+        if not await should_deliver_to_participant(db, sender_id, uid):
             continue
         meta = await db_conversation_muted(uid, conversation_id)
         if meta:

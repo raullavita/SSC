@@ -139,6 +139,7 @@ async def add_reaction(
         public,
         participants,
         event_type="reaction_added",
+        sender_id=user_id,
     )
     background_tasks.add_task(
         notify_conversation_participants,
@@ -172,5 +173,6 @@ async def remove_reaction(
         {"id": reaction_id, "target_message_id": doc["target_message_id"]},
         participants,
         event_type="reaction_removed",
+        sender_id=user_id,
     )
     return {"ok": True, "reaction_id": reaction_id}

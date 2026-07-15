@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from core.block_policy import should_deliver_to_participant
 from core.conversation_privacy_policy import effective_read_receipts
 from core.last_seen import default_privacy_settings
 from core.retention_policy import default_expires_at
@@ -19,6 +20,8 @@ async def increment_unread(
 ) -> None:
     for uid in participants:
         if uid == sender_id:
+            continue
+        if not await should_deliver_to_participant(db, sender_id, uid):
             continue
         await db.conversation_meta.update_one(
             {"user_id": uid, "conversation_id": conversation_id},

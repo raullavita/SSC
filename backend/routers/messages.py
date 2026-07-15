@@ -8,7 +8,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
 from core.abuse_enforcement import is_abuse_rate_limited
-from core.block_policy import interaction_blocked
+from core.block_policy import interaction_blocked, reachable_participants
 from core.abuse_policy import msg_rate_limiter
 from core.new_account_policy import enforce_new_account_dm
 from core.ids import new_message_id
@@ -153,6 +153,10 @@ async def send_message(
             blocked, detail = await interaction_blocked(db, user_id, others[0])
             if blocked:
                 raise HTTPException(status_code=403, detail=detail)
+    elif conv.get("type") == "group":
+        others = [p for p in conv.get("participants", []) if p != user_id]
+        if others and not await reachable_participants(db, user_id, conv.get("participants", [])):
+            raise HTTPException(status_code=403, detail="all_participants_blocked")
 
     now = datetime.now(timezone.utc)
     if body.disappearing_seconds:
