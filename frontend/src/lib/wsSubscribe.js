@@ -29,3 +29,7 @@ export async function buildSubscribePayload(topic) {
   }
   return JSON.stringify(payload);
 }
+
+export function buildUnsubscribePayload(topic) {
+  return JSON.stringify({ type: 'unsubscribe', topic });
+}

@@ -22,6 +22,15 @@ describe('groupSenderKeys', () => {
     expect(status.senderKeys).toBe(true);
   });
 
+  it('reports missing sender key on decrypt without distribution', async () => {
+    const plain = await decryptGroupMessage('Y2lwaGVy', {
+      groupId: 'g_missing',
+      senderId: 'u_other',
+      protocol: 'group_sender_key_dev',
+    });
+    expect(plain).toContain('sender key not received');
+  });
+
   it('encrypts and decrypts with dev fallback when libsignal unavailable', async () => {
     const groupId = 'g_test';
     const userId = 'u_a';

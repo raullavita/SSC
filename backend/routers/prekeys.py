@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from config import get_settings
 from core.abuse_policy import prekey_fetch_limiter
 from core.abuse_enforcement import is_abuse_rate_limited
+from core.block_policy import interaction_blocked
 from core.device_id_policy import is_valid_device_id
 from core.prekey_consume import consume_one_prekey, count_prekeys
 from core.prekey_policy import prekey_fetch_allowed
@@ -216,6 +217,9 @@ async def fetch_prekey_bundle(
         raise HTTPException(status_code=429, detail="abuse_rate_limited")
     if not await prekey_fetch_allowed(db, viewer, target_user_id):
         raise HTTPException(status_code=403, detail="prekey_fetch_not_allowed")
+    blocked, detail = await interaction_blocked(db, viewer, target_user_id)
+    if blocked:
+        raise HTTPException(status_code=403, detail=detail)
 
     doc_id = f"{target_user_id}:{device_id}"
     bundle, detail = await consume_one_prekey(db, doc_id)
@@ -238,6 +242,9 @@ async def list_user_prekey_devices(
         raise HTTPException(status_code=429, detail="abuse_rate_limited")
     if not await prekey_fetch_allowed(db, viewer, target_user_id):
         raise HTTPException(status_code=403, detail="prekey_fetch_not_allowed")
+    blocked, detail = await interaction_blocked(db, viewer, target_user_id)
+    if blocked:
+        raise HTTPException(status_code=403, detail=detail)
     cursor = db.prekeys.find({"user_id": target_user_id})
     devices = [public_prekey_device_summary(doc) async for doc in cursor]
     return {"user_id": target_user_id, "devices": devices}

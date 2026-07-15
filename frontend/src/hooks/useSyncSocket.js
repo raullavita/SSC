@@ -5,9 +5,10 @@
 
 import { useEffect, useRef } from 'react';
 import { wsAuthPayload, wsUrl } from '../lib/api';
-import { buildSubscribePayload } from '../lib/wsSubscribe';
+import { buildSubscribePayload, buildUnsubscribePayload } from '../lib/wsSubscribe';
 
 const listeners = new Set();
+const listenerTopics = new Map();
 let sharedWs = null;
 let sharedUserId = null;
 let sharedWsToken = null;
@@ -53,14 +54,31 @@ function scheduleReconnect() {
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
     openSharedSocket(sharedUserId, sharedWsToken)
-      .then(() => ensureTopics([...subscribedTopics]))
+      .then(() => syncTopicSubscriptions())
       .catch(() => scheduleReconnect());
   }, delay);
 }
 
-async function ensureTopics(topics) {
+function neededTopics() {
+  const needed = new Set();
+  listenerTopics.forEach((topics) => {
+    topics.forEach((topic) => needed.add(topic));
+  });
+  return needed;
+}
+
+async function syncTopicSubscriptions() {
   if (!sharedWs || sharedWs.readyState !== WebSocket.OPEN) return;
-  for (const topic of topics) {
+  const needed = neededTopics();
+
+  for (const topic of subscribedTopics) {
+    if (!needed.has(topic)) {
+      sharedWs.send(buildUnsubscribePayload(topic));
+      subscribedTopics.delete(topic);
+    }
+  }
+
+  for (const topic of needed) {
     if (subscribedTopics.has(topic)) continue;
     sharedWs.send(await buildSubscribePayload(topic));
     subscribedTopics.add(topic);
@@ -141,12 +159,13 @@ export function useSyncSocket({ userId, wsToken, topics = [], onEvent, enabled =
       onEventRef.current?.(envelope);
     };
     listeners.add(listener);
+    listenerTopics.set(listener, new Set(topics));
 
     let cancelled = false;
     (async () => {
       try {
         await openSharedSocket(userId, wsToken);
-        if (!cancelled) await ensureTopics(topics);
+        if (!cancelled) await syncTopicSubscriptions();
       } catch {
         if (!cancelled) scheduleReconnect();
       }
@@ -155,11 +174,14 @@ export function useSyncSocket({ userId, wsToken, topics = [], onEvent, enabled =
     return () => {
       cancelled = true;
       listeners.delete(listener);
+      listenerTopics.delete(listener);
       if (listeners.size === 0) {
         closeSharedSocket();
         sharedUserId = null;
         sharedWsToken = null;
         reconnectAttempt = 0;
+      } else if (sharedWs?.readyState === WebSocket.OPEN) {
+        syncTopicSubscriptions().catch(() => {});
       }
     };
   }, [enabled, userId, wsToken, topicsKey]);
@@ -167,6 +189,7 @@ export function useSyncSocket({ userId, wsToken, topics = [], onEvent, enabled =
 
 export function __resetSyncSocketForTests() {
   listeners.clear();
+  listenerTopics.clear();
   closeSharedSocket();
   sharedUserId = null;
   sharedWsToken = null;

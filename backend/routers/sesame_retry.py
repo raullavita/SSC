@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from core.block_policy import interaction_blocked
 from core.device_ciphertext_policy import validate_send_ciphertexts
 from core.retention_policy import default_expires_at
 from core.message_fanout import fanout_message_edited
@@ -55,6 +56,10 @@ async def request_message_retry(
     sender_id = msg.get("sender_id")
     if not sender_id or sender_id == user_id:
         raise HTTPException(status_code=400, detail="retry_not_applicable")
+
+    blocked, detail = await interaction_blocked(db, user_id, sender_id)
+    if blocked:
+        raise HTTPException(status_code=403, detail=detail)
 
     retry_key = f"retry:{body.message_id}:{user_id}"
     retry_doc = await db.message_retries.find_one({"_id": retry_key})

@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from core.block_policy import interaction_blocked
 from core.ids import new_conversation_id, new_friend_request_id
 from core.retention_policy import default_expires_at
 from core.ws_hub import ws_hub
@@ -102,6 +103,10 @@ async def create_friend_request(
     target = await db.users.find_one({"_id": body.to_user_id}, {"_id": 1})
     if not target:
         raise HTTPException(status_code=404, detail="user_not_found")
+
+    blocked, detail = await interaction_blocked(db, user_id, body.to_user_id)
+    if blocked:
+        raise HTTPException(status_code=403, detail=detail)
 
     existing_conv = await db.conversations.find_one(
         {

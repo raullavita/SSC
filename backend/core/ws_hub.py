@@ -44,6 +44,15 @@ class WsHub:
         async with self._lock:
             self._connections.setdefault(topic, set()).add(websocket)
 
+    async def unsubscribe(self, websocket: WebSocket, topic: str) -> None:
+        async with self._lock:
+            bucket = self._connections.get(topic)
+            if not bucket:
+                return
+            bucket.discard(websocket)
+            if not bucket:
+                del self._connections[topic]
+
     async def publish_local(self, topic: str, payload: dict[str, Any]) -> None:
         async with self._lock:
             sockets = list(self._connections.get(topic, set()))

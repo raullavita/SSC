@@ -116,6 +116,15 @@ async def websocket_endpoint(
                         continue
                 await ws_hub.subscribe(websocket, topic)
                 await websocket.send_text(json.dumps({"type": "subscribed", "topic": topic}))
+                continue
+
+            if data.get("type") == "unsubscribe":
+                topic = data.get("topic")
+                if isinstance(topic, str) and await validate_topic_for_user(topic, user_id):
+                    await ws_hub.unsubscribe(websocket, topic)
+                    await websocket.send_text(json.dumps({"type": "unsubscribed", "topic": topic}))
+                else:
+                    await websocket.send_text(json.dumps({"type": "error", "detail": "invalid_topic"}))
     except WebSocketDisconnect:
         pass
     finally:

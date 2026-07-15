@@ -42,10 +42,10 @@ export async function devEncryptGroupMessage(plaintext, { groupId, userId } = {}
 
 export async function devDecryptGroupMessage(ciphertext, { groupId, senderId } = {}) {
   const keyMaterial = getSenderKey(groupId, senderId);
-  if (!keyMaterial) return '[encrypted group message]';
+  if (!keyMaterial) return '[Unable to decrypt — sender key not received yet]';
   try {
     return await xorUncombine(ciphertext, keyMaterial);
-  } catch {
-    return '[encrypted group message]';
+  } catch (err) {
+    return `[Group decrypt failed: ${err?.message || 'corrupt_ciphertext'}]`;
   }
 }

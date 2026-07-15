@@ -41,6 +41,17 @@ function isSenderKeyDistribution(ciphertext) {
   return Boolean(ciphertext && ciphertext.startsWith(LEGACY_SENDER_KEY_DIST_PREFIX));
 }
 
+function groupDecryptFailureLabel(err, { missingKey = false } = {}) {
+  if (missingKey) {
+    return '[Unable to decrypt — sender key not received yet]';
+  }
+  const code = err?.message || err?.code || 'decrypt_failed';
+  if (requiresProductionCrypto()) {
+    return `[Unable to decrypt group message (${code})]`;
+  }
+  return `[Group decrypt failed: ${code}]`;
+}
+
 async function postDistributionMessage(conversationId, ciphertext) {
   if (!conversationId || !ciphertext) return;
   await api.post(`/api/conversations/${conversationId}/messages`, {
@@ -111,8 +122,8 @@ export async function decryptGroupMessage(
   if (protocol === GROUP_SENDER_KEY_PROTOCOL && isLibsignalGroupAvailable()) {
     try {
       return await decryptGroupCiphertext(senderId, ciphertext, { deviceId });
-    } catch {
-      return '[encrypted group message]';
+    } catch (err) {
+      return groupDecryptFailureLabel(err);
     }
   }
 
@@ -120,7 +131,10 @@ export async function decryptGroupMessage(
     if (isLibsignalGroupAvailable()) {
       try {
         return await decryptGroupCiphertext(senderId, ciphertext, { deviceId });
-      } catch {
+      } catch (err) {
+        if (requiresProductionCrypto()) {
+          return groupDecryptFailureLabel(err);
+        }
         /* try dev/legacy below */
       }
     }

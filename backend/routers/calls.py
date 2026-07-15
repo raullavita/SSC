@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from core.block_policy import interaction_blocked
 from core.call_policy import (
     CALL_END_REASONS,
     CALL_TYPES,
@@ -83,6 +84,11 @@ async def start_call(
         callee_id = callee_id or next((p for p in participants if p != user_id), None)
     if not callee_id or callee_id not in participants:
         raise HTTPException(status_code=400, detail="callee_not_in_conversation")
+
+    if conv.get("type") == "direct":
+        blocked, detail = await interaction_blocked(db, user_id, callee_id)
+        if blocked:
+            raise HTTPException(status_code=403, detail=detail)
 
     now = datetime.now(timezone.utc)
     call_id = new_call_id()
