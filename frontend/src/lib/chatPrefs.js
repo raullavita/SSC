@@ -7,8 +7,6 @@ const USER_LANG_KEY = 'ssc_user_lang';
 const SEALED_SENDER_KEY = 'ssc_sealed_sender';
 const LINK_PREVIEWS_KEY = 'ssc_link_previews';
 
-const SERVER_PROXY_TRANSLATE_KEY = 'ssc_server_translate_proxy';
-
 export function getAutoTranslateEnabled() {
   try {
     return localStorage.getItem(AUTO_TRANSLATE_KEY) === 'true';
@@ -70,22 +68,6 @@ export function getLinkPreviewsEnabled() {
 export function setLinkPreviewsEnabled(enabled) {
   try {
     localStorage.setItem(LINK_PREVIEWS_KEY, enabled ? 'true' : 'false');
-  } catch {
-    /* ignore */
-  }
-}
-
-export function getServerProxyTranslateEnabled() {
-  try {
-    return localStorage.getItem(SERVER_PROXY_TRANSLATE_KEY) === 'true';
-  } catch {
-    return false;
-  }
-}
-
-export function setServerProxyTranslateEnabled(enabled) {
-  try {
-    localStorage.setItem(SERVER_PROXY_TRANSLATE_KEY, enabled ? 'true' : 'false');
   } catch {
     /* ignore */
   }

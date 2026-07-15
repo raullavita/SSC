@@ -1,22 +1,20 @@
 /**
- * Translation provider chain — user API keys first, then SSC server proxy (opt-in).
- * On-device and local LibreTranslate are not used (API keys or server only).
+ * Translation — SSC server only (admin configures LIBRETRANSLATE_URL on API).
+ * No user API keys; no on-device/local translate in the client chain.
  */
 
-import { translateWithUserApiKeys, userApiKeysConfigured } from './userApiKey';
-import { translateServerProxy, serverProxyAllowed } from './serverProxy';
+import { isServerTranslationAvailable } from '../../translationConfig';
+import { translateServerProxy } from './serverProxy';
 
-const CHAIN = [
-  { id: 'user-api-key', run: translateWithUserApiKeys },
-  { id: 'server-proxy', run: translateServerProxy },
-];
+const CHAIN = [{ id: 'server-proxy', run: translateServerProxy }];
 
 export function getTranslationProviderStatus() {
+  const available = isServerTranslationAvailable();
   return {
     onDevice: 'disabled',
-    userApiKey: userApiKeysConfigured() ? 'configured' : 'pending_api_key',
+    userApiKey: 'disabled',
     localLibre: 'disabled',
-    serverProxy: serverProxyAllowed() ? 'opted_in' : 'disabled',
+    serverProxy: available ? 'available' : 'coming_soon',
   };
 }
 
@@ -25,7 +23,13 @@ export async function runTranslationChain(text, options = {}) {
     return { status: 'ok', text: '', provider: 'none' };
   }
 
-  let sawPendingKey = false;
+  if (!isServerTranslationAvailable()) {
+    return {
+      status: 'unavailable',
+      provider: 'server',
+      message: 'Translation is not available yet. It will be enabled when SSC adds a translation service.',
+    };
+  }
 
   for (const step of CHAIN) {
     const result = await step.run(text, options);
@@ -33,23 +37,11 @@ export async function runTranslationChain(text, options = {}) {
     if (result.status === 'ok' && result.text !== undefined) {
       return result;
     }
-    if (result.status === 'pending_api_key') {
-      sawPendingKey = true;
-    }
-  }
-
-  if (sawPendingKey) {
-    return {
-      status: 'pending_api_key',
-      provider: 'user-api-key',
-      message: 'Add a Google or DeepL API key in Settings to enable translation.',
-    };
   }
 
   return {
     status: 'unavailable',
-    provider: 'none',
-    message:
-      'Translation unavailable. Add a Google or DeepL API key in Settings, or opt in to the SSC translation server.',
+    provider: 'server',
+    message: 'Translation service is temporarily unavailable. Try again later.',
   };
 }

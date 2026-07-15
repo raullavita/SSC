@@ -4,6 +4,7 @@ import { exchangeOAuthCode } from '../lib/googleAuth';
 
 import { runClientFootprintAudit } from '../lib/clientFootprintOrchestrator';
 import { ensureNotificationPermission } from '../lib/desktopNotify';
+import { fetchTranslationConfig } from '../lib/translationConfig';
 import { registerPushTokenIfAvailable } from '../lib/pushRegister';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 
@@ -28,6 +29,7 @@ export function AuthProvider({ children }) {
     startPresenceHeartbeat();
     registerPushTokenIfAvailable().catch(() => {});
     ensureNotificationPermission().catch(() => {});
+    fetchTranslationConfig().catch(() => {});
     return data.user;
   }, []);
 
@@ -45,6 +47,7 @@ export function AuthProvider({ children }) {
       warnFootprintViolations();
       startPresenceHeartbeat();
       registerPushTokenIfAvailable().catch(() => {});
+      fetchTranslationConfig().catch(() => {});
       return me;
     } catch {
       setUser(null);

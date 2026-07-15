@@ -1,18 +1,10 @@
-import {
-  getGoogleTranslateApiKey,
-  hasUserTranslationApiKey,
-  setGoogleTranslateApiKey,
-} from '../translationKeys';
 import { getTranslationProviderStatus } from '../translation/providers/index';
 import {
   translateText,
   TranslationError,
   DEFAULT_LANGUAGES,
 } from '../translation';
-import {
-  getServerProxyTranslateEnabled,
-  setServerProxyTranslateEnabled,
-} from '../chatPrefs';
+import { fetchTranslationConfig } from '../translationConfig';
 
 jest.mock('../api', () => ({
   api: {
@@ -24,7 +16,9 @@ jest.mock('../api', () => ({
 describe('translation provider chain', () => {
   beforeEach(() => {
     localStorage.clear();
-    setServerProxyTranslateEnabled(false);
+    jest.clearAllMocks();
+    const { api } = require('../api');
+    api.get.mockResolvedValue({ translation_enabled: false });
   });
 
   test('DEFAULT_LANGUAGES includes common codes', () => {
@@ -32,30 +26,30 @@ describe('translation provider chain', () => {
     expect(DEFAULT_LANGUAGES).toContain('es');
   });
 
-  test('server proxy disabled by default', () => {
-    expect(getServerProxyTranslateEnabled()).toBe(false);
-    expect(getTranslationProviderStatus().serverProxy).toBe('disabled');
+  test('server translation reports coming_soon when admin has not enabled it', async () => {
+    await fetchTranslationConfig();
+    const status = getTranslationProviderStatus();
+    expect(status.onDevice).toBe('disabled');
+    expect(status.userApiKey).toBe('disabled');
+    expect(status.localLibre).toBe('disabled');
+    expect(status.serverProxy).toBe('coming_soon');
   });
 
-  test('on-device translation is disabled (API keys or server only)', () => {
-    expect(getTranslationProviderStatus().onDevice).toBe('disabled');
-    expect(getTranslationProviderStatus().localLibre).toBe('disabled');
+  test('server translation reports available when admin enables it', async () => {
+    const { api } = require('../api');
+    api.get.mockResolvedValueOnce({ translation_enabled: true, translation_provider: 'libretranslate' });
+    await fetchTranslationConfig();
+    expect(getTranslationProviderStatus().serverProxy).toBe('available');
   });
 
-  test('returns pending_api_key when no providers configured', async () => {
-    await expect(
-      translateText('Hola mundo', { target: 'en' })
-    ).rejects.toMatchObject({ status: 'pending_api_key' });
+  test('translateText throws when SSC translation service is not enabled', async () => {
+    await fetchTranslationConfig();
+    await expect(translateText('Hola mundo', { target: 'en' })).rejects.toBeInstanceOf(
+      TranslationError
+    );
   });
 
-  test('user API key storage is local only', () => {
-    expect(hasUserTranslationApiKey()).toBe(false);
-    setGoogleTranslateApiKey('test-google-key');
-    expect(getGoogleTranslateApiKey()).toBe('test-google-key');
-    expect(hasUserTranslationApiKey()).toBe(true);
-  });
-
-  test('translateText throws TranslationError when providers unavailable', async () => {
+  test('translateText throws TranslationError when server returns unavailable', async () => {
     jest.spyOn(
       require('../translation/providers/index'),
       'runTranslationChain'

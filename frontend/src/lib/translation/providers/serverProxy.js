@@ -1,13 +1,12 @@
 /**
- * SSC server LibreTranslate proxy — LAST RESORT ONLY.
- * Plaintext at proxy; requires explicit opt-in in Settings.
+ * SSC server translation proxy — only when admin enables LIBRETRANSLATE_URL on the API.
  */
 
 import { api } from '../../api';
-import { getServerProxyTranslateEnabled } from '../../chatPrefs';
+import { isServerTranslationAvailable } from '../../translationConfig';
 
 export function serverProxyAllowed() {
-  return getServerProxyTranslateEnabled();
+  return isServerTranslationAvailable();
 }
 
 export async function fetchServerLanguages() {
@@ -17,7 +16,7 @@ export async function fetchServerLanguages() {
 
 export async function translateServerProxy(text, { source = 'auto', target = 'en' } = {}) {
   if (!serverProxyAllowed()) {
-    return { status: 'unavailable', provider: 'server-proxy', reason: 'opt_in_required' };
+    return { status: 'unavailable', provider: 'server-proxy', reason: 'not_configured' };
   }
 
   try {
@@ -27,7 +26,6 @@ export async function translateServerProxy(text, { source = 'auto', target = 'en
       text: data.translated_text || '',
       provider: 'server-proxy',
       target,
-      privacyWarning: true,
     };
   } catch (err) {
     return {

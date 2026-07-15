@@ -17,8 +17,9 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt ruff
+      - run: pip install -r requirements.txt ruff pip-audit
       - run: ruff check . --exclude venv,.audit-venv
+      - run: pip-audit -r requirements.txt
       - run: pytest -q
         env:
           MONGO_URL: mongodb://localhost:27017

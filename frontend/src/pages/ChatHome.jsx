@@ -436,10 +436,11 @@ export default function ChatHome() {
             setInlineTranslations((prev) => ({ ...prev, [m.id]: translated }));
           }
         } catch (err) {
-          if (err instanceof TranslationError && err.status === 'pending_api_key') {
-            if (!cancelled) {
-              setListError('Add a translation API key in Settings to auto-translate.');
-            }
+          if (err instanceof TranslationError && !cancelled) {
+            setListError(
+              err.message ||
+                'Auto-translate is not available yet. SSC will enable translation on the server when ready.'
+            );
           }
         }
       }

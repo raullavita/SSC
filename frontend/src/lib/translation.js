@@ -1,5 +1,5 @@
 /**
- * Translation client — privacy-first provider chain (on-device default).
+ * Translation client — SSC server only (admin enables service on API).
  */
 
 import { DEFAULT_LANGUAGES } from './translation/languages';
@@ -38,12 +38,6 @@ async function translateTextDetailed(text, options = {}) {
 export async function translateText(text, options = {}) {
   const result = await translateTextDetailed(text, options);
   if (result.status === 'ok') return result.text;
-  if (result.status === 'pending_api_key') {
-    throw new TranslationError(
-      result.message || 'Add a translation API key in Settings.',
-      result
-    );
-  }
   throw new TranslationError(
     result.message || 'Translation unavailable.',
     result

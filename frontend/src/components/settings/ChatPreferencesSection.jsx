@@ -80,7 +80,7 @@ export default function ChatPreferencesSection({
           onAutoTranslateChange?.(enabled);
         }}
         label="Auto-translate incoming messages"
-        hint="Translate after decrypt on this device. Configure API keys in Translation below."
+        hint="Translate after decrypt on this device when SSC's translation service is enabled."
       />
 
       <ToggleRow

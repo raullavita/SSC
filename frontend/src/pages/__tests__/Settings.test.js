@@ -27,9 +27,10 @@ jest.mock('../../lib/presence', () => ({
 jest.mock('../../lib/translation', () => ({
   DEFAULT_LANGUAGES: ['en', 'es'],
   getTranslationProviderStatus: () => ({
-    onDevice: 'available',
-    userApiKey: 'none',
-    localLibre: 'none',
+    onDevice: 'disabled',
+    userApiKey: 'disabled',
+    localLibre: 'disabled',
+    serverProxy: 'coming_soon',
   }),
 }));
 

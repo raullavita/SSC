@@ -2,11 +2,9 @@ import {
   getAutoTranslateEnabled,
   getLinkPreviewsEnabled,
   getSealedSenderEnabled,
-  getServerProxyTranslateEnabled,
   setAutoTranslateEnabled,
   setLinkPreviewsEnabled,
   setSealedSenderEnabled,
-  setServerProxyTranslateEnabled,
 } from '../chatPrefs';
 
 describe('chatPrefs privacy defaults', () => {
@@ -32,15 +30,6 @@ describe('chatPrefs privacy defaults', () => {
   test('link previews opt-in persists', () => {
     setLinkPreviewsEnabled(true);
     expect(getLinkPreviewsEnabled()).toBe(true);
-  });
-
-  test('server translation proxy is off by default', () => {
-    expect(getServerProxyTranslateEnabled()).toBe(false);
-  });
-
-  test('server translation proxy opt-in persists', () => {
-    setServerProxyTranslateEnabled(true);
-    expect(getServerProxyTranslateEnabled()).toBe(true);
   });
 
   test('sealed sender is on by default', () => {
