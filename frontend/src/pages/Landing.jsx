@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import styles from './Landing.module.css';
 
 const LANDING_ONLY = process.env.REACT_APP_SSC_LANDING_ONLY === 'true';
-const RELEASE_TAG = process.env.REACT_APP_SSC_RELEASE_TAG || 'v0.3.0';
+const RELEASE_TAG = process.env.REACT_APP_SSC_RELEASE_TAG || 'v0.3.1';
 const RELEASE_BASE =
   process.env.REACT_APP_SSC_RELEASE_URL ||
   `https://github.com/raullavita/SSC/releases/download/${RELEASE_TAG}`;

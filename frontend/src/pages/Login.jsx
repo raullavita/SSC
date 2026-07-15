@@ -7,6 +7,7 @@ import AuthSplash from '../components/AuthSplash';
 import { useAuth } from '../context/AuthContext';
 import { googleAuthEnabled, promptGoogleSignIn } from '../lib/googleAuth';
 import { isInstalledApp } from '../lib/appMode';
+import { waitForNativeApiBridge } from '../lib/nativeApiReady';
 import { postAuthPath } from '../lib/onboarding';
 import styles from './Login.module.css';
 
@@ -34,11 +35,38 @@ export default function Login() {
   if (loading) return <AuthSplash />;
   if (user) return <Navigate to={postAuthPath(user, nextParam || '/chat')} replace />;
 
+  function formatAuthError(err) {
+    const detail = err?.body?.detail;
+    if (detail) {
+      if (detail === 'installed_client_outdated') {
+        return 'This app build is outdated. Download the latest SSC-Setup from supersecurechat.com.';
+      }
+      if (detail === 'native_bridge_required') {
+        return 'This app build is outdated (missing native API bridge). Download the latest installer.';
+      }
+      return typeof detail === 'string' ? detail : 'Auth failed';
+    }
+    const msg = String(err?.message || 'Auth failed');
+    if (/failed to fetch|fetch failed|ERR_|network|api_url_not_configured/i.test(msg)) {
+      return 'Cannot reach api.supersecurechat.com. Use the latest Windows installer from supersecurechat.com, or check firewall/VPN.';
+    }
+    return msg;
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
+      if (installed) {
+        const bridgeReady = await waitForNativeApiBridge(6000);
+        if (!bridgeReady) {
+          setError(
+            'This app cannot talk to the server (outdated installer or blocked network). Download the latest SSC-Setup from supersecurechat.com.'
+          );
+          return;
+        }
+      }
       let authed;
       if (mode === 'login') {
         authed = await login(email, password);
@@ -56,7 +84,7 @@ export default function Login() {
       }
       navigate(postAuthPath(authed, nextParam || '/chat'));
     } catch (err) {
-      setError(err.body?.detail || err.message || 'Auth failed');
+      setError(formatAuthError(err));
       turnstileRef.current?.reset();
       setCaptchaToken('');
     } finally {

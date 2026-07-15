@@ -27,6 +27,14 @@ function authHeaders(extra = {}) {
 
 export async function apiFetch(path, options = {}) {
   const url = buildUrl(path);
+  if (
+    path.startsWith('/api/') &&
+    !url.startsWith('https://') &&
+    !electronApiFetchEnabled() &&
+    !androidApiFetchEnabled()
+  ) {
+    throw new Error('api_url_not_configured');
+  }
   const headers = authHeaders(options.headers || {});
   const init = {
     ...options,
