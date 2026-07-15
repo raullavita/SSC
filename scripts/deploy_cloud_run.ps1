@@ -78,7 +78,7 @@ try {
             Write-Host "Applying env from $EnvFile"
             $deployArgs += @("--env-vars-file", $EnvFile)
         } else {
-            Write-Warning "No $EnvFile — deploy will use existing Cloud Run env only. Copy cloudrun-env.yaml.example to cloudrun-env.yaml."
+            Write-Warning "No $EnvFile - deploy will use existing Cloud Run env only. Copy cloudrun-env.yaml.example to cloudrun-env.yaml."
         }
         $VpcConnector = if ($env:SSC_VPC_CONNECTOR) { $env:SSC_VPC_CONNECTOR } else { "ssc-connector" }
         $deployArgs += @("--vpc-connector", $VpcConnector, "--vpc-egress", "all-traffic")
