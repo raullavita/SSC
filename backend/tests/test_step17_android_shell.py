@@ -75,7 +75,7 @@ def test_android_oauth_custom_tabs():
     api = (ANDROID_ROOT / "ApiClient.kt").read_text(encoding="utf-8")
     assert "CustomTabsIntent" in launcher
     assert "isOAuthStart" in launcher
-    assert "android/0.3.1/12" in api
+    assert "android/0.3.1/13" in api
     assert "X-SSC-Client" in api
 
 

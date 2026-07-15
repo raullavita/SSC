@@ -6,7 +6,7 @@ const AUTO_TRANSLATE_KEY = 'ssc_auto_translate';
 const USER_LANG_KEY = 'ssc_user_lang';
 const SEALED_SENDER_KEY = 'ssc_sealed_sender';
 const LINK_PREVIEWS_KEY = 'ssc_link_previews';
-const LOCAL_TRANSLATE_URL_KEY = 'ssc_local_translate_url';
+
 const SERVER_PROXY_TRANSLATE_KEY = 'ssc_server_translate_proxy';
 
 export function getAutoTranslateEnabled() {
@@ -70,22 +70,6 @@ export function getLinkPreviewsEnabled() {
 export function setLinkPreviewsEnabled(enabled) {
   try {
     localStorage.setItem(LINK_PREVIEWS_KEY, enabled ? 'true' : 'false');
-  } catch {
-    /* ignore */
-  }
-}
-
-export function getLocalTranslateUrl() {
-  try {
-    return localStorage.getItem(LOCAL_TRANSLATE_URL_KEY) || '';
-  } catch {
-    return '';
-  }
-}
-
-export function setLocalTranslateUrl(url) {
-  try {
-    localStorage.setItem(LOCAL_TRANSLATE_URL_KEY, (url || '').trim());
   } catch {
     /* ignore */
   }

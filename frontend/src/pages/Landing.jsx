@@ -10,7 +10,7 @@ const RELEASE_BASE =
   process.env.REACT_APP_SSC_RELEASE_URL ||
   `https://github.com/raullavita/SSC/releases/download/${RELEASE_TAG}`;
 const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.1';
-const BUILD = process.env.REACT_APP_SSC_BUILD || '12';
+const BUILD = process.env.REACT_APP_SSC_BUILD || '13';
 const GITHUB_REPO = 'https://github.com/raullavita/SSC';
 const LIBSIGNAL_REPO = 'https://github.com/signalapp/libsignal';
 
