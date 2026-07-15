@@ -18,6 +18,7 @@ android/signing.local.env
 atlas-credentials.env
 atlas-credentials.env.*
 !atlas-credentials.env.example
+production-secrets.env
 cloud_run.env
 backend/cloudrun-env.yaml
 *-service-account*.json

@@ -3,10 +3,14 @@ import { api } from '../lib/api';
 import { exchangeOAuthCode } from '../lib/googleAuth';
 
 import { runClientFootprintAudit } from '../lib/clientFootprintOrchestrator';
+import { isInstalledApp } from '../lib/appMode';
+import { getLocalDeviceId } from '../lib/deviceLink';
 import { ensureNotificationPermission } from '../lib/desktopNotify';
+import { getInstalledClientHeader } from '../lib/installedClient';
 import { fetchTranslationConfig } from '../lib/translationConfig';
 import { registerPushTokenIfAvailable } from '../lib/pushRegister';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
+import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 
 function warnFootprintViolations() {
   const audit = runClientFootprintAudit();
@@ -22,6 +26,19 @@ export function AuthProvider({ children }) {
   const [wsToken, setWsToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const registerCryptoKeys = useCallback((authUser) => {
+    if (!authUser?.id || !isInstalledApp()) return;
+    const platform = getInstalledClientHeader().split('/')[0] || 'electron';
+    registerDeviceAndPrekeys({
+      deviceId: getLocalDeviceId(),
+      deviceName: 'SSC Client',
+      platform,
+      localUserId: authUser.id,
+    }).catch((err) => {
+      console.warn('[ssc] prekey registration failed', err?.message || err);
+    });
+  }, []);
+
   const onAuthenticated = useCallback((data) => {
     setUser(data.user);
     if (data.ws_token) setWsToken(data.ws_token);
@@ -30,8 +47,9 @@ export function AuthProvider({ children }) {
     registerPushTokenIfAvailable().catch(() => {});
     ensureNotificationPermission().catch(() => {});
     fetchTranslationConfig().catch(() => {});
+    registerCryptoKeys(data.user);
     return data.user;
-  }, []);
+  }, [registerCryptoKeys]);
 
   const refreshUser = useCallback(async () => {
     const timeoutMs = 8000;
@@ -42,12 +60,14 @@ export function AuthProvider({ children }) {
           setTimeout(() => reject(new Error('auth_refresh_timeout')), timeoutMs);
         }),
       ]);
-      setUser(me?.user ?? me);
+      const authUser = me?.user ?? me;
+      setUser(authUser);
       if (me?.ws_token) setWsToken(me.ws_token);
       warnFootprintViolations();
       startPresenceHeartbeat();
       registerPushTokenIfAvailable().catch(() => {});
       fetchTranslationConfig().catch(() => {});
+      registerCryptoKeys(authUser);
       return me;
     } catch {
       setUser(null);
@@ -57,7 +77,7 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [registerCryptoKeys]);
 
   useEffect(() => {
     refreshUser();

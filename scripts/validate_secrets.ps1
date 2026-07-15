@@ -11,6 +11,7 @@ function Add-Failure([string]$Message) {
 
 $forbiddenTracked = @(
     "backend/cloudrun-env.yaml",
+    "production-secrets.env",
     "atlas-credentials.env",
     "ssc-firebase-key.json",
     "google-services.json",

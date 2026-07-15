@@ -185,6 +185,12 @@ function Invoke-SscConfigProbe {
                     Assert-Ok "api.config.release_version" $true "release_version=$($cfg.release_version)"
                 }
             }
+            if ($null -ne $cfg.translation_enabled) {
+                Assert-Ok "api.config.translation_flag" $true "translation_enabled=$($cfg.translation_enabled)"
+            }
+            if ($cfg.captcha_required -eq $true) {
+                Assert-Ok "api.config.captcha_site_key" ([bool]$cfg.turnstile_site_key) "captcha_required without turnstile_site_key"
+            }
         } catch {
             Add-Failure "api.config.json - invalid JSON"
         }
