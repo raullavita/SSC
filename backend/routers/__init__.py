@@ -31,7 +31,7 @@ from routers.presence import router as presence_router
 from routers.privacy import router as privacy_router
 from routers.push_router import router as push_router
 from routers.sfu import router as sfu_router
-from routers.smart import router as smart_router
+from routers.cloud_backup import router as cloud_backup_router
 from routers.translation import router as translation_router
 from routers.typing import router as typing_router
 from routers.users import router as users_router
@@ -64,7 +64,7 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(calls_router, prefix=prefix)
     app.include_router(sfu_router, prefix=prefix)
     app.include_router(translation_router, prefix=prefix)
-    app.include_router(smart_router, prefix=prefix)
+    app.include_router(cloud_backup_router, prefix=prefix)
     app.include_router(typing_router, prefix=prefix)
     app.include_router(abuse_router, prefix=prefix)
     app.include_router(presence_router, prefix=prefix)

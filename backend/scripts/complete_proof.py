@@ -10,13 +10,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def main() -> int:
-    from core.engine13 import engine13_complete  # noqa: PLC0415
-    from core.smart_policy import NO_INSIDE_AI  # noqa: PLC0415
+    from core.engine13 import engine13_complete, engine13_no_ai_enforced  # noqa: PLC0415
 
     repo = Path(__file__).resolve().parents[2]
     checks = []
 
-    checks.append({"name": "no_inside_ai", "passed": NO_INSIDE_AI is True, "detail": ""})
+    checks.append({"name": "legacy_llm_removed", "passed": engine13_no_ai_enforced(), "detail": ""})
 
     for rel in [
         "frontend/src/signal/safetyNumber.js",
@@ -28,23 +27,19 @@ def main() -> int:
     ]:
         checks.append({"name": f"file:{rel}", "passed": (repo / rel).is_file(), "detail": ""})
 
-    smart_cfg = (repo / "backend" / "routers" / "smart.py").read_text(encoding="utf-8")
     checks.append(
         {
-            "name": "smart_replies_disabled",
-            "passed": '"smart_replies": False' in smart_cfg,
-            "detail": "no inside AI in API",
+            "name": "smart_router_removed",
+            "passed": not (repo / "backend" / "routers" / "smart.py").is_file(),
+            "detail": "legacy /api/smart removed",
         }
     )
-
-    ollama_gone = not (repo / "frontend" / "src" / "smart" / "smartReply.js").exists()
-    checks.append({"name": "ollama_removed", "passed": ollama_gone, "detail": "smartReply.js deleted"})
 
     chat = (repo / "frontend" / "src" / "pages" / "ChatHome.jsx").read_text(encoding="utf-8")
     checks.append(
         {
             "name": "safety_number_ui",
-            "passed": "computeSafetyNumber" in chat and "safetyNumber" in chat,
+            "passed": "safetyNumber" in chat and "SafetyVerifyModal" in chat,
             "detail": "",
         }
     )

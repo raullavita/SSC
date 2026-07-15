@@ -1,6 +1,6 @@
 # Verify production SFU is enabled and reachable.
 #
-# Requires SSC_SFU_ENABLED=true on Cloud Run and a live mediasoup SFU at SSC_SFU_WS_URL.
+# Uses public /api/health (SFU block) — /api/sfu/config requires an authenticated session.
 #
 # Usage:
 #   .\scripts\verify_sfu_production.ps1
@@ -21,15 +21,20 @@ Write-Host "SSC SFU production check"
 Write-Host "API: $ApiBase"
 Write-Host ""
 
-$configUrl = "$ApiBase/api/sfu/config"
+$healthUrl = "$ApiBase/api/health"
 try {
-    $resp = Invoke-RestMethod -Uri $configUrl -Method Get -TimeoutSec 20
+    $resp = Invoke-RestMethod -Uri $healthUrl -Method Get -TimeoutSec 20
 } catch {
-    Write-Error "Failed to fetch $configUrl : $($_.Exception.Message)"
+    Write-Error "Failed to fetch $healthUrl : $($_.Exception.Message)"
 }
 
-$enabled = [bool]$resp.enabled
-$wsUrl = [string]$resp.ws_url
+$sfu = $resp.sfu
+if (-not $sfu) {
+    Write-Error "Health response missing sfu block"
+}
+
+$enabled = [bool]$sfu.enabled
+$wsUrl = [string]$sfu.ws_url
 Write-Host "enabled: $enabled"
 Write-Host "ws_url:  $wsUrl"
 
@@ -44,9 +49,10 @@ if (-not $enabled) {
 }
 
 if (-not $wsUrl -or $wsUrl -notmatch '^wss?://') {
-    Write-Error "Invalid ws_url in SFU config"
+    Write-Error "Invalid ws_url in SFU health config"
 }
 
 Write-Host ""
 Write-Host "OK: production API reports SFU enabled."
 Write-Host "Group calls with >8 participants will use SFU mode."
+exit 0

@@ -1,5 +1,5 @@
 /**
- * Language detection — franc (OSS) for auto-translate — Engine 12.
+ * Language detection — franc (OSS) for auto-translate.
  * @see https://github.com/wooorm/franc
  */
 

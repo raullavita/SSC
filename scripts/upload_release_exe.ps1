@@ -46,14 +46,14 @@ for ($i = 1; $i -le $MaxRetries; $i++) {
 if (-not $uploaded) { throw "Upload failed after $MaxRetries attempts" }
 
 $body = @{
-    name = "v0.3.1 build 13"
+    name = "v0.3.1 build 14"
     body = @"
-## v0.3.1 build 13
+## v0.3.1 build 14
 
-- Messaging: clearer send errors, draft only clears on success
-- Desktop: OS notifications (no fake FCM tokens)
-- Backup: includes encryption key files
-- Translation: API keys or SSC server proxy only
+- Cloud backup: optional encrypted ciphertext stored server-side (free)
+- Broadcast lists: contact picker in Settings
+- Read receipts and encryption status chip in chat header
+- SFU production validation for large group calls
 
 ### Downloads
 - SSC-Setup-0.3.1.exe (Windows)

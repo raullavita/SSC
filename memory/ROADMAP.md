@@ -103,7 +103,7 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 | OSS | Use |
 |-----|-----|
-| Existing SSC retention + smart policy | `backend/core/smart_policy.py` |
+| Existing SSC retention + feature policy | `backend/core/feature_policy.py` |
 
 **Shipped (2026-07-05):** `stories` + `polls` API routes, `StoriesBar` + `PollBubble` UI, disappearing message expiry filter + live countdown, `step7_proof.py`.
 

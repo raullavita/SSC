@@ -24,7 +24,7 @@ if (-not $SkipBuild) {
         $env:REACT_APP_SSC_PLATFORM = "web"
         $env:REACT_APP_SSC_LANDING_ONLY = "true"
         $env:REACT_APP_SSC_VERSION = "0.3.1"
-        $env:REACT_APP_SSC_BUILD = "13"
+        $env:REACT_APP_SSC_BUILD = "14"
         $env:REACT_APP_SSC_RELEASE_TAG = "v0.3.1"
         $env:REACT_APP_SSC_REQUIRE_LIBCRYPTO = "false"
         $env:REACT_APP_API_URL = $(if ($env:REACT_APP_API_URL) { $env:REACT_APP_API_URL } else { "https://api.supersecurechat.com" })

@@ -17,7 +17,7 @@ export default function AddContactLanding() {
       <h1>Add @{name || 'user'} on Super Secure Chat</h1>
       <p className={styles.lead}>
         SSC is install-only E2E encrypted messaging. Open this link in the installed Android or
-        Windows app to start a chat — there is no web chat on this site.
+        Windows app to start a chat.
       </p>
       {name && (
         <p className={styles.deep}>

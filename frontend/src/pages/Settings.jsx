@@ -228,6 +228,16 @@ export default function Settings() {
       </section>
 
       <section className={styles.section}>
+        <h2>Broadcast lists</h2>
+        <BroadcastListsPanel onMessage={setMessage} />
+      </section>
+
+      <section className={styles.section}>
+        <h2>Backup &amp; restore</h2>
+        <BackupPanel userId={user.id} onMessage={setMessage} />
+      </section>
+
+      <section className={styles.section}>
         <h2>Security check</h2>
         <p className={styles.hint}>
           Scan local storage for tokens or other data that should not persist on this device.
@@ -250,9 +260,7 @@ export default function Settings() {
             <Link to="/link-device" className={styles.linkBtn}>
               Linked devices
             </Link>
-            <BroadcastListsPanel onMessage={setMessage} />
             <RecoveryPanel onMessage={setMessage} />
-            <BackupPanel userId={user.id} onMessage={setMessage} />
             <AbuseReportPanel onMessage={setMessage} />
             <BlockedUsersPanel />
           </div>

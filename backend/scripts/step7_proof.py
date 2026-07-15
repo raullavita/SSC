@@ -50,11 +50,12 @@ def main() -> int:
         }
     )
 
-    smart_src = (BACKEND_ROOT / "routers" / "smart.py").read_text(encoding="utf-8")
+    stories_src = (BACKEND_ROOT / "routers" / "stories.py").read_text(encoding="utf-8")
+    polls_src = (BACKEND_ROOT / "routers" / "polls.py").read_text(encoding="utf-8")
     checks.append(
         {
-            "name": "smart_config_stories_polls",
-            "passed": '"stories": True' in smart_src and '"polls": True' in smart_src,
+            "name": "stories_polls_routes",
+            "passed": "router = APIRouter" in stories_src and "router = APIRouter" in polls_src,
             "detail": "",
         }
     )

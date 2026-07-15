@@ -18,12 +18,11 @@ We aim to respond within 7 days.
 - Installed Android and Windows clients
 - E2E encryption, session handling, retention/TTL, panic wipe
 
-The public website (`www.supersecurechat.com`) is informational only — no web chat.
+The public website (`www.supersecurechat.com`) is informational only (downloads and docs).
 
 ## Design principles
 
 - Server stores **ciphertext only** for messages and files
-- **No inside AI** on message content
 - Push notifications are **generic** (no message body)
 - Installed-client enforcement in production
 - 24h default retention with TTL indexes; panic wipe clears user data immediately

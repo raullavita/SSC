@@ -6,6 +6,7 @@ describe('BackupPanel', () => {
     render(<BackupPanel userId="u1" onMessage={() => {}} />);
     expect(screen.getByRole('button', { name: 'Download encrypted backup' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Restore from backup' })).toBeInTheDocument();
-    expect(screen.getByText(/never uploaded to SSC servers/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Upload to cloud' })).toBeInTheDocument();
+    expect(screen.getByText(/ciphertext only/i)).toBeInTheDocument();
   });
 });

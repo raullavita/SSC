@@ -60,7 +60,8 @@ import {
   mergeConversationMeta,
   patchConversationInList,
 } from '../lib/conversationMeta';
-import { shouldAutoTranslate } from '../smart/languageDetect';
+import { shouldAutoTranslate } from '../lib/languageDetect';
+import EncryptionStatusChip from '../components/chat/EncryptionStatusChip';
 import styles from './ChatHome.module.css';
 
 export default function ChatHome() {
@@ -845,6 +846,9 @@ export default function ChatHome() {
                   )}
                 </div>
                 <div className={styles.threadHeaderActions}>
+                  {!isGroup && (
+                    <EncryptionStatusChip error={chatError || listError} compact />
+                  )}
                   {isGroup && <GroupE2EBadge />}
                   {!isGroup && active?.peer_id && (
                     <SafetyVerifyButton

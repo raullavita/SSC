@@ -1,4 +1,4 @@
-"""Engine 12 gate — intelligence layer + premium UX."""
+"""Engine 12 gate — premium UX features."""
 
 from __future__ import annotations
 
@@ -37,12 +37,11 @@ def main() -> int:
 
     for rel in [
         "memory/INTELLIGENCE_CHARTER.md",
-        "backend/core/smart_policy.py",
+        "backend/core/feature_policy.py",
         "backend/core/engine12.py",
-        "backend/routers/smart.py",
         "backend/routers/typing.py",
         "frontend/src/search/messageIndex.js",
-        "frontend/src/smart/languageDetect.js",
+        "frontend/src/lib/languageDetect.js",
         "frontend/src/chat/useTypingIndicator.js",
         "frontend/src/chat/useVoiceMessage.js",
         "frontend/src/hooks/usePresenceMap.js",
@@ -98,7 +97,7 @@ def main() -> int:
 
     passed = all(c["passed"] for c in checks)
     print(json.dumps({"passed": passed, "checks": checks}, indent=2))
-    print("ENGINE 12 GATE PASSED" if passed else "ENGINE 12 GATE FAILED")
+    print("ENGINE12 GATE PASSED" if passed else "ENGINE12 GATE FAILED")
     return 0 if passed else 1
 
 

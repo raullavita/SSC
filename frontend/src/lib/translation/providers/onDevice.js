@@ -3,7 +3,7 @@
  * No text leaves the device on this path.
  */
 
-import { detectLanguage } from '../../../smart/languageDetect';
+import { detectLanguage } from '../../languageDetect';
 
 function normalizeLang(code) {
   if (!code || code === 'auto') return null;

@@ -1,4 +1,4 @@
-"""Backup policy — Step 16. Export/restore is client-only; server stores no backup blobs."""
+"""Backup policy — Step 16 local export + optional encrypted cloud blob (ciphertext only)."""
 
 from __future__ import annotations
 

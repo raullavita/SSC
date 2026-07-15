@@ -79,3 +79,36 @@
   font-size: 0.8rem;
   color: #8696a0;
 }
+
+.friendPick {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 10rem;
+  overflow-y: auto;
+  border: 1px solid #2a3942;
+  border-radius: 6px;
+  background: #0b141a;
+}
+
+.friendPick li {
+  border-bottom: 1px solid #2a3942;
+}
+
+.friendPick li:last-child {
+  border-bottom: none;
+}
+
+.friendLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #e9edef;
+}
+
+.friendLabel input {
+  accent-color: #00a884;
+}

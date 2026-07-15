@@ -1,12 +1,12 @@
-"""Smart features tests — Engine 12."""
+"""Feature policy tests — Engine 12."""
 
 from __future__ import annotations
 
 from core.engine12 import ENGINE12_STEPS, engine12_complete
-from core.smart_policy import (
+from core.feature_policy import (
     DISAPPEARING_MAX_SECONDS,
     DISAPPEARING_MIN_SECONDS,
-    engine12_smart_ready,
+    engine12_features_ready,
     validate_disappearing_seconds,
 )
 
@@ -24,14 +24,8 @@ def test_disappearing_bounds():
     assert DISAPPEARING_MAX_SECONDS == 86_400
 
 
-def test_engine12_smart_ready():
-    assert engine12_smart_ready() is True
-
-
-def test_no_inside_ai():
-    from core.smart_policy import NO_INSIDE_AI
-
-    assert NO_INSIDE_AI is True
+def test_engine12_features_ready():
+    assert engine12_features_ready() is True
 
 
 def test_engine12_complete():

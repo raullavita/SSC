@@ -24,7 +24,7 @@ from core.message_lifecycle_policy import (
 from core.read_receipts import increment_unread
 from core.metadata_policy import public_message
 from core.retention_policy import default_expires_at
-from core.smart_policy import validate_disappearing_seconds
+from core.feature_policy import validate_disappearing_seconds
 from core.sealed_sender_policy import mark_sealed
 from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.reaction_policy import SIGNAL_PROTOCOL_REACTION

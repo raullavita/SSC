@@ -38,7 +38,7 @@ ROUTER_PREFIXES = {
     "privacy": "/api/privacy",
     "push_router": "/api/push",
     "sfu": "/api/sfu",
-    "smart": "/api/smart",
+    "cloud_backup": "/api",
     "translation": "/api/translation",
     "typing": "/api",
     "users": "/api/users",
@@ -50,7 +50,6 @@ ROUTER_PREFIXES = {
 }
 
 KNOWN_UNWIRED_INTENTIONAL = {
-    "/api/smart/config": "Inside AI disabled by smart_policy charter",
     "/api/translation/translate": "Server translate exists; client uses opt-in local path too",
     "/api/conversations/{conversation_id}/messages/{message_id}/reactions": "Conv-level reactions used in UI",
     "/api/auth/google/start": "OAuth redirect — browser navigation, not api.get",
@@ -68,21 +67,6 @@ KNOWN_UNWIRED_INTENTIONAL = {
 
 POLICY_ONLY_FEATURES = [
     {
-        "name": "Broadcast list management UI",
-        "location": "frontend/src/components/BroadcastListsPanel.jsx",
-        "detail": "Settings panel CRUD only; composer broadcast send is wired in ChatHome",
-    },
-    {
-        "name": "Inside AI / smart replies",
-        "location": "backend/routers/smart.py",
-        "detail": "Config endpoint only; NO_INSIDE_AI charter",
-    },
-    {
-        "name": "Server-side backup",
-        "location": "backend/core/backup_policy.py",
-        "detail": "Client-only .ssc-backup by design",
-    },
-    {
         "name": "macOS native app",
         "location": "electron/electron-builder.yml (dmg target only)",
         "detail": "No macOS build script or libsignal shell",
@@ -91,16 +75,6 @@ POLICY_ONLY_FEATURES = [
         "name": "iOS native build",
         "location": "ios/SuperSecureChat.xcodeproj",
         "detail": "Swift libsignal bridge + bundle parser implemented; requires Mac/Xcode to build IPA",
-    },
-    {
-        "name": "Read receipts aggregate UI",
-        "location": "frontend/lib/readReceipts.js",
-        "detail": "Read-by-N tooltip on outgoing messages; full reader names not shown",
-    },
-    {
-        "name": "Web chat in browser",
-        "location": "frontend InstalledClientGate.jsx",
-        "detail": "Blocked by design for E2E",
     },
 ]
 

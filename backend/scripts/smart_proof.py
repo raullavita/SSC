@@ -1,4 +1,4 @@
-"""Engine 12 smart features proof — no inside AI."""
+"""Engine 12 feature proof."""
 
 from __future__ import annotations
 
@@ -11,31 +11,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 def main() -> int:
     from core.engine12 import engine12_complete  # noqa: PLC0415
-    from core.smart_policy import NO_INSIDE_AI  # noqa: PLC0415
 
     repo = Path(__file__).resolve().parents[2]
     checks = []
 
     for rel in [
-        "backend/core/smart_policy.py",
+        "backend/core/feature_policy.py",
         "backend/core/engine12.py",
-        "backend/routers/smart.py",
         "backend/routers/typing.py",
         "frontend/src/search/messageIndex.js",
-        "frontend/src/smart/languageDetect.js",
+        "frontend/src/lib/languageDetect.js",
         "frontend/src/chat/useTypingIndicator.js",
         "frontend/src/chat/useVoiceMessage.js",
     ]:
         path = repo / rel
         checks.append({"name": f"file:{rel}", "passed": path.is_file(), "detail": ""})
 
-    checks.append({"name": "no_inside_ai", "passed": NO_INSIDE_AI is True, "detail": ""})
-
     checks.append(
         {
-            "name": "ollama_removed",
+            "name": "legacy_llm_removed",
             "passed": not (repo / "frontend" / "src" / "smart" / "smartReply.js").is_file(),
-            "detail": "no inside AI",
+            "detail": "no smartReply.js",
         }
     )
 
@@ -53,7 +49,7 @@ def main() -> int:
         {
             "name": "chat_home_search",
             "passed": "searchMessages" in chat and "useSmartReplies" not in chat,
-            "detail": "search without AI",
+            "detail": "search without legacy LLM",
         }
     )
 
@@ -61,7 +57,7 @@ def main() -> int:
 
     passed = all(c["passed"] for c in checks)
     print(json.dumps({"passed": passed, "checks": checks}, indent=2))
-    print("SMART PROOF PASSED" if passed else "SMART PROOF FAILED")
+    print("FEATURE PROOF PASSED" if passed else "FEATURE PROOF FAILED")
     return 0 if passed else 1
 
 

@@ -1,0 +1,29 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.ok {
+  color: #0d7a4a;
+  background: rgba(13, 122, 74, 0.12);
+  border-color: rgba(13, 122, 74, 0.25);
+}
+
+.warn {
+  color: #8a6d1d;
+  background: rgba(138, 109, 29, 0.12);
+  border-color: rgba(138, 109, 29, 0.25);
+}
+
+.error {
+  color: #b42318;
+  background: rgba(180, 35, 24, 0.1);
+  border-color: rgba(180, 35, 24, 0.25);
+}

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from core.last_seen import default_privacy_settings
-from core.smart_policy import validate_disappearing_seconds
+from core.feature_policy import validate_disappearing_seconds
 
 DEFAULT_TYPING_VISIBLE = True
 

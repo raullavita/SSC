@@ -10,7 +10,7 @@ const RELEASE_BASE =
   process.env.REACT_APP_SSC_RELEASE_URL ||
   `https://github.com/raullavita/SSC/releases/download/${RELEASE_TAG}`;
 const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.1';
-const BUILD = process.env.REACT_APP_SSC_BUILD || '13';
+const BUILD = process.env.REACT_APP_SSC_BUILD || '14';
 const GITHUB_REPO = 'https://github.com/raullavita/SSC';
 const LIBSIGNAL_REPO = 'https://github.com/signalapp/libsignal';
 
@@ -49,8 +49,8 @@ function LandingPublic() {
         <h1 className={styles.title}>Messaging you can verify.</h1>
         <p className={styles.tagline}>
           Super Secure Chat is end-to-end encrypted messaging for installed Android and Windows
-          clients. Your messages never leave your device in plaintext — and this website is
-          informational only. There is no web chat.
+          clients. Your messages never leave your device in plaintext. This website is for
+          downloads and information only.
         </p>
         <div className={styles.heroActions}>
           <a className={styles.primaryBtn} href="#download">
@@ -94,17 +94,10 @@ function LandingPublic() {
             </p>
           </article>
           <article className={styles.card}>
-            <h3>No inside AI</h3>
+            <h3>Installed app</h3>
             <p>
-              SSC does not run AI over your message content on the server. Optional translation
-              stays user-controlled on the client.
-            </p>
-          </article>
-          <article className={styles.card}>
-            <h3>Installed clients only</h3>
-            <p>
-              Sign up, messaging, and encryption run inside the Android APK or Windows desktop
-              app — not in a browser tab on the public site.
+              Sign up, messaging, calls, and encryption run inside the Android APK or Windows
+              desktop installer you download from GitHub Releases.
             </p>
           </article>
         </div>
@@ -443,11 +436,8 @@ function LandingDev() {
 
       <footer className={styles.footer}>
         <p>
-          <Link to="/login">Sign in</Link> — local dev chat scaffold only.
-        </p>
-        <p>
-          Production site:{' '}
-          <a href="https://www.supersecurechat.com">www.supersecurechat.com</a> (info only).
+          <a href="https://www.supersecurechat.com#download">Download SSC</a> — install the Windows
+          or Android app to sign in and chat.
         </p>
       </footer>
     </div>

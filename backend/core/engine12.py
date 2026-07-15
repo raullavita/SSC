@@ -1,24 +1,24 @@
-"""Engine 12 completion registry — premium UX, no inside AI."""
+"""Engine 12 completion registry — premium UX features."""
 
 from __future__ import annotations
 
-from core.smart_policy import NO_INSIDE_AI, engine12_smart_ready
+from core.feature_policy import engine12_features_ready
 
 ENGINE12_STEPS = {
-    "12.1": "smart_policy + OSS provider registry",
-    "12.2": "ephemeral typing indicators (WebSocket)",
-    "12.3": "disappearing messages (per-message TTL)",
-    "12.4": "smart config API",
-    "12.5": "minisearch local encrypted search index",
-    "12.6": "franc language detect + auto-translate",
-    "12.7": "no inside AI policy (no Ollama/LLM)",
-    "12.8": "voice messages (MediaRecorder + E2EE file)",
-    "12.9": "ChatHome UX upgrade (search, typing)",
-    "12.10": "presence badges in conversation list",
-    "12.11": "smart_proof + unit tests",
-    "12.12": "run_engine12_gate.py",
+    "12.1": "feature_policy (disappearing bounds)",
+    "12.2": "local message search (minisearch)",
+    "12.3": "language detect (franc)",
+    "12.4": "typing indicators",
+    "12.5": "voice messages",
+    "12.6": "disappearing messages",
+    "12.7": "stories + polls",
+    "12.8": "presence map",
+    "12.9": "link previews client-side",
+    "12.10": "translation hooks",
+    "12.11": "feature_proof + unit tests",
+    "12.12": "engine12 gate",
 }
 
 
 def engine12_complete() -> bool:
-    return engine12_smart_ready() and NO_INSIDE_AI and len(ENGINE12_STEPS) == 12
+    return engine12_features_ready() and len(ENGINE12_STEPS) == 12

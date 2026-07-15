@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/raullavita/SSC/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/raullavita/SSC/actions/workflows/ci.yml)
 
-**Install-only E2E encrypted messenger** — Android + Windows desktop. No web chat on the public site.
+**Install-only E2E encrypted messenger** — Android + Windows desktop.
 
 | | |
 |---|---|
@@ -37,13 +37,13 @@ SSC uses maintained open-source projects for heavy lifting:
 | **Desktop** | [Electron](https://www.electronjs.org/) + electron-builder |
 | **Frontend** | React 18 |
 
-We do **not** run inside AI on your messages. Translation is optional and user-controlled.
+Translation is optional and user-controlled.
 
 ## Status
 
 | Component | State |
 |-----------|--------|
-| Engines 1–13 | Complete (retention, Signal, messaging, no inside AI) |
+| Engines 1–13 | Complete (retention, Signal, messaging) |
 | Engine 14 | FCM push + mediasoup SFU live (gate) |
 | Auth | Email/password + Google OAuth |
 | Chat | E2EE messages, reactions, files, voice notes |
@@ -79,7 +79,7 @@ yarn start
 |----------|-------|-----|
 | Windows / macOS | Electron | Shared React installed-client bundle |
 | Android | WebView + native bridges | **Same** React bundle (`assets/www/`) |
-| Website | Firebase Hosting | Landing + downloads only (no web chat) |
+| Website | Firebase Hosting | Landing + downloads |
 
 Native code on mobile/desktop is limited to crypto (libsignal), OAuth, push hooks, and device APIs — not a second chat UI.
 

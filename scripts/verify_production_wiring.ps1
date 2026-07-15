@@ -50,7 +50,7 @@ if ($Gcloud) {
 }
 
 $headers = @{
-    "X-SSC-Client" = "electron/0.3.1/13"
+    "X-SSC-Client" = "electron/0.3.1/14"
     "X-SSC-Native-Bridge" = "v1"
     "X-SSC-Device-Attest" = "ssc-attest-test-v1"
 }
@@ -63,6 +63,15 @@ try {
     }
 } catch {
     Add-Failure "api.config probe - $($_.Exception.Message)"
+}
+
+try {
+    & (Join-Path $PSScriptRoot "verify_sfu_production.ps1") -ApiBase $ApiUrl
+    if ($LASTEXITCODE -ne 0) {
+        Add-Failure "verify_sfu_production.ps1 failed"
+    }
+} catch {
+    Add-Failure "sfu.production - $($_.Exception.Message)"
 }
 
 try {
