@@ -10,7 +10,7 @@ param(
     [string]$ApiUrl = "https://api.supersecurechat.com",
     [string]$WebUrl = "https://www.supersecurechat.com",
     [string]$ExpectedVersion = "0.3.1",
-    [string]$ClientBuild = "12",
+    [string]$ClientBuild = "13",
     [switch]$StrictVersionMatch,
     [switch]$StrictInstalledClient,
     [string]$ExePath = "",
