@@ -21,7 +21,7 @@ export async function uploadCloudBackup({ passphrase, userId }) {
   return api.put('/api/backup/cloud', { ciphertext });
 }
 
-export async function downloadCloudBackupCiphertext() {
+async function downloadCloudBackupCiphertext() {
   const data = await api.get('/api/backup/cloud');
   if (!data.has_backup || !data.backup?.ciphertext) {
     throw new Error('cloud_backup_not_found');
