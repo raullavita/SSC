@@ -5,7 +5,7 @@ from __future__ import annotations
 import inspect
 
 from core.push_payload import GENERIC_BODY, GENERIC_TITLE, build_generic_push
-from push import send_generic_push_to_user
+from push import _is_fcm_token, send_generic_push_to_user
 
 
 def test_build_generic_push_has_no_content_leak():
@@ -21,3 +21,9 @@ def test_build_generic_push_has_no_content_leak():
 def test_push_module_uses_build_generic_push():
     source = inspect.getsource(send_generic_push_to_user)
     assert "build_generic_push" in source
+
+
+def test_electron_tokens_are_not_fcm():
+    assert _is_fcm_token("ssc-electron-deadbeef") is False
+    assert _is_fcm_token("") is False
+    assert _is_fcm_token("dGhpcyBpcyBhIHJlYWwgZmNtIHRva2Vu") is True

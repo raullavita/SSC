@@ -31,10 +31,23 @@ $AppPython = Join-Path $Root "backend\venv\Scripts\python.exe"
 if (-not (Test-Path $AppPython)) { $AppPython = "python" }
 $AuditVenv = Join-Path $Root "backend\.audit-venv"
 $AuditPython = Join-Path $AuditVenv "Scripts\python.exe"
-if (-not (Test-Path $AuditPython)) {
+function Test-AuditPython {
+    param([string]$Exe)
+    if (-not (Test-Path $Exe)) { return $false }
+    try {
+        & $Exe -c "import sys; print(sys.version)" 2>$null | Out-Null
+        return $LASTEXITCODE -eq 0
+    } catch {
+        return $false
+    }
+}
+if (-not (Test-AuditPython $AuditPython)) {
+    if (Test-Path $AuditVenv) {
+        Remove-Item $AuditVenv -Recurse -Force -ErrorAction SilentlyContinue
+    }
     & $AppPython -m venv $AuditVenv
 }
-$Python = $AuditPython
+$Python = if (Test-AuditPython $AuditPython) { $AuditPython } else { $AppPython }
 
 New-Item -ItemType Directory -Force -Path $ReportDir | Out-Null
 $lines = [System.Collections.Generic.List[string]]::new()

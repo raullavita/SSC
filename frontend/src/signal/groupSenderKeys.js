@@ -86,26 +86,27 @@ export async function encryptGroupMessage(
   plaintext,
   { groupId, userId, conversationId, deviceId = '1' } = {}
 ) {
-  if (!groupId || !userId) {
+  const resolvedGroupId = groupId || conversationId;
+  if (!resolvedGroupId || !userId) {
     throw new Error('group_id_and_user_required');
   }
 
   if (isLibsignalGroupAvailable()) {
     await configureGroupKeys({ localUserId: userId, deviceId });
-    const state = await getDistributionState(groupId);
+    const state = await getDistributionState(resolvedGroupId);
     if (!state.distributed) {
-      const dist = await createDistributionMessage(groupId);
+      const dist = await createDistributionMessage(resolvedGroupId);
       if (dist?.ciphertext) {
         await postDistributionMessage(conversationId, dist.ciphertext);
-        await markDistributionSent(groupId);
+        await markDistributionSent(resolvedGroupId);
       }
     }
-    const ciphertext = await encryptGroupPlaintext(groupId, plaintext);
+    const ciphertext = await encryptGroupPlaintext(resolvedGroupId, plaintext);
     return { ciphertext, protocol: GROUP_SENDER_KEY_PROTOCOL };
   }
 
   assertGroupLibsignalRuntime('encrypt_group');
-  return devEncryptGroupMessage(plaintext, { groupId, userId });
+  return devEncryptGroupMessage(plaintext, { groupId: resolvedGroupId, userId });
 }
 
 export async function decryptGroupMessage(

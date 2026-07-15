@@ -21,7 +21,11 @@ export default function BackupPanel({ userId, onMessage }) {
       const result = await createEncryptedBackup({ passphrase: exportPassphrase, userId });
       downloadBackup(result.blob, result.filename);
       onMessage?.(
-        `Backup saved (${result.keyCount} local keys, ${result.indexCount} search indexes)`
+        `Backup saved (${result.keyCount} prefs, ${result.indexCount} indexes` +
+          (result.signalFileCount
+            ? `, ${result.signalFileCount} encryption files`
+            : '') +
+          ')'
       );
       setExportPassphrase('');
     } catch (err) {
@@ -49,7 +53,10 @@ export default function BackupPanel({ userId, onMessage }) {
     try {
       const result = await restoreEncryptedBackup(file, restorePassphrase, { replace: true });
       onMessage?.(
-        `Restored ${result.keysRestored} keys and ${result.conversationsIndexed} search indexes` +
+        `Restored ${result.keysRestored} prefs, ${result.conversationsIndexed} indexes` +
+          (result.signalFilesRestored
+            ? `, ${result.signalFilesRestored} encryption files`
+            : '') +
           (result.exportedAt ? ` (from ${result.exportedAt})` : '')
       );
       setRestorePassphrase('');

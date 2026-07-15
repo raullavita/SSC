@@ -33,6 +33,7 @@ import { useVoiceMessage } from '../chat/useVoiceMessage';
 import { useAuth } from '../context/AuthContext';
 import { usePresenceMap } from '../hooks/usePresenceMap';
 import { api } from '../lib/api';
+import { formatApiError } from '../lib/apiErrors';
 import { listBroadcastLists } from '../lib/broadcastLists';
 import { sendBroadcastMessage } from '../lib/broadcastSend';
 import {
@@ -49,6 +50,7 @@ import { checkBlockedBy } from '../lib/abuseReport';
 import { getLocalDeviceId } from '../lib/deviceLink';
 import { runMessageRecordMaintenance } from '../signal/messageRecords';
 import { handleDecryptRetryRequest } from '../signal/sesameRetry';
+import { ensureNotificationPermission, showDesktopNotification } from '../lib/desktopNotify';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
 import { getPeerTrust } from '../lib/trustStore';
 import { isAndroidShell, isInstalledApp } from '../lib/appMode';
@@ -68,6 +70,7 @@ export default function ChatHome() {
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
   const [listError, setListError] = useState(null);
+  const [chatError, setChatError] = useState(null);
   const [translateTarget, setTranslateTarget] = useState('en');
   const [userLang, setUserLang] = useState(() => getPreferredLanguage());
 
@@ -94,6 +97,10 @@ export default function ChatHome() {
   const [broadcastLists, setBroadcastLists] = useState([]);
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
+
+  useEffect(() => {
+    setChatError(null);
+  }, [activeId]);
 
   useEffect(() => {
     const openId = location.state?.openConversationId;
@@ -161,6 +168,16 @@ export default function ChatHome() {
 
       if (convId === activeId) {
         refreshActiveConversation();
+      }
+
+      if (payload.message?.sender_id && payload.message.sender_id !== user?.id) {
+        const inBackground = convId !== activeId || document.hidden || !document.hasFocus();
+        if (inBackground) {
+          showDesktopNotification({
+            title: 'SSC',
+            body: 'New message',
+          });
+        }
       }
     },
     [activeId, loadConversations, refreshActiveConversation, user?.id]
@@ -241,11 +258,13 @@ export default function ChatHome() {
     deleteMessage,
     forwardMessage,
     loading: messagesLoading,
+    error: messagesError,
+    reload: reloadMessages,
   } = useChatMessages(activeId, Boolean(user), active?.peer_id, {
     onSocketEvent: handleSocketEvent,
     wsToken,
     isGroup,
-    groupId: active?.group_id,
+    groupId: active?.group_id || (isGroup ? activeId : undefined),
     userId: user?.id,
     memberIds: active?.participants || [],
   });
@@ -364,9 +383,10 @@ export default function ChatHome() {
         platform: getInstalledClientHeader().split('/')[0] || 'electron',
         localUserId: user.id,
       }).catch((err) => {
-        const detail = err?.body?.detail || err?.message || 'prekey_registration_failed';
-        setListError(`Encryption setup failed (${detail}). Close and reopen SSC.`);
-        console.warn('[ssc] prekey registration failed', detail);
+        const msg = formatApiError(err, 'Encryption setup failed. Close and reopen SSC.');
+        setListError(msg);
+        setChatError(msg);
+        console.warn('[ssc] prekey registration failed', err?.message || err);
       });
       fetchLanguages()
         .then(setLanguages)
@@ -477,23 +497,30 @@ export default function ChatHome() {
     e.preventDefault();
     if (!draft.trim()) return;
     const text = draft;
-    setDraft('');
-    onDraftChange('');
-    setTranslatedPreview('');
+    setChatError(null);
     try {
       if (editingMessage) {
         await editMessage(editingMessage.id, text);
         setEditingMessage(null);
+        setDraft('');
+        onDraftChange('');
+        setTranslatedPreview('');
       } else {
         await sendMessage(text, {
           disappearingSeconds: disappearingSeconds || undefined,
           replyTo: replyTo?.id,
         });
+        setDraft('');
+        onDraftChange('');
+        setTranslatedPreview('');
         setReplyTo(null);
       }
     } catch (err) {
       setDraft(text);
-      setListError(err.message);
+      onDraftChange(text);
+      const msg = formatApiError(err, 'Message could not be sent');
+      setChatError(msg);
+      setListError(msg);
     }
   }
 
@@ -505,22 +532,28 @@ export default function ChatHome() {
       return;
     }
     const text = draft;
-    setDraft('');
-    onDraftChange('');
-    setTranslatedPreview('');
+    setChatError(null);
     try {
       const result = await sendBroadcastMessage({
         text,
         recipientIds: list.recipient_ids,
         disappearingSeconds: disappearingSeconds || undefined,
       });
+      setDraft('');
+      onDraftChange('');
+      setTranslatedPreview('');
       if (result.failed > 0) {
-        setListError(`Broadcast sent to ${result.sent}; ${result.failed} failed`);
+        const msg = `Broadcast sent to ${result.sent}; ${result.failed} failed`;
+        setChatError(msg);
+        setListError(msg);
       }
       await loadConversations();
     } catch (err) {
       setDraft(text);
-      setListError(err.message);
+      onDraftChange(text);
+      const msg = formatApiError(err, 'Broadcast could not be sent');
+      setChatError(msg);
+      setListError(msg);
     }
   }
 
@@ -891,6 +924,14 @@ export default function ChatHome() {
 
             <div className={styles.messages}>
               {messagesLoading && <p className={styles.muted}>Loading messages…</p>}
+              {messagesError && !messagesLoading && (
+                <div className={styles.messagesError}>
+                  <p>{messagesError}</p>
+                  <button type="button" onClick={() => reloadMessages()}>
+                    Retry
+                  </button>
+                </div>
+              )}
               {messages.map((m) => (
                 <div
                   key={m.id}
@@ -929,6 +970,7 @@ export default function ChatHome() {
                         : undefined
                     }
                     disappearingRemaining={remainingById[m.id]}
+                    onRetryDecrypt={() => reloadMessages()}
                   />
                 </div>
               ))}
@@ -1011,10 +1053,17 @@ export default function ChatHome() {
                   onClick={async () => {
                     const options = pollOptions.map((o) => o.trim()).filter(Boolean);
                     if (!pollQuestion.trim() || options.length < 2) return;
-                    await sendPoll(pollQuestion, options);
-                    setPollQuestion('');
-                    setPollOptions(['', '']);
-                    setShowPollForm(false);
+                    setChatError(null);
+                    try {
+                      await sendPoll(pollQuestion, options);
+                      setPollQuestion('');
+                      setPollOptions(['', '']);
+                      setShowPollForm(false);
+                    } catch (err) {
+                      const msg = formatApiError(err, 'Poll could not be posted');
+                      setChatError(msg);
+                      setListError(msg);
+                    }
                   }}
                 >
                   Post poll
@@ -1026,6 +1075,7 @@ export default function ChatHome() {
             )}
 
             <Composer
+              error={chatError}
               draft={draft}
               onDraftChange={(value) => {
                 setDraft(value);

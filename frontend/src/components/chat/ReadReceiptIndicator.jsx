@@ -30,7 +30,7 @@ export default function ReadReceiptIndicator({
   if (!detail?.short) return null;
 
   const tooltip = formatReadReceiptLabel(readers, { isGroup, nameForId: resolveName });
-  const showExpand = isGroup && (detail.entries?.length || 0) > 1;
+  const showExpand = (detail.entries?.length || 0) > 0;
 
   return (
     <div className={styles.wrap}>

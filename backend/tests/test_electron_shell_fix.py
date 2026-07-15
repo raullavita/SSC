@@ -31,7 +31,7 @@ def test_electron_preload_injects_client_header():
 
 def test_build_electron_uses_numeric_build():
     script = (REPO / "scripts" / "build_electron.ps1").read_text(encoding="utf-8")
-    assert 'REACT_APP_SSC_BUILD = "12"' in script
+    assert 'REACT_APP_SSC_BUILD = "13"' in script
     assert 'REACT_APP_SSC_LANDING_ONLY = "false"' in script
     assert 'PUBLIC_URL = "."' in script
 

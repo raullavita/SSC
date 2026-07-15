@@ -32,6 +32,7 @@ export default function Composer({
   broadcastLists = [],
   onBroadcastSend,
   disabled = false,
+  error = null,
 }) {
   const fileInputRef = useRef(null);
 
@@ -42,6 +43,11 @@ export default function Composer({
 
   return (
     <form className={styles.composer} onSubmit={onSend}>
+      {error && (
+        <p className={styles.error} role="alert">
+          {String(error)}
+        </p>
+      )}
       <div className={styles.inputRow}>
         <input
           className={styles.input}

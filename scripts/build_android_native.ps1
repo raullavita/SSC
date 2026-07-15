@@ -1,4 +1,5 @@
-# Build native SSC Android APK (Kotlin + Jetpack Compose, no WebView).
+# Build SSC Android release APK (WebView shell + native libsignal bridges).
+# Output is tagged SSC-Native-* for distribution; same Gradle target as build_android.ps1.
 param(
     [string]$Version = "0.3.1",
     [string]$Build = "12"

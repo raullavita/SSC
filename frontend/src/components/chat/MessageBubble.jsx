@@ -146,6 +146,7 @@ export default function MessageBubble({
   onPollVote,
   disappearingRemaining,
   reactionPending = false,
+  onRetryDecrypt,
 }) {
   const {
     text,
@@ -228,6 +229,19 @@ export default function MessageBubble({
 
       {isDeleted ? (
         <span className={styles.deletedText}>This message was deleted</span>
+      ) : message.decryptFailed ? (
+        <div className={styles.decryptFailed}>
+          <span>
+            {message.decryptPending
+              ? 'Waiting for encryption keys from this sender…'
+              : 'Could not decrypt this message.'}
+          </span>
+          {onRetryDecrypt && (
+            <button type="button" onClick={() => onRetryDecrypt(message)}>
+              Retry
+            </button>
+          )}
+        </div>
       ) : (
         text && <span className={styles.text}>{text}</span>
       )}

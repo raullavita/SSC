@@ -65,8 +65,17 @@ function writeStartupDiagnostics() {
 
 function registerPushIpc() {
   try {
-    const { getOrCreatePushToken } = require('./pushTokenStore');
-    ipcMain.handle('ssc-push:get-token', () => getOrCreatePushToken(app.getPath('userData')));
+    const { showDesktopNotification } = require('./desktopNotify');
+    ipcMain.handle('ssc-push:get-token', () => null);
+    ipcMain.handle('ssc-push:notify', (_event, payload) => {
+      showDesktopNotification(payload || {});
+      return true;
+    });
+    ipcMain.handle('ssc-push:request-permission', () => {
+      const { Notification } = require('electron');
+      if (!Notification.isSupported()) return 'unsupported';
+      return 'granted';
+    });
   } catch (err) {
     console.warn('[ssc] push IPC disabled', err?.message || err);
   }
@@ -153,6 +162,16 @@ function registerCryptoIpc() {
   ipcMain.handle('ssc-crypto:wipeLocalData', async () => {
     if (!libsignalAvailable) return { ok: true, skipped: true };
     return wipeLocalData(app.getPath('userData'));
+  });
+
+  ipcMain.handle('ssc-crypto:export-signal-store', () => {
+    const { exportSignalStoreFiles } = require('./signalStoreBackup');
+    return exportSignalStoreFiles(app.getPath('userData'));
+  });
+
+  ipcMain.handle('ssc-crypto:import-signal-store', (_evt, payload) => {
+    const { importSignalStoreFiles } = require('./signalStoreBackup');
+    return importSignalStoreFiles(app.getPath('userData'), payload?.files || {});
   });
 
   ipcMain.handle('ssc-group-keys:configure', (_evt, opts) => {

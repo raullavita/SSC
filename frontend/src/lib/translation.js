@@ -3,7 +3,6 @@
  */
 
 import { DEFAULT_LANGUAGES } from './translation/languages';
-import { fetchLocalLibreLanguages } from './translation/providers/localLibre';
 import { fetchServerLanguages, serverProxyAllowed } from './translation/providers/serverProxy';
 import {
   getTranslationProviderStatus,
@@ -22,8 +21,6 @@ export class TranslationError extends Error {
 }
 
 export async function fetchLanguages() {
-  const local = await fetchLocalLibreLanguages();
-  if (local?.length) return local;
   if (serverProxyAllowed()) {
     try {
       return await fetchServerLanguages();

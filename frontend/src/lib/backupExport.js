@@ -3,6 +3,7 @@
  */
 
 import { exportAllIndexes } from '../search/messageIndex';
+import { exportNativeSignalStore } from './signalStoreBackup';
 import {
   BACKUP_FILE_EXTENSION,
   encryptBackupPayload,
@@ -27,19 +28,21 @@ function collectLocalStorageSnapshot() {
   return snapshot;
 }
 
-function buildBackupPayload({ userId } = {}) {
+async function buildBackupPayload({ userId } = {}) {
+  const signalStore = await exportNativeSignalStore();
   return {
     format: BACKUP_FORMAT_INNER,
-    version: 1,
+    version: 2,
     exported_at: new Date().toISOString(),
     user_id: userId || null,
     localStorage: collectLocalStorageSnapshot(),
     messageIndex: exportAllIndexes(),
+    signalStore: signalStore?.files || null,
   };
 }
 
 export async function createEncryptedBackup({ passphrase, userId } = {}) {
-  const payload = buildBackupPayload({ userId });
+  const payload = await buildBackupPayload({ userId });
   const envelope = await encryptBackupPayload(JSON.stringify(payload), passphrase);
   const date = payload.exported_at.slice(0, 10);
   return {
@@ -47,6 +50,7 @@ export async function createEncryptedBackup({ passphrase, userId } = {}) {
     blob: new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' }),
     keyCount: Object.keys(payload.localStorage).length,
     indexCount: Object.keys(payload.messageIndex).length,
+    signalFileCount: payload.signalStore ? Object.keys(payload.signalStore).length : 0,
   };
 }
 

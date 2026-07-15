@@ -37,8 +37,9 @@ describe('translation provider chain', () => {
     expect(getTranslationProviderStatus().serverProxy).toBe('disabled');
   });
 
-  test('on-device status reflects unavailable without native or browser engine', () => {
-    expect(getTranslationProviderStatus().onDevice).toBe('unavailable');
+  test('on-device translation is disabled (API keys or server only)', () => {
+    expect(getTranslationProviderStatus().onDevice).toBe('disabled');
+    expect(getTranslationProviderStatus().localLibre).toBe('disabled');
   });
 
   test('returns pending_api_key when no providers configured', async () => {

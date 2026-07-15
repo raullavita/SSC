@@ -34,11 +34,18 @@ function resolvePlatform() {
   return process.env.REACT_APP_SSC_PLATFORM || 'electron';
 }
 
+function isFcmToken(token, platform) {
+  if (!token || token.length < 10) return false;
+  if (token.startsWith('ssc-electron-')) return false;
+  if (platform === 'electron') return false;
+  return true;
+}
+
 export async function registerPushTokenIfAvailable() {
   const token = await resolvePushToken();
   const platform = resolvePlatform();
-  if (!token || token.length < 10) {
-    return { skipped: true };
+  if (!isFcmToken(token, platform)) {
+    return { skipped: true, reason: 'desktop_uses_local_notifications' };
   }
   return api.post('/api/push/register', { token, platform });
 }

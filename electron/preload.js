@@ -7,7 +7,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 // Must not require() local files here — Electron 20+ sandboxes preload by default and
 // only allows built-in modules, so require('./package.json') crashes before sscCrypto loads.
 const SSC_VERSION = '0.3.1';
-const SSC_BUILD = '12';
+const SSC_BUILD = '13';
 const CLIENT_VALUE = `electron/${SSC_VERSION}/${SSC_BUILD}`;
 
 contextBridge.exposeInMainWorld('sscUpdater', {
@@ -46,6 +46,12 @@ contextBridge.exposeInMainWorld('sscShell', {
 contextBridge.exposeInMainWorld('sscPush', {
   getToken() {
     return ipcRenderer.invoke('ssc-push:get-token');
+  },
+  showNotification(payload) {
+    return ipcRenderer.invoke('ssc-push:notify', payload);
+  },
+  requestPermission() {
+    return ipcRenderer.invoke('ssc-push:request-permission');
   },
   platform: 'electron',
 });
@@ -105,6 +111,14 @@ contextBridge.exposeInMainWorld('sscCrypto', {
 
   async wipeLocalData() {
     return ipcRenderer.invoke('ssc-crypto:wipeLocalData');
+  },
+
+  async exportSignalStore() {
+    return ipcRenderer.invoke('ssc-crypto:export-signal-store');
+  },
+
+  async importSignalStore(files) {
+    return ipcRenderer.invoke('ssc-crypto:import-signal-store', { files });
   },
 
   async configureGroupKeys(opts) {

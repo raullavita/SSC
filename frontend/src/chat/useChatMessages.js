@@ -24,6 +24,7 @@ import {
   decryptWithRetry,
   resolveCiphertext,
 } from '../signal/sesameRetry';
+import { formatApiError } from '../lib/apiErrors';
 import { encryptMessageForRecipients } from '../signal/signalBridge';
 import { useChatSocket } from './useChatSocket';
 
@@ -46,6 +47,32 @@ function parseMessageContent(text, messageKind) {
   return { text, reaction: null, attachment: null, poll: null };
 }
 
+function groupDecryptRow(m, raw) {
+  if (
+    typeof raw === 'string' &&
+    (raw.startsWith('[Unable to decrypt') || raw.startsWith('[Group decrypt'))
+  ) {
+    return {
+      ...m,
+      text: null,
+      reaction: null,
+      attachment: null,
+      poll: null,
+      decryptFailed: true,
+      decryptPending: raw.includes('sender key not received'),
+      decryptLabel: raw,
+    };
+  }
+  const parsed = parseMessageContent(raw, m.message_kind);
+  return {
+    ...m,
+    text: parsed.text,
+    reaction: parsed.reaction,
+    attachment: parsed.attachment,
+    poll: parsed.poll,
+  };
+}
+
 async function hydrateGroupMessage(m, { groupId }) {
   if (isSenderKeyDistributionMessage(m)) {
     await ingestSenderKeyDistribution(m.ciphertext, {
@@ -59,14 +86,7 @@ async function hydrateGroupMessage(m, { groupId }) {
     senderId: m.sender_id,
     protocol: m.protocol,
   });
-  const parsed = parseMessageContent(raw, m.message_kind);
-  return {
-    ...m,
-    text: parsed.text,
-    reaction: parsed.reaction,
-    attachment: parsed.attachment,
-    poll: parsed.poll,
-  };
+  return groupDecryptRow(m, raw);
 }
 
 export function useChatMessages(
@@ -147,7 +167,7 @@ export function useChatMessages(
         rows.filter((m) => m.text)
       );
     } catch (e) {
-      setError(e.message || 'Failed to load messages');
+      setError(formatApiError(e, 'Failed to load messages'));
     } finally {
       setLoading(false);
     }
@@ -177,8 +197,7 @@ export function useChatMessages(
               senderId: m.sender_id,
               protocol: m.protocol,
             });
-            const parsed = parseMessageContent(raw, m.message_kind);
-            row = { ...m, text: parsed.text, reaction: null, attachment: parsed.attachment, poll: parsed.poll };
+            row = groupDecryptRow(m, raw);
           } else {
             const ct = resolveCiphertext(m, getLocalDeviceId());
             const raw = await decryptWithRetry(
@@ -229,6 +248,7 @@ export function useChatMessages(
               peerId: m.sender_id,
               protocol: m.protocol,
             });
+            reload();
             return;
           }
           const raw = await decryptGroupMessage(m.ciphertext, {
@@ -236,14 +256,7 @@ export function useChatMessages(
             senderId: m.sender_id,
             protocol: m.protocol,
           });
-          const parsed = parseMessageContent(raw, m.message_kind);
-          const row = {
-            ...m,
-            text: parsed.text,
-            reaction: parsed.reaction,
-            attachment: parsed.attachment,
-            poll: parsed.poll,
-          };
+          const row = groupDecryptRow(m, raw);
           setMessages((prev) => {
             if (prev.some((x) => x.id === m.id)) return prev;
             return [...prev, row];

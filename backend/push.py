@@ -143,7 +143,16 @@ async def db_conversation_muted(user_id: str, conversation_id: str) -> bool:
     return bool(doc and doc.get("muted"))
 
 
+def _is_fcm_token(token: str) -> bool:
+    """Electron/desktop clients use local OS notifications, not FCM."""
+    if not token or token.startswith("ssc-electron-"):
+        return False
+    return True
+
+
 async def _dispatch_fcm(token: str, payload: dict[str, Any]) -> bool:
+    if not _is_fcm_token(token):
+        return False
     if not ensure_firebase():
         return False
 

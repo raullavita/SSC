@@ -8,10 +8,8 @@ import { inviteWebUrl } from '../lib/inviteLink';
 import { needsUsernameSetup } from '../lib/onboarding';
 import {
   getPreferredLanguage,
-  getLocalTranslateUrl,
   getServerProxyTranslateEnabled,
   setPreferredLanguage,
-  setLocalTranslateUrl,
   setServerProxyTranslateEnabled,
   getAutoTranslateEnabled,
 } from '../lib/chatPrefs';
@@ -52,7 +50,6 @@ export default function Settings() {
   const [preferredLang, setPreferredLang] = useState(() => getPreferredLanguage());
   const [googleKey, setGoogleKey] = useState(() => getGoogleTranslateApiKey());
   const [deeplKey, setDeeplKey] = useState(() => getDeepLApiKey());
-  const [localLibreUrl, setLocalLibreUrl] = useState(() => getLocalTranslateUrl());
   const [serverProxy, setServerProxy] = useState(() => getServerProxyTranslateEnabled());
   const [providerStatus] = useState(() => getTranslationProviderStatus());
   const [footprintOk, setFootprintOk] = useState(null);
@@ -180,10 +177,10 @@ export default function Settings() {
           Auto-translate is controlled in Chat &amp; notifications above. API keys stay on this
           device only.
         </p>
-        {getAutoTranslateEnabled() && (
+        {getAutoTranslateEnabled() && providerStatus.userApiKey === 'pending_api_key' && (
           <p className={styles.warning}>
-            Auto-translate is on. Translation runs on your device when possible; server proxy is
-            never used unless you enable it below.
+            Auto-translate is on but no API key is configured. Add a Google or DeepL key below, or
+            enable the SSC translation server.
           </p>
         )}
         <label className={styles.rowStack}>
@@ -205,8 +202,7 @@ export default function Settings() {
           </select>
         </label>
         <p className={styles.hint}>
-          On-device: {providerStatus.onDevice} · API keys: {providerStatus.userApiKey} · Local
-          LibreTranslate: {providerStatus.localLibre}
+          API keys: {providerStatus.userApiKey} · SSC server proxy: {providerStatus.serverProxy}
         </p>
         <label className={styles.rowStack}>
           <span>Google Cloud Translation API key (optional)</span>
@@ -235,21 +231,6 @@ export default function Settings() {
               setMessage(deeplKey ? 'DeepL key saved locally' : 'DeepL key cleared');
             }}
             placeholder="Paste key when you have one"
-            autoComplete="off"
-          />
-        </label>
-        <label className={styles.rowStack}>
-          <span>Local LibreTranslate URL (advanced, optional)</span>
-          <input
-            type="url"
-            className={styles.textInput}
-            value={localLibreUrl}
-            onChange={(e) => setLocalLibreUrl(e.target.value)}
-            onBlur={() => {
-              setLocalTranslateUrl(localLibreUrl);
-              setMessage(localLibreUrl ? 'Local translate URL saved' : 'Local translate URL cleared');
-            }}
-            placeholder="https://your-libretranslate.example.com"
             autoComplete="off"
           />
         </label>

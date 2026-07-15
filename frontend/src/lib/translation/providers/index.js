@@ -1,36 +1,21 @@
 /**
- * Translation provider chain — privacy-first order:
- * on-device → user API keys → local LibreTranslate → server proxy (opt-in only).
+ * Translation provider chain — user API keys first, then SSC server proxy (opt-in).
+ * On-device and local LibreTranslate are not used (API keys or server only).
  */
 
-import {
-  translateOnDevice,
-  onDeviceTranslationSupported,
-  getOnDeviceTranslationKind,
-} from './onDevice';
 import { translateWithUserApiKeys, userApiKeysConfigured } from './userApiKey';
-import { translateLocalLibre, localLibreConfigured } from './localLibre';
 import { translateServerProxy, serverProxyAllowed } from './serverProxy';
 
 const CHAIN = [
-  { id: 'on-device', run: translateOnDevice },
   { id: 'user-api-key', run: translateWithUserApiKeys },
-  { id: 'local-libre', run: translateLocalLibre },
   { id: 'server-proxy', run: translateServerProxy },
 ];
 
-function onDeviceStatusLabel() {
-  const kind = getOnDeviceTranslationKind();
-  if (kind === 'android_mlkit') return 'available_android';
-  if (kind === 'browser_translator') return 'available_browser';
-  return 'unavailable';
-}
-
 export function getTranslationProviderStatus() {
   return {
-    onDevice: onDeviceStatusLabel(),
+    onDevice: 'disabled',
     userApiKey: userApiKeysConfigured() ? 'configured' : 'pending_api_key',
-    localLibre: localLibreConfigured() ? 'configured' : 'not_configured',
+    localLibre: 'disabled',
     serverProxy: serverProxyAllowed() ? 'opted_in' : 'disabled',
   };
 }
@@ -65,6 +50,6 @@ export async function runTranslationChain(text, options = {}) {
     status: 'unavailable',
     provider: 'none',
     message:
-      'Translation unavailable. Enable on-device models, add an API key, or opt in to server proxy in Settings.',
+      'Translation unavailable. Add a Google or DeepL API key in Settings, or opt in to the SSC translation server.',
   };
 }

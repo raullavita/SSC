@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { exchangeOAuthCode } from '../lib/googleAuth';
 
 import { runClientFootprintAudit } from '../lib/clientFootprintOrchestrator';
+import { ensureNotificationPermission } from '../lib/desktopNotify';
 import { registerPushTokenIfAvailable } from '../lib/pushRegister';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
 
@@ -26,6 +27,7 @@ export function AuthProvider({ children }) {
     warnFootprintViolations();
     startPresenceHeartbeat();
     registerPushTokenIfAvailable().catch(() => {});
+    ensureNotificationPermission().catch(() => {});
     return data.user;
   }, []);
 

@@ -3,6 +3,7 @@
  */
 
 import { importAllIndexes } from '../search/messageIndex';
+import { importNativeSignalStore } from './signalStoreBackup';
 import {
   decryptBackupPayload,
   isForbiddenBackupKey,
@@ -92,10 +93,16 @@ export async function restoreEncryptedBackup(file, passphrase, { replace = true 
 
   const keysRestored = restoreLocalStorageSnapshot(payload.localStorage, { replace });
   const conversationsIndexed = importAllIndexes(payload.messageIndex);
+  let signalFilesRestored = 0;
+  if (payload.signalStore && typeof payload.signalStore === 'object') {
+    const signalResult = await importNativeSignalStore(payload.signalStore);
+    signalFilesRestored = signalResult?.imported || 0;
+  }
 
   return {
     keysRestored,
     conversationsIndexed,
+    signalFilesRestored,
     exportedAt: payload.exported_at,
     userId: payload.user_id,
   };
