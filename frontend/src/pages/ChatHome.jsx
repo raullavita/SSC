@@ -42,6 +42,7 @@ import {
 } from '../lib/chatPrefs';
 import { fetchLanguages, translateText, TranslationError } from '../lib/translation';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
+import { enrichDirectReadReceipts } from '../lib/readReceipts';
 import { searchMessages } from '../search/messageIndex';
 import { getInstalledClientHeader } from '../lib/installedClient';
 import { checkBlockedBy } from '../lib/abuseReport';
@@ -913,7 +914,10 @@ export default function ChatHome() {
                     reactionPending={isReactionPending(m.id)}
                     onTranslate={onTranslateMessage}
                     downloadFile={downloadFile}
-                    readReceipts={readByMessage[m.id] || []}
+                    readReceipts={enrichDirectReadReceipts(
+                      readByMessage[m.id] || [],
+                      isGroup ? null : active?.peer_id
+                    )}
                     isGroup={isGroup}
                     nameForId={nameForId}
                     poll={m.poll}

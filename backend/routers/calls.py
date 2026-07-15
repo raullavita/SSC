@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from core.block_policy import interaction_blocked
+from core.block_policy import interaction_blocked, reachable_participants
 from core.call_policy import (
     CALL_END_REASONS,
     CALL_TYPES,
@@ -114,9 +114,11 @@ async def start_call(
     if use_sfu:
         payload["sfu_required"] = True
     if is_group_call or use_sfu:
-        for pid in participants:
-            if pid != user_id:
-                await ws_hub.publish(f"user:{pid}", payload)
+        targets = await reachable_participants(db, user_id, participants)
+        if not targets:
+            raise HTTPException(status_code=403, detail="all_participants_blocked")
+        for pid in targets:
+            await ws_hub.publish(f"user:{pid}", payload)
     else:
         await ws_hub.publish(f"user:{callee_id}", payload)
 
@@ -148,6 +150,9 @@ async def relay_signal(
         target = body.target_peer_id
         if not target or target not in allowed or target == user_id:
             raise HTTPException(status_code=400, detail="target_peer_required_for_group_call")
+        blocked, detail = await interaction_blocked(db, user_id, target)
+        if blocked:
+            raise HTTPException(status_code=403, detail=detail)
         await ws_hub.publish(
             f"user:{target}",
             {
@@ -166,6 +171,9 @@ async def relay_signal(
         raise HTTPException(status_code=403, detail="not_a_call_participant")
 
     peer = call["callee_id"] if user_id == call["caller_id"] else call["caller_id"]
+    blocked, detail = await interaction_blocked(db, user_id, peer)
+    if blocked:
+        raise HTTPException(status_code=403, detail=detail)
     await ws_hub.publish(
         f"user:{peer}",
         {

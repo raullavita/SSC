@@ -76,6 +76,18 @@ export function formatReadReceiptLabel(readers, options = {}) {
 /**
  * Rich label for group message footer (names + optional times).
  */
+/**
+ * Attach peer reader id for 1:1 chats when the API omits reader_id.
+ */
+export function enrichDirectReadReceipts(readers, peerId) {
+  if (!peerId) return readers || [];
+  return (readers || []).map((row) => ({
+    ...row,
+    readerId: row.readerId || row.reader_id || peerId,
+    readAt: row.readAt || row.read_at,
+  }));
+}
+
 export function formatReadReceiptDetail(readers, options = {}) {
   const { isGroup = false, nameForId, maxNames = 4 } = options;
   const list = normalizeReaders(readers).sort((a, b) =>

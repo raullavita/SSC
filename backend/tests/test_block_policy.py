@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from unittest.mock import AsyncMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -108,3 +109,45 @@ async def test_prekey_fetch_blocked_when_viewer_blocked_target(monkeypatch):
         fetch = await ac.get(f"/api/prekeys/users/{b_id}/devices/1", headers=CLIENT)
         assert fetch.status_code == 403
         assert fetch.json()["detail"] == "you_blocked_user"
+
+
+@pytest.mark.asyncio
+async def test_group_call_skips_blocked_participants(monkeypatch):
+    fake_db = FakeDatabase()
+    _patch(monkeypatch, fake_db)
+    publish_mock = AsyncMock()
+    monkeypatch.setattr("routers.calls.ws_hub.publish", publish_mock)
+
+    app = create_app()
+    app.state.enforce_installed_client = True
+    transport = ASGITransport(app=app)
+
+    reg_a, cookies_a = await _register(transport, "caller@example.com", "Caller")
+    reg_b, _ = await _register(transport, "b@example.com", "B")
+    reg_c, _ = await _register(transport, "c@example.com", "C")
+    a_id = reg_a["user"]["id"]
+    b_id = reg_b["user"]["id"]
+    c_id = reg_c["user"]["id"]
+    now = datetime.now(timezone.utc)
+    await fake_db.conversations.insert_one(
+        {
+            "_id": "c_group_call",
+            "type": "group",
+            "participants": [a_id, b_id, c_id],
+            "created_at": now,
+            "updated_at": now,
+        }
+    )
+    await record_user_block(fake_db, b_id, a_id)
+
+    async with AsyncClient(transport=transport, base_url="http://test", cookies=cookies_a) as ac:
+        started = await ac.post(
+            "/api/calls",
+            json={"conversation_id": "c_group_call", "group_call": True},
+            headers=CLIENT,
+        )
+        assert started.status_code == 200
+
+    assert publish_mock.await_count == 1
+    args, _kwargs = publish_mock.await_args
+    assert args[0] == f"user:{c_id}"

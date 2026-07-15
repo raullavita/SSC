@@ -1,4 +1,5 @@
 import {
+  enrichDirectReadReceipts,
   formatReadReceiptDetail,
   formatReadReceiptLabel,
   indexReadsByMessage,
@@ -30,6 +31,17 @@ describe('readReceipts', () => {
     ]);
     expect(map.m1).toHaveLength(1);
     expect(map.m1[0].readAt).toBe('2026-01-05T00:00:00Z');
+  });
+
+  it('enriches direct receipts with peer id when missing', () => {
+    const enriched = enrichDirectReadReceipts(
+      [{ readAt: '2026-01-01T12:00:00Z' }],
+      'u_bob'
+    );
+    expect(enriched[0].readerId).toBe('u_bob');
+    expect(
+      formatReadReceiptLabel(enriched, { isGroup: false, nameForId })
+    ).toContain('Bob');
   });
 
   it('formats group labels with names', () => {
