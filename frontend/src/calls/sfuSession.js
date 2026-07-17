@@ -154,7 +154,7 @@ class SfuSession {
     return producers;
   }
 
-  async _onNewProducer({ producerId, kind }) {
+  async _onNewProducer({ producerId, kind: _kind }) {
     if (!this.recvTransport) {
       this.recvTransport = await this._createTransport('recv');
     }

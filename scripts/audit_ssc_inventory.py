@@ -254,9 +254,10 @@ def find_stubs() -> list[dict]:
 
 def artifact_sizes() -> list[dict]:
     candidates = [
-        ROOT / "electron" / "dist" / "SSC-Setup-0.3.0.exe",
-        ROOT / "android" / "app" / "build" / "outputs" / "apk" / "release" / "SSC-0.3.0.apk",
-        ROOT / "android" / "app" / "build" / "outputs" / "apk" / "release" / "app-release-unsigned.apk",
+        ROOT / "electron" / "dist" / "SSC-Setup-0.3.1.exe",
+        ROOT / "dist" / "SSC-Setup-0.3.1.exe",
+        ROOT / "android" / "app" / "build" / "outputs" / "apk" / "release" / "SSC-0.3.1.apk",
+        ROOT / "android" / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk",
         ROOT / "frontend" / "build",
     ]
     out = []

@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
 $Version = "0.3.1"
-$Build = "12"
+$Build = "14"
 
 $signingLoaded = & "$PSScriptRoot\load_android_signing.ps1"
 if ($signingLoaded -and $env:SSC_ANDROID_KEYSTORE) {

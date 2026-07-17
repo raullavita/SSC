@@ -1,12 +1,12 @@
 # SSC Intelligence Charter
 
-**Version:** 1.1  
-**Effective:** 2026-07-04  
-**Engine:** 12 + 13 — Premium UX, **no inside AI**
+**Version:** 1.2  
+**Effective:** 2026-07-17  
+**Engine:** 12 + 13 — Premium UX
 
-## No inside AI (hard rule)
+## Design rule
 
-SSC does **not** ship inside AI: no Ollama, no smart replies, no on-device LLM, no server-side inference on message content.
+SSC does not run inference on message content. Optional translation is user-controlled and uses the SSC server proxy when enabled.
 
 Allowed “smart” features use deterministic OSS only:
 
@@ -14,18 +14,18 @@ Allowed “smart” features use deterministic OSS only:
 |---------|---------|------|
 | Local search | minisearch | https://github.com/lucaong/minisearch |
 | Language detect | franc | https://github.com/wooorm/franc |
-| Translation | LibreTranslate (proxy) | https://github.com/LibreTranslate/LibreTranslate |
+| Translation | LibreTranslate (server proxy) | https://github.com/LibreTranslate/LibreTranslate |
 
 ## Server features (metadata-minimal)
 
 - **Typing indicators:** ephemeral WebSocket only — no DB
 - **Disappearing messages:** per-message `disappearing_seconds` → `expires_at`
-- **Smart config:** `GET /api/smart/config` — `no_inside_ai: true`
+- **Translation config:** `GET /api/config` — `translation_enabled` when LibreTranslate is configured
 
 ## Client features
 
 - Encrypted local message index + search
-- Auto-translate incoming messages (franc + LibreTranslate)
+- Auto-translate incoming messages when server translation is enabled
 - Voice messages (MediaRecorder → E2EE file upload)
 - Presence badges in conversation list
 - Safety numbers (libsignal Fingerprint)

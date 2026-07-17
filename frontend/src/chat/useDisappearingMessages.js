@@ -30,6 +30,8 @@ export function useDisappearingMessages(messages, setMessages) {
   }, [messages, setMessages, tick]);
 
   const remainingById = useMemo(() => {
+    // tick forces recompute every second for live countdown labels
+    void tick;
     const map = {};
     for (const m of messages) {
       if (m.expires_at || m.disappearing_seconds) {

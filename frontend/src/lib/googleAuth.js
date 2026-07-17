@@ -11,28 +11,6 @@ export function googleAuthEnabled() {
   return Boolean(process.env.REACT_APP_GOOGLE_CLIENT_ID || API_BASE);
 }
 
-/** Detect OAuth return on Electron (hash), Android (pathname+search), or BrowserRouter. */
-function isGoogleOAuthReturn() {
-  if (typeof window === 'undefined') return false;
-  const { pathname, search, hash } = window.location;
-  if (pathname === '/auth/google' || pathname.endsWith('/auth/google')) {
-    return search.includes('oauth_code=') || hash.includes('oauth_code=');
-  }
-  return search.includes('oauth_code=');
-}
-
-function extractOAuthCode() {
-  const params = new URLSearchParams(window.location.search);
-  let code = params.get('oauth_code');
-  if (!code && window.location.hash) {
-    const hash = window.location.hash.replace(/^#/, '');
-    const qIndex = hash.indexOf('?');
-    const query = qIndex >= 0 ? hash.slice(qIndex + 1) : hash;
-    code = new URLSearchParams(query).get('oauth_code');
-  }
-  return code;
-}
-
 /** Installed Electron/Android/iOS must use full redirect — GIS One Tap hangs on file:// origins. */
 function shouldUseGoogleRedirect() {
   return isInstalledApp();

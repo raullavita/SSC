@@ -9,7 +9,7 @@ import {
   sendReaction as postReaction,
 } from './reactions';
 
-async function hydrateReaction(row, { peerId, isGroup, groupId }) {
+async function hydrateReaction(row, { peerId: _peerId, isGroup, groupId }) {
   try {
     let raw;
     if (isGroup) {

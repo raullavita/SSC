@@ -237,6 +237,12 @@ COLLECTIONS: dict[str, CollectionPolicy] = {
         mode="until_panic",
         panic_field="user_id",
     ),
+    "user_cloud_backups": CollectionPolicy(
+        name="user_cloud_backups",
+        purpose="Encrypted client backup ciphertext (server stores blob only)",
+        mode="until_panic",
+        panic_field="_id",
+    ),
 }
 
 

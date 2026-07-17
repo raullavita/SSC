@@ -4,12 +4,9 @@
 
 import { DEFAULT_LANGUAGES } from './translation/languages';
 import { fetchServerLanguages, serverProxyAllowed } from './translation/providers/serverProxy';
-import {
-  getTranslationProviderStatus,
-  runTranslationChain,
-} from './translation/providers/index';
+import { runTranslationChain } from './translation/providers/index';
 
-export { getTranslationProviderStatus, DEFAULT_LANGUAGES };
+export { DEFAULT_LANGUAGES };
 
 export class TranslationError extends Error {
   constructor(message, { status, provider } = {}) {

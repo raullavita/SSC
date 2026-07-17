@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.ids import new_broadcast_list_id
-from core.retention_policy import default_expires_at
 from db import get_database
 from deps import get_client_header, get_current_user_id
 
@@ -85,7 +84,6 @@ async def create_broadcast_list(
         "recipient_ids": recipients,
         "created_at": now,
         "updated_at": now,
-        "expires_at": default_expires_at(),
     }
     await db.broadcast_lists.insert_one(doc)
     return {"broadcast_list": _public_list(doc)}

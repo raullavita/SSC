@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import styles from './ElectronUpdaterBanner.module.css';
 
+/**
+ * Matches electron/main.js payloads: { status: 'available'|'downloaded'|'error', detail? }
+ */
 export default function ElectronUpdaterBanner() {
   const [status, setStatus] = useState(null);
 
@@ -14,17 +17,24 @@ export default function ElectronUpdaterBanner() {
     return undefined;
   }, []);
 
-  if (!status || status.type === 'checking') return null;
+  if (!status?.status || status.status === 'checking') return null;
 
-  const ready = status.type === 'update-downloaded';
+  const ready = status.status === 'downloaded';
+  const failed = status.status === 'error';
+  let message = 'Checking for updates…';
+  if (ready) {
+    message = 'Update downloaded — restart to install the latest SSC version.';
+  } else if (failed) {
+    message = status.detail || status.message || 'Update check failed';
+  } else if (status.status === 'available') {
+    message = 'Update available — downloading…';
+  } else if (status.message) {
+    message = status.message;
+  }
 
   return (
     <div className={styles.banner} role="status">
-      <span>
-        {ready
-          ? 'Update downloaded — restart to install the latest SSC version.'
-          : status.message || 'Checking for updates…'}
-      </span>
+      <span>{message}</span>
       {ready && (
         <button type="button" className={styles.btn} onClick={() => window.sscUpdater.installUpdate()}>
           Restart &amp; install

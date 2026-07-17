@@ -25,11 +25,7 @@ import {
   devDecryptGroupMessage,
   devEncryptGroupMessage,
 } from './groupSenderKeysDev';
-import {
-  packSenderKeyDistribution,
-  rememberSenderKey,
-  unpackSenderKeyDistribution,
-} from './senderKeyStore';
+import { rememberSenderKey, unpackSenderKeyDistribution } from './senderKeyStore';
 
 export function isSenderKeyDistributionMessage(message) {
   if (!message) return false;

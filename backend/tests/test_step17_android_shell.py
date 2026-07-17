@@ -95,6 +95,6 @@ def test_android_webview_shell_build():
     script = (REPO / "scripts" / "build_android.ps1").read_text(encoding="utf-8")
     assert "SSC_WEB_URL" in gradle
     assert "android_asset/www/index.html" in gradle
-    assert "versionCode = 12" in gradle
+    assert "versionCode = 14" in gradle
     assert "assets/www" in script
-    assert '$Build = "12"' in script
+    assert '$Build = "14"' in script

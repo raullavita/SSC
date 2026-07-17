@@ -3,11 +3,7 @@
  * Not used in installed production clients — Step 4 removes this path from prod builds.
  */
 
-import {
-  ensureOwnSenderKey,
-  getSenderKey,
-  rememberSenderKey,
-} from './senderKeyStore';
+import { ensureOwnSenderKey, getSenderKey } from './senderKeyStore';
 
 async function xorCombine(plaintext, keyMaterial) {
   const enc = new TextEncoder();

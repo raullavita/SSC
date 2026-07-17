@@ -36,7 +36,8 @@
 }
 
 .btn,
-.btnDanger {
+.btnDanger,
+.btnSecondary {
   align-self: flex-start;
   border-radius: 6px;
   padding: 0.35rem 0.65rem;
@@ -50,10 +51,24 @@
   color: #0b141a;
 }
 
+.btnSecondary {
+  background: transparent;
+  border: 1px solid #2a3942;
+  color: #e9edef;
+}
+
 .btnDanger {
   background: transparent;
   border: 1px solid #2a3942;
   color: #ea4335;
+}
+
+.formActions,
+.itemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .list {

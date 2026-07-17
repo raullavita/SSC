@@ -118,6 +118,13 @@ async def panic_wipe_user(db: AsyncIOMotorDatabase, user_id: str) -> dict[str, i
             counts[name] = result_from.deleted_count + result_to.deleted_count
             continue
 
+        if name == "user_blocks":
+            coll = db[name]
+            as_blocker = await coll.delete_many({"blocker_id": user_id})
+            as_blocked = await coll.delete_many({"blocked_id": user_id})
+            counts[name] = as_blocker.deleted_count + as_blocked.deleted_count
+            continue
+
         result = await db[name].delete_many(filt)
         counts[name] = result.deleted_count
 

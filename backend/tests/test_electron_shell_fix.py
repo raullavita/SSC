@@ -49,6 +49,6 @@ def test_android_webview_shell_build():
     assert "com.supersecurechat.app" in gradle
     assert "SSC_WEB_URL" in gradle
     assert "android_asset/www/index.html" in gradle
-    assert "versionCode = 12" in gradle
+    assert "versionCode = 14" in gradle
     assert "assets/www" in script
     assert "assembleRelease" in script or "bundleRelease" in script

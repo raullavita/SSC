@@ -151,7 +151,7 @@ export function useCall({ conversationId, peerId, userId, enabled, wsToken }) {
     };
     pcRef.current = pc;
     return pc;
-  }, [relaySignal, clearRingTimer, flushIceQueue]);
+  }, [relaySignal, clearRingTimer]);
 
   const attachLocalMedia = useCallback(
     async (video) => {

@@ -2,7 +2,7 @@
 # Output is tagged SSC-Native-* for distribution; same Gradle target as build_android.ps1.
 param(
     [string]$Version = "0.3.1",
-    [string]$Build = "12"
+    [string]$Build = "14"
 )
 
 $ErrorActionPreference = "Stop"

@@ -61,6 +61,7 @@ Client panic wipe also clears local `ssc_*` storage, search indexes, and Electro
 | `beta_feedback` | In-app beta feedback | Until panic wipe |
 | `site_feedback` | Public website reviews & feedback | Retained (not user-linked) |
 | `recovery_keys` | Account recovery key hashes | Until panic wipe |
+| `user_cloud_backups` | Encrypted client backup ciphertext | Until panic wipe |
 
 ## Gate
 

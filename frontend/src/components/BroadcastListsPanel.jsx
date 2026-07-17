@@ -4,6 +4,7 @@ import {
   createBroadcastList,
   deleteBroadcastList,
   listBroadcastLists,
+  updateBroadcastList,
 } from '../lib/broadcastLists';
 import styles from './BroadcastListsPanel.module.css';
 
@@ -12,6 +13,7 @@ export default function BroadcastListsPanel({ onMessage }) {
   const [friends, setFriends] = useState([]);
   const [name, setName] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
+  const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -59,7 +61,19 @@ export default function BroadcastListsPanel({ onMessage }) {
     );
   }
 
-  async function handleCreate(event) {
+  function startEdit(item) {
+    setEditingId(item.id);
+    setName(item.name || '');
+    setSelectedIds([...(item.recipient_ids || [])]);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setName('');
+    setSelectedIds([]);
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault();
     if (!name.trim() || selectedIds.length === 0) {
       onMessage?.('Enter a list name and pick at least one contact');
@@ -67,13 +81,20 @@ export default function BroadcastListsPanel({ onMessage }) {
     }
     setBusy(true);
     try {
-      await createBroadcastList({ name: name.trim(), recipientIds: selectedIds });
-      setName('');
-      setSelectedIds([]);
-      onMessage?.('Broadcast list created');
+      if (editingId) {
+        await updateBroadcastList(editingId, {
+          name: name.trim(),
+          recipientIds: selectedIds,
+        });
+        onMessage?.('Broadcast list updated');
+      } else {
+        await createBroadcastList({ name: name.trim(), recipientIds: selectedIds });
+        onMessage?.('Broadcast list created');
+      }
+      cancelEdit();
       await refresh();
     } catch (err) {
-      onMessage?.(err.message || 'Create failed');
+      onMessage?.(err.message || (editingId ? 'Update failed' : 'Create failed'));
     } finally {
       setBusy(false);
     }
@@ -83,6 +104,7 @@ export default function BroadcastListsPanel({ onMessage }) {
     setBusy(true);
     try {
       await deleteBroadcastList(listId);
+      if (editingId === listId) cancelEdit();
       onMessage?.('Broadcast list deleted');
       await refresh();
     } catch (err) {
@@ -99,9 +121,9 @@ export default function BroadcastListsPanel({ onMessage }) {
         Message several contacts at once from the composer 📣 menu in any chat.
       </p>
 
-      <form className={styles.form} onSubmit={handleCreate}>
+      <form className={styles.form} onSubmit={handleSubmit}>
         <label className={styles.rowStack}>
-          <span>List name</span>
+          <span>{editingId ? 'Edit list name' : 'List name'}</span>
           <input
             className={styles.input}
             value={name}
@@ -132,9 +154,16 @@ export default function BroadcastListsPanel({ onMessage }) {
             </ul>
           )}
         </div>
-        <button type="submit" className={styles.btn} disabled={busy || friends.length === 0}>
-          Create list
-        </button>
+        <div className={styles.formActions}>
+          <button type="submit" className={styles.btn} disabled={busy || friends.length === 0}>
+            {editingId ? 'Save changes' : 'Create list'}
+          </button>
+          {editingId && (
+            <button type="button" className={styles.btnSecondary} disabled={busy} onClick={cancelEdit}>
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
       {loading ? (
@@ -153,14 +182,24 @@ export default function BroadcastListsPanel({ onMessage }) {
                     .join(', ')}
                 </span>
               </div>
-              <button
-                type="button"
-                className={styles.btnDanger}
-                disabled={busy}
-                onClick={() => handleDelete(item.id)}
-              >
-                Delete
-              </button>
+              <div className={styles.itemActions}>
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  disabled={busy}
+                  onClick={() => startEdit(item)}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className={styles.btnDanger}
+                  disabled={busy}
+                  onClick={() => handleDelete(item.id)}
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ))}
         </ul>

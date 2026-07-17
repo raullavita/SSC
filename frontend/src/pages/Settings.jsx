@@ -11,7 +11,7 @@ import {
   setPreferredLanguage,
   getAutoTranslateEnabled,
 } from '../lib/chatPrefs';
-import { DEFAULT_LANGUAGES, getTranslationProviderStatus } from '../lib/translation';
+import { DEFAULT_LANGUAGES } from '../lib/translation';
 import { fetchTranslationConfig, getTranslationConfig } from '../lib/translationConfig';
 import {
   clientFootprintClean,
@@ -41,7 +41,6 @@ export default function Settings() {
   const [panicConfirm, setPanicConfirm] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [preferredLang, setPreferredLang] = useState(() => getPreferredLanguage());
-  const [providerStatus, setProviderStatus] = useState(() => getTranslationProviderStatus());
   const [translationReady, setTranslationReady] = useState(() => getTranslationConfig().enabled);
   const [footprintOk, setFootprintOk] = useState(null);
 
@@ -54,7 +53,6 @@ export default function Settings() {
     fetchTranslationConfig()
       .then((cfg) => {
         setTranslationReady(cfg.enabled);
-        setProviderStatus(getTranslationProviderStatus());
       })
       .catch(() => {});
   }, [user]);
@@ -200,8 +198,9 @@ export default function Settings() {
         </label>
         <p className={styles.hint}>
           Translation service:{' '}
-          {translationReady ? 'available (SSC server)' : 'coming soon'}
-          {providerStatus.serverProxy === 'available' ? '' : ''}
+          {translationReady
+            ? 'available on SSC servers'
+            : 'not enabled on the server yet — messages stay in their original language'}
         </p>
       </section>
 

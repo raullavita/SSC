@@ -58,6 +58,7 @@ async def test_panic_wipe_deletes_user_row():
     counts = await panic_wipe_user(db, "user-alice-123")
     assert counts["users"] == 1
     assert counts["devices"] == 2
+    assert "user_cloud_backups" in counts
     users.delete_many.assert_awaited()
     messages.delete_many.assert_not_awaited()
 

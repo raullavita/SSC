@@ -47,10 +47,10 @@ Translation is optional and user-controlled.
 | Engine 14 | FCM push + mediasoup SFU live (gate) |
 | Auth | Email/password + Google OAuth |
 | Chat | E2EE messages, reactions, files, voice notes |
-| Calls | WebRTC mesh + SFU scaffold |
+| Calls | WebRTC mesh + mediasoup SFU for large groups |
 | Production API | Live |
 | Website | Professional landing + OSS compliance at [supersecurechat.com](https://www.supersecurechat.com) |
-| Latest release | [v0.3.1 (build 12)](https://github.com/raullavita/SSC/releases/tag/v0.3.1) — same files as [supersecurechat.com](https://www.supersecurechat.com#download) |
+| Latest release | [v0.3.1 (build 14)](https://github.com/raullavita/SSC/releases/tag/v0.3.1) — same files as [supersecurechat.com](https://www.supersecurechat.com#download) |
 
 ## Quick start (local dev)
 

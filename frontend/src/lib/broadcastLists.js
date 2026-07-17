@@ -13,6 +13,14 @@ export async function createBroadcastList({ name, recipientIds }) {
   return data.broadcast_list;
 }
 
+export async function updateBroadcastList(listId, { name, recipientIds }) {
+  const body = {};
+  if (name != null) body.name = name;
+  if (recipientIds != null) body.recipient_ids = recipientIds;
+  const data = await api.patch(`/api/broadcast_lists/${encodeURIComponent(listId)}`, body);
+  return data.broadcast_list;
+}
+
 export async function deleteBroadcastList(listId) {
   return api.delete(`/api/broadcast_lists/${encodeURIComponent(listId)}`);
 }
