@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.GroupAdd
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -99,7 +98,27 @@ fun ConversationListScreen(
         error = null
         scope.launch {
             try {
-                items = withContext(Dispatchers.IO) { conversations.listConversations() }
+                val raw = withContext(Dispatchers.IO) { conversations.listConversations() }
+                // Resolve @username for direct chats (API omits display names by design)
+                items = withContext(Dispatchers.IO) {
+                    raw.map { c ->
+                        val peer = c.peerId ?: return@map c
+                        if (c.title.contains("@") || c.type == "group") return@map c
+                        try {
+                            val u = users.lookup(peer)
+                            val label = when {
+                                !u.displayName.isNullOrBlank() && !u.username.isNullOrBlank() ->
+                                    "${u.displayName} (@${u.username})"
+                                !u.username.isNullOrBlank() -> "@${u.username}"
+                                !u.displayName.isNullOrBlank() -> u.displayName!!
+                                else -> c.title
+                            }
+                            c.copy(title = label)
+                        } catch (_: Exception) {
+                            c
+                        }
+                    }
+                }
                 storyFeed = withContext(Dispatchers.IO) {
                     stories?.feed() ?: emptyList()
                 }
@@ -125,9 +144,6 @@ fun ConversationListScreen(
                 actions = {
                     IconButton(onClick = { showGroup = true }) {
                         Icon(Icons.Default.GroupAdd, contentDescription = "New group")
-                    }
-                    IconButton(onClick = { refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
@@ -382,17 +398,18 @@ fun ConversationListScreen(
     if (showNew) {
         AlertDialog(
             onDismissRequest = { showNew = false },
-            title = { Text("New chat") },
+            title = { Text("Add contact") },
             text = {
                 Column {
                     Text(
-                        "Username (@name) or user id",
+                        "Privacy: you can only message people who accept your friend request. Enter their username.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     OutlinedTextField(
                         value = peerQuery,
                         onValueChange = { peerQuery = it },
-                        label = { Text("User") },
+                        label = { Text("Username") },
+                        placeholder = { Text("@username") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     )
@@ -402,50 +419,30 @@ fun ConversationListScreen(
                 }
             },
             confirmButton = {
-                Row {
-                    TextButton(onClick = {
-                        scope.launch {
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    val q = peerQuery.trim().removePrefix("@")
-                                    val peer = users.lookup(q)
-                                    social?.sendRequest(peer.id, note = "Hi from SSC")
-                                }
-                                error = null
-                                showNew = false
-                                peerQuery = ""
-                                statusToast = "Friend request sent"
-                            } catch (e: SscHttpClient.ApiException) {
-                                error = e.detail
-                            } catch (e: Exception) {
-                                error = e.message
+                TextButton(onClick = {
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                val q = peerQuery.trim().removePrefix("@")
+                                val peer = users.lookup(q)
+                                social?.sendRequest(peer.id, note = "Hi from SSC")
+                                    ?: throw IllegalStateException("social_unavailable")
                             }
-                        }
-                    }) { Text("Add friend") }
-                    TextButton(onClick = {
-                        scope.launch {
-                            try {
-                                val conv = withContext(Dispatchers.IO) {
-                                    val q = peerQuery.trim().removePrefix("@")
-                                    val peerId = try {
-                                        users.lookup(q).id
-                                    } catch (_: Exception) {
-                                        q
-                                    }
-                                    conversations.createDirect(peerId)
-                                }
-                                showNew = false
-                                peerQuery = ""
-                                refresh()
-                                onOpenChat(conv)
-                            } catch (e: SscHttpClient.ApiException) {
-                                error = e.detail
-                            } catch (e: Exception) {
-                                error = e.message
+                            error = null
+                            showNew = false
+                            peerQuery = ""
+                            statusToast = "Friend request sent — chat unlocks after they accept"
+                        } catch (e: SscHttpClient.ApiException) {
+                            error = when (e.detail) {
+                                "already_contacts" -> "Already contacts — find them in your chat list"
+                                "friendship_required" -> "They must accept your request first"
+                                else -> e.detail
                             }
+                        } catch (e: Exception) {
+                            error = e.message
                         }
-                    }) { Text("Chat") }
-                }
+                    }
+                }) { Text("Send request") }
             },
             dismissButton = {
                 TextButton(onClick = { showNew = false }) { Text("Cancel") }

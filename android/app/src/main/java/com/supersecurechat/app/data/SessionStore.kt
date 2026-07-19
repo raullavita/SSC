@@ -71,11 +71,17 @@ class SessionStore(context: Context) {
             prefs.edit().putBoolean(KEY_SEALED, value).apply()
         }
 
-    /** Default disappearing timer in seconds (0 = off). */
+    /**
+     * Default disappearing timer in seconds.
+     * Product default is 24h (86400). 0 = off (user must opt out deliberately).
+     */
     var disappearingSecondsDefault: Int
-        get() = prefs.getInt(KEY_DISAPPEARING, 0)
+        get() {
+            if (!prefs.contains(KEY_DISAPPEARING)) return DEFAULT_DISAPPEARING_SECONDS
+            return prefs.getInt(KEY_DISAPPEARING, DEFAULT_DISAPPEARING_SECONDS)
+        }
         set(value) {
-            prefs.edit().putInt(KEY_DISAPPEARING, value.coerceIn(0, 86_400)).apply()
+            prefs.edit().putInt(KEY_DISAPPEARING, value.coerceIn(0, 604_800)).apply()
         }
 
     val isLoggedIn: Boolean
@@ -107,6 +113,8 @@ class SessionStore(context: Context) {
 
     companion object {
         private const val PRIMARY_DEVICE_ID = "1"
+        /** Product design: messages recycle after 24 hours by default. */
+        const val DEFAULT_DISAPPEARING_SECONDS = 86_400
         private const val KEY_TOKEN = "access_token"
         private const val KEY_USER_ID = "user_id"
         private const val KEY_DISPLAY_NAME = "display_name"

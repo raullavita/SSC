@@ -39,6 +39,7 @@ fun RecoveryScreen(
     onRecovered: () -> Unit,
     onBack: () -> Unit,
 ) {
+    androidx.activity.compose.BackHandler(onBack = onBack)
     var email by remember { mutableStateOf("") }
     var passphrase by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }

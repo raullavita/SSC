@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from core.block_policy import interaction_blocked
-from core.ids import new_conversation_id, new_friend_request_id
+from core.ids import direct_conversation_key, new_conversation_id, new_friend_request_id
 from core.retention_policy import default_expires_at
 from core.ws_hub import ws_hub
 from db import get_database
@@ -159,16 +159,23 @@ async def accept_friend_request(
     if req["to_user_id"] != user_id:
         raise HTTPException(status_code=403, detail="not_request_recipient")
 
-    conv_id = new_conversation_id()
-    await db.conversations.insert_one(
-        {
-            "_id": conv_id,
-            "type": "direct",
-            "participants": [req["from_user_id"], req["to_user_id"]],
-            "created_at": now,
-            "updated_at": now,
-        }
-    )
+    a, b = req["from_user_id"], req["to_user_id"]
+    key = direct_conversation_key(a, b)
+    existing = await db.conversations.find_one({"direct_key": key})
+    if existing:
+        conv_id = existing["_id"]
+    else:
+        conv_id = new_conversation_id()
+        await db.conversations.insert_one(
+            {
+                "_id": conv_id,
+                "type": "direct",
+                "direct_key": key,
+                "participants": sorted([a, b]),
+                "created_at": now,
+                "updated_at": now,
+            }
+        )
     await db.friend_requests.update_one(
         {"_id": request_id},
         {"$set": {"status": "accepted", "accepted_at": now, "conversation_id": conv_id}},

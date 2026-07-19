@@ -17,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.supersecurechat.app.data.AuthRepository
-import com.supersecurechat.app.data.BackupRepository
 import com.supersecurechat.app.data.BroadcastRepository
 import com.supersecurechat.app.data.CallCoordinator
 import com.supersecurechat.app.data.CallsRepository
@@ -87,7 +86,7 @@ fun SscApp(pendingIntent: Intent? = null) {
     val stories = remember { StoriesRepository(http) }
     val polls = remember { PollsRepository(http) }
     val sfu = remember { SfuRepository(http) }
-    val backup = remember { BackupRepository(context, db, session, http) }
+
     val broadcast = remember { BroadcastRepository(http, signal, conversations) }
     val privacyRepo = remember { PrivacyRepository(http) }
     val search = remember { LocalSearch(db) }
@@ -388,8 +387,6 @@ fun SscApp(pendingIntent: Intent? = null) {
                         social = social,
                         signal = signal,
                         db = db,
-                        backup = backup,
-                        broadcast = broadcast,
                         privacyRepo = privacyRepo,
                         onBack = { screen = Screen.Chats },
                         onPanicDone = {

@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -31,7 +32,6 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -110,7 +110,6 @@ fun ChatThreadScreen(
     var loading by remember { mutableStateOf(true) }
     var sending by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var safetyText by remember { mutableStateOf<String?>(null) }
     var menuMessage by remember { mutableStateOf<ConversationRepository.Message?>(null) }
     var replyTo by remember { mutableStateOf<ConversationRepository.Message?>(null) }
     var editMessage by remember { mutableStateOf<ConversationRepository.Message?>(null) }
@@ -121,8 +120,8 @@ fun ChatThreadScreen(
     var pollQuestion by remember { mutableStateOf("") }
     var peerTyping by remember { mutableStateOf(false) }
     var readIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-    var threadFilter by remember { mutableStateOf("") }
     var showMembers by remember { mutableStateOf(false) }
+    var headerTitle by remember { mutableStateOf(conversation.title) }
     var members by remember { mutableStateOf<List<GroupsRepository.Member>>(emptyList()) }
     var reactionLabels by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     val scope = rememberCoroutineScope()
@@ -326,6 +325,22 @@ fun ChatThreadScreen(
     }
 
     // Presence refresh while thread open
+    // Resolve display title: "Name (@username)" when possible
+    LaunchedEffect(conversation.id, conversation.peerId, conversation.title) {
+        headerTitle = conversation.title
+        val peer = conversation.peerId ?: return@LaunchedEffect
+        try {
+            // Prefer username from local contacts / prekey path via users lookup in parent is ideal;
+            // title often already has display name from list enrichment.
+            if (!headerTitle.contains("@") && peer.isNotBlank()) {
+                // leave as-is; list screen enriches titles
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    BackHandler(onBack = onBack)
+
     LaunchedEffect(conversation.id, conversation.peerId) {
         val peer = conversation.peerId ?: return@LaunchedEffect
         while (true) {
@@ -359,11 +374,11 @@ fun ChatThreadScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text(conversation.title)
+                        Text(headerTitle)
                         val flags = buildList {
-                            if (session.sealedSenderEnabled) add("sealed")
                             if (session.disappearingSecondsDefault > 0) {
-                                add("⏱${session.disappearingSecondsDefault}s")
+                                val h = session.disappearingSecondsDefault / 3600
+                                add(if (h >= 24) "⏱ 24h" else if (h >= 1) "⏱ ${h}h" else "⏱ ${session.disappearingSecondsDefault}s")
                             }
                             if (peerTyping) add("typing…")
                             else presenceLabel?.let { add(it) }
@@ -393,53 +408,20 @@ fun ChatThreadScreen(
                                 showMembers = true
                             }
                         }) { Text("Members") }
+                        TextButton(onClick = { showPoll = true }) { Text("Poll") }
                     }
-                    TextButton(onClick = { showPoll = true }) { Text("Poll") }
                     IconButton(onClick = { startOutgoingCall(video = false) }) {
                         Icon(Icons.Default.Call, contentDescription = "Audio call")
                     }
                     IconButton(onClick = { startOutgoingCall(video = true) }) {
                         Icon(Icons.Default.Videocam, contentDescription = "Video call")
                     }
-                    if (conversation.peerId != null) {
-                        IconButton(onClick = {
-                            scope.launch {
-                                try {
-                                    val text = withContext(Dispatchers.IO) {
-                                        val key = conversations.fetchPeerIdentityKey(conversation.peerId!!)
-                                            ?: return@withContext "unavailable"
-                                        signal.safetyNumber(conversation.peerId!!, key)
-                                    }
-                                    safetyText = text
-                                } catch (e: Exception) {
-                                    error = e.message
-                                }
-                            }
-                        }) {
-                            Icon(Icons.Default.VerifiedUser, contentDescription = "Safety number")
-                        }
-                    }
                 },
             )
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            OutlinedTextField(
-                value = threadFilter,
-                onValueChange = { threadFilter = it },
-                label = { Text("Filter in thread") },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-            )
-            val visibleMessages = if (threadFilter.isBlank()) {
-                messages
-            } else {
-                messages.filter {
-                    it.plaintext?.contains(threadFilter, ignoreCase = true) == true
-                }
-            }
+            val visibleMessages = messages
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when {
                     loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
@@ -447,11 +429,6 @@ fun ChatThreadScreen(
                         error ?: "Error",
                         Modifier.align(Alignment.Center).padding(16.dp),
                         color = MaterialTheme.colorScheme.error,
-                    )
-                    visibleMessages.isEmpty() && threadFilter.isNotBlank() -> Text(
-                        "No matches for \"$threadFilter\"",
-                        Modifier.align(Alignment.Center).padding(16.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     else -> LazyColumn(
                         state = listState,
@@ -877,17 +854,6 @@ fun ChatThreadScreen(
             },
             dismissButton = {
                 TextButton(onClick = { editMessage = null }) { Text("Cancel") }
-            },
-        )
-    }
-
-    safetyText?.let { sn ->
-        AlertDialog(
-            onDismissRequest = { safetyText = null },
-            title = { Text("Safety number") },
-            text = { Text(sn.ifBlank { "Could not compute safety number" }) },
-            confirmButton = {
-                TextButton(onClick = { safetyText = null }) { Text("OK") }
             },
         )
     }

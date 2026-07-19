@@ -101,6 +101,22 @@ async def create_conversation(
             )
         }
 
+    # Privacy: no DM until both sides are contacts (accepted friend request).
+    friendship = await db.friend_requests.find_one(
+        {
+            "status": "accepted",
+            "$or": [
+                {"from_user_id": user_id, "to_user_id": body.participant_id},
+                {"from_user_id": body.participant_id, "to_user_id": user_id},
+            ],
+        }
+    )
+    if not friendship:
+        raise HTTPException(
+            status_code=403,
+            detail="friendship_required",
+        )
+
     now = datetime.now(timezone.utc)
     doc = {
         "_id": new_conversation_id(),

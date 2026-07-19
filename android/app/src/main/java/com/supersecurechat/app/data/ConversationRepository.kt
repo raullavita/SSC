@@ -305,17 +305,20 @@ class ConversationRepository(
                     } catch (e: Exception) {
                         Log.w(TAG, "decrypt fallback failed, sesame retry: ${e.message}")
                         sesame?.requestRetry(msg.id, msg.conversationId)
-                        msg.plaintext ?: if (sender == myId) "[sent]" else "[unable to decrypt]"
+                        msg.plaintext ?: if (sender == myId) "✓ Sent" else "Message unavailable"
                     }
                 }
-                sender == myId -> msg.plaintext ?: "[sent]"
+                sender == myId -> msg.plaintext ?: "✓ Sent"
                 else -> "[encrypted]"
             }
         } catch (e: Exception) {
             Log.w(TAG, "decryptIfPossible: ${e.message}")
-            if (sender == myId) msg.plaintext ?: "[sent]" else {
+            if (sender == myId) {
+                msg.plaintext ?: "✓ Sent"
+            } else {
                 sesame?.requestRetry(msg.id, msg.conversationId)
-                "[unable to decrypt]"
+                // Do not show raw crypto failure strings in the bubble forever
+                msg.plaintext ?: "Message unavailable"
             }
         }
     }
