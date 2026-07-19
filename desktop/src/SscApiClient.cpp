@@ -454,6 +454,7 @@ void SscApiClient::decryptNext(int index)
     QJsonObject m = m_rawMessages.at(index).toObject();
     const QString ct = m.value(QStringLiteral("ciphertext")).toString();
     const QString sender = m.value(QStringLiteral("sender_id")).toString();
+    const QString protocol = m.value(QStringLiteral("protocol")).toString();
     const QString myId = m_session->userId();
     if (ct.isEmpty()) {
         m.insert(QStringLiteral("plaintext"), QString());
@@ -461,11 +462,40 @@ void SscApiClient::decryptNext(int index)
         decryptNext(index + 1);
         return;
     }
-    if (sender == myId) {
+    if (sender == myId && !protocol.contains(QStringLiteral("group_sender_key"))) {
         m.insert(QStringLiteral("plaintext"), QStringLiteral("[sent]"));
         m.insert(QStringLiteral("mine"), true);
         m_messages.append(m);
         decryptNext(index + 1);
+        return;
+    }
+    // Group sender-key dist: ingest then show marker
+    if (protocol.contains(QStringLiteral("sender_key_dist"))) {
+        m_crypto->call(QStringLiteral("groupProcessDistribution"),
+                       QJsonObject{{QStringLiteral("senderId"), sender},
+                                   {QStringLiteral("deviceId"), QStringLiteral("1")},
+                                   {QStringLiteral("ciphertext"), ct}},
+                       [this, m, index](bool, const QJsonObject &, const QString &) mutable {
+                           m.insert(QStringLiteral("plaintext"), QStringLiteral("[sender key]"));
+                           m_messages.append(m);
+                           decryptNext(index + 1);
+                       });
+        return;
+    }
+    if (protocol.contains(QStringLiteral("group_sender_key"))) {
+        m_crypto->call(QStringLiteral("groupDecrypt"),
+                       QJsonObject{{QStringLiteral("senderId"), sender},
+                                   {QStringLiteral("deviceId"), QStringLiteral("1")},
+                                   {QStringLiteral("ciphertext"), ct}},
+                       [this, m, index](bool ok, const QJsonObject &result, const QString &err) mutable {
+                           if (ok) m.insert(QStringLiteral("plaintext"), result.value(QStringLiteral("plaintext")).toString());
+                           else {
+                               m.insert(QStringLiteral("plaintext"), QStringLiteral("[unable to decrypt]"));
+                               m.insert(QStringLiteral("decrypt_error"), err);
+                           }
+                           m_messages.append(m);
+                           decryptNext(index + 1);
+                       });
         return;
     }
     const QString peer = sender.isEmpty() ? m_activePeerId : sender;
@@ -490,28 +520,105 @@ void SscApiClient::sendMessage(const QString &conversationId, const QString &pla
     setBusy(true);
     setError({});
     QString peerId = m_activePeerId;
-    if (peerId.isEmpty()) {
+    QString groupId = m_activeGroupId;
+    if (peerId.isEmpty() || groupId.isEmpty()) {
         for (const auto &v : m_conversations) {
             const auto c = v.toObject();
             if (c.value(QStringLiteral("id")).toString() == conversationId
                 || c.value(QStringLiteral("_id")).toString() == conversationId) {
-                peerId = c.value(QStringLiteral("peer_id")).toString();
+                if (peerId.isEmpty()) peerId = c.value(QStringLiteral("peer_id")).toString();
+                if (groupId.isEmpty()) groupId = c.value(QStringLiteral("group_id")).toString();
                 break;
             }
         }
     }
-    if (peerId.isEmpty() && m_activeGroupId.isEmpty()) {
+    if (peerId.isEmpty() && groupId.isEmpty()) {
         setBusy(false);
         setError(QStringLiteral("peer_id_unknown"));
         return;
     }
-    // Group sender-key path not fully ported — for groups encrypt to first member later
-    if (peerId.isEmpty()) {
-        setBusy(false);
-        setError(QStringLiteral("group_send_use_member_chat_for_now"));
+    m_pendingReplyTo = replyTo;
+    // Group sender-key path (Android parity)
+    if (!groupId.isEmpty() && peerId.isEmpty()) {
+        m_activeGroupId = groupId;
+        // Ensure distribution then encrypt
+        m_crypto->call(QStringLiteral("groupDistributionState"),
+                       QJsonObject{{QStringLiteral("groupId"), groupId}},
+                       [this, conversationId, groupId, plaintext, replyTo](bool ok, const QJsonObject &st, const QString &) {
+                           auto doGroupEncrypt = [this, conversationId, groupId, plaintext, replyTo]() {
+                               m_crypto->call(QStringLiteral("groupEncrypt"),
+                                              QJsonObject{{QStringLiteral("groupId"), groupId},
+                                                          {QStringLiteral("plaintext"), plaintext}},
+                                              [this, conversationId, plaintext, replyTo](bool ok2, const QJsonObject &result,
+                                                                                         const QString &err2) {
+                                                  if (!ok2) {
+                                                      setBusy(false);
+                                                      setError(err2);
+                                                      return;
+                                                  }
+                                                  QJsonObject body{
+                                                      {QStringLiteral("ciphertext"),
+                                                       result.value(QStringLiteral("ciphertext")).toString()},
+                                                      {QStringLiteral("protocol"),
+                                                       result.value(QStringLiteral("protocol"))
+                                                           .toString(QStringLiteral("signal_v1_group_sender_key"))},
+                                                  };
+                                                  if (!replyTo.isEmpty()) body.insert(QStringLiteral("reply_to"), replyTo);
+                                                  httpJson(QStringLiteral("POST"),
+                                                           QStringLiteral("/api/conversations/%1/messages").arg(conversationId),
+                                                           body,
+                                                           [this, conversationId, plaintext](bool ok3, QJsonObject, QString err3) {
+                                                               setBusy(false);
+                                                               if (!ok3) {
+                                                                   setError(err3);
+                                                                   return;
+                                                               }
+                                                               QJsonObject local{
+                                                                   {QStringLiteral("id"),
+                                                                    QStringLiteral("local-")
+                                                                        + QString::number(QDateTime::currentMSecsSinceEpoch())},
+                                                                   {QStringLiteral("plaintext"), plaintext},
+                                                                   {QStringLiteral("mine"), true},
+                                                                   {QStringLiteral("sender_id"), m_session->userId()},
+                                                               };
+                                                               m_messages.append(local);
+                                                               emit messagesChanged();
+                                                               openConversation(conversationId, m_activePeerId, m_activeGroupId);
+                                                           });
+                                              });
+                           };
+                           if (!ok || !st.value(QStringLiteral("distributed")).toBool()) {
+                               m_crypto->call(QStringLiteral("groupCreateDistribution"),
+                                              QJsonObject{{QStringLiteral("groupId"), groupId}},
+                                              [this, conversationId, groupId, doGroupEncrypt](bool okd, const QJsonObject &dist,
+                                                                                              const QString &errd) {
+                                                  if (!okd) {
+                                                      setBusy(false);
+                                                      setError(errd);
+                                                      return;
+                                                  }
+                                                  // Post distribution message to group conversation
+                                                  httpJson(QStringLiteral("POST"),
+                                                           QStringLiteral("/api/conversations/%1/messages").arg(conversationId),
+                                                           QJsonObject{{QStringLiteral("ciphertext"),
+                                                                        dist.value(QStringLiteral("ciphertext")).toString()},
+                                                                       {QStringLiteral("protocol"),
+                                                                        QStringLiteral("signal_v1_group_sender_key_dist")}},
+                                                           [this, groupId, doGroupEncrypt](bool, QJsonObject, QString) {
+                                                               m_crypto->call(QStringLiteral("groupMarkDistributed"),
+                                                                              QJsonObject{{QStringLiteral("groupId"), groupId}},
+                                                                              {});
+                                                               doGroupEncrypt();
+                                                           });
+                                              });
+                           } else {
+                               doGroupEncrypt();
+                           }
+                       });
+        sendTyping(conversationId, false);
         return;
     }
-    m_pendingReplyTo = replyTo;
+    // Direct 1:1 (optionally multi-device via device list)
     fetchPeerBundleAndEncrypt(conversationId, peerId, plaintext, replyTo);
     sendTyping(conversationId, false);
 }

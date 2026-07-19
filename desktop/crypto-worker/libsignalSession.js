@@ -572,9 +572,17 @@ function getSession(userDataPath) {
 }
 
 function wipeLocalData(userDataPath) {
-  // Desktop worker stores under userDataPath root (already ssc-signal path from Qt)
+  try {
+    const { wipeGroupSenderKeyData } = require('./groupSenderKeySession');
+    wipeGroupSenderKeyData(userDataPath);
+  } catch (_) {
+    /* optional */
+  }
   const root = path.resolve(String(userDataPath || ''));
-  if (root && fs.existsSync(root)) {
+  const signalRoot = path.join(root, 'ssc-signal');
+  if (fs.existsSync(signalRoot)) {
+    fs.rmSync(signalRoot, { recursive: true, force: true });
+  } else if (root && fs.existsSync(root) && path.basename(root) === 'ssc-signal') {
     fs.rmSync(root, { recursive: true, force: true });
   }
   session = null;

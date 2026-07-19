@@ -53,7 +53,7 @@ Crypto-worker + libsignal live under `crypto-worker/`.
 | Broadcast lists | Yes |
 | Realtime WebSocket | Yes |
 | Call signaling | Yes (media WebRTC attach later) |
-| Group sender-key multi encrypt | Partial (direct preferred) |
+| Group sender-key multi encrypt | Yes (dist + encrypt/decrypt) |
 
 ## Android ↔ Windows
 

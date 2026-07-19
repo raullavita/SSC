@@ -9,9 +9,14 @@ const readline = require('readline');
 const path = require('path');
 const { setActiveRoot } = require('./secureFileStore');
 const { getSession, wipeLocalData } = require('./libsignalSession');
+const {
+  getGroupSenderKeySession,
+  wipeGroupSenderKeyData,
+} = require('./groupSenderKeySession');
 
-let userDataPath = path.join(process.env.APPDATA || process.env.HOME || '.', 'SuperSecureChat', 'ssc-signal');
+let userDataPath = path.join(process.env.APPDATA || process.env.HOME || '.', 'SuperSecureChat');
 let session = null;
+let groupSession = null;
 
 function ensureSession() {
   setActiveRoot(userDataPath);
@@ -21,25 +26,47 @@ function ensureSession() {
   return session;
 }
 
+function ensureGroup() {
+  setActiveRoot(userDataPath);
+  if (!groupSession) {
+    groupSession = getGroupSenderKeySession(userDataPath);
+  }
+  return groupSession;
+}
+
 async function handle(cmd, args = {}) {
   switch (cmd) {
     case 'ping':
-      return { pong: true, version: '0.4.0' };
+      return { pong: true, version: '0.4.0', group: true };
     case 'configure': {
       if (args.userDataPath) {
         userDataPath = String(args.userDataPath);
         session = null;
+        groupSession = null;
       }
       const s = ensureSession();
       s.configure({
         deviceId: args.deviceId || '1',
         localUserId: args.localUserId || null,
       });
+      const g = ensureGroup();
+      if (g.configure) {
+        g.configure({
+          deviceId: args.deviceId || '1',
+          localUserId: args.localUserId || null,
+        });
+      }
       return { ok: true, root: userDataPath };
     }
     case 'wipe': {
       wipeLocalData(userDataPath);
+      try {
+        wipeGroupSenderKeyData(userDataPath);
+      } catch (_) {
+        /* ignore */
+      }
       session = null;
+      groupSession = null;
       return { wiped: true };
     }
     case 'generatePreKeyBundle': {
@@ -76,6 +103,36 @@ async function handle(cmd, args = {}) {
     }
     case 'decryptBytes': {
       return ensureSession().decryptBytes(args.ciphertext);
+    }
+    case 'groupCreateDistribution': {
+      const g = ensureGroup();
+      return g.createDistributionMessage(args.groupId);
+    }
+    case 'groupProcessDistribution': {
+      const g = ensureGroup();
+      return g.processDistribution(args.senderId, args.deviceId || '1', args.ciphertext);
+    }
+    case 'groupEncrypt': {
+      const g = ensureGroup();
+      const ciphertext = await g.encryptGroupPlaintext(args.groupId, args.plaintext);
+      return { ciphertext, protocol: 'signal_v1_group_sender_key' };
+    }
+    case 'groupDecrypt': {
+      const g = ensureGroup();
+      const plain = await g.decryptGroupCiphertext(
+        args.senderId,
+        args.deviceId || '1',
+        args.ciphertext,
+      );
+      return { plaintext: plain };
+    }
+    case 'groupDistributionState': {
+      const g = ensureGroup();
+      return g.getDistributionState(args.groupId);
+    }
+    case 'groupMarkDistributed': {
+      const g = ensureGroup();
+      return g.markDistributionSent(args.groupId);
     }
     default:
       throw new Error(`unknown_cmd:${cmd}`);

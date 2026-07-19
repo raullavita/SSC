@@ -30,10 +30,25 @@ def test_electron_preload_injects_client_header():
 
 
 def test_build_electron_uses_numeric_build():
+    """Legacy Electron script kept for emergency rebuilds; product Windows path is Qt."""
     script = (REPO / "scripts" / "build_electron.ps1").read_text(encoding="utf-8")
-    assert 'REACT_APP_SSC_BUILD = "14"' in script
+    # Aligned with release_policy 0.4.0 / build 15 (no longer hard-coded 14)
+    assert '$Build = "15"' in script or 'REACT_APP_SSC_BUILD = "15"' in script
+    assert "REACT_APP_SSC_BUILD" in script
     assert 'REACT_APP_SSC_LANDING_ONLY = "false"' in script
     assert 'PUBLIC_URL = "."' in script
+
+
+def test_windows_qt_desktop_product_path():
+    """Native Qt desktop is the Windows product client (not Electron UI)."""
+    cmake = (REPO / "desktop" / "CMakeLists.txt").read_text(encoding="utf-8")
+    build = (REPO / "scripts" / "build_desktop_windows.ps1").read_text(encoding="utf-8")
+    api = (REPO / "desktop" / "src" / "SscApiClient.cpp").read_text(encoding="utf-8")
+    assert "ssc_desktop" in cmake
+    assert "Qt6" in cmake
+    assert "build_desktop_windows" in build or "SSC-Desktop" in build
+    assert "windows/0.4.0/15" in api
+    assert (REPO / "desktop" / "crypto-worker" / "worker.js").is_file()
 
 
 def test_frontend_installed_shell_hash_router():
