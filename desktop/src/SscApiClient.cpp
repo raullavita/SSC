@@ -881,11 +881,42 @@ void SscApiClient::setChatPrivacy(const QString &conversationId, bool readReceip
 
 void SscApiClient::startNewDirect(const QString &peerUserId)
 {
-    if (peerUserId.trimmed().isEmpty()) return;
+    QString peer = peerUserId.trimmed();
+    if (peer.startsWith(QLatin1Char('@'))) peer = peer.mid(1).trimmed();
+    if (peer.isEmpty()) return;
+
+    // If caller passed a username (not a raw id), resolve first then open chat.
+    // User ids from this API are typically "u_..." prefixes; usernames are lowercase alnum.
+    const bool looksLikeId = peer.startsWith(QLatin1String("u_")) || peer.length() >= 20;
+    if (!looksLikeId) {
+        setBusy(true);
+        const QString path =
+            QStringLiteral("/api/users/lookup/%1").arg(QString::fromUtf8(QUrl::toPercentEncoding(peer.toLower())));
+        httpJson(QStringLiteral("GET"), path, {}, [this, peer](bool ok, QJsonObject obj, QString err) {
+            if (!ok) {
+                setBusy(false);
+                setError(QStringLiteral("User not found: @") + peer);
+                return;
+            }
+            auto user = obj.value(QStringLiteral("user")).toObject();
+            if (user.isEmpty()) user = obj;
+            const QString id = user.value(QStringLiteral("id")).toString(user.value(QStringLiteral("_id")).toString());
+            if (id.isEmpty()) {
+                setBusy(false);
+                setError(QStringLiteral("user_id_missing"));
+                return;
+            }
+            // re-enter with resolved id
+            setBusy(false);
+            startNewDirect(id);
+        });
+        return;
+    }
+
     setBusy(true);
     httpJson(QStringLiteral("POST"), QStringLiteral("/api/conversations"),
-             QJsonObject{{QStringLiteral("participant_id"), peerUserId.trimmed()}},
-             [this, peerUserId](bool ok, QJsonObject obj, QString err) {
+             QJsonObject{{QStringLiteral("participant_id"), peer}},
+             [this, peer](bool ok, QJsonObject obj, QString err) {
                  setBusy(false);
                  if (!ok) {
                      setError(err);
@@ -896,31 +927,44 @@ void SscApiClient::startNewDirect(const QString &peerUserId)
                  const QString id =
                      conv.value(QStringLiteral("id")).toString(conv.value(QStringLiteral("_id")).toString());
                  refreshConversations();
-                 openConversation(id, peerUserId.trimmed(), {});
+                 openConversation(id, peer, {});
+                 setStatus(QStringLiteral("Chat ready"));
              });
 }
 
 void SscApiClient::searchUsers(const QString &query)
 {
-    const QString q = query.trimmed();
+    // Privacy model: no global directory. Lookup exact username (@name) or user id.
+    QString q = query.trimmed();
+    if (q.startsWith(QLatin1Char('@'))) q = q.mid(1).trimmed();
+    q = q.toLower();
     m_userSearchResults = {};
     emit userSearchResultsChanged();
     if (q.isEmpty()) return;
+    setStatus(QStringLiteral("Looking up @") + q + QStringLiteral("…"));
     const QString path =
         QStringLiteral("/api/users/lookup/%1").arg(QString::fromUtf8(QUrl::toPercentEncoding(q)));
-    httpJson(QStringLiteral("GET"), path, {}, [this, q](bool ok, QJsonObject obj, QString) {
+    httpJson(QStringLiteral("GET"), path, {}, [this, q](bool ok, QJsonObject obj, QString err) {
         if (!ok) {
-            httpJson(QStringLiteral("GET"), QStringLiteral("/api/users/by-username/") + q, {},
-                     [this, q](bool ok2, QJsonObject obj2, QString) {
+            httpJson(QStringLiteral("GET"),
+                     QStringLiteral("/api/users/by-username/")
+                         + QString::fromUtf8(QUrl::toPercentEncoding(q)),
+                     {},
+                     [this, q](bool ok2, QJsonObject obj2, QString err2) {
                          if (!ok2) {
-                             m_userSearchResults = QJsonArray{QJsonObject{{QStringLiteral("id"), q},
-                                                                          {QStringLiteral("display_name"), q}}};
-                         } else {
-                             auto user = obj2.value(QStringLiteral("user")).toObject();
-                             if (user.isEmpty()) user = obj2;
-                             m_userSearchResults = QJsonArray{user};
+                             m_userSearchResults = {};
+                             emit userSearchResultsChanged();
+                             setError(QStringLiteral("User not found: @") + q
+                                      + QStringLiteral(" (use exact username)"));
+                             setStatus(QStringLiteral("No match for @") + q);
+                             return;
                          }
+                         auto user = obj2.value(QStringLiteral("user")).toObject();
+                         if (user.isEmpty()) user = obj2;
+                         m_userSearchResults = QJsonArray{user};
                          emit userSearchResultsChanged();
+                         setStatus(QStringLiteral("Found @")
+                                   + user.value(QStringLiteral("username")).toString(q));
                      });
             return;
         }
@@ -928,6 +972,9 @@ void SscApiClient::searchUsers(const QString &query)
         if (user.isEmpty()) user = obj;
         m_userSearchResults = QJsonArray{user};
         emit userSearchResultsChanged();
+        setStatus(QStringLiteral("Found @")
+                  + user.value(QStringLiteral("username")).toString(q));
+        Q_UNUSED(err);
     });
 }
 

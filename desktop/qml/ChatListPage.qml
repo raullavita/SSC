@@ -118,6 +118,14 @@ Page {
                 color: Theme.primary
                 font.bold: true
             }
+            Label {
+                visible: panelMode.currentIndex === 0
+                text: "No public user list (privacy). Type exact username, e.g. dots or @dots"
+                color: Theme.onSurfaceVariant
+                font.pixelSize: 11
+                wrapMode: Text.Wrap
+                Layout.fillWidth: true
+            }
             TabBar {
                 id: panelMode
                 Layout.fillWidth: true
@@ -128,10 +136,62 @@ Page {
                 id: peerQuery
                 visible: panelMode.currentIndex === 0
                 Layout.fillWidth: true
-                placeholderText: "Username or user id"
+                placeholderText: "Exact username (e.g. dots) or user id"
                 color: Theme.onSurface
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
                 onTextChanged: if (text.length >= 2) sscApi.searchUsers(text)
+                onAccepted: {
+                    if (text.length >= 2) sscApi.searchUsers(text)
+                }
+            }
+            // Recent chat peers (started chats stay on main list)
+            Label {
+                visible: panelMode.currentIndex === 0 && sscApi.conversations.length > 0
+                text: "Recent chats"
+                color: Theme.secondary
+                font.pixelSize: 11
+            }
+            Repeater {
+                model: panelMode.currentIndex === 0 ? sscApi.conversations : []
+                delegate: Button {
+                    visible: !!(modelData.peer_id)
+                    Layout.fillWidth: true
+                    flat: true
+                    text: (modelData.title || modelData.peer_username || modelData.peer_id || "Chat")
+                          + (modelData.peer_id ? " · open" : "")
+                    onClicked: {
+                        const id = modelData.id || modelData._id
+                        sscApi.openConversation(id, modelData.peer_id || "", modelData.group_id || "")
+                        newChatRow.visible = false
+                    }
+                }
+            }
+            Label {
+                visible: panelMode.currentIndex === 0 && sscApi.friendRequests.length > 0
+                text: "Friend requests"
+                color: Theme.secondary
+                font.pixelSize: 11
+            }
+            Repeater {
+                model: panelMode.currentIndex === 0 ? sscApi.friendRequests : []
+                delegate: RowLayout {
+                    Layout.fillWidth: true
+                    Button {
+                        Layout.fillWidth: true
+                        flat: true
+                        text: "From " + (modelData.from_user_id || modelData.from || "?")
+                        onClicked: {
+                            const pid = modelData.from_user_id || ""
+                            if (pid) sscApi.startNewDirect(pid)
+                            newChatRow.visible = false
+                        }
+                    }
+                    Button {
+                        text: "Accept"
+                        flat: true
+                        onClicked: sscApi.acceptFriendRequest(modelData.id || modelData._id)
+                    }
+                }
             }
             TextField {
                 id: groupName
@@ -149,31 +209,50 @@ Page {
                 color: Theme.onSurface
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
+            Label {
+                visible: panelMode.currentIndex === 0 && sscApi.userSearchResults.length > 0
+                text: "Search result"
+                color: Theme.secondary
+                font.pixelSize: 11
+            }
             Repeater {
                 model: panelMode.currentIndex === 0 ? sscApi.userSearchResults : []
                 delegate: Button {
                     Layout.fillWidth: true
                     text: (modelData.display_name || modelData.username || modelData.id || "") +
                           (modelData.username ? " @" + modelData.username : "")
+                          + " — Chat"
+                    Material.background: Theme.primary
+                    Material.foreground: Theme.onPrimary
                     onClicked: {
-                        const id = modelData.id || modelData._id || peerQuery.text
-                        sscApi.startNewDirect(id)
+                        const id = modelData.id || modelData._id || ""
+                        if (id) sscApi.startNewDirect(id)
                         newChatRow.visible = false
+                        peerQuery.text = ""
                     }
                 }
             }
             RowLayout {
                 Layout.fillWidth: true
                 Button {
-                    text: panelMode.currentIndex === 0 ? "Open chat" : "Create group"
+                    text: panelMode.currentIndex === 0 ? "Lookup & chat" : "Create group"
                     Material.background: Theme.primary
                     Material.foreground: Theme.onPrimary
                     onClicked: {
-                        if (panelMode.currentIndex === 0)
-                            sscApi.startNewDirect(peerQuery.text)
-                        else
+                        if (panelMode.currentIndex === 0) {
+                            // Prefer resolved search hit; else lookup then open
+                            if (sscApi.userSearchResults.length > 0) {
+                                const u = sscApi.userSearchResults[0]
+                                const id = u.id || u._id || ""
+                                if (id) sscApi.startNewDirect(id)
+                            } else if (peerQuery.text.length >= 2) {
+                                sscApi.searchUsers(peerQuery.text)
+                            }
+                        } else {
                             sscApi.createGroup(groupName.text, groupMembers.text)
-                        newChatRow.visible = false
+                        }
+                        if (panelMode.currentIndex !== 0)
+                            newChatRow.visible = false
                     }
                 }
                 Button {
@@ -195,7 +274,13 @@ Page {
         font.pixelSize: 24
         Material.background: Theme.primary
         Material.foreground: Theme.onPrimary
-        onClicked: newChatRow.visible = !newChatRow.visible
+        onClicked: {
+            newChatRow.visible = !newChatRow.visible
+            if (newChatRow.visible) {
+                sscApi.refreshConversations()
+                sscApi.refreshFriendRequests()
+            }
+        }
         z: 10
     }
 
