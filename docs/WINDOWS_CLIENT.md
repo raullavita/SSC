@@ -52,8 +52,11 @@ Crypto-worker + libsignal live under `crypto-worker/`.
 | Cloud backup API | Yes (desktop envelope) |
 | Broadcast lists | Yes |
 | Realtime WebSocket | Yes |
-| Call signaling | Yes (media WebRTC attach later) |
+| Call signaling + WebRTC media worker | Yes (audio 1:1 via @roamhq/wrtc) |
 | Group sender-key multi encrypt | Yes (dist + encrypt/decrypt) |
+| Multi-device Sesame encrypt | Yes (`device_ciphertexts` map) |
+| Sesame decrypt retry-request | Yes |
+| Edit message | Yes |
 
 ## Android ↔ Windows
 

@@ -9,7 +9,11 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickControls2 WebSockets)
 
 set(SSC_CRYPTO_WORKER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/crypto-worker")
-add_compile_definitions(SSC_CRYPTO_WORKER_DIR="${SSC_CRYPTO_WORKER_DIR}")
+set(SSC_MEDIA_WORKER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/media-worker")
+add_compile_definitions(
+    SSC_CRYPTO_WORKER_DIR="${SSC_CRYPTO_WORKER_DIR}"
+    SSC_MEDIA_WORKER_DIR="${SSC_MEDIA_WORKER_DIR}"
+)
 
 qt_add_executable(ssc_desktop
     src/main.cpp
@@ -23,6 +27,8 @@ qt_add_executable(ssc_desktop
     src/SscTurnstileHelper.h
     src/SscRealtime.cpp
     src/SscRealtime.h
+    src/SscCallEngine.cpp
+    src/SscCallEngine.h
 )
 
 qt_add_qml_module(ssc_desktop
@@ -50,13 +56,17 @@ target_link_libraries(ssc_desktop PRIVATE
     Qt6::WebSockets
 )
 
-# Copy crypto-worker next to binary for runtime
+# Copy workers next to binary for runtime
 add_custom_command(TARGET ssc_desktop POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/crypto-worker"
         "$<TARGET_FILE_DIR:ssc_desktop>/crypto-worker"
-    COMMENT "Copy crypto-worker for libsignal bridge"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/media-worker"
+        "$<TARGET_FILE_DIR:ssc_desktop>/media-worker"
+    COMMENT "Copy crypto-worker and media-worker"
 )
 
 install(TARGETS ssc_desktop RUNTIME DESTINATION bin)
 install(DIRECTORY crypto-worker/ DESTINATION bin/crypto-worker)
+install(DIRECTORY media-worker/ DESTINATION bin/media-worker)

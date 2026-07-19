@@ -4,6 +4,7 @@
 #include <QNetworkAccessManager>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QStringList>
 #include <functional>
 #include "SscSession.h"
 #include "SscCryptoBridge.h"
@@ -197,8 +198,12 @@ private:
     void uploadPrekeys(const QJsonObject &bundle);
     void fetchPeerBundleAndEncrypt(const QString &conversationId, const QString &peerId, const QString &plaintext,
                                    const QString &replyTo);
+    void encryptForDevices(const QString &conversationId, const QString &peerId, const QStringList &deviceIds,
+                           int index, const QString &plaintext, const QString &replyTo, QJsonObject deviceMap);
     void postCiphertext(const QString &conversationId, const QString &ciphertext, const QString &plaintext,
-                        const QString &replyTo);
+                        const QString &replyTo, const QJsonObject &deviceCiphertexts = {});
+    void establishThenEncryptDevice(const QString &peerId, const QString &deviceId, const QString &plaintext,
+                                    const std::function<void(bool, QString, QString)> &done);
     void decryptNext(int index);
     void handleRealtime(const QString &type, const QJsonObject &payload);
     void httpJson(const QString &method, const QString &path, const QJsonObject &body,

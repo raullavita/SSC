@@ -109,6 +109,19 @@ $cwOut = Join-Path $OutDir "crypto-worker"
 if (Test-Path $cwOut) { Remove-Item $cwOut -Recurse -Force }
 Copy-Item -Recurse -Force $Worker $cwOut
 
+# media-worker (WebRTC)
+$Media = Join-Path $Desktop "media-worker"
+Push-Location $Media
+if (-not (Test-Path "node_modules\@roamhq\wrtc") -and -not (Test-Path "node_modules\wrtc")) {
+    Write-Host "npm install media-worker (wrtc)..."
+    npm install
+    if ($LASTEXITCODE -ne 0) { Write-Warning "media-worker npm install failed - calls may be signaling-only" }
+}
+Pop-Location
+$mwOut = Join-Path $OutDir "media-worker"
+if (Test-Path $mwOut) { Remove-Item $mwOut -Recurse -Force }
+if (Test-Path $Media) { Copy-Item -Recurse -Force $Media $mwOut }
+
 # Bundle portable Node next to EXE
 $runtimeNode = Join-Path $OutDir "runtime\node"
 New-Item -ItemType Directory -Force -Path $runtimeNode | Out-Null

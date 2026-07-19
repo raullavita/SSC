@@ -284,8 +284,20 @@ Page {
                     }
                     ToolButton {
                         text: "📞"
-                        visible: sscApi.activeConversationId.length > 0
-                        onClicked: sscApi.startCall(sscApi.activeConversationId, false)
+                        visible: sscApi.activeConversationId.length > 0 && sscApi.activePeerId.length > 0
+                        onClicked: sscCalls.startOutgoing(sscApi.activeConversationId, sscApi.activePeerId, false)
+                    }
+                    Label {
+                        text: sscCalls.callState
+                        color: Theme.secondary
+                        font.pixelSize: 11
+                        visible: sscCalls.inCall
+                    }
+                    ToolButton {
+                        text: "Hangup"
+                        visible: sscCalls.inCall
+                        Material.foreground: Theme.error
+                        onClicked: sscCalls.hangup()
                     }
                     ToolButton {
                         text: "👥"
@@ -381,6 +393,17 @@ Page {
                                     Material.foreground: Theme.error
                                     onClicked: sscApi.deleteMessage(mid, "everyone")
                                 }
+                                Button {
+                                    text: "Edit"
+                                    flat: true
+                                    font.pixelSize: 10
+                                    visible: mine
+                                    onClicked: {
+                                        editDialog.messageId = mid
+                                        editDialog.draft = modelData.plaintext || ""
+                                        editDialog.open()
+                                    }
+                                }
                             }
                         }
                     }
@@ -474,6 +497,23 @@ Page {
     }
 
     Dialog {
+        id: editDialog
+        property string messageId: ""
+        property alias draft: editField.text
+        title: "Edit message"
+        modal: true
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        TextField {
+            id: editField
+            width: 320
+            placeholderText: "New text"
+        }
+        onAccepted: {
+            if (messageId.length) sscApi.editMessage(messageId, editField.text)
+        }
+    }
+
+    Dialog {
         id: pollDialog
         title: "Create poll"
         modal: true
@@ -538,22 +578,36 @@ Page {
         target: sscApi
         function onIncomingCall(callId, fromUserId, video) {
             callDialog.callId = callId
+            callDialog.fromUserId = fromUserId
+            callDialog.video = video
             callDialog.text = "Incoming " + (video ? "video" : "audio") + " call from " + fromUserId
             callDialog.open()
+        }
+    }
+    Connections {
+        target: sscCalls
+        function onCallError(detail) {
+            // surface via API status
+            console.log("call error", detail)
         }
     }
 
     Dialog {
         id: callDialog
         property string callId: ""
+        property string fromUserId: ""
+        property bool video: false
+        property string text: ""
         title: "Call"
         modal: true
         standardButtons: Dialog.Yes | Dialog.No
         Label { text: callDialog.text; wrapMode: Text.WordWrap; width: 300 }
-        property string text: ""
-        onRejected: if (callId) sscApi.endCall(callId, "declined")
-        onAccepted: setStatusNote()
-        function setStatusNote() { /* accept path: media TBD; signaling already created */ }
+        onRejected: {
+            if (callId) sscApi.endCall(callId, "declined")
+        }
+        onAccepted: {
+            sscCalls.acceptIncoming(callId, fromUserId, video)
+        }
     }
 
     Component.onCompleted: {

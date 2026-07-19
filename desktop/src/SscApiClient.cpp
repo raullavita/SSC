@@ -503,9 +503,20 @@ void SscApiClient::decryptNext(int index)
                    QJsonObject{{QStringLiteral("ciphertext"), ct},
                                {QStringLiteral("peerId"), peer},
                                {QStringLiteral("deviceId"), QStringLiteral("1")}},
-                   [this, m, index](bool ok, const QJsonObject &result, const QString &err) mutable {
-                       if (ok) m.insert(QStringLiteral("plaintext"), result.value(QStringLiteral("plaintext")).toString());
-                       else {
+                   [this, m, index, peer](bool ok, const QJsonObject &result, const QString &err) mutable {
+                       if (ok) {
+                           m.insert(QStringLiteral("plaintext"), result.value(QStringLiteral("plaintext")).toString());
+                       } else {
+                           // Sesame multi-device retry request (Android ConversationRepository)
+                           const QString mid = m.value(QStringLiteral("id")).toString();
+                           if (!mid.isEmpty() && !m_activeConversationId.isEmpty()) {
+                               httpJson(QStringLiteral("POST"), QStringLiteral("/api/messages/retry-request"),
+                                        QJsonObject{{QStringLiteral("message_id"), mid},
+                                                    {QStringLiteral("conversation_id"), m_activeConversationId},
+                                                    {QStringLiteral("requester_device_id"), m_session->deviceId()}},
+                                        {});
+                           }
+                           Q_UNUSED(peer);
                            m.insert(QStringLiteral("plaintext"), QStringLiteral("[unable to decrypt]"));
                            m.insert(QStringLiteral("decrypt_error"), err);
                        }
@@ -623,26 +634,24 @@ void SscApiClient::sendMessage(const QString &conversationId, const QString &pla
     sendTyping(conversationId, false);
 }
 
-void SscApiClient::fetchPeerBundleAndEncrypt(const QString &conversationId, const QString &peerId,
-                                             const QString &plaintext, const QString &replyTo)
+void SscApiClient::establishThenEncryptDevice(const QString &peerId, const QString &deviceId,
+                                              const QString &plaintext,
+                                              const std::function<void(bool, QString, QString)> &done)
 {
-    httpJson(QStringLiteral("GET"), QStringLiteral("/api/prekeys/users/%1/devices/1").arg(peerId), {},
-             [this, conversationId, peerId, plaintext, replyTo](bool ok, QJsonObject body, QString) {
-                 auto doEncrypt = [this, conversationId, peerId, plaintext, replyTo]() {
+    httpJson(QStringLiteral("GET"),
+             QStringLiteral("/api/prekeys/users/%1/devices/%2").arg(peerId, deviceId), {},
+             [this, peerId, deviceId, plaintext, done](bool ok, QJsonObject body, QString) {
+                 auto encryptOnly = [this, peerId, deviceId, plaintext, done]() {
                      m_crypto->call(QStringLiteral("encryptMessage"),
                                     QJsonObject{{QStringLiteral("plaintext"), plaintext},
                                                 {QStringLiteral("peerId"), peerId},
-                                                {QStringLiteral("deviceId"), QStringLiteral("1")}},
-                                    [this, conversationId, plaintext, replyTo](bool ok2, const QJsonObject &result,
-                                                                               const QString &err2) {
+                                                {QStringLiteral("deviceId"), deviceId}},
+                                    [done](bool ok2, const QJsonObject &result, const QString &err2) {
                                         if (!ok2) {
-                                            setBusy(false);
-                                            setError(err2);
+                                            done(false, {}, err2);
                                             return;
                                         }
-                                        postCiphertext(conversationId,
-                                                       result.value(QStringLiteral("ciphertext")).toString(),
-                                                       plaintext, replyTo);
+                                        done(true, result.value(QStringLiteral("ciphertext")).toString(), {});
                                     });
                  };
                  if (ok) {
@@ -650,21 +659,73 @@ void SscApiClient::fetchPeerBundleAndEncrypt(const QString &conversationId, cons
                      if (bundle.isEmpty()) bundle = body;
                      m_crypto->call(QStringLiteral("establishSession"),
                                     QJsonObject{{QStringLiteral("peerId"), peerId},
-                                                {QStringLiteral("deviceId"), QStringLiteral("1")},
+                                                {QStringLiteral("deviceId"), deviceId},
                                                 {QStringLiteral("bundle"), bundle}},
-                                    [doEncrypt](bool, const QJsonObject &, const QString &) { doEncrypt(); });
+                                    [encryptOnly](bool, const QJsonObject &, const QString &) { encryptOnly(); });
                  } else {
-                     doEncrypt();
+                     encryptOnly();
                  }
              });
 }
 
+void SscApiClient::encryptForDevices(const QString &conversationId, const QString &peerId,
+                                     const QStringList &deviceIds, int index, const QString &plaintext,
+                                     const QString &replyTo, QJsonObject deviceMap)
+{
+    if (index >= deviceIds.size()) {
+        if (deviceMap.isEmpty()) {
+            setBusy(false);
+            setError(QStringLiteral("encrypt_all_devices_failed"));
+            return;
+        }
+        const QString legacy = deviceMap.value(deviceIds.value(0, QStringLiteral("1"))).toString();
+        const QString leg = legacy.isEmpty() ? deviceMap.begin().value().toString() : legacy;
+        postCiphertext(conversationId, leg, plaintext, replyTo, deviceMap);
+        return;
+    }
+    const QString deviceId = deviceIds.at(index);
+    establishThenEncryptDevice(peerId, deviceId, plaintext,
+                               [this, conversationId, peerId, deviceIds, index, plaintext, replyTo, deviceMap,
+                                deviceId](bool ok, QString ct, QString) mutable {
+                                   if (ok && !ct.isEmpty()) {
+                                       deviceMap.insert(deviceId, ct);
+                                   }
+                                   encryptForDevices(conversationId, peerId, deviceIds, index + 1, plaintext, replyTo,
+                                                     deviceMap);
+                               });
+}
+
+void SscApiClient::fetchPeerBundleAndEncrypt(const QString &conversationId, const QString &peerId,
+                                             const QString &plaintext, const QString &replyTo)
+{
+    // Sesame multi-device: list peer devices then encrypt per device (Android encryptForAllDevices)
+    httpJson(QStringLiteral("GET"), QStringLiteral("/api/prekeys/users/%1").arg(peerId), {},
+             [this, conversationId, peerId, plaintext, replyTo](bool ok, QJsonObject body, QString) {
+                 QStringList deviceIds;
+                 if (ok) {
+                     const auto arr = body.value(QStringLiteral("devices")).toArray();
+                     for (const auto &v : arr) {
+                         const auto d = v.toObject();
+                         const QString id =
+                             d.value(QStringLiteral("device_id")).toString(d.value(QStringLiteral("deviceId")).toString());
+                         if (!id.isEmpty()) deviceIds.append(id);
+                     }
+                 }
+                 if (deviceIds.isEmpty()) deviceIds.append(QStringLiteral("1"));
+                 encryptForDevices(conversationId, peerId, deviceIds, 0, plaintext, replyTo, {});
+             });
+}
+
 void SscApiClient::postCiphertext(const QString &conversationId, const QString &ciphertext,
-                                  const QString &plaintext, const QString &replyTo)
+                                  const QString &plaintext, const QString &replyTo,
+                                  const QJsonObject &deviceCiphertexts)
 {
     QJsonObject body{{QStringLiteral("ciphertext"), ciphertext},
                      {QStringLiteral("protocol"), QStringLiteral("signal_v1")}};
     if (!replyTo.isEmpty()) body.insert(QStringLiteral("reply_to"), replyTo);
+    if (!deviceCiphertexts.isEmpty()) {
+        body.insert(QStringLiteral("device_ciphertexts"), deviceCiphertexts);
+    }
     httpJson(QStringLiteral("POST"), QStringLiteral("/api/conversations/%1/messages").arg(conversationId), body,
              [this, conversationId, plaintext](bool ok, QJsonObject, QString err) {
                  setBusy(false);
@@ -689,26 +750,46 @@ void SscApiClient::editMessage(const QString &messageId, const QString &plaintex
 {
     if (m_activePeerId.isEmpty()) return;
     setBusy(true);
-    m_crypto->call(QStringLiteral("encryptMessage"),
-                   QJsonObject{{QStringLiteral("plaintext"), plaintext},
-                               {QStringLiteral("peerId"), m_activePeerId},
-                               {QStringLiteral("deviceId"), QStringLiteral("1")}},
-                   [this, messageId](bool ok, const QJsonObject &result, const QString &err) {
-                       if (!ok) {
-                           setBusy(false);
-                           setError(err);
-                           return;
-                       }
-                       httpJson(QStringLiteral("PATCH"), QStringLiteral("/api/messages/") + messageId,
-                                QJsonObject{{QStringLiteral("ciphertext"),
-                                             result.value(QStringLiteral("ciphertext")).toString()},
-                                            {QStringLiteral("protocol"), QStringLiteral("signal_v1")}},
-                                [this](bool ok2, QJsonObject, QString err2) {
-                                    setBusy(false);
-                                    if (!ok2) setError(err2);
-                                    else openConversation(m_activeConversationId, m_activePeerId, m_activeGroupId);
-                                });
-                   });
+    // Multi-device edit envelope
+    httpJson(QStringLiteral("GET"), QStringLiteral("/api/prekeys/users/%1").arg(m_activePeerId), {},
+             [this, messageId, plaintext](bool ok, QJsonObject body, QString) {
+                 QStringList deviceIds;
+                 if (ok) {
+                     const auto arr = body.value(QStringLiteral("devices")).toArray();
+                     for (const auto &v : arr) {
+                         const auto d = v.toObject();
+                         const QString id =
+                             d.value(QStringLiteral("device_id")).toString(d.value(QStringLiteral("deviceId")).toString());
+                         if (!id.isEmpty()) deviceIds.append(id);
+                     }
+                 }
+                 if (deviceIds.isEmpty()) deviceIds.append(QStringLiteral("1"));
+                 // encrypt sequentially into map then PATCH
+                 std::function<void(int, QJsonObject)> step;
+                 step = [this, messageId, plaintext, deviceIds, step](int index, QJsonObject deviceMap) {
+                     if (index >= deviceIds.size()) {
+                         const QString legacy = deviceMap.begin().value().toString();
+                         QJsonObject body{{QStringLiteral("ciphertext"), legacy},
+                                          {QStringLiteral("protocol"), QStringLiteral("signal_v1")}};
+                         if (!deviceMap.isEmpty()) body.insert(QStringLiteral("device_ciphertexts"), deviceMap);
+                         httpJson(QStringLiteral("PATCH"), QStringLiteral("/api/messages/") + messageId, body,
+                                  [this](bool ok2, QJsonObject, QString err2) {
+                                      setBusy(false);
+                                      if (!ok2) setError(err2);
+                                      else openConversation(m_activeConversationId, m_activePeerId, m_activeGroupId);
+                                  });
+                         return;
+                     }
+                     const QString deviceId = deviceIds.at(index);
+                     establishThenEncryptDevice(
+                         m_activePeerId, deviceId, plaintext,
+                         [step, index, deviceMap, deviceId](bool ok3, QString ct, QString) mutable {
+                             if (ok3 && !ct.isEmpty()) deviceMap.insert(deviceId, ct);
+                             step(index + 1, deviceMap);
+                         });
+                 };
+                 step(0, {});
+             });
 }
 
 void SscApiClient::deleteMessage(const QString &messageId, const QString &scope)
