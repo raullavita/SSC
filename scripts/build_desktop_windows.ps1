@@ -159,9 +159,16 @@ if ($pong -notmatch 'ok') {
     Write-Warning "crypto-worker ping unexpected - check node_modules"
 }
 
+# App icon next to EXE for shortcuts
+$icoSrc = Join-Path $Desktop "resources\ssc.ico"
+if (Test-Path $icoSrc) {
+    Copy-Item $icoSrc (Join-Path $OutDir "ssc.ico") -Force
+}
+
 Write-Host ""
 $finalExe = Join-Path $OutDir ("SSC-Desktop-" + $Version + ".exe")
 Write-Host "OK: $finalExe"
 Write-Host "    runtime\node\node.exe bundled (no system Node required)"
 Write-Host "    crypto-worker\ with libsignal 0.96.4"
+Write-Host "Install with: .\scripts\install_ssc_desktop.ps1 -Launch"
 Write-Host "Android was not modified."

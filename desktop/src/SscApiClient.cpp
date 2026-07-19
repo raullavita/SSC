@@ -293,9 +293,16 @@ void SscApiClient::setupRecovery(const QString &passphrase)
 
 void SscApiClient::openGoogleOAuth()
 {
+    // client=installed → finish page redirects to ssc://auth/google?oauth_code=...
+    // Windows installer registers the ssc:// protocol to this app.
     const QUrl url(m_apiBase + QStringLiteral("/api/auth/google/start?client=installed"));
-    QDesktopServices::openUrl(url);
-    setStatus(QStringLiteral("Complete Google sign-in in the browser"));
+    if (!QDesktopServices::openUrl(url)) {
+        setError(QStringLiteral("Could not open browser for Google sign-in"));
+        return;
+    }
+    setError({});
+    setStatus(QStringLiteral("Browser opened — pick your Google account, then return here. "
+                             "The app finishes login automatically."));
 }
 
 void SscApiClient::exchangeGoogleCode(const QString &oauthCode)

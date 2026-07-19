@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <QTimer>
+#include <QWindow>
 
 #include "SscApiClient.h"
 #include "SscSession.h"
@@ -12,6 +13,18 @@
 #include "SscCallEngine.h"
 #include "SscLocalCache.h"
 #include "SscVoiceRecorder.h"
+#include "SscDeepLink.h"
+
+static void raiseMainWindow(QQmlApplicationEngine &engine)
+{
+    const auto roots = engine.rootObjects();
+    if (roots.isEmpty()) return;
+    if (auto *w = qobject_cast<QWindow *>(roots.first())) {
+        w->show();
+        w->raise();
+        w->requestActivate();
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -19,6 +32,12 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(QStringLiteral("SuperSecureChat"));
     QCoreApplication::setApplicationName(QStringLiteral("SSC"));
     QCoreApplication::setApplicationVersion(QStringLiteral("0.4.0"));
+
+    SscDeepLink deepLink;
+    if (!deepLink.claimPrimaryInstance(QCoreApplication::arguments())) {
+        // Another instance is running; URL already forwarded.
+        return 0;
+    }
 
     QQuickStyle::setStyle(QStringLiteral("Material"));
 
@@ -33,7 +52,6 @@ int main(int argc, char *argv[])
 
     crypto.start(session.signalStorePath());
 
-    // Presence heartbeat while logged in
     QTimer heartbeat;
     heartbeat.setInterval(60'000);
     QObject::connect(&heartbeat, &QTimer::timeout, &api, [&api, &session]() {
@@ -41,10 +59,6 @@ int main(int argc, char *argv[])
     });
     heartbeat.start();
 
-    // Decrypt call signals from realtime and feed media engine
-    QObject::connect(&api, &SscApiClient::realtimeEvent, &calls, [&](const QString &) {
-        // detailed payload handling below via custom connection
-    });
     QObject::connect(&realtime, &SscRealtime::eventReceived, &app,
                      [&](const QString &type, const QJsonObject &payload) {
                          if (type == QLatin1String("call_signal") || type == QLatin1String("signal")) {
@@ -62,14 +76,9 @@ int main(int argc, char *argv[])
                                              calls.onSignalPayload(st, result.value(QStringLiteral("plaintext")).toString());
                                          });
                          }
-                         if (type == QLatin1String("call") || type == QLatin1String("call_invite")
-                             || type == QLatin1String("incoming_call")) {
-                             // UI listens to sscApi.incomingCall
-                         }
                      });
 
     QQmlApplicationEngine engine;
-    // QML module resources are under qrc:/SuperSecureChat/ (see qt_add_qml_module)
     engine.addImportPath(QStringLiteral("qrc:/"));
     engine.addImportPath(QCoreApplication::applicationDirPath());
     engine.rootContext()->setContextProperty(QStringLiteral("sscSession"), &session);
@@ -80,18 +89,39 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("sscCalls"), &calls);
     engine.rootContext()->setContextProperty(QStringLiteral("sscVoice"), &voice);
 
-    // Prefer module entry; fall back if resource layout differs across Qt versions
-    QUrl url(QStringLiteral("qrc:/SuperSecureChat/qml/Main.qml"));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
         &app,
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
-    engine.load(url);
+
+    engine.load(QUrl(QStringLiteral("qrc:/SuperSecureChat/qml/Main.qml")));
     if (engine.rootObjects().isEmpty()) {
-        url = QUrl(QStringLiteral("qrc:/qt/qml/SuperSecureChat/qml/Main.qml"));
-        engine.load(url);
+        engine.load(QUrl(QStringLiteral("qrc:/qt/qml/SuperSecureChat/qml/Main.qml")));
+    }
+    if (engine.rootObjects().isEmpty()) {
+        return -1;
+    }
+
+    // Google OAuth / deep links
+    QObject::connect(&deepLink, &SscDeepLink::oauthCodeReceived, &api, [&api, &engine](const QString &code) {
+        if (!code.isEmpty()) {
+            api.exchangeGoogleCode(code);
+            raiseMainWindow(engine);
+        }
+    });
+    QObject::connect(&deepLink, &SscDeepLink::deepLinkReceived, &app, [&engine](const QString &) {
+        raiseMainWindow(engine);
+    });
+
+    // Cold-start args also handled in claimPrimaryInstance via queued oauthCodeReceived
+    for (const QString &a : QCoreApplication::arguments()) {
+        const QString code = SscDeepLink::extractOAuthCode(a);
+        if (!code.isEmpty()) {
+            QTimer::singleShot(300, &api, [&api, code]() { api.exchangeGoogleCode(code); });
+            break;
+        }
     }
 
     return app.exec();

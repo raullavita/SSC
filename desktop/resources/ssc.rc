@@ -1,0 +1,2 @@
+#include <windows.h>
+IDI_ICON1 ICON "C:/Users/smash/ssc/desktop/resources/ssc.ico"

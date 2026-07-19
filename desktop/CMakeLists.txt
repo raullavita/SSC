@@ -15,7 +15,7 @@ add_compile_definitions(
     SSC_MEDIA_WORKER_DIR="${SSC_MEDIA_WORKER_DIR}"
 )
 
-qt_add_executable(ssc_desktop
+set(SSC_DESKTOP_SOURCES
     src/main.cpp
     src/SscApiClient.cpp
     src/SscApiClient.h
@@ -33,7 +33,20 @@ qt_add_executable(ssc_desktop
     src/SscLocalCache.h
     src/SscVoiceRecorder.cpp
     src/SscVoiceRecorder.h
+    src/SscDeepLink.cpp
+    src/SscDeepLink.h
 )
+
+if(WIN32 AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources/ssc.rc")
+    list(APPEND SSC_DESKTOP_SOURCES resources/ssc.rc)
+endif()
+
+qt_add_executable(ssc_desktop ${SSC_DESKTOP_SOURCES})
+
+# Real Windows GUI app (no console/terminal flash on launch)
+if(WIN32)
+    set_target_properties(ssc_desktop PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
 
 qt_add_qml_module(ssc_desktop
     URI SuperSecureChat

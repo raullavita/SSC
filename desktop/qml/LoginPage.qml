@@ -149,6 +149,21 @@ Item {
                 Material.foreground: Theme.surfaceFg
                 onClicked: sscApi.openGoogleOAuth()
             }
+            Label {
+                text: sscApi.statusText
+                color: Theme.secondary
+                visible: sscApi.statusText.length > 0
+                wrapMode: Text.Wrap
+                font.pixelSize: 12
+                Layout.fillWidth: true
+            }
+            Label {
+                text: "Tip: after Google, if the browser says “return to SSC”, the app should open itself. You can also sign in with email above."
+                color: Theme.surfaceVariantFg
+                wrapMode: Text.Wrap
+                font.pixelSize: 11
+                Layout.fillWidth: true
+            }
             Button {
                 text: registerMode ? "Have an account? Sign in" : "Need an account? Register"
                 Layout.fillWidth: true
