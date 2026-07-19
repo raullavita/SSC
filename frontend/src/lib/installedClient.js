@@ -4,8 +4,8 @@
  */
 
 const PLATFORM = process.env.REACT_APP_SSC_PLATFORM || 'electron';
-const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.1';
-const BUILD = process.env.REACT_APP_SSC_BUILD || '14';
+const VERSION = process.env.REACT_APP_SSC_VERSION || '0.4.0';
+const BUILD = process.env.REACT_APP_SSC_BUILD || '15';
 
 const ALLOWED = new Set(['android', 'ios', 'windows', 'mac', 'electron']);
 

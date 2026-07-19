@@ -17,8 +17,11 @@ Windows + macOS (+ Linux later) from one Qt codebase.
 ## Status
 
 - Scaffold: login, conversation list refresh, logout
-- No Chromium/Electron
-- Wire libsignal + thread send/receive next
+- No Chromium/Electron UI here
+- **Not ready for Android ↔ Windows E2EE tests** (no libsignal FFI yet)
+
+**Shipping Windows messenger today:** see [`docs/WINDOWS_CLIENT.md`](../docs/WINDOWS_CLIENT.md)  
+(`.\scripts\build_electron.ps1` → `SSC-Setup-0.4.0.exe` with libsignal 0.96.4).
 
 ## Build (free — no paid Windows code signing required)
 

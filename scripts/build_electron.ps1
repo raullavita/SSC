@@ -8,26 +8,33 @@ Remove-Item Env:WIN_CSC_LINK -ErrorAction SilentlyContinue
 Remove-Item Env:CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
 $env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
 
-Write-Host "Building frontend..."
+# Windows shipping client (libsignal 0.96.4 parity with Android). Do not use SAC_COMPAT builds for E2EE.
+$Version = "0.4.0"
+$Build = "15"
+
+Write-Host "Building frontend for Windows installed client v$Version/$Build..."
 Push-Location "$Root\frontend"
-$env:REACT_APP_SSC_PLATFORM = "electron"
+$env:REACT_APP_SSC_PLATFORM = "windows"
 $env:REACT_APP_SSC_LANDING_ONLY = "false"
-$env:REACT_APP_SSC_VERSION = "0.3.1"
-$env:REACT_APP_SSC_BUILD = "14"
+$env:REACT_APP_SSC_VERSION = $Version
+$env:REACT_APP_SSC_BUILD = $Build
 $env:REACT_APP_SSC_REQUIRE_LIBCRYPTO = "true"
 $env:PUBLIC_URL = "."
 $env:REACT_APP_API_URL = $(if ($env:REACT_APP_API_URL) { $env:REACT_APP_API_URL } else { "https://api.supersecurechat.com" })
 $env:REACT_APP_GOOGLE_CLIENT_ID = $(if ($env:REACT_APP_GOOGLE_CLIENT_ID) { $env:REACT_APP_GOOGLE_CLIENT_ID } else { "814078411789-o3t5krp2mvoi32rkaug6jmegtb8t1ihf.apps.googleusercontent.com" })
 yarn build
+if ($LASTEXITCODE -ne 0) { throw "frontend yarn build failed" }
 Pop-Location
 
 Write-Host "Installing Electron deps..."
 Remove-Item "$Root\electron\SSC_COMPAT_MODE" -Force -ErrorAction SilentlyContinue
 Push-Location "$Root\electron"
 npm install
+if ($LASTEXITCODE -ne 0) { throw "npm install failed" }
 $env:SSC_PROD_FILE = "$Root\frontend\build\index.html"
-Write-Host "Building UNSIGNED Electron installer (signing disabled)."
+Write-Host "Building UNSIGNED Windows installer SSC-Setup-$Version.exe (signing disabled)."
 npm run dist
+if ($LASTEXITCODE -ne 0) { throw "electron-builder failed" }
 Pop-Location
 
 $installer = Get-ChildItem "$Root\electron\dist\SSC-Setup-*.exe" -ErrorAction SilentlyContinue |
@@ -36,16 +43,18 @@ $installer = Get-ChildItem "$Root\electron\dist\SSC-Setup-*.exe" -ErrorAction Si
   Select-Object -First 1
 if ($installer -and $installer.Length -gt 10MB) {
   New-Item -ItemType Directory -Force -Path "$Root\dist" | Out-Null
-  Copy-Item $installer.FullName "$Root\dist\SSC-Setup-0.3.1.exe" -Force
-  $desktopInstaller = "$env:USERPROFILE\Desktop\SSC-Setup-0.3.1.exe"
+  $named = "$Root\dist\SSC-Setup-$Version.exe"
+  Copy-Item $installer.FullName $named -Force
+  $desktopInstaller = "$env:USERPROFILE\Desktop\SSC-Setup-$Version.exe"
   try {
     Copy-Item $installer.FullName $desktopInstaller -Force
     Write-Host "Installer: $desktopInstaller ($([math]::Round($installer.Length/1MB,1)) MB)"
   } catch {
     Write-Host "Installer built at $($installer.FullName) (Desktop copy locked)"
   }
+  Write-Host "Repo copy: $named"
 } else {
   throw "NSIS installer not found in electron\dist"
 }
 
-Write-Host "Electron build complete (unsigned)."
+Write-Host "Windows Electron build complete (unsigned) - libsignal E2EE enabled, client windows/$Version/$Build."

@@ -1,31 +1,22 @@
-# Electron / WebView hybrid — retired
+# Electron shell — Windows shipping path (see WINDOWS_CLIENT.md)
 
-**Status:** Not the product path. Do not ship Electron builds as SSC messenger.
+**Update 2026-07-19:** Electron is **not** the long-term UI architecture, but it **is** the **Windows shipping messenger** until Qt + libsignal FFI is complete.
 
-## Product clients (current)
+| Role | Path |
+|------|------|
+| **Android product** | `android/` Compose + libsignal-android |
+| **Windows product (now)** | `electron/` + frontend + libsignal-client 0.96.4 → `SSC-Setup-0.4.0.exe` |
+| **Windows future** | `desktop/` Qt Quick (scaffold; no E2EE yet) |
 
-| Platform | Path | Notes |
-|----------|------|--------|
-| **Android** | `android/` Jetpack Compose + libsignal | Primary free-distribution APK |
-| **Backend** | `backend/` FastAPI | Production API |
-| **SFU** | `sfu-server/` mediasoup | Group/call media |
-| **iOS** | `ios/` SwiftUI scaffold | Incomplete; no Xcode project in CI |
-| **Desktop** | `desktop/` Qt scaffold | Memory-only session token; not E2EE-complete |
+Full build and A↔W test notes: **[WINDOWS_CLIENT.md](WINDOWS_CLIENT.md)**.
 
-## Why Electron remains in the tree
+## Still retired / forbidden
 
-- Historical `electron/` sources, `latest-builds` artifacts, and release scripts reference 0.3.x installers.
-- Some ops scripts still mention Electron artifact names for backward-compatible GitHub release URLs.
-- **Native Android** is the only supported end-user messenger for free sideload (`docs/FREE_DISTRIBUTION.md`).
+- WebView **Android** messenger (`assets/www`) — Compose only
+- SAC_COMPAT Electron builds (no libsignal) for production messaging
+- Treating Qt `desktop/` as ready for Android interop tests
 
-## Do not
+## Version
 
-- Treat `electron/dist` or `SSC-Setup-*.exe` as current product
-- Re-enable WebView messenger UI in Android (`assets/www` removed; Compose only)
-- Point store listings or landing “Download” at Electron without an explicit revive project
-
-## Revive (if ever)
-
-1. New design doc + security review (E2EE, auto-update signing)
-2. Align version with `backend/core/release_policy.py` (`RELEASE_VERSION`)
-3. Remove dual product messaging from README / landing
+Align with `backend/core/release_policy.py`: **0.4.0 / build 15**.  
+Client header from preload: `windows/0.4.0/15`.
