@@ -1,10 +1,12 @@
 /**
- * SSC desktop media worker — 1:1 WebRTC audio via @roamhq/wrtc.
+ * SSC desktop media worker — 1:1 WebRTC + SFU join path via @roamhq/wrtc.
  * JSON lines stdin/stdout (same pattern as crypto-worker).
  *
- * cmds: ping, create, setRemote, addIce, close, getStats
+ * cmds: ping, create, createOffer, createAnswer, setRemote, addIce, close,
+ *       drainIce, sfuJoin, sfuLeave
  */
 const readline = require('readline');
+const { SfuClient } = require('./sfuClient');
 
 let wrtc;
 try {
@@ -15,6 +17,7 @@ try {
 
 const { RTCPeerConnection, nonstandard } = wrtc || {};
 const sessions = new Map(); // callId -> { pc, pendingIce }
+const sfuSessions = new Map(); // roomId -> SfuClient
 
 function iceServersFromArgs(args) {
   const list = args.iceServers || args.ice_servers || [];
@@ -30,11 +33,79 @@ function iceServersFromArgs(args) {
   });
 }
 
+function addLocalTracks(pc, video) {
+  try {
+    if (nonstandard && nonstandard.RTCAudioSource) {
+      const source = new nonstandard.RTCAudioSource();
+      pc.addTrack(source.createTrack());
+    } else {
+      pc.addTransceiver('audio', { direction: 'sendrecv' });
+    }
+  } catch (_) {
+    pc.addTransceiver('audio', { direction: 'sendrecv' });
+  }
+  if (video) {
+    try {
+      if (nonstandard && nonstandard.RTCVideoSource) {
+        const vsrc = new nonstandard.RTCVideoSource();
+        pc.addTrack(vsrc.createTrack());
+      } else {
+        pc.addTransceiver('video', { direction: 'sendrecv' });
+      }
+    } catch (_) {
+      pc.addTransceiver('video', { direction: 'sendrecv' });
+    }
+  }
+}
+
 async function handle(cmd, args = {}) {
   if (cmd === 'ping') {
-    return { pong: true, version: '0.4.0', wrtc: Boolean(wrtc) };
+    return { pong: true, version: '0.4.0', wrtc: Boolean(wrtc), sfu: true };
   }
-  if (!wrtc) {
+  if (cmd === 'sfuJoin') {
+    const roomId = String(args.roomId || '');
+    if (!roomId) throw new Error('sfu_room_id_required');
+    if (sfuSessions.has(roomId)) {
+      try {
+        await sfuSessions.get(roomId).leave();
+      } catch (_) {
+        /* ignore */
+      }
+      sfuSessions.delete(roomId);
+    }
+    const client = new SfuClient({
+      wsUrl: args.wsUrl,
+      roomId,
+      joinToken: args.joinToken,
+      peerId: args.peerId,
+      wrtc,
+    });
+    const joined = await client.connectAndJoin(Number(args.timeoutMs) || 15000);
+    await client.createTransport('send');
+    await client.createTransport('recv');
+    const media = await client.prepareMedia();
+    sfuSessions.set(roomId, client);
+    return {
+      joined: true,
+      roomId,
+      peerId: joined.peerId,
+      existingProducers: joined.existingProducers,
+      hasRtpCapabilities: joined.hasRtpCapabilities,
+      sendTransportId: client.sendTransport && client.sendTransport.id,
+      recvTransportId: client.recvTransport && client.recvTransport.id,
+      media,
+    };
+  }
+  if (cmd === 'sfuLeave') {
+    const roomId = String(args.roomId || '');
+    const client = sfuSessions.get(roomId);
+    if (client) {
+      await client.leave();
+      sfuSessions.delete(roomId);
+    }
+    return { left: true, roomId };
+  }
+  if (!wrtc && cmd !== 'ping') {
     throw new Error('wrtc_unavailable');
   }
   switch (cmd) {
@@ -55,32 +126,22 @@ async function handle(cmd, args = {}) {
           pendingIce.push(ev.candidate.toJSON ? ev.candidate.toJSON() : ev.candidate);
         }
       };
-      // Local mic (nonstandard for node)
-      try {
-        if (nonstandard && nonstandard.RTCAudioSource) {
-          const source = new nonstandard.RTCAudioSource();
-          const track = source.createTrack();
-          pc.addTrack(track);
-        } else {
-          // transceiver-only — still allows SDP negotiation for remote audio
-          pc.addTransceiver('audio', { direction: 'sendrecv' });
-        }
-      } catch (_) {
-        pc.addTransceiver('audio', { direction: 'sendrecv' });
-      }
-      sessions.set(callId, { pc, pendingIce, iceComplete: false });
+      addLocalTracks(pc, !!args.video);
+      sessions.set(callId, { pc, pendingIce, iceComplete: false, video: !!args.video });
       pc.onicegatheringstatechange = () => {
         const s = sessions.get(callId);
         if (s && pc.iceGatheringState === 'complete') s.iceComplete = true;
       };
-      return { callId, ok: true };
+      return { callId, ok: true, video: !!args.video };
     }
     case 'createOffer': {
       const s = sessions.get(String(args.callId || 'default'));
       if (!s) throw new Error('no_session');
-      const offer = await s.pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: !!args.video });
+      const offer = await s.pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: !!(args.video || s.video),
+      });
       await s.pc.setLocalDescription(offer);
-      // brief wait for ICE host candidates
       await new Promise((r) => setTimeout(r, 400));
       return {
         sdp: s.pc.localDescription.sdp,
@@ -159,4 +220,4 @@ rl.on('line', async (line) => {
     );
   }
 });
-process.stdout.write(`${JSON.stringify({ id: 0, ok: true, result: { ready: true, wrtc: Boolean(wrtc) } })}\n`);
+process.stdout.write(`${JSON.stringify({ id: 0, ok: true, result: { ready: true, wrtc: Boolean(wrtc), sfu: true } })}\n`);

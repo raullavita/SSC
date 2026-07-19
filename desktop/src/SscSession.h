@@ -14,6 +14,7 @@ class SscSession : public QObject
     Q_PROPERTY(QString accessToken READ accessToken NOTIFY changed)
     Q_PROPERTY(QString deviceId READ deviceId CONSTANT)
     Q_PROPERTY(QString signalStorePath READ signalStorePath CONSTANT)
+    Q_PROPERTY(bool sealedSenderEnabled READ sealedSenderEnabled WRITE setSealedSenderEnabled NOTIFY changed)
 public:
     explicit SscSession(QObject *parent = nullptr);
 
@@ -24,6 +25,8 @@ public:
     QString accessToken() const;
     QString deviceId() const;
     QString signalStorePath() const;
+    bool sealedSenderEnabled() const;
+    void setSealedSenderEnabled(bool on);
 
     Q_INVOKABLE void saveSession(const QString &token, const QString &userId, const QString &displayName,
                                  const QString &username = {});

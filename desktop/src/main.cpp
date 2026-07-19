@@ -10,6 +10,8 @@
 #include "SscTurnstileHelper.h"
 #include "SscRealtime.h"
 #include "SscCallEngine.h"
+#include "SscLocalCache.h"
+#include "SscVoiceRecorder.h"
 
 int main(int argc, char *argv[])
 {
@@ -23,9 +25,11 @@ int main(int argc, char *argv[])
     SscSession session;
     SscCryptoBridge crypto;
     SscRealtime realtime;
-    SscApiClient api(&session, &crypto, &realtime);
+    SscLocalCache cache;
+    SscApiClient api(&session, &crypto, &realtime, &cache);
     SscTurnstileHelper turnstile;
     SscCallEngine calls(&session, &api, &crypto);
+    SscVoiceRecorder voice;
 
     crypto.start(session.signalStorePath());
 
@@ -72,6 +76,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("sscTurnstile"), &turnstile);
     engine.rootContext()->setContextProperty(QStringLiteral("sscRealtime"), &realtime);
     engine.rootContext()->setContextProperty(QStringLiteral("sscCalls"), &calls);
+    engine.rootContext()->setContextProperty(QStringLiteral("sscVoice"), &voice);
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/qml"));
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/SuperSecureChat/qml/Main.qml"));

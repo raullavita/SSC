@@ -547,7 +547,14 @@ class LibsignalSession {
   }
 
   async decryptBytes(ciphertextB64) {
-    const outer = JSON.parse(Buffer.from(b64decode(ciphertextB64)).toString('utf8'));
+    // envelope may itself be base64 of JSON, or raw JSON string
+    let outerRaw = ciphertextB64;
+    try {
+      outerRaw = Buffer.from(b64decode(ciphertextB64)).toString('utf8');
+    } catch (_) {
+      /* already json */
+    }
+    const outer = typeof outerRaw === 'string' ? JSON.parse(outerRaw) : outerRaw;
     if (outer?.type !== 'ssc_file' || !outer.nonce || !outer.data) {
       throw new Error('ssc_file_invalid_envelope');
     }
@@ -557,7 +564,8 @@ class LibsignalSession {
     const plain = cipher.decrypt(b64decode(outer.data), b64decode(outer.nonce), new Uint8Array(0));
     const plainBuf = Buffer.from(plain);
     return {
-      buffer: plainBuf.buffer.slice(plainBuf.byteOffset, plainBuf.byteOffset + plainBuf.byteLength),
+      base64: plainBuf.toString('base64'),
+      byteLength: plainBuf.length,
     };
   }
 }

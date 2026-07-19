@@ -74,9 +74,22 @@ Page {
             Label { text: "Security"; color: Theme.primary; font.bold: true; Layout.topMargin: 12 }
             Label {
                 text: sscApi.prekeyInfo + "\nE2EE libsignal 0.96.4 · windows/0.4.0/15\nWS: " + sscApi.connectionState
+                      + "\nSFU: " + (sscApi.sfuStatus || "idle")
                 color: Theme.onSurfaceVariant
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
+            }
+            Switch {
+                id: swSealed
+                text: "Sealed sender"
+                checked: sscSession.sealedSenderEnabled
+                contentItem: Text {
+                    text: swSealed.text
+                    color: Theme.onSurface
+                    leftPadding: swSealed.indicator.width + 8
+                    verticalAlignment: Text.AlignVCenter
+                }
+                onToggled: sscSession.sealedSenderEnabled = checked
             }
             Button {
                 text: "Re-upload prekeys"

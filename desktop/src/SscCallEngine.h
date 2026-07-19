@@ -21,6 +21,9 @@ class SscCallEngine : public QObject
     Q_PROPERTY(QString callState READ callState NOTIFY callChanged)
     Q_PROPERTY(bool inCall READ inCall NOTIFY callChanged)
     Q_PROPERTY(bool mediaReady READ mediaReady NOTIFY mediaReadyChanged)
+    Q_PROPERTY(bool videoEnabled READ videoEnabled NOTIFY callChanged)
+    Q_PROPERTY(QString sfuRoomId READ sfuRoomId NOTIFY sfuChanged)
+    Q_PROPERTY(QString sfuState READ sfuState NOTIFY sfuChanged)
 public:
     explicit SscCallEngine(SscSession *session, SscApiClient *api, SscCryptoBridge *crypto,
                            QObject *parent = nullptr);
@@ -30,16 +33,24 @@ public:
     QString callState() const { return m_callState; }
     bool inCall() const { return !m_callId.isEmpty(); }
     bool mediaReady() const { return m_mediaReady; }
+    bool videoEnabled() const { return m_video; }
+    QString sfuRoomId() const { return m_sfuRoomId; }
+    QString sfuState() const { return m_sfuState; }
 
     Q_INVOKABLE void startOutgoing(const QString &conversationId, const QString &peerId, bool video = false);
     Q_INVOKABLE void acceptIncoming(const QString &callId, const QString &peerId, bool video = false);
     Q_INVOKABLE void hangup();
     Q_INVOKABLE void onSignalPayload(const QString &signalType, const QString &plaintextJson);
+    /** Join mediasoup SFU room (signaling + transports; media best-effort). */
+    Q_INVOKABLE void joinSfuRoom(const QString &wsUrl, const QString &roomId, const QString &joinToken);
+    Q_INVOKABLE void leaveSfuRoom();
 
 signals:
     void callChanged();
     void mediaReadyChanged();
     void callError(const QString &detail);
+    void sfuChanged();
+    void sfuJoined(const QString &roomId, int existingProducers);
 
 private:
     using ReplyFn = std::function<void(bool, QJsonObject, QString)>;
@@ -67,4 +78,6 @@ private:
     bool m_mediaReady = false;
     bool m_isCaller = false;
     bool m_video = false;
+    QString m_sfuRoomId;
+    QString m_sfuState;
 };

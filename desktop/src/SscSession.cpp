@@ -43,6 +43,17 @@ QString SscSession::signalStorePath() const
     return base;
 }
 
+bool SscSession::sealedSenderEnabled() const
+{
+    return m_settings.value(QStringLiteral("sealed_sender"), true).toBool();
+}
+
+void SscSession::setSealedSenderEnabled(bool on)
+{
+    m_settings.setValue(QStringLiteral("sealed_sender"), on);
+    emit changed();
+}
+
 void SscSession::saveSession(const QString &token, const QString &userId, const QString &displayName,
                              const QString &username)
 {

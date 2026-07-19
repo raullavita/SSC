@@ -46,9 +46,15 @@ def test_windows_qt_desktop_product_path():
     api = (REPO / "desktop" / "src" / "SscApiClient.cpp").read_text(encoding="utf-8")
     assert "ssc_desktop" in cmake
     assert "Qt6" in cmake
+    assert "SscLocalCache" in cmake
+    assert "SscVoiceRecorder" in cmake
     assert "build_desktop_windows" in build or "SSC-Desktop" in build
     assert "windows/0.4.0/15" in api
+    assert "sendVoiceNote" in api or "uploadEncryptedAttachment" in api
     assert (REPO / "desktop" / "crypto-worker" / "worker.js").is_file()
+    assert (REPO / "desktop" / "media-worker" / "sfuClient.js").is_file()
+    assert (REPO / "desktop" / "src" / "SscLocalCache.cpp").is_file()
+    assert (REPO / "desktop" / "src" / "SscVoiceRecorder.cpp").is_file()
 
 
 def test_frontend_installed_shell_hash_router():

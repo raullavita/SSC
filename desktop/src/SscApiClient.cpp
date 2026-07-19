@@ -19,11 +19,13 @@
 
 #include <functional>
 
-SscApiClient::SscApiClient(SscSession *session, SscCryptoBridge *crypto, SscRealtime *realtime, QObject *parent)
+SscApiClient::SscApiClient(SscSession *session, SscCryptoBridge *crypto, SscRealtime *realtime,
+                           SscLocalCache *cache, QObject *parent)
     : QObject(parent)
     , m_session(session)
     , m_crypto(crypto)
     , m_realtime(realtime)
+    , m_cache(cache)
 {
     connect(m_crypto, &SscCryptoBridge::prekeyBundleReady, this, [this](const QJsonObject &bundle) {
         if (bundle.isEmpty()) {
@@ -137,6 +139,7 @@ void SscApiClient::applyAuth(const QJsonObject &obj)
         user.value(QStringLiteral("id")).toString(user.value(QStringLiteral("_id")).toString()),
         user.value(QStringLiteral("display_name")).toString(),
         user.value(QStringLiteral("username")).toString());
+    if (m_cache) m_cache->open(m_session->userId());
     m_crypto->start(m_session->signalStorePath());
     m_crypto->configure(m_session->userId(), m_session->deviceId());
     if (m_realtime) {
@@ -206,15 +209,18 @@ void SscApiClient::logout()
 {
     httpJson(QStringLiteral("POST"), QStringLiteral("/api/auth/logout"), {}, {});
     if (m_realtime) m_realtime->disconnectWs();
+    if (m_cache) m_cache->close();
     m_session->clear();
     m_conversations = {};
     m_messages = {};
     m_activeConversationId.clear();
     m_activePeerId.clear();
     m_activeGroupId.clear();
+    m_safetyNumber.clear();
     emit conversationsChanged();
     emit messagesChanged();
     emit activeConversationChanged();
+    emit safetyNumberChanged();
 }
 
 void SscApiClient::me()
@@ -401,10 +407,18 @@ void SscApiClient::refreshConversations()
 {
     httpJson(QStringLiteral("GET"), QStringLiteral("/api/conversations"), {}, [this](bool ok, QJsonObject obj, QString err) {
         if (!ok) {
+            // Offline fallback to local cache
+            if (m_cache) {
+                m_conversations = m_cache->listConversations();
+                emit conversationsChanged();
+            }
             setError(err);
             return;
         }
         m_conversations = obj.value(QStringLiteral("conversations")).toArray();
+        if (m_cache) {
+            for (const auto &v : m_conversations) m_cache->upsertConversation(v.toObject());
+        }
         emit conversationsChanged();
     });
 }
@@ -456,8 +470,12 @@ void SscApiClient::decryptNext(int index)
     const QString sender = m.value(QStringLiteral("sender_id")).toString();
     const QString protocol = m.value(QStringLiteral("protocol")).toString();
     const QString myId = m_session->userId();
+    if (m.value(QStringLiteral("conversation_id")).toString().isEmpty()) {
+        m.insert(QStringLiteral("conversation_id"), m_activeConversationId);
+    }
     if (ct.isEmpty()) {
         m.insert(QStringLiteral("plaintext"), QString());
+        if (m_cache) m_cache->upsertMessage(m);
         m_messages.append(m);
         decryptNext(index + 1);
         return;
@@ -465,6 +483,7 @@ void SscApiClient::decryptNext(int index)
     if (sender == myId && !protocol.contains(QStringLiteral("group_sender_key"))) {
         m.insert(QStringLiteral("plaintext"), QStringLiteral("[sent]"));
         m.insert(QStringLiteral("mine"), true);
+        if (m_cache) m_cache->upsertMessage(m);
         m_messages.append(m);
         decryptNext(index + 1);
         return;
@@ -477,6 +496,7 @@ void SscApiClient::decryptNext(int index)
                                    {QStringLiteral("ciphertext"), ct}},
                        [this, m, index](bool, const QJsonObject &, const QString &) mutable {
                            m.insert(QStringLiteral("plaintext"), QStringLiteral("[sender key]"));
+                           if (m_cache) m_cache->upsertMessage(m);
                            m_messages.append(m);
                            decryptNext(index + 1);
                        });
@@ -493,6 +513,7 @@ void SscApiClient::decryptNext(int index)
                                m.insert(QStringLiteral("plaintext"), QStringLiteral("[unable to decrypt]"));
                                m.insert(QStringLiteral("decrypt_error"), err);
                            }
+                           if (m_cache) m_cache->upsertMessage(m);
                            m_messages.append(m);
                            decryptNext(index + 1);
                        });
@@ -520,6 +541,10 @@ void SscApiClient::decryptNext(int index)
                            m.insert(QStringLiteral("plaintext"), QStringLiteral("[unable to decrypt]"));
                            m.insert(QStringLiteral("decrypt_error"), err);
                        }
+                       if (m.value(QStringLiteral("conversation_id")).toString().isEmpty()) {
+                           m.insert(QStringLiteral("conversation_id"), m_activeConversationId);
+                       }
+                       if (m_cache) m_cache->upsertMessage(m);
                        m_messages.append(m);
                        decryptNext(index + 1);
                    });
@@ -720,8 +745,13 @@ void SscApiClient::postCiphertext(const QString &conversationId, const QString &
                                   const QString &plaintext, const QString &replyTo,
                                   const QJsonObject &deviceCiphertexts)
 {
+    QString protocol = QStringLiteral("signal_v1");
+    if (m_session->sealedSenderEnabled()) {
+        protocol = QStringLiteral("signal_v1_sealed");
+    }
     QJsonObject body{{QStringLiteral("ciphertext"), ciphertext},
-                     {QStringLiteral("protocol"), QStringLiteral("signal_v1")}};
+                     {QStringLiteral("protocol"), protocol}};
+    if (m_session->sealedSenderEnabled()) body.insert(QStringLiteral("sealed"), true);
     if (!replyTo.isEmpty()) body.insert(QStringLiteral("reply_to"), replyTo);
     if (!deviceCiphertexts.isEmpty()) {
         body.insert(QStringLiteral("device_ciphertexts"), deviceCiphertexts);
@@ -1125,6 +1155,7 @@ void SscApiClient::panicWipe()
     httpJson(QStringLiteral("POST"), QStringLiteral("/api/panic/wipe"), {}, [this](bool ok, QJsonObject, QString err) {
         if (!ok) setError(err);
         m_crypto->call(QStringLiteral("wipe"), {}, {});
+        if (m_cache) m_cache->wipe();
         logout();
         setStatus(QStringLiteral("Panic wipe complete"));
     });
@@ -1365,12 +1396,14 @@ void SscApiClient::endCall(const QString &callId, const QString &reason)
              QJsonObject{{QStringLiteral("reason"), reason}}, {});
 }
 
-void SscApiClient::sendFile(const QString &conversationId, const QString &localPath)
+void SscApiClient::uploadEncryptedAttachment(const QString &conversationId, const QString &localPath,
+                                             const QString &contentType, const QString &noticePrefix)
 {
-    if (conversationId.isEmpty() || localPath.isEmpty() || m_activePeerId.isEmpty()) {
-        setError(QStringLiteral("file_send_requires_open_direct_chat"));
+    if (conversationId.isEmpty() || localPath.isEmpty()) {
+        setError(QStringLiteral("attachment_missing_args"));
         return;
     }
+    // Direct chat preferred for key material; groups still send notice ciphertext via group path
     QFile f(localPath);
     if (!f.open(QIODevice::ReadOnly)) {
         setError(QStringLiteral("cannot_read_file"));
@@ -1381,7 +1414,8 @@ void SscApiClient::sendFile(const QString &conversationId, const QString &localP
     setBusy(true);
     m_crypto->call(QStringLiteral("encryptBytes"),
                    QJsonObject{{QStringLiteral("base64"), QString::fromLatin1(bytes.toBase64())}},
-                   [this, conversationId, localPath](bool ok, const QJsonObject &result, const QString &err) {
+                   [this, conversationId, localPath, contentType, noticePrefix](bool ok, const QJsonObject &result,
+                                                                               const QString &err) {
                        if (!ok) {
                            setBusy(false);
                            setError(err);
@@ -1391,8 +1425,8 @@ void SscApiClient::sendFile(const QString &conversationId, const QString &localP
                        httpJson(QStringLiteral("POST"), QStringLiteral("/api/files"),
                                 QJsonObject{{QStringLiteral("ciphertext"), fileCt},
                                             {QStringLiteral("filename"), QFileInfo(localPath).fileName()},
-                                            {QStringLiteral("content_type"), QStringLiteral("application/octet-stream")}},
-                                [this, conversationId, localPath](bool ok2, QJsonObject obj, QString err2) {
+                                            {QStringLiteral("content_type"), contentType}},
+                                [this, conversationId, localPath, noticePrefix](bool ok2, QJsonObject obj, QString err2) {
                                     if (!ok2) {
                                         setBusy(false);
                                         setError(err2);
@@ -1401,12 +1435,156 @@ void SscApiClient::sendFile(const QString &conversationId, const QString &localP
                                     const auto file = obj.value(QStringLiteral("file")).toObject();
                                     const QString fileId =
                                         file.value(QStringLiteral("id")).toString(obj.value(QStringLiteral("id")).toString());
-                                    const QString notice = QStringLiteral("[file] ") + QFileInfo(localPath).fileName()
-                                                          + QStringLiteral(" id=") + fileId;
-                                    // Send as E2EE chat notice with file id
+                                    QString notice;
+                                    if (noticePrefix == QLatin1String("voice")) {
+                                        // Android parity: [voice:fileId]
+                                        notice = QStringLiteral("[voice:%1]").arg(fileId);
+                                    } else {
+                                        notice = QStringLiteral("[file] ") + QFileInfo(localPath).fileName()
+                                                 + QStringLiteral(" id=") + fileId;
+                                    }
                                     sendMessage(conversationId, notice, {});
                                 });
                    });
+}
+
+void SscApiClient::sendFile(const QString &conversationId, const QString &localPath)
+{
+    uploadEncryptedAttachment(conversationId, localPath, QStringLiteral("application/octet-stream"),
+                              QStringLiteral("file"));
+}
+
+void SscApiClient::sendVoiceNote(const QString &conversationId, const QString &localPath)
+{
+    uploadEncryptedAttachment(conversationId, localPath, QStringLiteral("audio/wav"), QStringLiteral("voice"));
+}
+
+void SscApiClient::searchLocalMessages(const QString &query)
+{
+    m_searchHits = m_cache ? m_cache->searchMessages(query) : QJsonArray{};
+    emit searchHitsChanged();
+}
+
+void SscApiClient::computeSafetyNumber(const QString &peerId)
+{
+    if (peerId.isEmpty()) return;
+    httpJson(QStringLiteral("GET"), QStringLiteral("/api/prekeys/users/%1/devices/1").arg(peerId), {},
+             [this, peerId](bool ok, QJsonObject body, QString err) {
+                 if (!ok) {
+                     setError(err);
+                     return;
+                 }
+                 auto bundle = body.value(QStringLiteral("bundle")).toObject();
+                 if (bundle.isEmpty()) bundle = body;
+                 const QString ik = bundle.value(QStringLiteral("identity_key"))
+                                        .toString(bundle.value(QStringLiteral("identityKey")).toString());
+                 m_crypto->call(QStringLiteral("computeSafetyNumber"),
+                                QJsonObject{{QStringLiteral("peerId"), peerId},
+                                            {QStringLiteral("peerIdentityKeyB64"), ik}},
+                                [this](bool ok2, const QJsonObject &result, const QString &err2) {
+                                    if (!ok2) {
+                                        setError(err2);
+                                        return;
+                                    }
+                                    m_safetyNumber = result.value(QStringLiteral("displayable")).toString();
+                                    emit safetyNumberChanged();
+                                    setStatus(QStringLiteral("Safety number ready"));
+                                });
+             });
+}
+
+void SscApiClient::startSfuGroupCall(const QString &conversationId, int expectedParticipants)
+{
+    m_sfuStatus = QStringLiteral("provisioning…");
+    emit sfuStatusChanged();
+    httpJson(QStringLiteral("POST"), QStringLiteral("/api/sfu/rooms"),
+             QJsonObject{{QStringLiteral("conversation_id"), conversationId},
+                         {QStringLiteral("expected_participants"), expectedParticipants}},
+             [this](bool ok, QJsonObject obj, QString err) {
+                 if (!ok) {
+                     m_sfuStatus = QStringLiteral("sfu_failed: ") + err;
+                     emit sfuStatusChanged();
+                     setError(err);
+                     return;
+                 }
+                 auto room = obj.value(QStringLiteral("room")).toObject();
+                 if (room.isEmpty()) room = obj;
+                 m_sfuRoomId = room.value(QStringLiteral("room_id")).toString(room.value(QStringLiteral("id")).toString());
+                 const QString token = room.value(QStringLiteral("join_token")).toString(obj.value(QStringLiteral("join_token")).toString());
+                 const QString ws = room.value(QStringLiteral("ws_url")).toString(obj.value(QStringLiteral("ws_url")).toString());
+                 m_sfuJoinToken = token;
+                 m_sfuWsUrl = ws;
+                 m_sfuStatus = QStringLiteral("SFU room ") + m_sfuRoomId;
+                 emit sfuStatusChanged();
+                 emit sfuRoomReady(m_sfuRoomId, ws, token);
+                 setStatus(QStringLiteral("Group SFU ready — use Join to connect"));
+             });
+}
+
+void SscApiClient::endSfuRoom()
+{
+    if (m_sfuRoomId.isEmpty()) return;
+    httpJson(QStringLiteral("POST"), QStringLiteral("/api/sfu/rooms/%1/end").arg(m_sfuRoomId), {},
+             [this](bool, QJsonObject, QString) {
+                 m_sfuRoomId.clear();
+                 m_sfuJoinToken.clear();
+                 m_sfuWsUrl.clear();
+                 m_sfuStatus = QStringLiteral("SFU ended");
+                 emit sfuStatusChanged();
+             });
+}
+
+void SscApiClient::downloadAndOpenFile(const QString &fileId)
+{
+    if (fileId.isEmpty()) return;
+    httpJson(QStringLiteral("GET"), QStringLiteral("/api/files/") + fileId, {},
+             [this, fileId](bool ok, QJsonObject obj, QString err) {
+                 if (!ok) {
+                     setError(err);
+                     return;
+                 }
+                 const auto file = obj.value(QStringLiteral("file")).toObject();
+                 QString ct = file.value(QStringLiteral("ciphertext")).toString(obj.value(QStringLiteral("ciphertext")).toString());
+                 if (ct.isEmpty()) {
+                     setError(QStringLiteral("file_ciphertext_missing"));
+                     return;
+                 }
+                 m_crypto->call(QStringLiteral("decryptBytes"), QJsonObject{{QStringLiteral("ciphertext"), ct}},
+                                [this, fileId, file](bool ok2, const QJsonObject &result, const QString &err2) {
+                                    if (!ok2) {
+                                        setError(err2);
+                                        return;
+                                    }
+                                    // decryptBytes may return buffer as base64 in various shapes
+                                    QByteArray raw;
+                                    if (result.contains(QStringLiteral("buffer"))) {
+                                        // not serializable easily — try base64 field
+                                    }
+                                    const QString b64 = result.value(QStringLiteral("base64")).toString();
+                                    if (!b64.isEmpty()) raw = QByteArray::fromBase64(b64.toLatin1());
+                                    // Some workers return nested data
+                                    if (raw.isEmpty() && result.contains(QStringLiteral("data"))) {
+                                        raw = QByteArray::fromBase64(result.value(QStringLiteral("data")).toString().toLatin1());
+                                    }
+                                    if (raw.isEmpty()) {
+                                        // try ciphertext open as JSON envelope then fail gracefully
+                                        setStatus(QStringLiteral("File decrypted metadata only — open incomplete"));
+                                        return;
+                                    }
+                                    const QString name = file.value(QStringLiteral("filename")).toString(fileId + QStringLiteral(".bin"));
+                                    const QString path = QStandardPaths::writableLocation(QStandardPaths::TempLocation)
+                                                         + QStringLiteral("/") + name;
+                                    QFile out(path);
+                                    if (!out.open(QIODevice::WriteOnly)) {
+                                        setError(QStringLiteral("cannot_write_temp_file"));
+                                        return;
+                                    }
+                                    out.write(raw);
+                                    out.close();
+                                    QDesktopServices::openUrl(QUrl::fromLocalFile(path));
+                                    setStatus(QStringLiteral("Opened ") + name);
+                                });
+             });
 }
 
 void SscApiClient::handleRealtime(const QString &type, const QJsonObject &payload)
@@ -1436,9 +1614,29 @@ void SscApiClient::handleRealtime(const QString &type, const QJsonObject &payloa
         refreshReactions(m_activeConversationId);
         return;
     }
-    if (type == QLatin1String("call") || type == QLatin1String("call_invite")) {
+    if (type == QLatin1String("call") || type == QLatin1String("call_invite")
+        || type == QLatin1String("incoming_call")) {
         emit incomingCall(payload.value(QStringLiteral("call_id")).toString(),
-                          payload.value(QStringLiteral("from_user_id")).toString(),
+                          payload.value(QStringLiteral("from_user_id")).toString(
+                              payload.value(QStringLiteral("caller_id")).toString()),
                           payload.value(QStringLiteral("video")).toBool());
+        return;
+    }
+    if (type == QLatin1String("sfu_room")) {
+        m_sfuRoomId = payload.value(QStringLiteral("room_id")).toString(
+            payload.value(QStringLiteral("id")).toString());
+        m_sfuJoinToken = payload.value(QStringLiteral("join_token")).toString();
+        m_sfuWsUrl = payload.value(QStringLiteral("ws_url")).toString();
+        m_sfuStatus = QStringLiteral("Invite: ") + m_sfuRoomId;
+        emit sfuStatusChanged();
+        emit sfuRoomReady(m_sfuRoomId, m_sfuWsUrl, m_sfuJoinToken);
+        return;
+    }
+    if (type == QLatin1String("sfu_room_ended")) {
+        m_sfuRoomId.clear();
+        m_sfuJoinToken.clear();
+        m_sfuWsUrl.clear();
+        m_sfuStatus = QStringLiteral("SFU ended (remote)");
+        emit sfuStatusChanged();
     }
 }

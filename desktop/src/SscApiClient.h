@@ -9,6 +9,7 @@
 #include "SscSession.h"
 #include "SscCryptoBridge.h"
 #include "SscRealtime.h"
+#include "SscLocalCache.h"
 
 /**
  * Full native API facade — parity with Android repositories (auth, chat, groups,
@@ -42,10 +43,13 @@ class SscApiClient : public QObject
     Q_PROPERTY(QJsonObject privacy READ privacy NOTIFY privacyChanged)
     Q_PROPERTY(QString prekeyInfo READ prekeyInfo NOTIFY prekeyInfoChanged)
     Q_PROPERTY(QJsonArray broadcastLists READ broadcastLists NOTIFY broadcastListsChanged)
+    Q_PROPERTY(QJsonArray searchHits READ searchHits NOTIFY searchHitsChanged)
+    Q_PROPERTY(QString safetyNumber READ safetyNumber NOTIFY safetyNumberChanged)
+    Q_PROPERTY(QString sfuStatus READ sfuStatus NOTIFY sfuStatusChanged)
 
 public:
     explicit SscApiClient(SscSession *session, SscCryptoBridge *crypto, SscRealtime *realtime,
-                          QObject *parent = nullptr);
+                          SscLocalCache *cache = nullptr, QObject *parent = nullptr);
 
     QJsonArray conversations() const { return m_conversations; }
     QJsonArray messages() const { return m_messages; }
@@ -68,6 +72,9 @@ public:
     QJsonObject privacy() const { return m_privacy; }
     QString prekeyInfo() const { return m_prekeyInfo; }
     QJsonArray broadcastLists() const { return m_broadcastLists; }
+    QJsonArray searchHits() const { return m_searchHits; }
+    QString safetyNumber() const { return m_safetyNumber; }
+    QString sfuStatus() const { return m_sfuStatus; }
 
     // Auth
     Q_INVOKABLE void loadPublicConfig();
@@ -158,6 +165,16 @@ public:
 
     // Files / attachments (encrypted via crypto-worker encryptBytes)
     Q_INVOKABLE void sendFile(const QString &conversationId, const QString &localPath);
+    Q_INVOKABLE void sendVoiceNote(const QString &conversationId, const QString &localPath);
+    Q_INVOKABLE void downloadAndOpenFile(const QString &fileId);
+
+    // Local search + safety number + SFU
+    Q_INVOKABLE void searchLocalMessages(const QString &query);
+    Q_INVOKABLE void computeSafetyNumber(const QString &peerId);
+    Q_INVOKABLE void startSfuGroupCall(const QString &conversationId, int expectedParticipants = 4);
+    Q_INVOKABLE void endSfuRoom();
+    Q_INVOKABLE QString sfuJoinToken() const { return m_sfuJoinToken; }
+    Q_INVOKABLE QString sfuWsUrl() const { return m_sfuWsUrl; }
 
     // Boot after login
     Q_INVOKABLE void onLoggedInBootstrap();
@@ -188,6 +205,10 @@ signals:
     void deviceLinkReady(const QString &token, const QString &deepLink);
     void incomingCall(const QString &callId, const QString &fromUserId, bool video);
     void realtimeEvent(const QString &type);
+    void searchHitsChanged();
+    void safetyNumberChanged();
+    void sfuStatusChanged();
+    void sfuRoomReady(const QString &roomId, const QString &wsUrl, const QString &joinToken);
 
 private:
     void setError(const QString &e);
@@ -212,6 +233,7 @@ private:
     SscSession *m_session = nullptr;
     SscCryptoBridge *m_crypto = nullptr;
     SscRealtime *m_realtime = nullptr;
+    SscLocalCache *m_cache = nullptr;
     QNetworkAccessManager m_nam;
 
     QJsonArray m_conversations;
@@ -223,10 +245,18 @@ private:
     QJsonArray m_stories;
     QJsonArray m_groupMembers;
     QJsonArray m_broadcastLists;
+    QJsonArray m_searchHits;
     QJsonObject m_privacy;
     QJsonObject m_reactionSummary;
 
     QString m_lastError;
+    QString m_safetyNumber;
+    QString m_sfuStatus;
+    QString m_sfuRoomId;
+    QString m_sfuJoinToken;
+    QString m_sfuWsUrl;
+    void uploadEncryptedAttachment(const QString &conversationId, const QString &localPath,
+                                   const QString &contentType, const QString &noticePrefix);
     QString m_activeConversationId;
     QString m_activePeerId;
     QString m_activeGroupId;

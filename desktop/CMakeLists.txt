@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickControls2 WebSockets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickControls2 WebSockets Sql)
 
 set(SSC_CRYPTO_WORKER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/crypto-worker")
 set(SSC_MEDIA_WORKER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/media-worker")
@@ -29,6 +29,10 @@ qt_add_executable(ssc_desktop
     src/SscRealtime.h
     src/SscCallEngine.cpp
     src/SscCallEngine.h
+    src/SscLocalCache.cpp
+    src/SscLocalCache.h
+    src/SscVoiceRecorder.cpp
+    src/SscVoiceRecorder.h
 )
 
 qt_add_qml_module(ssc_desktop
@@ -54,7 +58,11 @@ target_link_libraries(ssc_desktop PRIVATE
     Qt6::Network
     Qt6::QuickControls2
     Qt6::WebSockets
+    Qt6::Sql
 )
+if(WIN32)
+    target_link_libraries(ssc_desktop PRIVATE winmm)
+endif()
 
 # Copy workers next to binary for runtime
 add_custom_command(TARGET ssc_desktop POST_BUILD

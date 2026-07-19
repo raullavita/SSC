@@ -354,6 +354,50 @@ void SscCallEngine::hangup()
     }
     m_callId.clear();
     m_peerId.clear();
+    m_video = false;
     setState(QStringLiteral("idle"));
     emit callChanged();
+}
+
+void SscCallEngine::joinSfuRoom(const QString &wsUrl, const QString &roomId, const QString &joinToken)
+{
+    if (roomId.isEmpty() || wsUrl.isEmpty()) {
+        emit callError(QStringLiteral("sfu_join_missing_params"));
+        return;
+    }
+    if (m_proc.state() != QProcess::Running) startMediaWorker();
+    m_sfuRoomId = roomId;
+    m_sfuState = QStringLiteral("joining…");
+    emit sfuChanged();
+    const QString peerId = QStringLiteral("win-%1").arg(m_session->deviceId().left(8));
+    mediaCall(QStringLiteral("sfuJoin"),
+              QJsonObject{{QStringLiteral("wsUrl"), wsUrl},
+                          {QStringLiteral("roomId"), roomId},
+                          {QStringLiteral("joinToken"), joinToken},
+                          {QStringLiteral("peerId"), peerId}},
+              [this, roomId](bool ok, QJsonObject result, QString err) {
+                  if (!ok) {
+                      m_sfuState = QStringLiteral("join_failed: ") + err;
+                      emit sfuChanged();
+                      emit callError(err);
+                      return;
+                  }
+                  m_sfuRoomId = roomId;
+                  const int existing = result.value(QStringLiteral("existingProducers")).toInt();
+                  m_sfuState = QStringLiteral("joined (peers producers: %1)").arg(existing);
+                  emit sfuChanged();
+                  emit sfuJoined(roomId, existing);
+              });
+}
+
+void SscCallEngine::leaveSfuRoom()
+{
+    if (m_sfuRoomId.isEmpty()) return;
+    const QString rid = m_sfuRoomId;
+    mediaCall(QStringLiteral("sfuLeave"), QJsonObject{{QStringLiteral("roomId"), rid}},
+              [this](bool, QJsonObject, QString) {
+                  m_sfuRoomId.clear();
+                  m_sfuState = QStringLiteral("left");
+                  emit sfuChanged();
+              });
 }

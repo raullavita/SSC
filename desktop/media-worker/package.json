@@ -4,6 +4,7 @@
   "private": true,
   "main": "worker.js",
   "dependencies": {
-    "@roamhq/wrtc": "0.10.0"
+    "@roamhq/wrtc": "0.10.0",
+    "ws": "^8.18.0"
   }
 }

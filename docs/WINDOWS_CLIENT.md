@@ -52,11 +52,17 @@ Crypto-worker + libsignal live under `crypto-worker/`.
 | Cloud backup API | Yes (desktop envelope) |
 | Broadcast lists | Yes |
 | Realtime WebSocket | Yes |
-| Call signaling + WebRTC media worker | Yes (audio 1:1 via @roamhq/wrtc) |
+| Call signaling + WebRTC media worker | Yes (audio/video 1:1 via @roamhq/wrtc) |
 | Group sender-key multi encrypt | Yes (dist + encrypt/decrypt) |
 | Multi-device Sesame encrypt | Yes (`device_ciphertexts` map) |
 | Sesame decrypt retry-request | Yes |
 | Edit message | Yes |
+| Local message search (SQLite) | Yes |
+| Safety number | Yes |
+| Sealed sender toggle | Yes |
+| SFU room provision + join (signaling/transports) | Yes (mediasoup WS; media best-effort) |
+| File download/open | Yes |
+| Voice notes (record + `[voice:id]`) | Yes (WinMM WAV → encrypted file) |
 
 ## Android ↔ Windows
 

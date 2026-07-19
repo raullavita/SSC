@@ -59,6 +59,14 @@ Page {
                     font.pixelSize: 11
                 }
             }
+            TextField {
+                id: searchField
+                Layout.fillWidth: true
+                placeholderText: "Search messages"
+                color: Theme.onSurface
+                background: Rectangle { color: Theme.surfaceVariant; radius: 6 }
+                onTextChanged: sscApi.searchLocalMessages(text)
+            }
         }
     }
 
@@ -204,7 +212,7 @@ Page {
             SplitView.preferredWidth: 300
             SplitView.minimumWidth: 220
             clip: true
-            model: sscApi.conversations
+            model: searchField.text.length >= 2 ? sscApi.searchHits : sscApi.conversations
             delegate: ItemDelegate {
                 width: ListView.view.width
                 height: 64
@@ -217,14 +225,18 @@ Page {
                 contentItem: ColumnLayout {
                     spacing: 2
                     Label {
-                        text: (modelData.pinned ? "📌 " : "") + (modelData.title || modelData.peer_id || modelData.id || "Chat")
+                        text: searchField.text.length >= 2
+                              ? (modelData.snippet || "")
+                              : ((modelData.pinned ? "📌 " : "") + (modelData.title || modelData.peer_id || modelData.id || "Chat"))
                         color: Theme.onSurface
                         font.bold: true
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
                     Label {
-                        text: (modelData.muted ? "🔇 " : "") + (modelData.peer_id || modelData.type || modelData.group_id || "")
+                        text: searchField.text.length >= 2
+                              ? (modelData.conversationId || "")
+                              : ((modelData.muted ? "🔇 " : "") + (modelData.peer_id || modelData.type || modelData.group_id || ""))
                         color: Theme.onSurfaceVariant
                         font.pixelSize: 12
                         elide: Text.ElideRight
@@ -232,8 +244,13 @@ Page {
                     }
                 }
                 onClicked: {
-                    const id = modelData.id || modelData._id
-                    sscApi.openConversation(id, modelData.peer_id || "", modelData.group_id || "")
+                    if (searchField.text.length >= 2) {
+                        sscApi.openConversation(modelData.conversationId || "", "", "")
+                        searchField.text = ""
+                    } else {
+                        const id = modelData.id || modelData._id
+                        sscApi.openConversation(id, modelData.peer_id || "", modelData.group_id || "")
+                    }
                     replyToId = ""
                     replyPreview = ""
                 }
@@ -284,11 +301,20 @@ Page {
                     }
                     ToolButton {
                         text: "📞"
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Audio call"
                         visible: sscApi.activeConversationId.length > 0 && sscApi.activePeerId.length > 0
                         onClicked: sscCalls.startOutgoing(sscApi.activeConversationId, sscApi.activePeerId, false)
                     }
+                    ToolButton {
+                        text: "📹"
+                        ToolTip.visible: hovered
+                        ToolTip.text: "Video call"
+                        visible: sscApi.activeConversationId.length > 0 && sscApi.activePeerId.length > 0
+                        onClicked: sscCalls.startOutgoing(sscApi.activeConversationId, sscApi.activePeerId, true)
+                    }
                     Label {
-                        text: sscCalls.callState
+                        text: sscCalls.callState + (sscCalls.videoEnabled ? " · video" : "")
                         color: Theme.secondary
                         font.pixelSize: 11
                         visible: sscCalls.inCall
@@ -308,6 +334,19 @@ Page {
                         text: "📊"
                         visible: sscApi.activeConversationId.length > 0
                         onClicked: pollDialog.open()
+                    }
+                    ToolButton {
+                        text: "🔐"
+                        visible: sscApi.activePeerId.length > 0
+                        onClicked: {
+                            sscApi.computeSafetyNumber(sscApi.activePeerId)
+                            safetyDialog.open()
+                        }
+                    }
+                    ToolButton {
+                        text: "SFU"
+                        visible: sscApi.activeGroupId.length > 0 || sscApi.activeConversationId.length > 0
+                        onClicked: sscApi.startSfuGroupCall(sscApi.activeConversationId, 6)
                     }
                 }
             }
@@ -404,6 +443,26 @@ Page {
                                         editDialog.open()
                                     }
                                 }
+                                Button {
+                                    text: "Open file"
+                                    flat: true
+                                    font.pixelSize: 10
+                                    visible: {
+                                        const t = modelData.plaintext || ""
+                                        return t.indexOf("[file]") === 0 || t.indexOf("[voice:") === 0
+                                    }
+                                    onClicked: {
+                                        const t = modelData.plaintext || ""
+                                        let id = ""
+                                        const voice = t.match(/\[voice:([^\]]+)\]/)
+                                        if (voice) id = voice[1]
+                                        else {
+                                            const m = t.match(/id=([^\s]+)/)
+                                            if (m) id = m[1]
+                                        }
+                                        if (id) sscApi.downloadAndOpenFile(id)
+                                    }
+                                }
                             }
                         }
                     }
@@ -426,17 +485,33 @@ Page {
                         flat: true
                         onClicked: fileDialog.open()
                     }
+                    Button {
+                        text: sscVoice.recording ? "⏹" : "🎤"
+                        enabled: sscApi.activeConversationId.length > 0 && !sscApi.busy
+                        flat: true
+                        Material.foreground: sscVoice.recording ? Theme.error : Theme.onSurface
+                        onClicked: {
+                            if (sscVoice.recording) {
+                                const path = sscVoice.stop()
+                                if (path && path.length)
+                                    sscApi.sendVoiceNote(sscApi.activeConversationId, path)
+                            } else {
+                                if (!sscVoice.start())
+                                    console.log("voice start failed")
+                            }
+                        }
+                    }
                     TextField {
                         id: draft
                         Layout.fillWidth: true
-                        placeholderText: "Message"
-                        enabled: sscApi.activeConversationId.length > 0
+                        placeholderText: sscVoice.recording ? "Recording voice note…" : "Message"
+                        enabled: sscApi.activeConversationId.length > 0 && !sscVoice.recording
                         color: Theme.onSurface
                         placeholderTextColor: Theme.onSurfaceVariant
                         background: Rectangle {
                             color: Theme.surfaceVariant
                             radius: 20
-                            border.color: Theme.outline
+                            border.color: sscVoice.recording ? Theme.error : Theme.outline
                         }
                         onTextChanged: {
                             if (sscApi.activeConversationId.length)
@@ -510,6 +585,82 @@ Page {
         }
         onAccepted: {
             if (messageId.length) sscApi.editMessage(messageId, editField.text)
+        }
+    }
+
+    Dialog {
+        id: safetyDialog
+        title: "Safety number"
+        modal: true
+        standardButtons: Dialog.Ok
+        Label {
+            width: 360
+            wrapMode: Text.Wrap
+            text: sscApi.safetyNumber.length
+                  ? sscApi.safetyNumber
+                  : "Computing… compare this number with your contact out-of-band."
+            color: Theme.onSurface
+        }
+    }
+
+    Connections {
+        target: sscApi
+        function onSfuRoomReady(roomId, wsUrl, joinToken) {
+            sfuDialog.roomId = roomId
+            sfuDialog.wsUrl = wsUrl
+            sfuDialog.joinToken = joinToken || ""
+            sfuInfo.text = "Room " + roomId + "\nWS: " + wsUrl
+                           + "\n" + (sscCalls.sfuState || "ready to join")
+            sfuDialog.open()
+        }
+    }
+    Connections {
+        target: sscCalls
+        function onSfuJoined(roomId, existingProducers) {
+            sfuInfo.text = "Joined " + roomId + "\nExisting producers: " + existingProducers
+                           + "\n" + (sscCalls.sfuState || "")
+        }
+    }
+    Dialog {
+        id: sfuDialog
+        property string roomId: ""
+        property string wsUrl: ""
+        property string joinToken: ""
+        title: "SFU group call"
+        modal: true
+        standardButtons: Dialog.Close
+        Label {
+            id: sfuInfo
+            width: 400
+            wrapMode: Text.WrapAnywhere
+            color: Theme.onSurface
+        }
+        footer: DialogButtonBox {
+            Button {
+                text: "Join"
+                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
+                enabled: sfuDialog.roomId.length > 0 && sfuDialog.wsUrl.length > 0
+                onClicked: sscCalls.joinSfuRoom(sfuDialog.wsUrl, sfuDialog.roomId, sfuDialog.joinToken)
+            }
+            Button {
+                text: "Leave SFU"
+                DialogButtonBox.buttonRole: DialogButtonBox.ActionRole
+                onClicked: sscCalls.leaveSfuRoom()
+            }
+            Button {
+                text: "End room"
+                DialogButtonBox.buttonRole: DialogButtonBox.DestructiveRole
+                onClicked: {
+                    sscCalls.leaveSfuRoom()
+                    sscApi.endSfuRoom()
+                    sfuDialog.close()
+                }
+            }
+            Button {
+                text: "Close"
+                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
+                onClicked: sfuDialog.close()
+            }
         }
     }
 
