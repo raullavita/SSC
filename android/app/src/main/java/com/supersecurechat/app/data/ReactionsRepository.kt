@@ -1,5 +1,6 @@
 package com.supersecurechat.app.data
 
+import android.util.Log
 import org.json.JSONObject
 
 /** Encrypted reactions — same wire format as frontend (ciphertext of JSON {emoji,target}). */
@@ -8,6 +9,7 @@ class ReactionsRepository(
 ) {
     companion object {
         const val PROTOCOL = "signal_v1_reaction"
+        private const val TAG = "ReactionsRepository"
     }
 
     data class Reaction(
@@ -59,7 +61,8 @@ class ReactionsRepository(
                 )
             }
             out
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "listForConversation: ${e.message}")
             emptyList()
         }
     }
@@ -105,8 +108,8 @@ class ReactionsRepository(
                 !peerId.isNullOrBlank() -> {
                     try {
                         signal.decrypt(ct, peerId)
-                    } catch (_: Exception) {
-                        // own reaction: may decrypt with peer session
+                    } catch (e: Exception) {
+                        Log.d(TAG, "decrypt own/peer reaction: ${e.message}")
                         null
                     }
                 }
@@ -114,7 +117,8 @@ class ReactionsRepository(
             } ?: return null
             val data = JSONObject(plain)
             data.optString("emoji").ifBlank { null }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "decryptEmoji: ${e.message}")
             null
         }
     }
@@ -126,7 +130,8 @@ class ReactionsRepository(
             val emoji = data.optString("emoji")
             val target = data.optString("target")
             if (emoji.isNotBlank() && target.isNotBlank()) emoji to target else null
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.d(TAG, "parseReactionText: ${e.message}")
             null
         }
     }

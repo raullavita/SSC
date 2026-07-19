@@ -133,11 +133,13 @@ fun SscApp(pendingIntent: Intent? = null) {
             }
             try {
                 devices.registerThisDevice()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.w("SscApp", "register device: ${e.message}")
             }
             try {
                 PushRegistrar.registerIfPossible(context, http, session)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.w("SscApp", "push register: ${e.message}")
             }
         }
         startRealtime()
@@ -270,18 +272,25 @@ fun SscApp(pendingIntent: Intent? = null) {
                 signal.configureLocalIdentity()
                 try {
                     signal.ensurePrekeysUploaded()
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.w("SscApp", "boot prekeys: ${e.message}")
                 }
                 try {
                     devices.registerThisDevice()
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    Log.w("SscApp", "boot register device: ${e.message}")
                 }
-                PushRegistrar.registerIfPossible(context, http, session)
+                try {
+                    PushRegistrar.registerIfPossible(context, http, session)
+                } catch (e: Exception) {
+                    Log.w("SscApp", "boot push: ${e.message}")
+                }
             }
             startRealtime()
             screen = Screen.Chats
             deepLink?.let { handleDeepLink(it) }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w("SscApp", "session restore failed: ${e.message}")
             session.clearSession()
             screen = Screen.Login
         }

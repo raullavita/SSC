@@ -1,5 +1,6 @@
 package com.supersecurechat.app.data
 
+import android.util.Log
 import org.json.JSONObject
 
 class PresenceRepository(
@@ -8,7 +9,8 @@ class PresenceRepository(
     fun heartbeat() {
         try {
             http.requestJson("/api/presence/heartbeat", "POST", JSONObject())
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "heartbeat: ${e.message}")
         }
     }
 
@@ -25,8 +27,13 @@ class PresenceRepository(
             json.optString("last_seen").ifBlank {
                 json.optString("status").ifBlank { null }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "lastSeen: ${e.message}")
             null
         }
+    }
+
+    companion object {
+        private const val TAG = "PresenceRepository"
     }
 }

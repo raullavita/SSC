@@ -4,13 +4,13 @@
 # Usage:
 #   .\scripts\release_smoke_test.ps1
 #   .\scripts\release_smoke_test.ps1 -StrictVersionMatch
-#   .\scripts\release_smoke_test.ps1 -ExePath electron\dist\SSC-Setup-0.3.1.exe -ApkPath android\app\build\outputs\apk\release\SSC-0.3.1.apk
+#   .\scripts\release_smoke_test.ps1 -ExePath electron\dist\SSC-Setup-0.4.0.exe -ApkPath android\app\build\outputs\apk\release\SSC-0.4.0.apk
 
 param(
     [string]$ApiUrl = "https://api.supersecurechat.com",
     [string]$WebUrl = "https://www.supersecurechat.com",
-    [string]$ExpectedVersion = "0.3.1",
-    [string]$ClientBuild = "14",
+    [string]$ExpectedVersion = "0.4.0",
+    [string]$ClientBuild = "15",
     [switch]$StrictVersionMatch,
     [switch]$StrictInstalledClient,
     [string]$ExePath = "",
@@ -33,8 +33,9 @@ function Assert-Ok([string]$Name, [bool]$Passed, [string]$Detail) {
 }
 
 function Get-InstalledClientHeaders {
+    # Product path is native Android; electron/* still accepted if version >= min_client
     return @{
-        "X-SSC-Client" = "electron/$ExpectedVersion/$ClientBuild"
+        "X-SSC-Client" = "android/$ExpectedVersion/$ClientBuild"
         "X-SSC-Native-Bridge" = "v1"
         "X-SSC-Device-Attest" = "ssc-attest-test-v1"
     }

@@ -1,5 +1,6 @@
 package com.supersecurechat.app.data
 
+import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -14,6 +15,7 @@ class PollsRepository(
 ) {
     companion object {
         const val PROTOCOL = "signal_v1_poll"
+        private const val TAG = "PollsRepository"
     }
 
     data class CreatedPoll(
@@ -41,7 +43,8 @@ class PollsRepository(
                 options.add(opts.optString(i, "Option ${i + 1}"))
             }
             PollContent(question = question, options = options)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "parsePollContent: ${e.message}")
             null
         }
     }

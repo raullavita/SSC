@@ -157,7 +157,7 @@ GET  /api/config          → needs X-SSC-Client + X-SSC-Native-Bridge: v1
 POST /api/auth/register   → needs captcha_token (Android Turnstile provides)
 ```
 
-Live config still may show `release_version` 0.3.1 until Cloud Run image redeployed with code 0.4.0/15.
+Live config confirmed: `release_version` **0.4.0** / build **15** after Cloud Run rev `ssc-api-00037`.
 
 ---
 

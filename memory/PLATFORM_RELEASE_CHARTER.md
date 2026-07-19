@@ -21,7 +21,7 @@ Engine 11 delivers **local builds only** — no live deploy to Firebase, Cloud R
 
 ## Android
 
-- `android/.../ApiClient.kt` — injects `X-SSC-Client: android/0.3.0/3`
+- `android/.../data/SscHttpClient.kt` — injects `X-SSC-Client: android/0.4.0/15` (Compose native path)
 - `android/.../MainActivity.kt` — WebView loads production web shell
 - `scripts/build_android.ps1` — local APK build
 

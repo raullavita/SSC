@@ -50,7 +50,7 @@ if ($Gcloud) {
 }
 
 $headers = @{
-    "X-SSC-Client" = "electron/0.3.1/14"
+    "X-SSC-Client" = "android/0.4.0/15"
     "X-SSC-Native-Bridge" = "v1"
     "X-SSC-Device-Attest" = "ssc-attest-test-v1"
 }
