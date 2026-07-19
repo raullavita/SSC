@@ -77,7 +77,7 @@ class AuthRepository(
 
     fun setupRecovery(passphrase: String) {
         http.requestJson(
-            "/api/recovery/setup",
+            "/api/auth/recovery/setup",
             "POST",
             JSONObject().put("recovery_passphrase", passphrase),
         )
@@ -85,7 +85,7 @@ class AuthRepository(
 
     fun recoveryConfigured(): Boolean {
         return try {
-            http.requestJson("/api/recovery/status", "GET").optBoolean("configured", false)
+            http.requestJson("/api/auth/recovery/status", "GET").optBoolean("configured", false)
         } catch (_: Exception) {
             false
         }
@@ -104,13 +104,13 @@ class AuthRepository(
             .put("email", email.trim())
             .put("recovery_passphrase", passphrase)
         if (!captchaToken.isNullOrBlank()) body.put("captcha_token", captchaToken)
-        val json = http.requestJson("/api/recovery/verify", "POST", body)
+        val json = http.requestJson("/api/auth/recovery/verify", "POST", body)
         return json.getString("recovery_token")
     }
 
     fun resetPasswordWithRecovery(recoveryToken: String, newPassword: String): User {
         val json = http.requestJson(
-            "/api/recovery/reset-password",
+            "/api/auth/recovery/reset-password",
             "POST",
             JSONObject()
                 .put("recovery_token", recoveryToken)
