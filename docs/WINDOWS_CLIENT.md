@@ -33,19 +33,36 @@ Output: `dist\windows-qt\SSC-Desktop-0.4.0.exe` (+ `crypto-worker/`).
 Runtime ships a **portable Node** under `runtime/node/node.exe` (no system Node install required).
 Crypto-worker + libsignal live under `crypto-worker/`.
 
-## Android ↔ Windows test
+## Feature parity (vs Android Compose)
+
+| Area | Windows Qt |
+|------|------------|
+| Login / register + Turnstile | Yes |
+| Google OAuth start | Yes (browser) |
+| Recovery | Yes |
+| E2EE 1:1 messages | Yes (libsignal 0.96.4) |
+| Reply / delete / reactions | Yes |
+| Typing + read + pin/mute | Yes |
+| Groups create / members / leave / dissolve | Yes |
+| Friend requests | Yes |
+| Devices + link token | Yes |
+| Privacy + username + panic | Yes |
+| Stories feed + post + delete | Yes |
+| Polls | Yes |
+| Cloud backup API | Yes (desktop envelope) |
+| Broadcast lists | Yes |
+| Realtime WebSocket | Yes |
+| Call signaling | Yes (media WebRTC attach later) |
+| Group sender-key multi encrypt | Partial (direct preferred) |
+
+## Android ↔ Windows
 
 1. Android Compose APK 0.4.0  
-2. Windows Qt `SSC-Desktop-0.4.0.exe`  
-3. Two accounts, open direct chat, send both ways  
+2. Run from `dist/windows-qt/` (EXE + runtime + crypto-worker)  
+3. Two accounts → direct chat → both directions  
 
 ## Why a small Node worker?
 
-libsignal’s supported desktop binding for 0.96.x is the official Node/Rust package. Qt UI stays native; the worker only runs Signal Protocol. This is **not** an Electron UI shell.
-
-## Removed from Windows product messaging
-
-- Shipping Electron React UI as “the Windows app”  
-- Qt scaffold that sent base64 fake ciphertext  
+libsignal’s supported desktop binding for 0.96.x is the official Node package. Qt UI stays native; the worker only runs Signal Protocol. **Not** an Electron UI shell. Portable Node is bundled under `runtime/node/`.
 
 See also: `desktop/README.md`, `docs/ELECTRON_RETIRED.md`.

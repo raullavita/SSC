@@ -2,11 +2,13 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
+#include <QTimer>
 
 #include "SscApiClient.h"
 #include "SscSession.h"
 #include "SscCryptoBridge.h"
 #include "SscTurnstileHelper.h"
+#include "SscRealtime.h"
 
 int main(int argc, char *argv[])
 {
@@ -19,10 +21,19 @@ int main(int argc, char *argv[])
 
     SscSession session;
     SscCryptoBridge crypto;
-    SscApiClient api(&session, &crypto);
+    SscRealtime realtime;
+    SscApiClient api(&session, &crypto, &realtime);
     SscTurnstileHelper turnstile;
 
     crypto.start(session.signalStorePath());
+
+    // Presence heartbeat while logged in
+    QTimer heartbeat;
+    heartbeat.setInterval(60'000);
+    QObject::connect(&heartbeat, &QTimer::timeout, &api, [&api, &session]() {
+        if (session.loggedIn()) api.heartbeat();
+    });
+    heartbeat.start();
 
     QQmlApplicationEngine engine;
     engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
@@ -30,6 +41,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("sscApi"), &api);
     engine.rootContext()->setContextProperty(QStringLiteral("sscCrypto"), &crypto);
     engine.rootContext()->setContextProperty(QStringLiteral("sscTurnstile"), &turnstile);
+    engine.rootContext()->setContextProperty(QStringLiteral("sscRealtime"), &realtime);
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/qml"));
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/SuperSecureChat/qml/Main.qml"));

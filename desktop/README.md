@@ -2,7 +2,9 @@
 
 **Architecture:** True native desktop UI (Qt 6 Quick / QML). **No Electron UI.**
 
-Matches Android Compose dark theme and core flows: login/register, chats, E2EE messages, settings.
+Matches Android Compose dark theme and product flows: login/register/recovery/OAuth,
+chats (E2EE, reply, delete, reactions, typing, pin/mute), groups, friends, devices,
+privacy, stories, polls, cloud backup, broadcast, realtime WS, call signaling.
 
 | Layer | Tech |
 |-------|------|

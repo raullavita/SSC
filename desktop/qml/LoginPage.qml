@@ -143,6 +143,13 @@ Item {
                 }
             }
             Button {
+                text: "Continue with Google"
+                Layout.fillWidth: true
+                Material.background: Theme.surfaceVariant
+                Material.foreground: Theme.onSurface
+                onClicked: sscApi.openGoogleOAuth()
+            }
+            Button {
                 text: registerMode ? "Have an account? Sign in" : "Need an account? Register"
                 Layout.fillWidth: true
                 flat: true

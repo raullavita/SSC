@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickControls2)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickControls2 WebSockets)
 
 set(SSC_CRYPTO_WORKER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/crypto-worker")
 add_compile_definitions(SSC_CRYPTO_WORKER_DIR="${SSC_CRYPTO_WORKER_DIR}")
@@ -21,6 +21,8 @@ qt_add_executable(ssc_desktop
     src/SscCryptoBridge.h
     src/SscTurnstileHelper.cpp
     src/SscTurnstileHelper.h
+    src/SscRealtime.cpp
+    src/SscRealtime.h
 )
 
 qt_add_qml_module(ssc_desktop
@@ -45,6 +47,7 @@ target_link_libraries(ssc_desktop PRIVATE
     Qt6::Quick
     Qt6::Network
     Qt6::QuickControls2
+    Qt6::WebSockets
 )
 
 # Copy crypto-worker next to binary for runtime

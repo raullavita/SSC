@@ -51,6 +51,18 @@ ApplicationWindow {
         }
     }
 
+    // Deep-link style: ssc:// or custom args can set oauth later
+    Component.onCompleted: {
+        // If process args contain oauth_code=...
+        for (let i = 0; i < Qt.application.arguments.length; i++) {
+            const a = Qt.application.arguments[i]
+            if (a.indexOf("oauth_code=") >= 0) {
+                const code = a.split("oauth_code=")[1].split("&")[0]
+                if (code) sscApi.exchangeGoogleCode(code)
+            }
+        }
+    }
+
     Component {
         id: loginComponent
         LoginPage { objectName: "login" }
