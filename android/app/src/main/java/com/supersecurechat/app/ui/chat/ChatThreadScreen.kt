@@ -893,6 +893,7 @@ fun ChatThreadScreen(
     }
 
     if (showMembers) {
+        var addMemberDraft by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showMembers = false },
             title = { Text("Members (${members.size})") },
@@ -902,11 +903,55 @@ fun ChatThreadScreen(
                         Text("No members loaded")
                     } else {
                         members.forEach { m ->
-                            Text(
-                                m.displayName ?: m.username?.let { "@$it" } ?: m.id,
-                                modifier = Modifier.padding(vertical = 4.dp),
-                            )
+                            Row(
+                                Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    m.displayName ?: m.username?.let { "@$it" } ?: m.id,
+                                    Modifier.weight(1f),
+                                )
+                                if (conversation.groupId != null && groups != null && m.id != myId) {
+                                    TextButton(onClick = {
+                                        scope.launch {
+                                            try {
+                                                withContext(Dispatchers.IO) {
+                                                    groups.removeMember(conversation.groupId!!, m.id)
+                                                    members = groups.listMembers(conversation.groupId!!)
+                                                }
+                                            } catch (e: Exception) {
+                                                error = e.message
+                                            }
+                                        }
+                                    }) { Text("Remove") }
+                                }
+                            }
                         }
+                    }
+                    if (conversation.groupId != null && groups != null) {
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = addMemberDraft,
+                            onValueChange = { addMemberDraft = it },
+                            label = { Text("Add member user id") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        TextButton(onClick = {
+                            val id = addMemberDraft.trim()
+                            if (id.isBlank()) return@TextButton
+                            scope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        groups.addMembers(conversation.groupId!!, listOf(id))
+                                        members = groups.listMembers(conversation.groupId!!)
+                                    }
+                                    addMemberDraft = ""
+                                } catch (e: Exception) {
+                                    error = e.message
+                                }
+                            }
+                        }) { Text("Add member") }
                     }
                 }
             },
@@ -915,19 +960,34 @@ fun ChatThreadScreen(
             },
             dismissButton = {
                 if (conversation.groupId != null && groups != null) {
-                    TextButton(onClick = {
-                        scope.launch {
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    groups.leaveGroup(conversation.groupId!!)
+                    Row {
+                        TextButton(onClick = {
+                            scope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        groups.leaveGroup(conversation.groupId!!)
+                                    }
+                                    showMembers = false
+                                    onBack()
+                                } catch (e: Exception) {
+                                    error = e.message
                                 }
-                                showMembers = false
-                                onBack()
-                            } catch (e: Exception) {
-                                error = e.message
                             }
-                        }
-                    }) { Text("Leave group") }
+                        }) { Text("Leave") }
+                        TextButton(onClick = {
+                            scope.launch {
+                                try {
+                                    withContext(Dispatchers.IO) {
+                                        groups.dissolveGroup(conversation.groupId!!)
+                                    }
+                                    showMembers = false
+                                    onBack()
+                                } catch (e: Exception) {
+                                    error = e.message
+                                }
+                            }
+                        }) { Text("Dissolve") }
+                    }
                 }
             },
         )

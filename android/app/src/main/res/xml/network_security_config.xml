@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- Product API / web — pin set for supersecurechat.com -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">api.supersecurechat.com</domain>
         <domain includeSubdomains="true">www.supersecurechat.com</domain>
@@ -12,4 +13,10 @@
             <pin digest="SHA-256">F6jTih9VkkYZS8yuYqeU/4DUGehJ+niBGkkQ1yg8H3U=</pin>
         </pin-set>
     </domain-config>
+    <!-- Turnstile captcha + temporary SFU WSS host (system CAs, no pin) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">challenges.cloudflare.com</domain>
+        <domain includeSubdomains="true">sslip.io</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
 </network-security-config>

@@ -70,8 +70,7 @@ class CallCoordinator(
             ) {
                 try {
                     withContextIo { calls.endCall(callId, "missed") }
-                } catch (_: Exception) {
-                }
+                } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
                 cleanup("missed")
                 _state.value = UiState(status = "idle", error = "no_answer")
             }
@@ -88,8 +87,7 @@ class CallCoordinator(
                     scope.launch(Dispatchers.IO) {
                         try {
                             calls.endCall(id, "busy")
-                        } catch (_: Exception) {
-                        }
+                        } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
                     }
                     return
                 }
@@ -354,12 +352,10 @@ class CallCoordinator(
     fun unbindVideoRenderers() {
         try {
             sfuMedia?.unbindVideoRenderers()
-        } catch (_: Exception) {
-        }
+        } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
         try {
             rtc?.unbindVideoRenderers()
-        } catch (_: Exception) {
-        }
+        } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
     }
 
     private suspend fun connectSfu(
@@ -491,8 +487,7 @@ class CallCoordinator(
             scope.launch(Dispatchers.IO) {
                 try {
                     calls.endCall(id, "declined")
-                } catch (_: Exception) {
-                }
+                } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
             }
         }
         cleanup("declined")
@@ -507,20 +502,17 @@ class CallCoordinator(
             if (id != null && peer != null && mode != "sfu") {
                 try {
                     relay(id, peer, "hangup", JSONObject().put("reason", reason))
-                } catch (_: Exception) {
-                }
+                } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
             }
             if (id != null) {
                 try {
                     calls.endCall(id, reason)
-                } catch (_: Exception) {
-                }
+                } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
             }
             if (mode == "sfu" && !roomId.isNullOrBlank()) {
                 try {
                     sfuRepo?.endRoom(roomId)
-                } catch (_: Exception) {
-                }
+                } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
             }
         }
         cleanup(reason)
@@ -625,8 +617,7 @@ class CallCoordinator(
     private fun relay(callId: String, peerId: String, type: String, body: JSONObject) {
         try {
             signal.establishWithPeer(peerId)
-        } catch (_: Exception) {
-        }
+        } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
         val (ct, protocol) = signal.encrypt(body.toString(), peerId)
         calls.signal(callId, type, ct, protocol)
     }
@@ -636,23 +627,19 @@ class CallCoordinator(
         ringJob = null
         try {
             unbindVideoRenderers()
-        } catch (_: Exception) {
-        }
+        } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
         try {
             sfuMedia?.close()
-        } catch (_: Exception) {
-        }
+        } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
         sfuMedia = null
         try {
             sfuSession?.close()
-        } catch (_: Exception) {
-        }
+        } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
         sfuSession = null
         pendingSfuJoin = null
         try {
             rtc?.close()
-        } catch (_: Exception) {
-        }
+        } catch (e: Exception) { Log.w(TAG, "swallowed: ${e.message}") }
         rtc = null
         pendingOffer = null
         pendingIce.clear()

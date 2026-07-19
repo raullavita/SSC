@@ -1,12 +1,17 @@
 package com.supersecurechat.app.data
 
+import android.util.Log
 import org.json.JSONObject
 
 class ConversationRepository(
     private val http: SscHttpClient,
     private val db: LocalMessageDb,
     private val session: SessionStore,
+    private val sesame: SesameRepository? = null,
 ) {
+    companion object {
+        private const val TAG = "ConversationRepo"
+    }
     data class Conversation(
         val id: String,
         val type: String,
@@ -43,7 +48,8 @@ class ConversationRepository(
             }
             // Pinned first, then by server order / updated_at
             out.sortedWith(compareByDescending<Conversation> { it.pinned }.thenByDescending { it.updatedAt ?: "" })
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "listConversations: ${e.message}")
             if (preferCache) {
                 db.listConversations().sortedWith(
                     compareByDescending<Conversation> { it.pinned }.thenByDescending { it.updatedAt ?: "" },
@@ -105,7 +111,8 @@ class ConversationRepository(
                 out.add(parseMessage(m, conversationId))
             }
             out
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "listMessages network: ${e.message}")
             return db.listMessages(conversationId)
         }
 
@@ -150,8 +157,8 @@ class ConversationRepository(
         if (!lastMessageId.isNullOrBlank()) body.put("last_message_id", lastMessageId)
         try {
             http.requestJson("/api/conversations/$conversationId/read", "POST", body)
-        } catch (_: Exception) {
-            // non-fatal
+        } catch (e: Exception) {
+            Log.w(TAG, "markRead: ${e.message}")
         }
     }
 
@@ -162,7 +169,8 @@ class ConversationRepository(
                 "POST",
                 JSONObject().put("active", active),
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "sendTyping: ${e.message}")
         }
     }
 
@@ -227,7 +235,8 @@ class ConversationRepository(
             val json = http.requestJson("/api/prekeys/users/$peerId/devices/$deviceId", "GET")
             val bundle = json.optJSONObject("bundle") ?: json
             bundle.optString("identity_key", bundle.optString("identityKey", "")).ifBlank { null }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "fetchPeerIdentityKey: ${e.message}")
             null
         }
     }
@@ -247,7 +256,8 @@ class ConversationRepository(
                 if (mid.isNotBlank()) out.add(mid)
             }
             out
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "fetchReadMessageIds: ${e.message}")
             emptySet()
         }
     }
@@ -270,7 +280,8 @@ class ConversationRepository(
                     if (sender != null) {
                         try {
                             signal.ingestGroupDistribution(sender, ct)
-                        } catch (_: Exception) {
+                        } catch (e: Exception) {
+                            Log.w(TAG, "ingestGroupDistribution: ${e.message}")
                         }
                     }
                     "[sender key]"
@@ -279,19 +290,33 @@ class ConversationRepository(
                     protocol.contains("group_sender_key") -> {
                     if (sender != null) signal.decryptGroup(sender, ct) else "[encrypted]"
                 }
-                sender != null && sender != myId -> signal.decrypt(ct, sender)
+                sender != null && sender != myId -> {
+                    try {
+                        signal.decrypt(ct, sender)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "decrypt peer failed, sesame retry: ${e.message}")
+                        sesame?.requestRetry(msg.id, msg.conversationId)
+                        throw e
+                    }
+                }
                 !peerId.isNullOrBlank() -> {
                     try {
                         signal.decrypt(ct, peerId)
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        Log.w(TAG, "decrypt fallback failed, sesame retry: ${e.message}")
+                        sesame?.requestRetry(msg.id, msg.conversationId)
                         msg.plaintext ?: if (sender == myId) "[sent]" else "[unable to decrypt]"
                     }
                 }
                 sender == myId -> msg.plaintext ?: "[sent]"
                 else -> "[encrypted]"
             }
-        } catch (_: Exception) {
-            if (sender == myId) msg.plaintext ?: "[sent]" else "[unable to decrypt]"
+        } catch (e: Exception) {
+            Log.w(TAG, "decryptIfPossible: ${e.message}")
+            if (sender == myId) msg.plaintext ?: "[sent]" else {
+                sesame?.requestRetry(msg.id, msg.conversationId)
+                "[unable to decrypt]"
+            }
         }
     }
 

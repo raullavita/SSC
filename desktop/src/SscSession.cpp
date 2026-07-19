@@ -1,14 +1,20 @@
 #include "SscSession.h"
 
+#include <QSysInfo>
+
 SscSession::SscSession(QObject *parent)
     : QObject(parent)
     , m_settings(QStringLiteral("SuperSecureChat"), QStringLiteral("SSC"))
 {
-    m_token = m_settings.value(QStringLiteral("access_token")).toString();
+    // Non-secret prefs only — access tokens stay in memory until Qt Keychain/libsignal FFI
     m_userId = m_settings.value(QStringLiteral("user_id")).toString();
     m_displayName = m_settings.value(QStringLiteral("display_name")).toString();
     if (!m_settings.contains(QStringLiteral("device_id"))) {
         m_settings.setValue(QStringLiteral("device_id"), QStringLiteral("1"));
+    }
+    // Purge any legacy plaintext token left by older scaffold builds
+    if (m_settings.contains(QStringLiteral("access_token"))) {
+        m_settings.remove(QStringLiteral("access_token"));
     }
 }
 
@@ -31,9 +37,10 @@ void SscSession::saveSession(const QString &token, const QString &userId, const 
     m_token = token;
     m_userId = userId;
     m_displayName = displayName;
-    m_settings.setValue(QStringLiteral("access_token"), token);
+    // Never write bearer token to disk (audit H3) — session is process-lifetime until Keychain lands
     m_settings.setValue(QStringLiteral("user_id"), userId);
     m_settings.setValue(QStringLiteral("display_name"), displayName);
+    m_settings.remove(QStringLiteral("access_token"));
     emit changed();
 }
 

@@ -1,11 +1,15 @@
 package com.supersecurechat.app.data
 
+import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 
 class GroupsRepository(
     private val http: SscHttpClient,
 ) {
+    companion object {
+        private const val TAG = "GroupsRepository"
+    }
     data class GroupSummary(
         val id: String,
         val conversationId: String?,
@@ -26,7 +30,8 @@ class GroupsRepository(
     fun listGroups(): List<GroupSummary> {
         val json = try {
             http.requestJson("/api/groups", "GET")
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "listGroups: ${e.message}")
             return emptyList()
         }
         val arr = json.optJSONArray("groups") ?: return emptyList()
@@ -67,12 +72,31 @@ class GroupsRepository(
                 )
             }
             out
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "listMembers: ${e.message}")
             emptyList()
         }
     }
 
     fun leaveGroup(groupId: String) {
         http.requestJson("/api/groups/$groupId/leave", "POST")
+    }
+
+    fun addMembers(groupId: String, memberIds: List<String>) {
+        val arr = JSONArray()
+        memberIds.forEach { arr.put(it) }
+        http.requestJson(
+            "/api/groups/$groupId/members",
+            "POST",
+            JSONObject().put("member_ids", arr),
+        )
+    }
+
+    fun removeMember(groupId: String, memberId: String) {
+        http.requestJson("/api/groups/$groupId/members/$memberId", "DELETE")
+    }
+
+    fun dissolveGroup(groupId: String) {
+        http.requestJson("/api/groups/$groupId", "DELETE")
     }
 }

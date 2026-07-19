@@ -1,5 +1,6 @@
 package com.supersecurechat.app.data
 
+import android.util.Log
 import org.json.JSONObject
 
 class StoriesRepository(
@@ -27,7 +28,8 @@ class StoriesRepository(
                 )
             }
             out
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "stories feed: ${e.message}")
             emptyList()
         }
     }
@@ -38,5 +40,13 @@ class StoriesRepository(
             "POST",
             JSONObject().put("ciphertext", ciphertext).put("protocol", protocol),
         )
+    }
+
+    fun delete(storyId: String) {
+        http.requestJson("/api/stories/$storyId", "DELETE")
+    }
+
+    companion object {
+        private const val TAG = "StoriesRepository"
     }
 }

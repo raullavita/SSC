@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -17,7 +19,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,11 +53,31 @@ fun LoginScreen(
     var registerMode by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    var captchaRequired by remember { mutableStateOf(false) }
+    var captchaSiteKey by remember { mutableStateOf<String?>(null) }
+    var captchaToken by remember { mutableStateOf("") }
+    var captchaReset by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        try {
+            val cfg = withContext(Dispatchers.IO) { auth.publicConfig() }
+            captchaRequired = cfg.captchaRequired
+            captchaSiteKey = cfg.turnstileSiteKey
+        } catch (_: Exception) {
+            // If config fails, still allow login attempt; server will reject if needed
+            captchaRequired = true
+        }
+    }
+
+    val needsCaptcha = registerMode && captchaRequired && !captchaSiteKey.isNullOrBlank()
+    val canSubmit = email.isNotBlank() && password.length >= 8 &&
+        (!needsCaptcha || captchaToken.isNotBlank())
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -101,6 +125,20 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
+        if (needsCaptcha) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Security check",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TurnstileWebView(
+                siteKey = captchaSiteKey!!,
+                onToken = { captchaToken = it },
+                resetKey = captchaReset,
+            )
+        }
+
         error?.let {
             Text(
                 text = it,
@@ -127,6 +165,7 @@ fun LoginScreen(
                                         email,
                                         password,
                                         displayName.ifBlank { email.substringBefore("@") },
+                                        captchaToken = captchaToken.ifBlank { null },
                                     )
                                 } else {
                                     auth.login(email, password)
@@ -135,14 +174,18 @@ fun LoginScreen(
                             onLoggedIn()
                         } catch (e: SscHttpClient.ApiException) {
                             error = e.detail
+                            captchaToken = ""
+                            captchaReset++
                         } catch (e: Exception) {
                             error = e.message ?: "login_failed"
+                            captchaToken = ""
+                            captchaReset++
                         } finally {
                             loading = false
                         }
                     }
                 },
-                enabled = email.isNotBlank() && password.length >= 8,
+                enabled = canSubmit,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(if (registerMode) "Register" else "Sign in")
@@ -166,6 +209,8 @@ fun LoginScreen(
                 onClick = {
                     registerMode = !registerMode
                     error = null
+                    captchaToken = ""
+                    captchaReset++
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) {
@@ -177,7 +222,7 @@ fun LoginScreen(
         }
 
         Text(
-            text = "Native Android · no WebView",
+            text = "Native Android · E2EE",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 24.dp),

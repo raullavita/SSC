@@ -68,6 +68,7 @@ class SfuMediaEngine(
     private var recvPc: PeerConnection? = null
     private var sendTransportId: String? = null
     private var recvTransportId: String? = null
+    private var recvTransportParams: SfuSession.TransportCreated? = null
     private var sendConnected = AtomicBoolean(false)
     private var recvConnected = AtomicBoolean(false)
 
@@ -77,6 +78,10 @@ class SfuMediaEngine(
     private var videoTrack: VideoTrack? = null
     private var remoteVideoTrack: VideoTrack? = null
     private var remoteAudioTrack: AudioTrack? = null
+    /** Multi-remote: all active remote tracks keyed by producerId (audit C3). */
+    private val remoteVideoByProducer = ConcurrentHashMap<String, VideoTrack>()
+    private val remoteAudioByProducer = ConcurrentHashMap<String, AudioTrack>()
+    private val consumedByProducer = ConcurrentHashMap<String, SfuSession.Consumed>()
     private var capturer: CameraVideoCapturer? = null
     private var surfaceHelper: SurfaceTextureHelper? = null
     private var localRenderer: SurfaceViewRenderer? = null
@@ -200,6 +205,7 @@ class SfuMediaEngine(
 
             val recvT = session.createWebRtcTransport("recv")
             recvTransportId = recvT.id
+            recvTransportParams = recvT
             recvPc = createPc("recv")
             applyRemoteIce(recvPc!!, recvT)
             val recvOffer = createOffer(recvPc!!)
@@ -244,6 +250,27 @@ class SfuMediaEngine(
 
     fun onProducerClosed(producerId: String) {
         consuming.remove(producerId)
+        consumedByProducer.remove(producerId)
+        remoteVideoByProducer.remove(producerId)?.let { track ->
+            try {
+                remoteRenderer?.let { track.removeSink(it) }
+            } catch (e: Exception) {
+                Log.w(TAG, "removeSink on close: ${e.message}")
+            }
+            if (remoteVideoTrack === track) remoteVideoTrack = remoteVideoByProducer.values.firstOrNull()
+        }
+        remoteAudioByProducer.remove(producerId)?.let { track ->
+            track.setEnabled(false)
+            if (remoteAudioTrack === track) remoteAudioTrack = remoteAudioByProducer.values.firstOrNull()
+        }
+        // Rebuild recv SDP without closed producer
+        if (consumedByProducer.isNotEmpty()) {
+            try {
+                applyAllConsumedTracks()
+            } catch (e: Exception) {
+                Log.w(TAG, "rebuild after producerClosed: ${e.message}")
+            }
+        }
     }
 
     fun consumeProducer(producerId: String, kind: String) {
@@ -258,13 +285,16 @@ class SfuMediaEngine(
                 // Prefer client-shaped caps that mediasoup canConsume accepts
                 val caps = buildClientRtpCapabilities(session.rtpCapabilities)
                 val consumed = session.consume(transportId, producerId, caps)
-                applyConsumedTrack(consumed)
+                consumedByProducer[producerId] = consumed
+                // Re-apply full multi-remote offer (all consumers) so BUNDLE keeps every mid
+                applyAllConsumedTracks()
                 session.resumeConsumer(consumed.id)
                 onRemoteTrack?.invoke(consumed.kind, producerId)
-                onState?.invoke("sfu_remote_${consumed.kind}")
-                Log.i(TAG, "consumed $kind $producerId")
+                onState?.invoke("sfu_remote_${consumed.kind}_n${consumedByProducer.size}")
+                Log.i(TAG, "consumed $kind $producerId (total remotes=${consumedByProducer.size})")
             } catch (e: Exception) {
                 consuming.remove(producerId)
+                consumedByProducer.remove(producerId)
                 Log.w(TAG, "consume $producerId: ${e.message}")
                 onState?.invoke("consume_failed:${e.message}")
             }
@@ -293,6 +323,10 @@ class SfuMediaEngine(
                 remoteVideoTrack = null
                 remoteAudioTrack?.setEnabled(false)
                 remoteAudioTrack = null
+                remoteVideoByProducer.clear()
+                remoteAudioByProducer.clear()
+                consumedByProducer.clear()
+                consuming.clear()
                 audioTrack?.dispose()
                 audioSource?.dispose()
                 sendPc?.close()
@@ -381,14 +415,48 @@ class SfuMediaEngine(
     }
 
     private fun applyConsumedTrack(consumed: SfuSession.Consumed) {
+        // Prefer multi-remote path
+        consumedByProducer[consumed.producerId.ifBlank { consumed.id }] = consumed
+        applyAllConsumedTracks()
+    }
+
+    /** Unified-plan offer with one m-line per consumed producer (multi-remote). */
+    private fun applyAllConsumedTracks() {
         val pc = recvPc ?: return
-        val sdp = buildRecvOfferSdp(consumed)
+        val transport = recvTransportParams
+        val all = consumedByProducer.values.toList()
+        if (all.isEmpty()) return
+        val sdp = buildMultiRecvOfferSdp(all, transport)
         try {
             setRemoteSync(pc, SessionDescription(SessionDescription.Type.OFFER, sdp))
             val answer = createAnswer(pc)
             setLocal(pc, answer)
+            if (transport != null) {
+                applyRemoteIceCandidatesOnly(pc, transport)
+            }
+            Log.i(TAG, "applyAllConsumedTracks n=${all.size}")
         } catch (e: Exception) {
-            Log.w(TAG, "applyConsumed: ${e.message}")
+            Log.w(TAG, "applyAllConsumed: ${e.message}")
+        }
+    }
+
+    private fun applyRemoteIceCandidatesOnly(pc: PeerConnection, transport: SfuSession.TransportCreated) {
+        for (i in 0 until transport.iceCandidates.length()) {
+            val c = transport.iceCandidates.optJSONObject(i) ?: continue
+            val foundation = c.optString("foundation", "sfu")
+            val priority = c.optLong("priority", 1)
+            val ip = c.optString("ip", c.optString("address", "0.0.0.0"))
+            val port = c.optInt("port", 0)
+            val type = c.optString("type", "host")
+            val protocol = c.optString("protocol", "udp")
+            val candStr = "candidate:$foundation 1 $protocol $priority $ip $port typ $type"
+            try {
+                pc.addIceCandidate(
+                    IceCandidate(c.optString("sdpMid", "0"), c.optInt("sdpMLineIndex", 0), candStr),
+                )
+            } catch (e: Exception) {
+                Log.w(TAG, "addIce consume: ${e.message}")
+            }
         }
     }
 
@@ -429,24 +497,28 @@ class SfuMediaEngine(
             override fun onRenegotiationNeeded() {}
             override fun onAddTrack(receiver: RtpReceiver?, streams: Array<out MediaStream>?) {
                 val track = receiver?.track() ?: return
+                val trackId = track.id() ?: "remote"
                 when (track.kind()) {
                     "video" -> {
                         if (track is VideoTrack) {
-                            remoteVideoTrack = track
+                            remoteVideoByProducer[trackId] = track
+                            remoteVideoTrack = track // primary renderer shows latest video
                             try {
                                 remoteRenderer?.let { track.addSink(it) }
-                            } catch (_: Exception) {
+                            } catch (e: Exception) {
+                                Log.w(TAG, "addSink remote video: ${e.message}")
                             }
                         }
-                        onRemoteTrack?.invoke("video", "remote")
+                        onRemoteTrack?.invoke("video", trackId)
                     }
                     "audio" -> {
                         if (track is AudioTrack) {
+                            remoteAudioByProducer[trackId] = track
                             remoteAudioTrack = track
                             track.setEnabled(true)
                             track.setVolume(1.0)
                         }
-                        onRemoteTrack?.invoke("audio", "remote")
+                        onRemoteTrack?.invoke("audio", trackId)
                     }
                 }
             }
@@ -823,48 +895,97 @@ class SfuMediaEngine(
             return sb.toString()
         }
 
-        fun buildRecvOfferSdp(consumed: SfuSession.Consumed): String {
-            val rtp = consumed.rtpParameters
-            val mid = rtp.optString("mid", midCounterNext())
-            val codecs = rtp.optJSONArray("codecs") ?: JSONArray()
-            val c0 = codecs.optJSONObject(0)
-            val pt = c0?.optInt("payloadType", if (consumed.kind == "video") 96 else 111)
-                ?: if (consumed.kind == "video") 96 else 111
-            val mime = c0?.optString("mimeType", if (consumed.kind == "video") "video/VP8" else "audio/opus")
-                ?: if (consumed.kind == "video") "video/VP8" else "audio/opus"
-            val clock = c0?.optInt("clockRate", if (consumed.kind == "video") 90000 else 48000)
-                ?: if (consumed.kind == "video") 90000 else 48000
-            val channels = c0?.optInt("channels", 2) ?: 2
-            val codecName = mime.substringAfter("/")
-            val media = if (consumed.kind == "video") "video" else "audio"
-            val rtpmap = if (media == "audio") {
-                "a=rtpmap:$pt $codecName/$clock/$channels"
+        fun buildRecvOfferSdp(
+            consumed: SfuSession.Consumed,
+            transport: SfuSession.TransportCreated? = null,
+        ): String = buildMultiRecvOfferSdp(listOf(consumed), transport)
+
+        /**
+         * Multi-remote receive offer: one m-section per consumed producer, real ICE/DTLS from transport.
+         */
+        fun buildMultiRecvOfferSdp(
+            consumedList: List<SfuSession.Consumed>,
+            transport: SfuSession.TransportCreated? = null,
+        ): String {
+            if (consumedList.isEmpty()) return ""
+            val ice = transport?.iceParameters
+            val ufrag = ice?.optString("usernameFragment", ice.optString("usernamefragment", "sfuu"))
+                ?: "sfuu"
+            val pwd = ice?.optString("password", "sfupasswordsfupassword00")
+                ?: "sfupasswordsfupassword00"
+            val dtls = transport?.dtlsParameters
+            val fp = dtls?.optJSONArray("fingerprints")?.optJSONObject(0)
+            val algo = fp?.optString("algorithm", "sha-256") ?: "sha-256"
+            val fpValue = fp?.optString("value", "") ?: ""
+            val fingerprintLine = if (fpValue.isNotBlank()) {
+                "a=fingerprint:$algo $fpValue"
             } else {
-                "a=rtpmap:$pt $codecName/$clock"
+                "a=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00"
             }
-            val encodings = rtp.optJSONArray("encodings")
-            val ssrc = encodings?.optJSONObject(0)?.optLong("ssrc", 0) ?: 0
-            val cname = rtp.optJSONObject("rtcp")?.optString("cname", "sfu") ?: "sfu"
-            // Use real DTLS from local if available — actpass placeholder is weak; ICE already set
+
+            val mids = ArrayList<String>(consumedList.size)
+            val mediaBlocks = ArrayList<String>(consumedList.size)
+            consumedList.forEachIndexed { index, consumed ->
+                val rtp = consumed.rtpParameters
+                val mid = rtp.optString("mid").ifBlank { "r$index" }
+                mids.add(mid)
+                val codecs = rtp.optJSONArray("codecs") ?: JSONArray()
+                val c0 = codecs.optJSONObject(0)
+                val pt = c0?.optInt("payloadType", if (consumed.kind == "video") 96 else 111)
+                    ?: if (consumed.kind == "video") 96 else 111
+                val mime = c0?.optString("mimeType", if (consumed.kind == "video") "video/VP8" else "audio/opus")
+                    ?: if (consumed.kind == "video") "video/VP8" else "audio/opus"
+                val clock = c0?.optInt("clockRate", if (consumed.kind == "video") 90000 else 48000)
+                    ?: if (consumed.kind == "video") 90000 else 48000
+                val channels = c0?.optInt("channels", 2) ?: 2
+                val codecName = mime.substringAfter("/")
+                val media = if (consumed.kind == "video") "video" else "audio"
+                val rtpmap = if (media == "audio") {
+                    "a=rtpmap:$pt $codecName/$clock/$channels"
+                } else {
+                    "a=rtpmap:$pt $codecName/$clock"
+                }
+                val encodings = rtp.optJSONArray("encodings")
+                val ssrc = encodings?.optJSONObject(0)?.optLong("ssrc", 0) ?: 0
+                val cname = rtp.optJSONObject("rtcp")?.optString("cname", "sfu") ?: "sfu"
+                val block = buildString {
+                    append("m=$media 9 UDP/TLS/RTP/SAVPF $pt\r\n")
+                    append("c=IN IP4 0.0.0.0\r\n")
+                    append("a=rtcp:9 IN IP4 0.0.0.0\r\n")
+                    append("a=ice-ufrag:$ufrag\r\n")
+                    append("a=ice-pwd:$pwd\r\n")
+                    append("$fingerprintLine\r\n")
+                    append("a=setup:actpass\r\n")
+                    append("a=mid:$mid\r\n")
+                    append("a=sendonly\r\n")
+                    append("a=rtcp-mux\r\n")
+                    append("$rtpmap\r\n")
+                    if (ssrc != 0L) append("a=ssrc:$ssrc cname:$cname\r\n")
+                    if (transport != null) {
+                        for (i in 0 until transport.iceCandidates.length()) {
+                            val c = transport.iceCandidates.optJSONObject(i) ?: continue
+                            val foundation = c.optString("foundation", "1")
+                            val priority = c.optLong("priority", 1)
+                            val ip = c.optString("ip", c.optString("address", "0.0.0.0"))
+                            val port = c.optInt("port", 9)
+                            val type = c.optString("type", "host")
+                            val protocol = c.optString("protocol", "udp")
+                            append("a=candidate:$foundation 1 $protocol $priority $ip $port typ $type\r\n")
+                        }
+                    }
+                }
+                mediaBlocks.add(block)
+            }
+
             return buildString {
                 append("v=0\r\n")
                 append("o=- ${System.currentTimeMillis()} 2 IN IP4 127.0.0.1\r\n")
                 append("s=-\r\n")
                 append("t=0 0\r\n")
-                append("a=group:BUNDLE $mid\r\n")
+                append("a=ice-lite\r\n")
+                append("a=group:BUNDLE ${mids.joinToString(" ")}\r\n")
                 append("a=msid-semantic: WMS *\r\n")
-                append("m=$media 9 UDP/TLS/RTP/SAVPF $pt\r\n")
-                append("c=IN IP4 0.0.0.0\r\n")
-                append("a=rtcp:9 IN IP4 0.0.0.0\r\n")
-                append("a=ice-ufrag:sfuu\r\n")
-                append("a=ice-pwd:sfupasswordsfupassword00\r\n")
-                append("a=fingerprint:sha-256 00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00\r\n")
-                append("a=setup:actpass\r\n")
-                append("a=mid:$mid\r\n")
-                append("a=sendonly\r\n")
-                append("a=rtcp-mux\r\n")
-                append("$rtpmap\r\n")
-                if (ssrc != 0L) append("a=ssrc:$ssrc cname:$cname\r\n")
+                mediaBlocks.forEach { append(it) }
             }
         }
 

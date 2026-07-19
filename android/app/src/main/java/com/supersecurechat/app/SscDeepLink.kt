@@ -5,8 +5,8 @@ import android.net.Uri
 import java.net.URLEncoder
 
 /**
- * Resolve Android deep links and app links into installed-app routes.
- * Bundled WebView uses hash routes: file:///android_asset/www/index.html#/login
+ * Resolve Android deep links and app links into in-app / https routes.
+ * Compose handles navigation; WebView product path is retired (see NATIVE_CLIENT_CHARTER).
  */
 object SscDeepLink {
     private const val WEB_HOST = "www.supersecurechat.com"

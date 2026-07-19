@@ -35,6 +35,7 @@ import com.supersecurechat.app.data.PresenceRepository
 import com.supersecurechat.app.data.PrivacyRepository
 import com.supersecurechat.app.data.PushRegistrar
 import com.supersecurechat.app.data.ReactionsRepository
+import com.supersecurechat.app.data.SesameRepository
 import com.supersecurechat.app.data.SessionStore
 import com.supersecurechat.app.data.SfuRepository
 import com.supersecurechat.app.data.SignalMessaging
@@ -72,7 +73,8 @@ fun SscApp(pendingIntent: Intent? = null) {
     val http = remember { SscHttpClient(session) }
     val db = remember { LocalMessageDb(context) }
     val auth = remember { AuthRepository(http, session) }
-    val conversations = remember { ConversationRepository(http, db, session) }
+    val sesame = remember { SesameRepository(http, session) }
+    val conversations = remember { ConversationRepository(http, db, session, sesame) }
     val users = remember { UserRepository(http, db) }
     val groups = remember { GroupsRepository(http) }
     val reactions = remember { ReactionsRepository(http) }
@@ -85,7 +87,7 @@ fun SscApp(pendingIntent: Intent? = null) {
     val stories = remember { StoriesRepository(http) }
     val polls = remember { PollsRepository(http) }
     val sfu = remember { SfuRepository(http) }
-    val backup = remember { BackupRepository(context, db, session) }
+    val backup = remember { BackupRepository(context, db, session, http) }
     val broadcast = remember { BroadcastRepository(http, signal, conversations) }
     val privacyRepo = remember { PrivacyRepository(http) }
     val search = remember { LocalSearch(db) }

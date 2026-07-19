@@ -14,10 +14,27 @@ class AuthRepository(
         val username: String? = null,
     )
 
-    fun login(email: String, password: String): User {
+    data class PublicConfig(
+        val captchaRequired: Boolean,
+        val turnstileSiteKey: String?,
+        val nativeBridgeRequired: Boolean = true,
+    )
+
+    /** Server policy for installed clients (captcha, SFU flags, etc.). */
+    fun publicConfig(): PublicConfig {
+        val json = http.requestJson("/api/config", "GET")
+        return PublicConfig(
+            captchaRequired = json.optBoolean("captcha_required", false),
+            turnstileSiteKey = json.optString("turnstile_site_key").ifBlank { null },
+            nativeBridgeRequired = json.optBoolean("native_bridge_required", true),
+        )
+    }
+
+    fun login(email: String, password: String, captchaToken: String? = null): User {
         val body = JSONObject()
             .put("email", email.trim())
             .put("password", password)
+        if (!captchaToken.isNullOrBlank()) body.put("captcha_token", captchaToken)
         val json = http.requestJson("/api/auth/login", "POST", body)
         return applyAuthResponse(json)
     }
@@ -66,7 +83,8 @@ class AuthRepository(
     fun logout() {
         try {
             http.post("/api/auth/logout")
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.w("AuthRepository", "logout: ${e.message}")
         }
         session.clearSession()
     }
@@ -86,7 +104,8 @@ class AuthRepository(
     fun recoveryConfigured(): Boolean {
         return try {
             http.requestJson("/api/auth/recovery/status", "GET").optBoolean("configured", false)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.w("AuthRepository", "recoveryConfigured: ${e.message}")
             false
         }
     }

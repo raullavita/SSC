@@ -1,23 +1,38 @@
 package com.supersecurechat.app
 
 import android.util.Base64
+import android.util.Log
 import com.supersecurechat.app.BuildConfig
 import java.nio.charset.StandardCharsets
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * Play Integrity attestation token builder (Phase 3).
- * Production builds should replace with Google Play Integrity API token exchange.
+ * Device attestation header for API gate.
+ *
+ * Current: HMAC token when `SSC_PLAY_INTEGRITY_SECRET` is set (shared secret).
+ * Production hardening path: replace [currentToken] with Google Play Integrity
+ * standard request + backend verifyIntegrityToken (Play Integrity API).
+ *
+ * When secret is blank:
+ * - debug builds send a known test token (backend may accept in non-prod)
+ * - release builds send no header (server must not require attest until Play Integrity is live)
  */
 object SscDeviceAttest {
     const val HEADER = "X-SSC-Device-Attest"
+    private const val TAG = "SscDeviceAttest"
 
     fun currentToken(): String? {
         val secret = BuildConfig.SSC_PLAY_INTEGRITY_SECRET
         if (secret.isNullOrBlank()) {
-            return if (BuildConfig.DEBUG) "ssc-attest-test-v1" else null
+            return if (BuildConfig.DEBUG) {
+                Log.d(TAG, "using debug attest token (no Play Integrity secret)")
+                "ssc-attest-test-v1"
+            } else {
+                null
+            }
         }
+        // Shared-secret HMAC until Play Integrity is wired end-to-end
         val ts = (System.currentTimeMillis() / 1000L)
         val sig = hmacSha256(secret, "android:$ts")
         return "$ts.$sig"

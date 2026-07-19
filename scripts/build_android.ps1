@@ -7,9 +7,12 @@ $Build = "15"
 $signingLoaded = & "$PSScriptRoot\load_android_signing.ps1"
 if ($signingLoaded -and $env:SSC_ANDROID_KEYSTORE) {
     Write-Host "Release signing: $($env:SSC_ANDROID_KEYSTORE)"
+} elseif ($env:SSC_ALLOW_DEBUG_RELEASE_SIGNING -eq "1") {
+    Write-Host "WARN: SSC_ALLOW_DEBUG_RELEASE_SIGNING=1 — release APK will use debug keystore."
 } else {
-    Write-Host "WARN: No release keystore - using debug keystore (fine for dev, not for releases)."
-    Write-Host "      Run .\scripts\create_android_keystore.ps1 first."
+    Write-Host "ERROR: No release keystore. Run .\scripts\create_android_keystore.ps1"
+    Write-Host "       Or set SSC_ALLOW_DEBUG_RELEASE_SIGNING=1 for local free sideload only."
+    exit 1
 }
 
 Write-Host "Building native Android (Compose) — WebView UI removed per NATIVE_CLIENT_CHARTER..."

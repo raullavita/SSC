@@ -19,7 +19,45 @@ class BackupRepository(
     private val context: Context,
     private val db: LocalMessageDb,
     private val session: SessionStore,
+    private val http: SscHttpClient? = null,
 ) {
+    /** Upload encrypted envelope to server cloud backup (ciphertext only server-side). */
+    fun uploadCloud(passphrase: String) {
+        val client = http ?: throw IllegalStateException("http_required")
+        val file = exportEncrypted(passphrase)
+        try {
+            val envelope = JSONObject(file.readText())
+            client.requestJson(
+                "/api/backup/cloud",
+                "PUT",
+                JSONObject().put("ciphertext", envelope.toString()),
+            )
+        } finally {
+            file.delete()
+        }
+    }
+
+    fun downloadCloud(passphrase: String) {
+        val client = http ?: throw IllegalStateException("http_required")
+        val json = client.requestJson("/api/backup/cloud", "GET")
+        val ct = json.optString("ciphertext").ifBlank {
+            json.optJSONObject("backup")?.optString("ciphertext").orEmpty()
+        }
+        if (ct.isBlank()) throw IllegalStateException("cloud_backup_empty")
+        val tmp = File(context.cacheDir, "ssc-cloud-import.sscbackup")
+        tmp.writeText(ct)
+        try {
+            importEncrypted(tmp, passphrase)
+        } finally {
+            tmp.delete()
+        }
+    }
+
+    fun deleteCloud() {
+        val client = http ?: throw IllegalStateException("http_required")
+        client.requestJson("/api/backup/cloud", "DELETE")
+    }
+
     fun exportEncrypted(passphrase: String): File {
         val payload = JSONObject()
             .put("format", "ssc-backup-payload")

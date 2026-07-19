@@ -434,6 +434,45 @@ fun SettingsScreen(
                     enabled = backupPass.length >= 8,
                 ) { Text("Import") }
             }
+            Row(Modifier.padding(top = 8.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                withContext(Dispatchers.IO) { backup.uploadCloud(backupPass) }
+                                status = "Cloud backup uploaded"
+                            } catch (e: Exception) {
+                                error = e.message
+                            }
+                        }
+                    },
+                    enabled = backupPass.length >= 8,
+                ) { Text("Upload cloud") }
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                withContext(Dispatchers.IO) { backup.downloadCloud(backupPass) }
+                                status = "Cloud backup restored locally"
+                            } catch (e: Exception) {
+                                error = e.message
+                            }
+                        }
+                    },
+                    enabled = backupPass.length >= 8,
+                    modifier = Modifier.padding(start = 8.dp),
+                ) { Text("Download cloud") }
+            }
+            TextButton(onClick = {
+                scope.launch {
+                    try {
+                        withContext(Dispatchers.IO) { backup.deleteCloud() }
+                        status = "Cloud backup deleted"
+                    } catch (e: Exception) {
+                        error = e.message
+                    }
+                }
+            }) { Text("Delete cloud backup") }
 
             Spacer(Modifier.height(20.dp))
             Text("Linked devices", style = MaterialTheme.typography.titleMedium)

@@ -1,5 +1,6 @@
 package com.supersecurechat.app.data
 
+import android.util.Log
 import org.json.JSONObject
 
 class PrivacyRepository(
@@ -20,7 +21,8 @@ class PrivacyRepository(
                 readReceipts = s.optBoolean("read_receipts", true),
                 pushRichLabels = s.optBoolean("push_rich_labels", false),
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "get privacy: ${e.message}")
             Settings()
         }
     }
@@ -41,5 +43,9 @@ class PrivacyRepository(
             readReceipts = s.optBoolean("read_receipts", true),
             pushRichLabels = s.optBoolean("push_rich_labels", false),
         )
+    }
+
+    companion object {
+        private const val TAG = "PrivacyRepository"
     }
 }

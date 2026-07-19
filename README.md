@@ -48,9 +48,9 @@ Anyone interacting with a **modified** SSC network service may request correspon
 | **API** | Live at api.supersecurechat.com |
 | **Website** | Landing + OSS compliance at [supersecurechat.com](https://www.supersecurechat.com) |
 | **iOS / Qt desktop** | Native scaffolds (no WebView product path) |
-| **Electron / WebView hybrid** | Retired as product messenger |
+| **Electron / WebView hybrid** | Retired as product messenger ([docs/ELECTRON_RETIRED.md](docs/ELECTRON_RETIRED.md)) |
 
-Parity notes: [`memory/NATIVE_ANDROID_PARITY.md`](memory/NATIVE_ANDROID_PARITY.md) · SFU ops: [`docs/LIVE_SFU_HARDEN.md`](docs/LIVE_SFU_HARDEN.md)
+Parity notes: [`memory/NATIVE_ANDROID_PARITY.md`](memory/NATIVE_ANDROID_PARITY.md) · SFU ops: [`docs/LIVE_SFU_HARDEN.md`](docs/LIVE_SFU_HARDEN.md) · Audit: [`docs/DEEP_AUDIT_2026-07-19.md`](docs/DEEP_AUDIT_2026-07-19.md)
 
 ## Quick start (local dev)
 

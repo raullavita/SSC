@@ -89,7 +89,8 @@ class CallsRepository(
                 "POST",
                 JSONObject().put("reason", reason),
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.w("CallsRepository", "endCall: ${e.message}")
         }
     }
 

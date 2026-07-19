@@ -41,19 +41,24 @@ android {
                 storePassword = System.getenv("SSC_ANDROID_KEYSTORE_PASSWORD") ?: ""
                 keyAlias = System.getenv("SSC_ANDROID_KEY_ALIAS") ?: ""
                 keyPassword = System.getenv("SSC_ANDROID_KEY_PASSWORD") ?: ""
-            } else {
-                val debugKeystore = File(System.getProperty("user.home"), ".android/debug.keystore")
-                storeFile = debugKeystore
-                storePassword = "android"
-                keyAlias = "androiddebugkey"
-                keyPassword = "android"
             }
+            // If no keystore env: leave storeFile null — release assemble will fail unless debug fallback allowed
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            val hasReleaseKey = signingConfigs.getByName("release").storeFile != null
+            if (hasReleaseKey) {
+                signingConfig = signingConfigs.getByName("release")
+            } else if (System.getenv("SSC_ALLOW_DEBUG_RELEASE_SIGNING") == "1") {
+                // Explicit opt-in only — free/dev sideload; never silent for store builds
+                signingConfig = signingConfigs.getByName("debug")
+                logger.warn("SSC: release signed with debug keystore (SSC_ALLOW_DEBUG_RELEASE_SIGNING=1)")
+            } else {
+                // Still attach release config; AGP fails clearly if storeFile missing on assembleRelease
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

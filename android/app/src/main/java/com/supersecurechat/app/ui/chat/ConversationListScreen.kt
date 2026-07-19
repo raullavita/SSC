@@ -180,6 +180,46 @@ fun ConversationListScreen(
                 )
                 TextButton(onClick = { showStory = true }) { Text("Add story") }
             }
+            if (storyFeed.isNotEmpty()) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                ) {
+                    storyFeed.take(8).forEach { story ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = (story.authorId ?: story.id).take(12) +
+                                    (story.createdAt?.let { " · $it" } ?: ""),
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                            )
+                            TextButton(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            withContext(Dispatchers.IO) {
+                                                stories?.delete(story.id)
+                                            }
+                                            statusToast = "Story deleted"
+                                            refresh()
+                                        } catch (e: Exception) {
+                                            error = e.message ?: "story_delete_failed"
+                                        }
+                                    }
+                                },
+                            ) { Text("Delete") }
+                        }
+                    }
+                }
+            }
             if (connectionState != "online") {
                 Row(
                     Modifier

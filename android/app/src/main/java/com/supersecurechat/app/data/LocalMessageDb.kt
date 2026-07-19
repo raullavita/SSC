@@ -7,13 +7,15 @@ import android.database.sqlite.SQLiteOpenHelper
 
 /**
  * On-device message + contact cache for native client (metadata-minimized server still has ciphertext).
+ * Message plaintext is AES-GCM sealed at rest via [MessageFieldCrypto].
  */
 class LocalMessageDb(context: Context) : SQLiteOpenHelper(
     context.applicationContext,
     "ssc_native.db",
     null,
-    2,
+    3,
 ) {
+    private val fieldCrypto = MessageFieldCrypto(context.applicationContext)
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -60,13 +62,16 @@ class LocalMessageDb(context: Context) : SQLiteOpenHelper(
         if (oldVersion < 2) {
             try {
                 db.execSQL("ALTER TABLE conversation_meta ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.d("LocalMessageDb", "pinned column may exist: ${e.message}")
             }
             try {
                 db.execSQL("ALTER TABLE conversation_meta ADD COLUMN muted INTEGER NOT NULL DEFAULT 0")
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                android.util.Log.d("LocalMessageDb", "muted column may exist: ${e.message}")
             }
         }
+        // v3: encrypt plaintext at rest on write; legacy rows decrypted as plain until re-saved
     }
 
     fun upsertMessage(msg: ConversationRepository.Message) {
@@ -77,7 +82,7 @@ class LocalMessageDb(context: Context) : SQLiteOpenHelper(
             put("ciphertext", msg.ciphertext)
             put("protocol", msg.protocol)
             put("created_at", msg.createdAt)
-            put("plaintext", msg.plaintext)
+            put("plaintext", fieldCrypto.seal(msg.plaintext))
             put("mine", if (msg.plaintext != null && msg.senderId != null) 0 else 0)
         }
         writableDatabase.insertWithOnConflict("messages", null, values, SQLiteDatabase.CONFLICT_REPLACE)
@@ -95,6 +100,7 @@ class LocalMessageDb(context: Context) : SQLiteOpenHelper(
             "created_at ASC",
         ).use { c ->
             while (c.moveToNext()) {
+                val sealed = c.getString(6)
                 out.add(
                     ConversationRepository.Message(
                         id = c.getString(0),
@@ -103,7 +109,7 @@ class LocalMessageDb(context: Context) : SQLiteOpenHelper(
                         ciphertext = c.getString(3),
                         protocol = c.getString(4),
                         createdAt = c.getString(5),
-                        plaintext = c.getString(6),
+                        plaintext = fieldCrypto.open(sealed),
                     ),
                 )
             }
@@ -195,20 +201,23 @@ class LocalMessageDb(context: Context) : SQLiteOpenHelper(
     }
 
     fun searchMessages(query: String, limit: Int = 50): List<LocalSearch.Hit> {
-        val like = "%$query%"
+        // Plaintext is sealed at rest — scan + decrypt (local-only, bounded by limit*scan)
+        val q = query.trim()
+        if (q.isEmpty()) return emptyList()
         val out = ArrayList<LocalSearch.Hit>()
         readableDatabase.query(
             "messages",
             arrayOf("id", "conversation_id", "plaintext"),
-            "plaintext LIKE ? AND plaintext IS NOT NULL",
-            arrayOf(like),
+            "plaintext IS NOT NULL",
+            null,
             null,
             null,
             "created_at DESC",
-            limit.toString(),
+            (limit * 20).toString(),
         ).use { c ->
-            while (c.moveToNext()) {
-                val plain = c.getString(2) ?: continue
+            while (c.moveToNext() && out.size < limit) {
+                val plain = fieldCrypto.open(c.getString(2)) ?: continue
+                if (!plain.contains(q, ignoreCase = true)) continue
                 out.add(
                     LocalSearch.Hit(
                         messageId = c.getString(0),

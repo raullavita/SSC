@@ -1,5 +1,6 @@
 package com.supersecurechat.app.data
 
+import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -37,7 +38,8 @@ class BroadcastRepository(
                 )
             }
             out
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.w(TAG, "list: ${e.message}")
             emptyList()
         }
     }
@@ -81,9 +83,14 @@ class BroadcastRepository(
                     sealed = false,
                 )
                 sent++
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.w(TAG, "sendToList peer=$peerId: ${e.message}")
             }
         }
         return sent
+    }
+
+    companion object {
+        private const val TAG = "BroadcastRepository"
     }
 }
