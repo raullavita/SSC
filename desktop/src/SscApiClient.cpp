@@ -16,6 +16,7 @@
 #include <QCryptographicHash>
 #include <QRandomGenerator>
 #include <QIODevice>
+#include <QHash>
 
 #include <functional>
 
@@ -426,8 +427,98 @@ void SscApiClient::refreshConversations()
         if (m_cache) {
             for (const auto &v : m_conversations) m_cache->upsertConversation(v.toObject());
         }
+        enrichConversationTitles();
+        updateActiveChatTitle();
         emit conversationsChanged();
     });
+}
+
+void SscApiClient::cachePlaintext(const QString &messageId, const QString &plaintext)
+{
+    if (!messageId.isEmpty() && !plaintext.isEmpty()) m_plaintextCache.insert(messageId, plaintext);
+}
+
+QString SscApiClient::cachedPlaintext(const QString &messageId) const
+{
+    return m_plaintextCache.value(messageId);
+}
+
+void SscApiClient::resolvePeerTitle(const QString &peerId, int convIndex)
+{
+    if (peerId.isEmpty() || m_peerTitles.contains(peerId)) return;
+    httpJson(QStringLiteral("GET"),
+             QStringLiteral("/api/users/lookup/%1").arg(QString::fromUtf8(QUrl::toPercentEncoding(peerId))), {},
+             [this, peerId, convIndex](bool ok, QJsonObject obj, QString) {
+                 QString title = peerId;
+                 if (ok) {
+                     auto user = obj.value(QStringLiteral("user")).toObject();
+                     if (user.isEmpty()) user = obj;
+                     const QString un = user.value(QStringLiteral("username")).toString();
+                     const QString dn = user.value(QStringLiteral("display_name")).toString();
+                     if (!dn.isEmpty() && !un.isEmpty()) title = dn + QStringLiteral(" (@") + un + QLatin1Char(')');
+                     else if (!dn.isEmpty()) title = dn;
+                     else if (!un.isEmpty()) title = QLatin1Char('@') + un;
+                 }
+                 m_peerTitles.insert(peerId, title);
+                 if (convIndex >= 0 && convIndex < m_conversations.size()) {
+                     QJsonObject c = m_conversations.at(convIndex).toObject();
+                     c.insert(QStringLiteral("title"), title);
+                     c.insert(QStringLiteral("peer_username"), title);
+                     m_conversations.replace(convIndex, c);
+                     emit conversationsChanged();
+                 }
+                 if (peerId == m_activePeerId) {
+                     m_activeChatTitle = title;
+                     emit activeConversationChanged();
+                 }
+             });
+}
+
+void SscApiClient::enrichConversationTitles()
+{
+    for (int i = 0; i < m_conversations.size(); ++i) {
+        QJsonObject c = m_conversations.at(i).toObject();
+        const QString peer = c.value(QStringLiteral("peer_id")).toString();
+        const QString gid = c.value(QStringLiteral("group_id")).toString();
+        if (!gid.isEmpty()) {
+            QString title = c.value(QStringLiteral("title")).toString();
+            if (title.isEmpty()) title = c.value(QStringLiteral("name")).toString(QStringLiteral("Group"));
+            c.insert(QStringLiteral("title"), title);
+            m_conversations.replace(i, c);
+            continue;
+        }
+        if (peer.isEmpty()) continue;
+        if (m_peerTitles.contains(peer)) {
+            c.insert(QStringLiteral("title"), m_peerTitles.value(peer));
+            m_conversations.replace(i, c);
+        } else {
+            c.insert(QStringLiteral("title"), QStringLiteral("…"));
+            m_conversations.replace(i, c);
+            resolvePeerTitle(peer, i);
+        }
+    }
+}
+
+void SscApiClient::updateActiveChatTitle()
+{
+    if (!m_activePeerId.isEmpty() && m_peerTitles.contains(m_activePeerId)) {
+        m_activeChatTitle = m_peerTitles.value(m_activePeerId);
+        return;
+    }
+    for (const auto &v : m_conversations) {
+        const auto c = v.toObject();
+        const QString id = c.value(QStringLiteral("id")).toString(c.value(QStringLiteral("_id")).toString());
+        if (id == m_activeConversationId) {
+            QString t = c.value(QStringLiteral("title")).toString();
+            if (t.isEmpty() || t == QLatin1String("…"))
+                t = c.value(QStringLiteral("peer_id")).toString(c.value(QStringLiteral("group_id")).toString());
+            m_activeChatTitle = t;
+            if (!c.value(QStringLiteral("peer_id")).toString().isEmpty())
+                resolvePeerTitle(c.value(QStringLiteral("peer_id")).toString(), -1);
+            return;
+        }
+    }
+    m_activeChatTitle = m_activePeerId.isEmpty() ? m_activeGroupId : m_activePeerId;
 }
 
 void SscApiClient::openConversation(const QString &conversationId, const QString &peerId, const QString &groupId)
@@ -435,6 +526,19 @@ void SscApiClient::openConversation(const QString &conversationId, const QString
     m_activeConversationId = conversationId;
     m_activePeerId = peerId;
     m_activeGroupId = groupId;
+    // Resolve peer_id from list if not provided
+    if (m_activePeerId.isEmpty() && m_activeGroupId.isEmpty()) {
+        for (const auto &v : m_conversations) {
+            const auto c = v.toObject();
+            const QString id = c.value(QStringLiteral("id")).toString(c.value(QStringLiteral("_id")).toString());
+            if (id == conversationId) {
+                m_activePeerId = c.value(QStringLiteral("peer_id")).toString();
+                m_activeGroupId = c.value(QStringLiteral("group_id")).toString();
+                break;
+            }
+        }
+    }
+    updateActiveChatTitle();
     emit activeConversationChanged();
     m_typingLabel.clear();
     emit typingLabelChanged();
@@ -488,7 +592,10 @@ void SscApiClient::decryptNext(int index)
         return;
     }
     if (sender == myId && !protocol.contains(QStringLiteral("group_sender_key"))) {
-        m.insert(QStringLiteral("plaintext"), QStringLiteral("[sent]"));
+        const QString mid = m.value(QStringLiteral("id")).toString();
+        QString plain = cachedPlaintext(mid);
+        if (plain.isEmpty()) plain = QStringLiteral("✓ Sent");
+        m.insert(QStringLiteral("plaintext"), plain);
         m.insert(QStringLiteral("mine"), true);
         if (m_cache) m_cache->upsertMessage(m);
         m_messages.append(m);
@@ -533,7 +640,9 @@ void SscApiClient::decryptNext(int index)
                                {QStringLiteral("deviceId"), QStringLiteral("1")}},
                    [this, m, index, peer](bool ok, const QJsonObject &result, const QString &err) mutable {
                        if (ok) {
-                           m.insert(QStringLiteral("plaintext"), result.value(QStringLiteral("plaintext")).toString());
+                           const QString plain = result.value(QStringLiteral("plaintext")).toString();
+                           m.insert(QStringLiteral("plaintext"), plain);
+                           cachePlaintext(m.value(QStringLiteral("id")).toString(), plain);
                        } else {
                            // Sesame multi-device retry request (Android ConversationRepository)
                            const QString mid = m.value(QStringLiteral("id")).toString();
@@ -545,7 +654,7 @@ void SscApiClient::decryptNext(int index)
                                         {});
                            }
                            Q_UNUSED(peer);
-                           m.insert(QStringLiteral("plaintext"), QStringLiteral("[unable to decrypt]"));
+                           m.insert(QStringLiteral("plaintext"), QStringLiteral("Unable to decrypt"));
                            m.insert(QStringLiteral("decrypt_error"), err);
                        }
                        if (m.value(QStringLiteral("conversation_id")).toString().isEmpty()) {
@@ -616,17 +725,20 @@ void SscApiClient::sendMessage(const QString &conversationId, const QString &pla
                                                                    setError(err3);
                                                                    return;
                                                                }
+                                                               const QString localId =
+                                                                   QStringLiteral("local-")
+                                                                   + QString::number(QDateTime::currentMSecsSinceEpoch());
+                                                               cachePlaintext(localId, plaintext);
                                                                QJsonObject local{
-                                                                   {QStringLiteral("id"),
-                                                                    QStringLiteral("local-")
-                                                                        + QString::number(QDateTime::currentMSecsSinceEpoch())},
+                                                                   {QStringLiteral("id"), localId},
                                                                    {QStringLiteral("plaintext"), plaintext},
                                                                    {QStringLiteral("mine"), true},
                                                                    {QStringLiteral("sender_id"), m_session->userId()},
+                                                                   {QStringLiteral("conversation_id"), conversationId},
                                                                };
                                                                m_messages.append(local);
                                                                emit messagesChanged();
-                                                               openConversation(conversationId, m_activePeerId, m_activeGroupId);
+                                                               refreshConversations();
                                                            });
                                               });
                            };
@@ -770,16 +882,22 @@ void SscApiClient::postCiphertext(const QString &conversationId, const QString &
                      setError(err);
                      return;
                  }
+                 // Optimistic bubble — do NOT reload conversation (would wipe plaintext to "✓ Sent")
+                 const QString localId =
+                     QStringLiteral("local-") + QString::number(QDateTime::currentMSecsSinceEpoch());
+                 cachePlaintext(localId, plaintext);
                  QJsonObject local{
-                     {QStringLiteral("id"),
-                      QStringLiteral("local-") + QString::number(QDateTime::currentMSecsSinceEpoch())},
+                     {QStringLiteral("id"), localId},
                      {QStringLiteral("plaintext"), plaintext},
                      {QStringLiteral("mine"), true},
                      {QStringLiteral("sender_id"), m_session->userId()},
+                     {QStringLiteral("conversation_id"), conversationId},
                  };
                  m_messages.append(local);
+                 if (m_cache) m_cache->upsertMessage(local);
                  emit messagesChanged();
-                 openConversation(conversationId, m_activePeerId, m_activeGroupId);
+                 refreshConversations();
+                 setStatus(QStringLiteral("Message sent"));
              });
 }
 

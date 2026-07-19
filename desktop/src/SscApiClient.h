@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QStringList>
+#include <QHash>
 #include <functional>
 #include "SscSession.h"
 #include "SscCryptoBridge.h"
@@ -25,6 +26,7 @@ class SscApiClient : public QObject
     Q_PROPERTY(QString activeConversationId READ activeConversationId NOTIFY activeConversationChanged)
     Q_PROPERTY(QString activePeerId READ activePeerId NOTIFY activeConversationChanged)
     Q_PROPERTY(QString activeGroupId READ activeGroupId NOTIFY activeConversationChanged)
+    Q_PROPERTY(QString activeChatTitle READ activeChatTitle NOTIFY activeConversationChanged)
     Q_PROPERTY(QString typingLabel READ typingLabel NOTIFY typingLabelChanged)
     Q_PROPERTY(QJsonObject reactionSummary READ reactionSummary NOTIFY reactionSummaryChanged)
     // Config / status
@@ -56,6 +58,7 @@ public:
     QString activeConversationId() const { return m_activeConversationId; }
     QString activePeerId() const { return m_activePeerId; }
     QString activeGroupId() const { return m_activeGroupId; }
+    QString activeChatTitle() const { return m_activeChatTitle; }
     QString typingLabel() const { return m_typingLabel; }
     QJsonObject reactionSummary() const { return m_reactionSummary; }
     QString lastError() const { return m_lastError; }
@@ -229,6 +232,11 @@ private:
     void handleRealtime(const QString &type, const QJsonObject &payload);
     void httpJson(const QString &method, const QString &path, const QJsonObject &body,
                   const std::function<void(bool, QJsonObject, QString)> &cb);
+    void enrichConversationTitles();
+    void resolvePeerTitle(const QString &peerId, int convIndex);
+    void updateActiveChatTitle();
+    void cachePlaintext(const QString &messageId, const QString &plaintext);
+    QString cachedPlaintext(const QString &messageId) const;
 
     SscSession *m_session = nullptr;
     SscCryptoBridge *m_crypto = nullptr;
@@ -260,7 +268,10 @@ private:
     QString m_activeConversationId;
     QString m_activePeerId;
     QString m_activeGroupId;
+    QString m_activeChatTitle;
     QString m_typingLabel;
+    QHash<QString, QString> m_peerTitles;      // peerId -> display name / @username
+    QHash<QString, QString> m_plaintextCache;  // messageId -> plaintext (own sends + decrypted)
     QString m_apiBase = QStringLiteral("https://api.supersecurechat.com");
     QString m_captchaSiteKey;
     QString m_statusText;

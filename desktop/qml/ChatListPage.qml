@@ -4,672 +4,694 @@ import QtQuick.Layouts
 import QtQuick.Controls.Material
 import QtQuick.Dialogs
 
+// Telegram / WhatsApp-style layout:
+// left: chat list + search + FAB new chat
+// right: header (name + actions) / messages / composer (only when a chat is open)
+
 Page {
     id: page
     background: Rectangle { color: Theme.background }
     property string replyToId: ""
     property string replyPreview: ""
+    property bool chatOpen: sscApi.activeConversationId.length > 0
 
+    function convTitle(c) {
+        if (!c) return "Chat"
+        const t = c.title || c.peer_username || ""
+        if (t && t !== "…" && !String(t).startsWith("u_")) return t
+        if (c.group_id) return c.name || "Group"
+        return c.peer_id ? ("Contact") : "Chat"
+    }
+
+    function convSubtitle(c) {
+        if (!c) return ""
+        if (c.muted) return "Muted"
+        if (c.type === "group" || c.group_id) return "Group"
+        return "Tap to open"
+    }
+
+    // —— Top app bar (list side context) ——
     header: ToolBar {
         Material.background: Theme.surface
         Material.foreground: Theme.surfaceFg
-        ColumnLayout {
+        height: 56
+        RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 12
+            anchors.leftMargin: 16
             anchors.rightMargin: 8
-            spacing: 0
-            RowLayout {
-                Layout.fillWidth: true
-                Label {
-                    text: "Chats"
-                    font.bold: true
-                    font.pixelSize: 18
-                    color: Theme.surfaceFg
-                }
-                Item { Layout.fillWidth: true }
-                ToolButton {
-                    text: "⟳"
-                    onClicked: {
-                        sscApi.refreshConversations()
-                        sscApi.refreshStories()
-                    }
-                }
-                ToolButton {
-                    text: "⚙"
-                    onClicked: ApplicationWindow.window.openSettings()
-                }
-                ToolButton {
-                    text: "⎋"
-                    onClicked: {
-                        sscApi.logout()
-                        ApplicationWindow.window.openLogin()
-                    }
-                }
-            }
-            // Connection banner (Android parity)
-            Rectangle {
-                visible: sscApi.connectionState !== "online"
-                Layout.fillWidth: true
-                height: 22
-                color: sscApi.connectionState === "connecting" ? "#3B4A54" : "#5C2B2B"
-                Label {
-                    anchors.centerIn: parent
-                    text: sscApi.connectionState === "connecting" ? "Connecting…" : "Offline — messages will sync when back"
-                    color: Theme.surfaceFg
-                    font.pixelSize: 11
-                }
-            }
-            TextField {
-                id: searchField
-                Layout.fillWidth: true
-                placeholderText: "Search messages"
+            Label {
+                text: "Chats"
+                font.bold: true
+                font.pixelSize: 20
                 color: Theme.surfaceFg
-                background: Rectangle { color: Theme.surfaceVariant; radius: 6 }
-                onTextChanged: sscApi.searchLocalMessages(text)
+            }
+            Item { Layout.fillWidth: true }
+            ToolButton {
+                text: "↻"
+                font.pixelSize: 18
+                ToolTip.text: "Refresh"
+                ToolTip.visible: hovered
+                onClicked: {
+                    sscApi.refreshConversations()
+                    sscApi.refreshStories()
+                }
+            }
+            ToolButton {
+                text: "⚙"
+                font.pixelSize: 18
+                ToolTip.text: "Settings"
+                ToolTip.visible: hovered
+                onClicked: ApplicationWindow.window.openSettings()
+            }
+            ToolButton {
+                text: "⎋"
+                font.pixelSize: 16
+                ToolTip.text: "Sign out"
+                ToolTip.visible: hovered
+                onClicked: {
+                    sscApi.logout()
+                    ApplicationWindow.window.openLogin()
+                }
             }
         }
     }
 
-    // Stories strip
+    // Offline banner
     Rectangle {
-        id: storiesBar
+        id: offlineBar
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 48
-        color: Theme.surface
-        RowLayout {
-            anchors.fill: parent
-            anchors.margins: 8
-            Label {
-                text: sscApi.stories.length ? ("Stories: " + sscApi.stories.length) : "Stories"
-                color: Theme.primary
-                font.pixelSize: 12
-            }
-            Item { Layout.fillWidth: true }
-            Button {
-                text: "Add"
-                flat: true
-                Material.foreground: Theme.primary
-                onClicked: storyDialog.open()
-            }
+        height: sscApi.connectionState !== "online" ? 26 : 0
+        visible: height > 0
+        color: sscApi.connectionState === "connecting" ? "#3B4A54" : "#6B2B2B"
+        z: 20
+        Label {
+            anchors.centerIn: parent
+            text: sscApi.connectionState === "connecting" ? "Connecting…" : "Offline — will sync when back"
+            color: Theme.surfaceFg
+            font.pixelSize: 12
         }
-    }
-
-    // New chat / group panel
-    Rectangle {
-        id: newChatRow
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        height: visible ? panelCol.implicitHeight + 16 : 0
-        color: Theme.surface
-        visible: false
-        z: 5
-        ColumnLayout {
-            id: panelCol
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.top: parent.top
-            anchors.margins: 8
-            spacing: 8
-            Label {
-                text: panelMode.currentIndex === 0 ? "New chat" : "New group"
-                color: Theme.primary
-                font.bold: true
-            }
-            Label {
-                visible: panelMode.currentIndex === 0
-                text: "No public user list (privacy). Type exact username, e.g. dots or @dots"
-                color: Theme.surfaceVariantFg
-                font.pixelSize: 11
-                wrapMode: Text.Wrap
-                Layout.fillWidth: true
-            }
-            TabBar {
-                id: panelMode
-                Layout.fillWidth: true
-                TabButton { text: "Direct" }
-                TabButton { text: "Group" }
-            }
-            TextField {
-                id: peerQuery
-                visible: panelMode.currentIndex === 0
-                Layout.fillWidth: true
-                placeholderText: "Exact username (e.g. dots) or user id"
-                color: Theme.surfaceFg
-                background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
-                onTextChanged: if (text.length >= 2) sscApi.searchUsers(text)
-                onAccepted: {
-                    if (text.length >= 2) sscApi.searchUsers(text)
-                }
-            }
-            // Recent chat peers (started chats stay on main list)
-            Label {
-                visible: panelMode.currentIndex === 0 && sscApi.conversations.length > 0
-                text: "Recent chats"
-                color: Theme.secondary
-                font.pixelSize: 11
-            }
-            Repeater {
-                model: panelMode.currentIndex === 0 ? sscApi.conversations : []
-                delegate: Button {
-                    visible: !!(modelData.peer_id)
-                    Layout.fillWidth: true
-                    flat: true
-                    text: (modelData.title || modelData.peer_username || modelData.peer_id || "Chat")
-                          + (modelData.peer_id ? " · open" : "")
-                    onClicked: {
-                        const id = modelData.id || modelData._id
-                        sscApi.openConversation(id, modelData.peer_id || "", modelData.group_id || "")
-                        newChatRow.visible = false
-                    }
-                }
-            }
-            Label {
-                visible: panelMode.currentIndex === 0 && sscApi.friendRequests.length > 0
-                text: "Friend requests"
-                color: Theme.secondary
-                font.pixelSize: 11
-            }
-            Repeater {
-                model: panelMode.currentIndex === 0 ? sscApi.friendRequests : []
-                delegate: RowLayout {
-                    Layout.fillWidth: true
-                    Button {
-                        Layout.fillWidth: true
-                        flat: true
-                        text: "From " + (modelData.from_user_id || modelData.from || "?")
-                        onClicked: {
-                            const pid = modelData.from_user_id || ""
-                            if (pid) sscApi.startNewDirect(pid)
-                            newChatRow.visible = false
-                        }
-                    }
-                    Button {
-                        text: "Accept"
-                        flat: true
-                        onClicked: sscApi.acceptFriendRequest(modelData.id || modelData._id)
-                    }
-                }
-            }
-            TextField {
-                id: groupName
-                visible: panelMode.currentIndex === 1
-                Layout.fillWidth: true
-                placeholderText: "Group name"
-                color: Theme.surfaceFg
-                background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
-            }
-            TextField {
-                id: groupMembers
-                visible: panelMode.currentIndex === 1
-                Layout.fillWidth: true
-                placeholderText: "Member user ids (comma-separated)"
-                color: Theme.surfaceFg
-                background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
-            }
-            Label {
-                visible: panelMode.currentIndex === 0 && sscApi.userSearchResults.length > 0
-                text: "Search result"
-                color: Theme.secondary
-                font.pixelSize: 11
-            }
-            Repeater {
-                model: panelMode.currentIndex === 0 ? sscApi.userSearchResults : []
-                delegate: Button {
-                    Layout.fillWidth: true
-                    text: (modelData.display_name || modelData.username || modelData.id || "") +
-                          (modelData.username ? " @" + modelData.username : "")
-                          + " — Chat"
-                    Material.background: Theme.primary
-                    Material.foreground: Theme.primaryFg
-                    onClicked: {
-                        const id = modelData.id || modelData._id || ""
-                        if (id) sscApi.startNewDirect(id)
-                        newChatRow.visible = false
-                        peerQuery.text = ""
-                    }
-                }
-            }
-            RowLayout {
-                Layout.fillWidth: true
-                Button {
-                    text: panelMode.currentIndex === 0 ? "Lookup & chat" : "Create group"
-                    Material.background: Theme.primary
-                    Material.foreground: Theme.primaryFg
-                    onClicked: {
-                        if (panelMode.currentIndex === 0) {
-                            // Prefer resolved search hit; else lookup then open
-                            if (sscApi.userSearchResults.length > 0) {
-                                const u = sscApi.userSearchResults[0]
-                                const id = u.id || u._id || ""
-                                if (id) sscApi.startNewDirect(id)
-                            } else if (peerQuery.text.length >= 2) {
-                                sscApi.searchUsers(peerQuery.text)
-                            }
-                        } else {
-                            sscApi.createGroup(groupName.text, groupMembers.text)
-                        }
-                        if (panelMode.currentIndex !== 0)
-                            newChatRow.visible = false
-                    }
-                }
-                Button {
-                    text: "Cancel"
-                    flat: true
-                    onClicked: newChatRow.visible = false
-                }
-            }
-        }
-    }
-
-    RoundButton {
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 20
-        anchors.bottomMargin: newChatRow.visible ? newChatRow.height + 20 : 20
-        width: 56; height: 56
-        text: "+"
-        font.pixelSize: 24
-        Material.background: Theme.primary
-        Material.foreground: Theme.primaryFg
-        onClicked: {
-            newChatRow.visible = !newChatRow.visible
-            if (newChatRow.visible) {
-                sscApi.refreshConversations()
-                sscApi.refreshFriendRequests()
-            }
-        }
-        z: 10
     }
 
     SplitView {
-        anchors.top: storiesBar.bottom
+        anchors.top: offlineBar.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: newChatRow.visible ? newChatRow.height : 0
         orientation: Qt.Horizontal
 
-        ListView {
-            id: convList
-            SplitView.preferredWidth: 300
-            SplitView.minimumWidth: 220
-            clip: true
-            model: searchField.text.length >= 2 ? sscApi.searchHits : sscApi.conversations
-            delegate: ItemDelegate {
-                width: ListView.view.width
-                height: 64
-                background: Rectangle {
-                    color: {
-                        const id = modelData.id || modelData._id || ""
-                        return id === sscApi.activeConversationId ? Theme.surfaceVariant : Theme.surface
-                    }
-                }
-                contentItem: ColumnLayout {
-                    spacing: 2
-                    Label {
-                        text: searchField.text.length >= 2
-                              ? (modelData.snippet || "")
-                              : ((modelData.pinned ? "📌 " : "") + (modelData.title || modelData.peer_id || modelData.id || "Chat"))
+        // ========== LEFT: conversation list ==========
+        Rectangle {
+            id: listPane
+            SplitView.preferredWidth: 340
+            SplitView.minimumWidth: 260
+            color: Theme.surface
+
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: 0
+
+                // Search (Telegram-style pill)
+                Item {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 52
+                    TextField {
+                        id: searchField
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.margins: 10
+                        height: 36
+                        placeholderText: "Search chats & messages"
                         color: Theme.surfaceFg
-                        font.bold: true
-                        elide: Text.ElideRight
-                        Layout.fillWidth: true
+                        placeholderTextColor: Theme.surfaceVariantFg
+                        leftPadding: 14
+                        background: Rectangle {
+                            radius: 18
+                            color: Theme.surfaceVariant
+                            border.color: searchField.activeFocus ? Theme.primary : "transparent"
+                            border.width: 1
+                        }
+                        onTextChanged: {
+                            if (text.length >= 2) sscApi.searchLocalMessages(text)
+                        }
                     }
+                }
+
+                Rectangle { Layout.fillWidth: true; height: 1; color: Theme.outline }
+
+                ListView {
+                    id: convList
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    model: searchField.text.length >= 2 ? sscApi.searchHits : sscApi.conversations
+                    spacing: 0
+                    delegate: ItemDelegate {
+                        width: ListView.view.width
+                        height: 72
+                        padding: 0
+                        background: Rectangle {
+                            color: {
+                                const id = modelData.id || modelData._id || modelData.conversationId || ""
+                                if (id === sscApi.activeConversationId) return Theme.surfaceVariant
+                                return hovered ? "#162229" : Theme.surface
+                            }
+                        }
+                        contentItem: RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 12
+                            // Avatar circle
+                            Rectangle {
+                                width: 48; height: 48; radius: 24
+                                color: Theme.primary
+                                Layout.alignment: Qt.AlignVCenter
+                                Label {
+                                    anchors.centerIn: parent
+                                    text: {
+                                        const t = page.convTitle(modelData)
+                                        return t.length ? t.charAt(0).toUpperCase() : "?"
+                                    }
+                                    color: Theme.primaryFg
+                                    font.bold: true
+                                    font.pixelSize: 18
+                                }
+                            }
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 2
+                                Label {
+                                    text: searchField.text.length >= 2
+                                          ? (modelData.snippet || "Message match")
+                                          : ((modelData.pinned ? "📌 " : "") + page.convTitle(modelData))
+                                    color: Theme.surfaceFg
+                                    font.bold: true
+                                    font.pixelSize: 15
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
+                                Label {
+                                    text: searchField.text.length >= 2
+                                          ? "Open conversation"
+                                          : page.convSubtitle(modelData)
+                                    color: Theme.surfaceVariantFg
+                                    font.pixelSize: 13
+                                    elide: Text.ElideRight
+                                    Layout.fillWidth: true
+                                }
+                            }
+                        }
+                        onClicked: {
+                            if (searchField.text.length >= 2) {
+                                sscApi.openConversation(modelData.conversationId || "", "", "")
+                                searchField.text = ""
+                            } else {
+                                const id = modelData.id || modelData._id
+                                sscApi.openConversation(id, modelData.peer_id || "", modelData.group_id || "")
+                            }
+                            replyToId = ""
+                            replyPreview = ""
+                        }
+                    }
+
                     Label {
-                        text: searchField.text.length >= 2
-                              ? (modelData.conversationId || "")
-                              : ((modelData.muted ? "🔇 " : "") + (modelData.peer_id || modelData.type || modelData.group_id || ""))
+                        anchors.centerIn: parent
+                        visible: convList.count === 0
+                        horizontalAlignment: Text.AlignHCenter
+                        text: searchField.text.length ? "No results" : "No chats yet\n\nTap ＋ to message someone"
                         color: Theme.surfaceVariantFg
-                        font.pixelSize: 12
-                        elide: Text.ElideRight
-                        Layout.fillWidth: true
-                    }
-                }
-                onClicked: {
-                    if (searchField.text.length >= 2) {
-                        sscApi.openConversation(modelData.conversationId || "", "", "")
-                        searchField.text = ""
-                    } else {
-                        const id = modelData.id || modelData._id
-                        sscApi.openConversation(id, modelData.peer_id || "", modelData.group_id || "")
-                    }
-                    replyToId = ""
-                    replyPreview = ""
-                }
-                onPressAndHold: convMenu.open()
-                Menu {
-                    id: convMenu
-                    MenuItem {
-                        text: modelData.pinned ? "Unpin" : "Pin"
-                        onTriggered: sscApi.setPinned(modelData.id || modelData._id, !modelData.pinned)
-                    }
-                    MenuItem {
-                        text: modelData.muted ? "Unmute" : "Mute"
-                        onTriggered: sscApi.setMuted(modelData.id || modelData._id, !modelData.muted)
+                        font.pixelSize: 14
                     }
                 }
             }
-            Label {
-                anchors.centerIn: parent
-                visible: convList.count === 0
-                text: "No chats yet\nTap + to start"
-                horizontalAlignment: Text.AlignHCenter
-                color: Theme.surfaceVariantFg
+
+            // FAB new chat (bottom-right of list — Telegram style)
+            RoundButton {
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.margins: 16
+                width: 56; height: 56
+                text: "＋"
+                font.pixelSize: 26
+                Material.background: Theme.primary
+                Material.foreground: Theme.primaryFg
+                ToolTip.text: "New chat"
+                ToolTip.visible: hovered
+                onClicked: newChatDialog.open()
             }
         }
 
-        // Thread pane
-        Page {
-            background: Rectangle { color: Theme.background }
-            header: ToolBar {
-                Material.background: Theme.surface
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 4
-                    Label {
-                        text: sscApi.activeConversationId
-                              ? (sscApi.activePeerId || sscApi.activeGroupId || sscApi.activeConversationId)
-                              : "Select a chat"
-                        color: Theme.surfaceFg
-                        font.bold: true
-                        Layout.fillWidth: true
-                        elide: Text.ElideRight
-                    }
-                    Label {
-                        text: sscApi.typingLabel
-                        color: Theme.secondary
-                        font.pixelSize: 11
-                        visible: sscApi.typingLabel.length > 0
-                    }
-                    ToolButton {
-                        text: "📞"
-                        ToolTip.visible: hovered
-                        ToolTip.text: "Audio call"
-                        visible: sscApi.activeConversationId.length > 0 && sscApi.activePeerId.length > 0
-                        onClicked: sscCalls.startOutgoing(sscApi.activeConversationId, sscApi.activePeerId, false)
-                    }
-                    ToolButton {
-                        text: "📹"
-                        ToolTip.visible: hovered
-                        ToolTip.text: "Video call"
-                        visible: sscApi.activeConversationId.length > 0 && sscApi.activePeerId.length > 0
-                        onClicked: sscCalls.startOutgoing(sscApi.activeConversationId, sscApi.activePeerId, true)
-                    }
-                    Label {
-                        text: sscCalls.callState + (sscCalls.videoEnabled ? " · video" : "")
-                        color: Theme.secondary
-                        font.pixelSize: 11
-                        visible: sscCalls.inCall
-                    }
-                    ToolButton {
-                        text: "Hangup"
-                        visible: sscCalls.inCall
-                        Material.foreground: Theme.error
-                        onClicked: sscCalls.hangup()
-                    }
-                    ToolButton {
-                        text: "👥"
-                        visible: sscApi.activeGroupId.length > 0
-                        onClicked: membersDialog.open()
-                    }
-                    ToolButton {
-                        text: "📊"
-                        visible: sscApi.activeConversationId.length > 0
-                        onClicked: pollDialog.open()
-                    }
-                    ToolButton {
-                        text: "🔐"
-                        visible: sscApi.activePeerId.length > 0
-                        onClicked: {
-                            sscApi.computeSafetyNumber(sscApi.activePeerId)
-                            safetyDialog.open()
-                        }
-                    }
-                    ToolButton {
-                        text: "SFU"
-                        visible: sscApi.activeGroupId.length > 0 || sscApi.activeConversationId.length > 0
-                        onClicked: sscApi.startSfuGroupCall(sscApi.activeConversationId, 6)
-                    }
+        // ========== RIGHT: thread ==========
+        Rectangle {
+            color: Theme.background
+            SplitView.fillWidth: true
+
+            // Empty state when no chat selected
+            Column {
+                anchors.centerIn: parent
+                spacing: 12
+                visible: !page.chatOpen
+                width: parent.width * 0.6
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: "SSC"
+                    font.pixelSize: 42
+                    font.bold: true
+                    color: Theme.primary
+                }
+                Label {
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap
+                    text: "Select a chat on the left\nor start a new one with ＋"
+                    color: Theme.surfaceVariantFg
+                    font.pixelSize: 15
                 }
             }
 
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 8
-                spacing: 6
+                spacing: 0
+                visible: page.chatOpen
 
+                // Thread header (WhatsApp/Telegram)
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 56
+                    color: Theme.surface
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 4
+                        spacing: 8
+                        Rectangle {
+                            width: 40; height: 40; radius: 20
+                            color: Theme.primary
+                            Label {
+                                anchors.centerIn: parent
+                                text: {
+                                    const t = sscApi.activeChatTitle || "?"
+                                    return t.charAt(0).toUpperCase()
+                                }
+                                color: Theme.primaryFg
+                                font.bold: true
+                            }
+                        }
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 0
+                            Label {
+                                text: sscApi.activeChatTitle.length ? sscApi.activeChatTitle : "Chat"
+                                color: Theme.surfaceFg
+                                font.bold: true
+                                font.pixelSize: 15
+                                elide: Text.ElideRight
+                                Layout.fillWidth: true
+                            }
+                            Label {
+                                text: sscApi.typingLabel.length ? sscApi.typingLabel
+                                      : (sscCalls.inCall ? ("In call · " + sscCalls.callState) : "online")
+                                color: Theme.secondary
+                                font.pixelSize: 12
+                                visible: true
+                            }
+                        }
+                        // Compact action cluster — text labels, no random emoji soup
+                        ToolButton {
+                            text: "Call"
+                            visible: sscApi.activePeerId.length > 0
+                            onClicked: sscCalls.startOutgoing(sscApi.activeConversationId, sscApi.activePeerId, false)
+                        }
+                        ToolButton {
+                            text: "Video"
+                            visible: sscApi.activePeerId.length > 0
+                            onClicked: sscCalls.startOutgoing(sscApi.activeConversationId, sscApi.activePeerId, true)
+                        }
+                        ToolButton {
+                            text: "End"
+                            visible: sscCalls.inCall
+                            Material.foreground: Theme.error
+                            onClicked: sscCalls.hangup()
+                        }
+                        ToolButton {
+                            text: "⋮"
+                            font.pixelSize: 20
+                            onClicked: threadMenu.open()
+                            Menu {
+                                id: threadMenu
+                                MenuItem {
+                                    text: "Safety number"
+                                    visible: sscApi.activePeerId.length > 0
+                                    onTriggered: {
+                                        sscApi.computeSafetyNumber(sscApi.activePeerId)
+                                        safetyDialog.open()
+                                    }
+                                }
+                                MenuItem {
+                                    text: "Group members"
+                                    visible: sscApi.activeGroupId.length > 0
+                                    onTriggered: membersDialog.open()
+                                }
+                                MenuItem {
+                                    text: "Create poll"
+                                    onTriggered: pollDialog.open()
+                                }
+                                MenuItem {
+                                    text: "Group call (SFU)"
+                                    visible: sscApi.activeGroupId.length > 0
+                                    onTriggered: sscApi.startSfuGroupCall(sscApi.activeConversationId, 6)
+                                }
+                            }
+                        }
+                    }
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        width: parent.width; height: 1
+                        color: Theme.outline
+                    }
+                }
+
+                // Messages
                 ListView {
                     id: msgList
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
                     model: sscApi.messages
-                    spacing: 6
+                    spacing: 4
+                    topMargin: 12
+                    bottomMargin: 12
                     delegate: Item {
                         width: ListView.view.width
-                        height: bubbleCol.implicitHeight + 4
+                        height: bubble.implicitHeight + 8
                         readonly property bool mine: !!(modelData.mine) || modelData.sender_id === sscSession.userId
                         readonly property string mid: modelData.id || ""
-                        ColumnLayout {
-                            id: bubbleCol
+                        readonly property string body: modelData.plaintext || (modelData.ciphertext ? "Encrypted message" : "")
+
+                        Rectangle {
+                            id: bubble
                             anchors.left: mine ? undefined : parent.left
                             anchors.right: mine ? parent.right : undefined
-                            anchors.margins: 8
-                            width: Math.min(parent.width * 0.78, Math.max(120, msgText.implicitWidth + 28))
-                            Rectangle {
-                                Layout.fillWidth: true
-                                radius: 12
-                                color: mine ? Theme.bubbleMine : Theme.bubblePeer
-                                implicitHeight: msgText.implicitHeight + (rxLabel.visible ? 28 : 16)
-                                Column {
-                                    anchors.fill: parent
-                                    anchors.margins: 10
-                                    spacing: 4
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            width: Math.min(parent.width * 0.72, Math.max(80, msgLabel.implicitWidth + 28))
+                            radius: 10
+                            color: mine ? Theme.bubbleMine : Theme.bubblePeer
+                            implicitHeight: msgCol.implicitHeight + 16
+
+                            Column {
+                                id: msgCol
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                anchors.top: parent.top
+                                anchors.margins: 10
+                                spacing: 4
+                                Text {
+                                    id: msgLabel
+                                    width: parent.width
+                                    wrapMode: Text.Wrap
+                                    color: Theme.surfaceFg
+                                    font.pixelSize: 14
+                                    text: body
+                                }
+                                Row {
+                                    spacing: 8
+                                    visible: mid.length > 0 && !String(mid).startsWith("local-")
                                     Text {
-                                        id: msgText
-                                        width: parent.width
-                                        wrapMode: Text.Wrap
-                                        color: Theme.surfaceFg
-                                        text: modelData.plaintext || (modelData.ciphertext ? "[encrypted]" : "")
-                                    }
-                                    Label {
-                                        id: rxLabel
-                                        visible: (sscApi.reactionSummary[mid] || 0) > 0
-                                        text: "❤ " + (sscApi.reactionSummary[mid] || "")
+                                        text: "Reply"
                                         color: Theme.secondary
                                         font.pixelSize: 11
-                                    }
-                                }
-                            }
-                            Row {
-                                spacing: 4
-                                visible: mid.length > 0 && !String(mid).startsWith("local-")
-                                Button {
-                                    text: "Reply"
-                                    flat: true
-                                    font.pixelSize: 10
-                                    onClicked: {
-                                        replyToId = mid
-                                        replyPreview = (modelData.plaintext || "").slice(0, 40)
-                                    }
-                                }
-                                Button {
-                                    text: "❤"
-                                    flat: true
-                                    font.pixelSize: 10
-                                    onClicked: sscApi.addReaction(mid, "❤️")
-                                }
-                                Button {
-                                    text: "Del"
-                                    flat: true
-                                    font.pixelSize: 10
-                                    Material.foreground: Theme.error
-                                    onClicked: sscApi.deleteMessage(mid, "me")
-                                }
-                                Button {
-                                    text: "Del all"
-                                    flat: true
-                                    font.pixelSize: 10
-                                    visible: mine
-                                    Material.foreground: Theme.error
-                                    onClicked: sscApi.deleteMessage(mid, "everyone")
-                                }
-                                Button {
-                                    text: "Edit"
-                                    flat: true
-                                    font.pixelSize: 10
-                                    visible: mine
-                                    onClicked: {
-                                        editDialog.messageId = mid
-                                        editDialog.draft = modelData.plaintext || ""
-                                        editDialog.open()
-                                    }
-                                }
-                                Button {
-                                    text: "Open file"
-                                    flat: true
-                                    font.pixelSize: 10
-                                    visible: {
-                                        const t = modelData.plaintext || ""
-                                        return t.indexOf("[file]") === 0 || t.indexOf("[voice:") === 0
-                                    }
-                                    onClicked: {
-                                        const t = modelData.plaintext || ""
-                                        let id = ""
-                                        const voice = t.match(/\[voice:([^\]]+)\]/)
-                                        if (voice) id = voice[1]
-                                        else {
-                                            const m = t.match(/id=([^\s]+)/)
-                                            if (m) id = m[1]
+                                        font.underline: true
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                replyToId = mid
+                                                replyPreview = body.slice(0, 40)
+                                            }
                                         }
-                                        if (id) sscApi.downloadAndOpenFile(id)
+                                    }
+                                    Text {
+                                        text: "❤"
+                                        color: Theme.secondary
+                                        font.pixelSize: 11
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: sscApi.addReaction(mid, "❤️")
+                                        }
+                                    }
+                                    Text {
+                                        text: "Open"
+                                        color: Theme.secondary
+                                        font.pixelSize: 11
+                                        font.underline: true
+                                        visible: body.indexOf("[file]") === 0 || body.indexOf("[voice:") === 0
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                let id = ""
+                                                const voice = body.match(/\[voice:([^\]]+)\]/)
+                                                if (voice) id = voice[1]
+                                                else {
+                                                    const m = body.match(/id=([^\s]+)/)
+                                                    if (m) id = m[1]
+                                                }
+                                                if (id) sscApi.downloadAndOpenFile(id)
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    onCountChanged: if (count > 0) positionViewAtEnd()
+                    onCountChanged: if (count > 0) Qt.callLater(function() { positionViewAtEnd() })
                 }
 
-                Label {
-                    visible: replyToId.length > 0
-                    text: "Replying: " + replyPreview
-                    color: Theme.secondary
-                    font.pixelSize: 11
+                // Reply strip
+                Rectangle {
                     Layout.fillWidth: true
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Button {
-                        text: "📎"
-                        enabled: sscApi.activeConversationId.length > 0
-                        flat: true
-                        onClicked: fileDialog.open()
+                    height: replyToId.length ? 36 : 0
+                    visible: height > 0
+                    color: Theme.surfaceVariant
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        Label {
+                            text: "Replying: " + replyPreview
+                            color: Theme.surfaceVariantFg
+                            font.pixelSize: 12
+                            Layout.fillWidth: true
+                            elide: Text.ElideRight
+                        }
+                        ToolButton {
+                            text: "✕"
+                            onClicked: { replyToId = ""; replyPreview = "" }
+                        }
                     }
-                    Button {
-                        text: sscVoice.recording ? "⏹" : "🎤"
-                        enabled: sscApi.activeConversationId.length > 0 && !sscApi.busy
-                        flat: true
-                        Material.foreground: sscVoice.recording ? Theme.error : Theme.surfaceFg
-                        onClicked: {
-                            if (sscVoice.recording) {
-                                const path = sscVoice.stop()
-                                if (path && path.length)
-                                    sscApi.sendVoiceNote(sscApi.activeConversationId, path)
-                            } else {
-                                if (!sscVoice.start())
-                                    console.log("voice start failed")
+                }
+
+                // Composer (only when chat open — WhatsApp bar)
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 60
+                    color: Theme.surface
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 8
+                        anchors.rightMargin: 8
+                        anchors.topMargin: 8
+                        anchors.bottomMargin: 8
+                        spacing: 6
+
+                        ToolButton {
+                            text: "📎"
+                            font.pixelSize: 18
+                            ToolTip.text: "Attach file"
+                            ToolTip.visible: hovered
+                            onClicked: fileDialog.open()
+                        }
+                        ToolButton {
+                            text: sscVoice.recording ? "⏹" : "🎤"
+                            font.pixelSize: 18
+                            Material.foreground: sscVoice.recording ? Theme.error : Theme.surfaceFg
+                            ToolTip.text: sscVoice.recording ? "Stop & send voice" : "Voice note"
+                            ToolTip.visible: hovered
+                            onClicked: {
+                                if (sscVoice.recording) {
+                                    const path = sscVoice.stop()
+                                    if (path && path.length)
+                                        sscApi.sendVoiceNote(sscApi.activeConversationId, path)
+                                } else {
+                                    sscVoice.start()
+                                }
+                            }
+                        }
+                        TextField {
+                            id: draft
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 40
+                            placeholderText: sscVoice.recording ? "Recording…" : "Type a message"
+                            enabled: !sscVoice.recording
+                            color: Theme.surfaceFg
+                            placeholderTextColor: Theme.surfaceVariantFg
+                            leftPadding: 16
+                            rightPadding: 16
+                            background: Rectangle {
+                                radius: 20
+                                color: Theme.surfaceVariant
+                                border.color: draft.activeFocus ? Theme.primary : Theme.outline
+                                border.width: 1
+                            }
+                            onTextChanged: {
+                                if (sscApi.activeConversationId.length)
+                                    sscApi.sendTyping(sscApi.activeConversationId, text.length > 0)
+                            }
+                            onAccepted: sendBtn.clicked()
+                        }
+                        RoundButton {
+                            id: sendBtn
+                            width: 44; height: 44
+                            text: "➤"
+                            font.pixelSize: 16
+                            enabled: draft.text.trim().length > 0 && !sscApi.busy
+                            Material.background: enabled ? Theme.primary : Theme.surfaceVariant
+                            Material.foreground: enabled ? Theme.primaryFg : Theme.surfaceVariantFg
+                            onClicked: {
+                                const t = draft.text.trim()
+                                if (!t.length) return
+                                sscApi.sendMessage(sscApi.activeConversationId, t, replyToId)
+                                draft.text = ""
+                                replyToId = ""
+                                replyPreview = ""
                             }
                         }
                     }
-                    TextField {
-                        id: draft
-                        Layout.fillWidth: true
-                        placeholderText: sscVoice.recording ? "Recording voice note…" : "Message"
-                        enabled: sscApi.activeConversationId.length > 0 && !sscVoice.recording
-                        color: Theme.surfaceFg
-                        placeholderTextColor: Theme.surfaceVariantFg
-                        background: Rectangle {
-                            color: Theme.surfaceVariant
-                            radius: 20
-                            border.color: sscVoice.recording ? Theme.error : Theme.outline
-                        }
-                        onTextChanged: {
-                            if (sscApi.activeConversationId.length)
-                                sscApi.sendTyping(sscApi.activeConversationId, text.length > 0)
-                        }
-                        onAccepted: sendBtn.clicked()
-                    }
-                    Button {
-                        id: sendBtn
-                        text: "Send"
-                        enabled: draft.text.length > 0 && sscApi.activeConversationId.length > 0 && !sscApi.busy
-                        Material.background: Theme.primary
-                        Material.foreground: Theme.primaryFg
-                        onClicked: {
-                            sscApi.sendMessage(sscApi.activeConversationId, draft.text, replyToId)
-                            draft.text = ""
-                            replyToId = ""
-                            replyPreview = ""
-                        }
-                    }
-                }
-
-                FileDialog {
-                    id: fileDialog
-                    title: "Send file"
-                    fileMode: FileDialog.OpenFile
-                    onAccepted: {
-                        const p = selectedFile.toString().replace("file:///", "").replace("file://", "")
-                        sscApi.sendFile(sscApi.activeConversationId, p)
-                    }
                 }
 
                 Label {
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 12
+                    Layout.rightMargin: 12
+                    Layout.bottomMargin: 4
                     text: sscApi.lastError
                     color: Theme.error
                     visible: sscApi.lastError.length > 0
-                    wrapMode: Text.WordWrap
-                    Layout.fillWidth: true
+                    wrapMode: Text.Wrap
+                    font.pixelSize: 11
                 }
             }
         }
     }
 
-    Dialog {
-        id: storyDialog
-        title: "New story"
-        modal: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        TextField {
-            id: storyText
-            width: 320
-            placeholderText: "Story text"
-        }
+    FileDialog {
+        id: fileDialog
+        title: "Send file"
+        fileMode: FileDialog.OpenFile
         onAccepted: {
-            sscApi.createStory(storyText.text)
-            storyText.text = ""
+            const p = selectedFile.toString().replace("file:///", "").replace("file://", "")
+            sscApi.sendFile(sscApi.activeConversationId, p)
         }
     }
 
+    // —— New chat dialog (not a floating panel under + overlapping send) ——
     Dialog {
-        id: editDialog
-        property string messageId: ""
-        property alias draft: editField.text
-        title: "Edit message"
+        id: newChatDialog
+        title: "New chat"
         modal: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        TextField {
-            id: editField
-            width: 320
-            placeholderText: "New text"
+        anchors.centerIn: parent
+        width: 400
+        standardButtons: Dialog.Close
+        onOpened: {
+            sscApi.refreshConversations()
+            sscApi.refreshFriendRequests()
+            peerQuery.forceActiveFocus()
         }
-        onAccepted: {
-            if (messageId.length) sscApi.editMessage(messageId, editField.text)
+        ColumnLayout {
+            width: parent ? parent.width - 24 : 360
+            spacing: 10
+            Label {
+                text: "Type the exact username (privacy: no public directory)."
+                color: Theme.surfaceVariantFg
+                wrapMode: Text.Wrap
+                Layout.fillWidth: true
+                font.pixelSize: 12
+            }
+            TextField {
+                id: peerQuery
+                Layout.fillWidth: true
+                placeholderText: "e.g. dots or @dots"
+                color: Theme.surfaceFg
+                onTextChanged: if (text.length >= 2) sscApi.searchUsers(text)
+                onAccepted: lookupChatBtn.clicked()
+            }
+            Button {
+                id: lookupChatBtn
+                text: "Find & chat"
+                Layout.fillWidth: true
+                Material.background: Theme.primary
+                Material.foreground: Theme.primaryFg
+                enabled: peerQuery.text.length >= 2
+                onClicked: {
+                    if (sscApi.userSearchResults.length > 0) {
+                        const u = sscApi.userSearchResults[0]
+                        const id = u.id || u._id || ""
+                        if (id) {
+                            sscApi.startNewDirect(id)
+                            newChatDialog.close()
+                            peerQuery.text = ""
+                        }
+                    } else {
+                        sscApi.searchUsers(peerQuery.text)
+                        // second click after results, or username path
+                        sscApi.startNewDirect(peerQuery.text)
+                        newChatDialog.close()
+                    }
+                }
+            }
+            Repeater {
+                model: sscApi.userSearchResults
+                delegate: Button {
+                    Layout.fillWidth: true
+                    text: (modelData.display_name || "") +
+                          (modelData.username ? (" @" + modelData.username) : "") +
+                          " — Chat"
+                    Material.background: Theme.surfaceVariant
+                    onClicked: {
+                        sscApi.startNewDirect(modelData.id || modelData._id)
+                        newChatDialog.close()
+                        peerQuery.text = ""
+                    }
+                }
+            }
+            Label {
+                text: "Or create a group"
+                color: Theme.secondary
+                font.pixelSize: 12
+            }
+            TextField {
+                id: groupName
+                Layout.fillWidth: true
+                placeholderText: "Group name"
+                color: Theme.surfaceFg
+            }
+            TextField {
+                id: groupMembers
+                Layout.fillWidth: true
+                placeholderText: "Member user ids (comma-separated)"
+                color: Theme.surfaceFg
+            }
+            Button {
+                text: "Create group"
+                Layout.fillWidth: true
+                enabled: groupName.text.length > 0
+                onClicked: {
+                    sscApi.createGroup(groupName.text, groupMembers.text)
+                    newChatDialog.close()
+                }
+            }
         }
     }
 
@@ -685,72 +707,6 @@ Page {
                   ? sscApi.safetyNumber
                   : "Computing… compare this number with your contact out-of-band."
             color: Theme.surfaceFg
-        }
-    }
-
-    Connections {
-        target: sscApi
-        function onSfuRoomReady(roomId, wsUrl, joinToken) {
-            sfuDialog.roomId = roomId
-            sfuDialog.wsUrl = wsUrl
-            sfuDialog.joinToken = joinToken || ""
-            sfuInfo.text = "Room " + roomId + "\nWS: " + wsUrl
-                           + "\n" + (sscCalls.sfuState || "joining…")
-            sfuDialog.open()
-            // Auto-join mediasoup (Android CallCoordinator parity)
-            if (roomId.length && wsUrl.length)
-                sscCalls.joinSfuRoom(wsUrl, roomId, joinToken || "")
-        }
-    }
-    Connections {
-        target: sscCalls
-        function onSfuJoined(roomId, existingProducers) {
-            sfuInfo.text = "Joined " + roomId
-                           + "\nKnown producers: " + existingProducers
-                           + "\n" + (sscCalls.sfuState || "")
-                           + "\n(audio produce + consume active)"
-        }
-    }
-    Dialog {
-        id: sfuDialog
-        property string roomId: ""
-        property string wsUrl: ""
-        property string joinToken: ""
-        title: "SFU group call"
-        modal: true
-        standardButtons: Dialog.Close
-        Label {
-            id: sfuInfo
-            width: 400
-            wrapMode: Text.WrapAnywhere
-            color: Theme.surfaceFg
-        }
-        footer: DialogButtonBox {
-            Button {
-                text: "Join"
-                DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
-                enabled: sfuDialog.roomId.length > 0 && sfuDialog.wsUrl.length > 0
-                onClicked: sscCalls.joinSfuRoom(sfuDialog.wsUrl, sfuDialog.roomId, sfuDialog.joinToken)
-            }
-            Button {
-                text: "Leave SFU"
-                DialogButtonBox.buttonRole: DialogButtonBox.ActionRole
-                onClicked: sscCalls.leaveSfuRoom()
-            }
-            Button {
-                text: "End room"
-                DialogButtonBox.buttonRole: DialogButtonBox.DestructiveRole
-                onClicked: {
-                    sscCalls.leaveSfuRoom()
-                    sscApi.endSfuRoom()
-                    sfuDialog.close()
-                }
-            }
-            Button {
-                text: "Close"
-                DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
-                onClicked: sfuDialog.close()
-            }
         }
     }
 
@@ -791,25 +747,10 @@ Page {
                     }
                 }
             }
-            TextField {
-                id: addMem
-                placeholderText: "Add member user id"
-                Layout.fillWidth: true
-            }
-            Button {
-                text: "Add members"
-                onClicked: sscApi.addGroupMembers(sscApi.activeGroupId, addMem.text)
-            }
             Button {
                 text: "Leave group"
                 Material.foreground: Theme.error
                 onClicked: { sscApi.leaveGroup(sscApi.activeGroupId); membersDialog.close() }
-            }
-            Button {
-                text: "Dissolve group"
-                Material.background: Theme.error
-                Material.foreground: "#fff"
-                onClicked: { sscApi.dissolveGroup(sscApi.activeGroupId); membersDialog.close() }
             }
         }
         onOpened: sscApi.refreshGroupMembers(sscApi.activeGroupId)
@@ -817,19 +758,52 @@ Page {
 
     Connections {
         target: sscApi
+        function onSfuRoomReady(roomId, wsUrl, joinToken) {
+            sfuDialog.roomId = roomId
+            sfuDialog.wsUrl = wsUrl
+            sfuDialog.joinToken = joinToken || ""
+            sfuInfo.text = "Group call ready.\nRoom: " + roomId
+            sfuDialog.open()
+            if (roomId.length && wsUrl.length)
+                sscCalls.joinSfuRoom(wsUrl, roomId, joinToken || "")
+        }
         function onIncomingCall(callId, fromUserId, video) {
             callDialog.callId = callId
             callDialog.fromUserId = fromUserId
             callDialog.video = video
-            callDialog.text = "Incoming " + (video ? "video" : "audio") + " call from " + fromUserId
+            callDialog.text = "Incoming " + (video ? "video" : "voice") + " call"
             callDialog.open()
         }
     }
     Connections {
         target: sscCalls
-        function onCallError(detail) {
-            // surface via API status
-            console.log("call error", detail)
+        function onSfuJoined(roomId, existingProducers) {
+            sfuInfo.text = "Joined group call\nProducers: " + existingProducers
+        }
+    }
+
+    Dialog {
+        id: sfuDialog
+        property string roomId: ""
+        property string wsUrl: ""
+        property string joinToken: ""
+        title: "Group call"
+        modal: true
+        Label {
+            id: sfuInfo
+            width: 360
+            wrapMode: Text.Wrap
+            color: Theme.surfaceFg
+        }
+        footer: DialogButtonBox {
+            Button {
+                text: "Leave"
+                onClicked: { sscCalls.leaveSfuRoom(); sscApi.endSfuRoom(); sfuDialog.close() }
+            }
+            Button {
+                text: "Close"
+                onClicked: sfuDialog.close()
+            }
         }
     }
 
@@ -839,16 +813,12 @@ Page {
         property string fromUserId: ""
         property bool video: false
         property string text: ""
-        title: "Call"
+        title: "Incoming call"
         modal: true
         standardButtons: Dialog.Yes | Dialog.No
-        Label { text: callDialog.text; wrapMode: Text.WordWrap; width: 300 }
-        onRejected: {
-            if (callId) sscApi.endCall(callId, "declined")
-        }
-        onAccepted: {
-            sscCalls.acceptIncoming(callId, fromUserId, video)
-        }
+        Label { text: callDialog.text; wrapMode: Text.Wrap; width: 300 }
+        onRejected: { if (callId) sscApi.endCall(callId, "declined") }
+        onAccepted: sscCalls.acceptIncoming(callId, fromUserId, video)
     }
 
     Component.onCompleted: {
