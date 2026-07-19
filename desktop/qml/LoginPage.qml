@@ -32,7 +32,7 @@ Item {
             }
             Label {
                 text: registerMode ? "Create account" : "Sign in"
-                color: Theme.onSurfaceVariant
+                color: Theme.surfaceVariantFg
                 font.pixelSize: 16
                 Layout.alignment: Qt.AlignHCenter
                 Layout.bottomMargin: 12
@@ -43,8 +43,8 @@ Item {
                 visible: registerMode
                 placeholderText: "Display name"
                 Layout.fillWidth: true
-                color: Theme.onSurface
-                placeholderTextColor: Theme.onSurfaceVariant
+                color: Theme.surfaceFg
+                placeholderTextColor: Theme.surfaceVariantFg
                 background: Rectangle {
                     color: Theme.surfaceVariant
                     radius: 8
@@ -56,8 +56,8 @@ Item {
                 placeholderText: "Email"
                 Layout.fillWidth: true
                 inputMethodHints: Qt.ImhEmailCharactersOnly
-                color: Theme.onSurface
-                placeholderTextColor: Theme.onSurfaceVariant
+                color: Theme.surfaceFg
+                placeholderTextColor: Theme.surfaceVariantFg
                 background: Rectangle {
                     color: Theme.surfaceVariant
                     radius: 8
@@ -69,8 +69,8 @@ Item {
                 placeholderText: "Password (min 8)"
                 echoMode: TextInput.Password
                 Layout.fillWidth: true
-                color: Theme.onSurface
-                placeholderTextColor: Theme.onSurfaceVariant
+                color: Theme.surfaceFg
+                placeholderTextColor: Theme.surfaceVariantFg
                 background: Rectangle {
                     color: Theme.surfaceVariant
                     radius: 8
@@ -87,14 +87,14 @@ Item {
                     text: sscTurnstile.token.length > 0
                           ? "Security check complete"
                           : "Security check required"
-                    color: sscTurnstile.token.length > 0 ? Theme.primary : Theme.onSurfaceVariant
+                    color: sscTurnstile.token.length > 0 ? Theme.primary : Theme.surfaceVariantFg
                     font.pixelSize: 12
                 }
                 Button {
                     text: sscTurnstile.token.length > 0 ? "Re-run security check" : "Complete security check"
                     Layout.fillWidth: true
                     Material.background: Theme.surfaceVariant
-                    Material.foreground: Theme.onSurface
+                    Material.foreground: Theme.surfaceFg
                     enabled: sscApi.captchaSiteKey.length > 0
                     onClicked: {
                         sscTurnstile.clearToken()
@@ -131,7 +131,7 @@ Item {
                 enabled: !sscApi.busy && email.text.length > 0 && password.text.length >= 8
                          && (!registerMode || !sscApi.captchaRequired || sscTurnstile.token.length > 0)
                 Material.background: Theme.primary
-                Material.foreground: Theme.onPrimary
+                Material.foreground: Theme.primaryFg
                 onClicked: {
                     if (registerMode) {
                         sscApi.registerAccount(email.text, password.text,
@@ -146,7 +146,7 @@ Item {
                 text: "Continue with Google"
                 Layout.fillWidth: true
                 Material.background: Theme.surfaceVariant
-                Material.foreground: Theme.onSurface
+                Material.foreground: Theme.surfaceFg
                 onClicked: sscApi.openGoogleOAuth()
             }
             Button {
@@ -163,7 +163,7 @@ Item {
                 text: "Account recovery"
                 Layout.fillWidth: true
                 flat: true
-                Material.foreground: Theme.onSurfaceVariant
+                Material.foreground: Theme.surfaceVariantFg
                 onClicked: ApplicationWindow.window.openRecovery()
             }
         }

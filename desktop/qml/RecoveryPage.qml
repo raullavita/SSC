@@ -19,7 +19,7 @@ Page {
             Label {
                 text: "Recovery"
                 font.bold: true
-                color: Theme.onSurface
+                color: Theme.surfaceFg
             }
         }
     }
@@ -33,7 +33,7 @@ Page {
             text: recoveryToken.length === 0
                   ? "Verify recovery passphrase"
                   : "Set a new password"
-            color: Theme.onSurfaceVariant
+            color: Theme.surfaceVariantFg
             Layout.fillWidth: true
             wrapMode: Text.WordWrap
         }
@@ -43,7 +43,7 @@ Page {
             visible: recoveryToken.length === 0
             placeholderText: "Email"
             Layout.fillWidth: true
-            color: Theme.onSurface
+            color: Theme.surfaceFg
             background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
         }
         TextField {
@@ -52,7 +52,7 @@ Page {
             placeholderText: "Recovery passphrase"
             echoMode: TextInput.Password
             Layout.fillWidth: true
-            color: Theme.onSurface
+            color: Theme.surfaceFg
             background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
         }
         TextField {
@@ -61,7 +61,7 @@ Page {
             placeholderText: "New password (min 8)"
             echoMode: TextInput.Password
             Layout.fillWidth: true
-            color: Theme.onSurface
+            color: Theme.surfaceFg
             background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
         }
 
@@ -84,7 +84,7 @@ Page {
             text: recoveryToken.length === 0 ? "Verify" : "Reset password"
             Layout.fillWidth: true
             Material.background: Theme.primary
-            Material.foreground: Theme.onPrimary
+            Material.foreground: Theme.primaryFg
             enabled: !sscApi.busy
             onClicked: {
                 if (recoveryToken.length === 0) {

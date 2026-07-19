@@ -12,7 +12,7 @@ Page {
         RowLayout {
             anchors.fill: parent
             ToolButton { text: "←"; onClicked: ApplicationWindow.window.goBack() }
-            Label { text: "Settings"; font.bold: true; color: Theme.onSurface }
+            Label { text: "Settings"; font.bold: true; color: Theme.surfaceFg }
             Item { Layout.fillWidth: true }
             ToolButton { text: "⟳"; onClicked: refreshAll() }
         }
@@ -38,14 +38,14 @@ Page {
             spacing: 10
 
             Label { text: "Account"; color: Theme.primary; font.bold: true; font.pixelSize: 16 }
-            Label { text: "Name: " + (sscSession.displayName || "—"); color: Theme.onSurface }
+            Label { text: "Name: " + (sscSession.displayName || "—"); color: Theme.surfaceFg }
             Label {
                 text: "User id: " + (sscSession.userId || "—")
-                color: Theme.onSurfaceVariant
+                color: Theme.surfaceVariantFg
                 wrapMode: Text.WrapAnywhere
                 Layout.fillWidth: true
             }
-            Label { text: "Device: " + sscSession.deviceId; color: Theme.onSurfaceVariant }
+            Label { text: "Device: " + sscSession.deviceId; color: Theme.surfaceVariantFg }
             Label {
                 visible: sscSession.username.length > 0
                 text: "Invite: https://www.supersecurechat.com/add/" + sscSession.username
@@ -59,7 +59,7 @@ Page {
                 visible: !sscSession.username || sscSession.username.length === 0
                 placeholderText: "Choose username"
                 Layout.fillWidth: true
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
             Button {
@@ -67,7 +67,7 @@ Page {
                 text: "Save username"
                 Layout.fillWidth: true
                 Material.background: Theme.primary
-                Material.foreground: Theme.onPrimary
+                Material.foreground: Theme.primaryFg
                 onClicked: sscApi.setUsername(usernameField.text)
             }
 
@@ -75,7 +75,7 @@ Page {
             Label {
                 text: sscApi.prekeyInfo + "\nE2EE libsignal 0.96.4 · windows/0.4.0/15\nWS: " + sscApi.connectionState
                       + "\nSFU: " + (sscApi.sfuStatus || "idle")
-                color: Theme.onSurfaceVariant
+                color: Theme.surfaceVariantFg
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
             }
@@ -85,7 +85,7 @@ Page {
                 checked: sscSession.sealedSenderEnabled
                 contentItem: Text {
                     text: swSealed.text
-                    color: Theme.onSurface
+                    color: Theme.surfaceFg
                     leftPadding: swSealed.indicator.width + 8
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -101,7 +101,7 @@ Page {
                 placeholderText: "Set recovery passphrase (min 8)"
                 echoMode: TextInput.Password
                 Layout.fillWidth: true
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
             Button {
@@ -118,7 +118,7 @@ Page {
                 checked: sscApi.privacy.last_seen_visible !== false
                 contentItem: Text {
                     text: swLastSeen.text
-                    color: Theme.onSurface
+                    color: Theme.surfaceFg
                     leftPadding: swLastSeen.indicator.width + 8
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -129,7 +129,7 @@ Page {
                 checked: sscApi.privacy.read_receipts !== false
                 contentItem: Text {
                     text: swReceipts.text
-                    color: Theme.onSurface
+                    color: Theme.surfaceFg
                     leftPadding: swReceipts.indicator.width + 8
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -140,7 +140,7 @@ Page {
                 checked: !!sscApi.privacy.push_rich_labels
                 contentItem: Text {
                     text: swPush.text
-                    color: Theme.onSurface
+                    color: Theme.surfaceFg
                     leftPadding: swPush.indicator.width + 8
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -158,7 +158,7 @@ Page {
                     Layout.fillWidth: true
                     Label {
                         text: (modelData.name || "Device") + " · " + (modelData.platform || "") + " · " + (modelData.device_id || modelData.id || "")
-                        color: Theme.onSurface
+                        color: Theme.surfaceFg
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
@@ -195,7 +195,7 @@ Page {
                     Layout.fillWidth: true
                     Label {
                         text: "From " + (modelData.from_user_id || modelData.fromUserId || "?")
-                        color: Theme.onSurface
+                        color: Theme.surfaceFg
                         Layout.fillWidth: true
                     }
                     Button {
@@ -213,7 +213,7 @@ Page {
                 id: friendId
                 placeholderText: "Send friend request to user id"
                 Layout.fillWidth: true
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
             Button {
@@ -228,7 +228,7 @@ Page {
                 placeholderText: "Backup passphrase (min 8)"
                 echoMode: TextInput.Password
                 Layout.fillWidth: true
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
             RowLayout {
@@ -256,14 +256,14 @@ Page {
                 id: bcName
                 placeholderText: "List name"
                 Layout.fillWidth: true
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
             TextField {
                 id: bcMembers
                 placeholderText: "Recipient user ids (comma)"
                 Layout.fillWidth: true
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
             Button {
@@ -277,14 +277,14 @@ Page {
                     Layout.fillWidth: true
                     Label {
                         text: (modelData.name || "List") + " (" + ((modelData.recipient_ids || []).length || "?") + ")"
-                        color: Theme.onSurface
+                        color: Theme.surfaceFg
                     }
                     RowLayout {
                         TextField {
                             id: bcMsg
                             placeholderText: "Message"
                             Layout.fillWidth: true
-                            color: Theme.onSurface
+                            color: Theme.surfaceFg
                             background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
                         }
                         Button {
@@ -334,7 +334,7 @@ Page {
             }
             Label {
                 text: "SSC Desktop Qt · v0.4.0 (build 15) · Android parity track"
-                color: Theme.onSurfaceVariant
+                color: Theme.surfaceVariantFg
                 font.pixelSize: 11
                 Layout.alignment: Qt.AlignHCenter
                 Layout.topMargin: 12

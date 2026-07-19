@@ -69,7 +69,9 @@ int main(int argc, char *argv[])
                      });
 
     QQmlApplicationEngine engine;
-    engine.addImportPath(QStringLiteral("qrc:/qt/qml"));
+    // QML module resources are under qrc:/SuperSecureChat/ (see qt_add_qml_module)
+    engine.addImportPath(QStringLiteral("qrc:/"));
+    engine.addImportPath(QCoreApplication::applicationDirPath());
     engine.rootContext()->setContextProperty(QStringLiteral("sscSession"), &session);
     engine.rootContext()->setContextProperty(QStringLiteral("sscApi"), &api);
     engine.rootContext()->setContextProperty(QStringLiteral("sscCrypto"), &crypto);
@@ -77,9 +79,9 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("sscRealtime"), &realtime);
     engine.rootContext()->setContextProperty(QStringLiteral("sscCalls"), &calls);
     engine.rootContext()->setContextProperty(QStringLiteral("sscVoice"), &voice);
-    engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/qml"));
 
-    const QUrl url(QStringLiteral("qrc:/qt/qml/SuperSecureChat/qml/Main.qml"));
+    // Prefer module entry; fall back if resource layout differs across Qt versions
+    QUrl url(QStringLiteral("qrc:/SuperSecureChat/qml/Main.qml"));
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,
@@ -87,6 +89,10 @@ int main(int argc, char *argv[])
         []() { QCoreApplication::exit(-1); },
         Qt::QueuedConnection);
     engine.load(url);
+    if (engine.rootObjects().isEmpty()) {
+        url = QUrl(QStringLiteral("qrc:/qt/qml/SuperSecureChat/qml/Main.qml"));
+        engine.load(url);
+    }
 
     return app.exec();
 }

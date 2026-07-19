@@ -12,7 +12,7 @@ Page {
 
     header: ToolBar {
         Material.background: Theme.surface
-        Material.foreground: Theme.onSurface
+        Material.foreground: Theme.surfaceFg
         ColumnLayout {
             anchors.fill: parent
             anchors.leftMargin: 12
@@ -24,7 +24,7 @@ Page {
                     text: "Chats"
                     font.bold: true
                     font.pixelSize: 18
-                    color: Theme.onSurface
+                    color: Theme.surfaceFg
                 }
                 Item { Layout.fillWidth: true }
                 ToolButton {
@@ -55,7 +55,7 @@ Page {
                 Label {
                     anchors.centerIn: parent
                     text: sscApi.connectionState === "connecting" ? "Connecting…" : "Offline — messages will sync when back"
-                    color: Theme.onSurface
+                    color: Theme.surfaceFg
                     font.pixelSize: 11
                 }
             }
@@ -63,7 +63,7 @@ Page {
                 id: searchField
                 Layout.fillWidth: true
                 placeholderText: "Search messages"
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 6 }
                 onTextChanged: sscApi.searchLocalMessages(text)
             }
@@ -121,7 +121,7 @@ Page {
             Label {
                 visible: panelMode.currentIndex === 0
                 text: "No public user list (privacy). Type exact username, e.g. dots or @dots"
-                color: Theme.onSurfaceVariant
+                color: Theme.surfaceVariantFg
                 font.pixelSize: 11
                 wrapMode: Text.Wrap
                 Layout.fillWidth: true
@@ -137,7 +137,7 @@ Page {
                 visible: panelMode.currentIndex === 0
                 Layout.fillWidth: true
                 placeholderText: "Exact username (e.g. dots) or user id"
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
                 onTextChanged: if (text.length >= 2) sscApi.searchUsers(text)
                 onAccepted: {
@@ -198,7 +198,7 @@ Page {
                 visible: panelMode.currentIndex === 1
                 Layout.fillWidth: true
                 placeholderText: "Group name"
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
             TextField {
@@ -206,7 +206,7 @@ Page {
                 visible: panelMode.currentIndex === 1
                 Layout.fillWidth: true
                 placeholderText: "Member user ids (comma-separated)"
-                color: Theme.onSurface
+                color: Theme.surfaceFg
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
             Label {
@@ -223,7 +223,7 @@ Page {
                           (modelData.username ? " @" + modelData.username : "")
                           + " — Chat"
                     Material.background: Theme.primary
-                    Material.foreground: Theme.onPrimary
+                    Material.foreground: Theme.primaryFg
                     onClicked: {
                         const id = modelData.id || modelData._id || ""
                         if (id) sscApi.startNewDirect(id)
@@ -237,7 +237,7 @@ Page {
                 Button {
                     text: panelMode.currentIndex === 0 ? "Lookup & chat" : "Create group"
                     Material.background: Theme.primary
-                    Material.foreground: Theme.onPrimary
+                    Material.foreground: Theme.primaryFg
                     onClicked: {
                         if (panelMode.currentIndex === 0) {
                             // Prefer resolved search hit; else lookup then open
@@ -273,7 +273,7 @@ Page {
         text: "+"
         font.pixelSize: 24
         Material.background: Theme.primary
-        Material.foreground: Theme.onPrimary
+        Material.foreground: Theme.primaryFg
         onClicked: {
             newChatRow.visible = !newChatRow.visible
             if (newChatRow.visible) {
@@ -313,7 +313,7 @@ Page {
                         text: searchField.text.length >= 2
                               ? (modelData.snippet || "")
                               : ((modelData.pinned ? "📌 " : "") + (modelData.title || modelData.peer_id || modelData.id || "Chat"))
-                        color: Theme.onSurface
+                        color: Theme.surfaceFg
                         font.bold: true
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -322,7 +322,7 @@ Page {
                         text: searchField.text.length >= 2
                               ? (modelData.conversationId || "")
                               : ((modelData.muted ? "🔇 " : "") + (modelData.peer_id || modelData.type || modelData.group_id || ""))
-                        color: Theme.onSurfaceVariant
+                        color: Theme.surfaceVariantFg
                         font.pixelSize: 12
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -357,7 +357,7 @@ Page {
                 visible: convList.count === 0
                 text: "No chats yet\nTap + to start"
                 horizontalAlignment: Text.AlignHCenter
-                color: Theme.onSurfaceVariant
+                color: Theme.surfaceVariantFg
             }
         }
 
@@ -373,7 +373,7 @@ Page {
                         text: sscApi.activeConversationId
                               ? (sscApi.activePeerId || sscApi.activeGroupId || sscApi.activeConversationId)
                               : "Select a chat"
-                        color: Theme.onSurface
+                        color: Theme.surfaceFg
                         font.bold: true
                         Layout.fillWidth: true
                         elide: Text.ElideRight
@@ -472,7 +472,7 @@ Page {
                                         id: msgText
                                         width: parent.width
                                         wrapMode: Text.Wrap
-                                        color: Theme.onSurface
+                                        color: Theme.surfaceFg
                                         text: modelData.plaintext || (modelData.ciphertext ? "[encrypted]" : "")
                                     }
                                     Label {
@@ -574,7 +574,7 @@ Page {
                         text: sscVoice.recording ? "⏹" : "🎤"
                         enabled: sscApi.activeConversationId.length > 0 && !sscApi.busy
                         flat: true
-                        Material.foreground: sscVoice.recording ? Theme.error : Theme.onSurface
+                        Material.foreground: sscVoice.recording ? Theme.error : Theme.surfaceFg
                         onClicked: {
                             if (sscVoice.recording) {
                                 const path = sscVoice.stop()
@@ -591,8 +591,8 @@ Page {
                         Layout.fillWidth: true
                         placeholderText: sscVoice.recording ? "Recording voice note…" : "Message"
                         enabled: sscApi.activeConversationId.length > 0 && !sscVoice.recording
-                        color: Theme.onSurface
-                        placeholderTextColor: Theme.onSurfaceVariant
+                        color: Theme.surfaceFg
+                        placeholderTextColor: Theme.surfaceVariantFg
                         background: Rectangle {
                             color: Theme.surfaceVariant
                             radius: 20
@@ -609,7 +609,7 @@ Page {
                         text: "Send"
                         enabled: draft.text.length > 0 && sscApi.activeConversationId.length > 0 && !sscApi.busy
                         Material.background: Theme.primary
-                        Material.foreground: Theme.onPrimary
+                        Material.foreground: Theme.primaryFg
                         onClicked: {
                             sscApi.sendMessage(sscApi.activeConversationId, draft.text, replyToId)
                             draft.text = ""
@@ -684,7 +684,7 @@ Page {
             text: sscApi.safetyNumber.length
                   ? sscApi.safetyNumber
                   : "Computing… compare this number with your contact out-of-band."
-            color: Theme.onSurface
+            color: Theme.surfaceFg
         }
     }
 
@@ -723,7 +723,7 @@ Page {
             id: sfuInfo
             width: 400
             wrapMode: Text.WrapAnywhere
-            color: Theme.onSurface
+            color: Theme.surfaceFg
         }
         footer: DialogButtonBox {
             Button {
@@ -781,7 +781,7 @@ Page {
                     Layout.fillWidth: true
                     Label {
                         text: (modelData.display_name || modelData.username || modelData.id || "")
-                        color: Theme.onSurface
+                        color: Theme.surfaceFg
                         Layout.fillWidth: true
                     }
                     Button {

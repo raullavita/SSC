@@ -16,7 +16,7 @@ ApplicationWindow {
     Material.accent: Theme.primary
     Material.primary: Theme.primary
     Material.background: Theme.background
-    Material.foreground: Theme.onSurface
+    Material.foreground: Theme.surfaceFg
 
     property alias stackView: stack
 
