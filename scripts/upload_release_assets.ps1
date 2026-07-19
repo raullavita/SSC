@@ -23,13 +23,14 @@ function Ensure-Release {
         return Invoke-RestMethod -Uri "https://api.github.com/repos/raullavita/SSC/releases/tags/$Tag" -Headers $headers
     } catch {
         Write-Host "Creating release $Tag..."
-        $body = @{
+        $bodyObj = @{
             tag_name   = $Tag
             name       = "SSC $Tag"
-            body       = "SSC $Tag — Android Compose + Windows Qt 0.4.0/15. See CHANGELOG.md."
+            body       = "SSC $Tag - Android Compose + Windows Qt 0.4.0/15. See CHANGELOG.md."
             draft      = $false
             prerelease = $false
-        } | ConvertTo-Json
+        }
+        $body = $bodyObj | ConvertTo-Json
         return Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/raullavita/SSC/releases" -Headers $headers -Body $body -ContentType "application/json"
     }
 }
@@ -67,12 +68,10 @@ function Upload-Asset {
     }
 }
 
-# Product Windows: portable Qt package (zip folder if present, else EXE)
 $qtExe = Join-Path $ProjectRoot "dist\windows-qt\SSC-Desktop-0.4.0.exe"
 $qtZip = Join-Path $ProjectRoot "dist\SSC-Desktop-0.4.0-windows.zip"
 if ((Test-Path $qtExe) -and -not (Test-Path $qtZip)) {
     Write-Host "Creating portable zip from dist\windows-qt..."
-    if (Test-Path $qtZip) { Remove-Item $qtZip -Force }
     Compress-Archive -Path (Join-Path $ProjectRoot "dist\windows-qt\*") -DestinationPath $qtZip -Force
 }
 

@@ -9,7 +9,7 @@ param(
     [string]$PackageName = "com.supersecurechat.app",
     [string]$TesterGroup = "ssc-testers",
     [string]$Testers = "raullavita1988@gmail.com,smashmaxxx@gmail.com,velvetnightshub@gmail.com",
-    [string]$ReleaseNotes = "SSC v0.4.0 build 15 — native Jetpack Compose, libsignal 0.96.4, multi-device Sesame, SFU group calls, E2EE Android↔Windows Qt interop."
+    [string]$ReleaseNotes = "SSC v0.4.0 build 15 - native Jetpack Compose, libsignal 0.96.4, multi-device Sesame, SFU group calls, E2EE Android-Windows Qt interop."
 )
 
 $ErrorActionPreference = "Stop"
