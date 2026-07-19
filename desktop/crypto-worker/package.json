@@ -1,0 +1,9 @@
+{
+  "name": "ssc-desktop-crypto-worker",
+  "version": "0.4.0",
+  "private": true,
+  "main": "worker.js",
+  "dependencies": {
+    "@signalapp/libsignal-client": "0.96.4"
+  }
+}

@@ -6,7 +6,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network WebSockets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick Network QuickControls2)
+
+set(SSC_CRYPTO_WORKER_DIR "${CMAKE_CURRENT_SOURCE_DIR}/crypto-worker")
+add_compile_definitions(SSC_CRYPTO_WORKER_DIR="${SSC_CRYPTO_WORKER_DIR}")
 
 qt_add_executable(ssc_desktop
     src/main.cpp
@@ -14,6 +17,8 @@ qt_add_executable(ssc_desktop
     src/SscApiClient.h
     src/SscSession.cpp
     src/SscSession.h
+    src/SscCryptoBridge.cpp
+    src/SscCryptoBridge.h
 )
 
 qt_add_qml_module(ssc_desktop
@@ -24,6 +29,10 @@ qt_add_qml_module(ssc_desktop
         qml/LoginPage.qml
         qml/ChatListPage.qml
         qml/ChatThreadPage.qml
+        qml/SettingsPage.qml
+        qml/Theme.qml
+    RESOURCES
+        qml/qmldir
 )
 
 target_link_libraries(ssc_desktop PRIVATE
@@ -32,7 +41,16 @@ target_link_libraries(ssc_desktop PRIVATE
     Qt6::Qml
     Qt6::Quick
     Qt6::Network
-    Qt6::WebSockets
+    Qt6::QuickControls2
+)
+
+# Copy crypto-worker next to binary for runtime
+add_custom_command(TARGET ssc_desktop POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/crypto-worker"
+        "$<TARGET_FILE_DIR:ssc_desktop>/crypto-worker"
+    COMMENT "Copy crypto-worker for libsignal bridge"
 )
 
 install(TARGETS ssc_desktop RUNTIME DESTINATION bin)
+install(DIRECTORY crypto-worker/ DESTINATION bin/crypto-worker)

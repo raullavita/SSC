@@ -47,9 +47,9 @@ Anyone interacting with a **modified** SSC network service may request correspon
 | **Calls** | 1:1 mesh WebRTC + **production mediasoup SFU** + TURN |
 | **API** | Live at api.supersecurechat.com |
 | **Website** | Landing + OSS compliance at [supersecurechat.com](https://www.supersecurechat.com) |
-| **Windows (shipping)** | Electron + libsignal 0.96.4 installer — [docs/WINDOWS_CLIENT.md](docs/WINDOWS_CLIENT.md) |
-| **iOS / Qt desktop** | Native scaffolds (Qt not E2EE-ready yet) |
-| **Electron shell** | Windows shipping path until Qt FFI ([docs/ELECTRON_RETIRED.md](docs/ELECTRON_RETIRED.md)) |
+| **Windows (shipping)** | **Native Qt Quick** + libsignal 0.96.4 worker — [docs/WINDOWS_CLIENT.md](docs/WINDOWS_CLIENT.md) |
+| **iOS** | SwiftUI scaffold |
+| **Electron** | Retired as Windows UI ([docs/ELECTRON_RETIRED.md](docs/ELECTRON_RETIRED.md)) |
 
 Parity notes: [`memory/NATIVE_ANDROID_PARITY.md`](memory/NATIVE_ANDROID_PARITY.md) · SFU ops: [`docs/LIVE_SFU_HARDEN.md`](docs/LIVE_SFU_HARDEN.md) · Audit: [`docs/DEEP_AUDIT_2026-07-19.md`](docs/DEEP_AUDIT_2026-07-19.md) · Windows: [`docs/WINDOWS_CLIENT.md`](docs/WINDOWS_CLIENT.md)
 

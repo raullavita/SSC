@@ -1,14 +1,25 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Layouts
+import QtQuick.Controls.Material
 
 ApplicationWindow {
     id: root
-    width: 960
-    height: 640
+    width: 1000
+    height: 680
+    minimumWidth: 720
+    minimumHeight: 480
     visible: true
     title: "SSC — Super Secure Chat"
-    color: "#0B141A"
+    color: Theme.background
+
+    Material.theme: Material.Dark
+    Material.accent: Theme.primary
+    Material.primary: Theme.primary
+    Material.background: Theme.background
+    Material.foreground: Theme.onSurface
+
+    // Exposed for child pages
+    property alias stack: stack
 
     StackView {
         id: stack
@@ -19,19 +30,32 @@ ApplicationWindow {
     Connections {
         target: sscSession
         function onChanged() {
-            if (sscSession.loggedIn)
-                stack.replace(chatListComponent)
-            else
+            if (sscSession.loggedIn) {
+                if (!(stack.currentItem && stack.currentItem.objectName === "chatList"))
+                    stack.replace(chatListComponent)
+            } else {
                 stack.replace(loginComponent)
+            }
+        }
+    }
+
+    Connections {
+        target: sscApi
+        function onLoginSucceeded() {
+            stack.replace(chatListComponent)
         }
     }
 
     Component {
         id: loginComponent
-        LoginPage {}
+        LoginPage { objectName: "login" }
     }
     Component {
         id: chatListComponent
-        ChatListPage {}
+        ChatListPage { objectName: "chatList" }
+    }
+    Component {
+        id: settingsComponent
+        SettingsPage { objectName: "settings" }
     }
 }

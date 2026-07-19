@@ -1,22 +1,12 @@
 import QtQuick
 import QtQuick.Controls
 
-// Placeholder for 1:1 / group thread UI + libsignal FFI.
-Page {
-    property string conversationId
-    property string titleText: "Chat"
-
-    header: ToolBar {
-        Label {
-            text: titleText
-            anchors.centerIn: parent
-            font.bold: true
-        }
-    }
-
+// Thread UI is embedded in ChatListPage (Android single-activity split).
+// Kept for module compatibility / future stack navigation.
+Item {
     Label {
         anchors.centerIn: parent
-        text: "Thread UI + libsignal next"
+        text: "Use main chat split view"
         color: "#8696A0"
     }
 }

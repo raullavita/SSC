@@ -1,44 +1,34 @@
-# SSC Desktop — Qt Quick / QML
+# SSC Desktop — Qt Quick (native Windows)
 
-**Architecture (locked):** True native desktop. **No Electron. No WebView UI.**
+**Architecture:** True native desktop UI (Qt 6 Quick / QML). **No Electron UI.**
 
-Windows + macOS (+ Linux later) from one Qt codebase.
-
-## Stack
+Matches Android Compose dark theme and core flows: login/register, chats, E2EE messages, settings.
 
 | Layer | Tech |
 |-------|------|
-| UI | Qt 6 Quick / QML |
-| Network | `QNetworkAccessManager` (`SscApiClient`) |
-| Session | `QSettings` (`SscSession`) |
-| Crypto | libsignal via FFI (next milestone) |
-| Client header | `windows/0.4.0/15` or `mac/0.4.0/15` |
+| UI | Qt 6 Quick + Material + `Theme.qml` (Android palette) |
+| Network | `SscApiClient` → `https://api.supersecurechat.com` |
+| Session | Memory token + QSettings for non-secrets (`SscSession`) |
+| Crypto | `crypto-worker` + `@signalapp/libsignal-client` **0.96.4** |
+| Client header | `windows/0.4.0/15` |
 
-## Status
-
-- Scaffold: login, conversation list refresh, logout
-- No Chromium/Electron UI here
-- **Not ready for Android ↔ Windows E2EE tests** (no libsignal FFI yet)
-
-**Shipping Windows messenger today:** see [`docs/WINDOWS_CLIENT.md`](../docs/WINDOWS_CLIENT.md)  
-(`.\scripts\build_electron.ps1` → `SSC-Setup-0.4.0.exe` with libsignal 0.96.4).
-
-## Build (free — no paid Windows code signing required)
-
-```bash
-# Requires Qt 6.5+ with Quick, Network, WebSockets
-cmake -S desktop -B desktop/build -DCMAKE_PREFIX_PATH=/path/to/Qt/6.x/gcc_64
-cmake --build desktop/build
-```
-
-Windows (example):
+## Build (Windows)
 
 ```powershell
-cmake -S desktop -B desktop/build -DCMAKE_PREFIX_PATH=C:\Qt\6.7.0\msvc2019_64
-cmake --build desktop/build --config Release
+.\scripts\build_desktop_windows.ps1
 ```
 
-Run the EXE from `desktop/build` (or `Release/`).  
-**No Authenticode certificate needed** for local/friends testing. SmartScreen may warn on unsigned binaries — expected without a paid cert.
+See [docs/WINDOWS_CLIENT.md](../docs/WINDOWS_CLIENT.md) for Qt install via aqt.
 
-macOS builds need a Mac (deferred). See also `docs/FREE_DISTRIBUTION.md`.
+## Layout
+
+```
+desktop/
+  qml/           # Main, Login, ChatList, Settings, Theme
+  src/           # C++ session, API, crypto bridge
+  crypto-worker/ # Node libsignal JSON-RPC worker
+```
+
+## Not Electron
+
+Electron is retired as the Windows product shell. Do not confuse historical `SSC-Setup-*.exe` with this Qt client.

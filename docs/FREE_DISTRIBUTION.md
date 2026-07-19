@@ -51,12 +51,16 @@ Rebuild with the **same** keystore and higher `versionCode`. Users reinstall/upd
 
 ## Windows desktop (free for now)
 
-- **Native path:** Qt app under `desktop/` (when Qt is installed) — no Electron.
+- **Native path:** Qt app under `desktop/` — same dark UI language as Android Compose + libsignal worker.
 - **No paid Authenticode required** for you to build and run locally.
 - Windows SmartScreen may warn on unsigned EXEs — normal without a paid cert. Users can choose “More info → Run anyway” for personal installs.
 
 ```powershell
-# When Qt 6 is installed:
+# Preferred (installs/uses Qt via aqt — see docs/WINDOWS_CLIENT.md):
+.\scripts\build_desktop_windows.ps1
+# Output: dist\windows-qt\SSC-Desktop-0.4.0.exe
+
+# Manual cmake when Qt 6 is installed:
 cmake -S desktop -B desktop/build -DCMAKE_PREFIX_PATH=C:\Qt\6.x\msvc2019_64
 cmake --build desktop/build --config Release
 ```

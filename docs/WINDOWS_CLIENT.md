@@ -1,56 +1,50 @@
-# SSC Windows client (ready for Android ↔ Windows E2EE)
+# SSC Windows — native Qt client (Android parity)
 
-**Status (0.4.0 / build 15):** Shipping Windows messenger uses **Electron shell + `@signalapp/libsignal-client` 0.96.4** — the **same protocol stack version as Android** (`libsignal-android` 0.96.4).
+**Product path:** Qt Quick / QML under `desktop/` — **not Electron**.
 
-This is intentional so you can test **Android ↔ Windows** encrypted messages end-to-end against production.
+| Concern | Implementation |
+|---------|----------------|
+| **UI** | Qt Quick Material, same dark palette as Android Compose (`#0B141A`, `#00A884`, …) |
+| **Flows** | Login / register, chat list, thread, settings, prekeys, E2EE send/receive |
+| **API** | `windows/0.4.0/15` + `X-SSC-Native-Bridge: v1` |
+| **Crypto** | Node **crypto-worker** + `@signalapp/libsignal-client` **0.96.4** (same target as Android) |
+| **Electron** | **Not** the Windows product. Do not ship `SSC-Setup-*.exe` as the desktop messenger. |
 
-## Why not pure Qt yet?
+Android sources are intentionally untouched.
 
-| Path | E2EE interop with Android | Build on this machine |
-|------|---------------------------|------------------------|
-| **`electron/` Windows installer** | Yes — real libsignal sessions | Yes (Node + electron-builder) |
-| **`desktop/` Qt Quick** | No — scaffold only (no libsignal FFI) | Needs Qt 6 + CMake + MSVC |
+## Build
 
-Qt remains the long-term native UI target (`desktop/`). It is **not** ready for A↔W crypto tests.
-
-## Build (unsigned free sideload)
+Prerequisites: **Node.js 20+**, **CMake**, **Qt 6.7+ (mingw or MSVC)**.
 
 ```powershell
-cd C:\Users\smash\ssc
-.\scripts\build_electron.ps1
+# One-time Qt install (example: aqt)
+python -m pip install aqtinstall
+python -m aqt install-qt windows desktop 6.7.3 win64_mingw -O C:\Users\smash\ssc\.ssc-tools\Qt
+python -m aqt install-tool windows desktop tools_mingw1310 -O C:\Users\smash\ssc\.ssc-tools\Qt
+
+$env:SSC_QT_PREFIX = "C:\Users\smash\ssc\.ssc-tools\Qt\6.7.3\mingw_64"
+$env:PATH = "C:\Users\smash\ssc\.ssc-tools\Qt\Tools\mingw1310_64\bin;$env:PATH"
+
+.\scripts\build_desktop_windows.ps1
 ```
 
-Outputs:
+Output: `dist\windows-qt\SSC-Desktop-0.4.0.exe` (+ `crypto-worker/`).
 
-- `electron\dist\SSC-Setup-0.4.0.exe`
-- `dist\SSC-Setup-0.4.0.exe`
-- optional Desktop copy
+Runtime needs **Node** on PATH so the crypto-worker can run libsignal (bundled next to the EXE).
 
-SmartScreen may warn (no paid Authenticode). Use **More info → Run anyway** for personal testing.
+## Android ↔ Windows test
 
-## Runtime identity
+1. Android Compose APK 0.4.0  
+2. Windows Qt `SSC-Desktop-0.4.0.exe`  
+3. Two accounts, open direct chat, send both ways  
 
-- Header: `X-SSC-Client: windows/0.4.0/15`
-- Bridge: `X-SSC-Native-Bridge: v1`
-- Crypto: main-process `libsignalSession.js` via preload `window.sscCrypto`
-- API: `https://api.supersecurechat.com`
+## Why a small Node worker?
 
-Production **rejects** clients below min version 0.4.0 — do not use old `SSC-Setup-0.3.1.exe`.
+libsignal’s supported desktop binding for 0.96.x is the official Node/Rust package. Qt UI stays native; the worker only runs Signal Protocol. This is **not** an Electron UI shell.
 
-## Android ↔ Windows test checklist
+## Removed from Windows product messaging
 
-1. Install **Android** APK 0.4.0/15 (Compose) and register/login (Turnstile on register).
-2. Install **Windows** `SSC-Setup-0.4.0.exe`, login with a **different** account.
-3. On Android: add Windows user (username / friend request) and open direct chat.
-4. Send text both ways; confirm decrypt on both devices (not `[unable to decrypt]`).
-5. Optional: attachment / voice if both clients support the same wire paths.
+- Shipping Electron React UI as “the Windows app”  
+- Qt scaffold that sent base64 fake ciphertext  
 
-## Do not
-
-- Ship **SAC_COMPAT** Electron builds for messaging (libsignal disabled).
-- Point production tests at the Qt `desktop/` scaffold.
-- Change Android Compose sources when iterating Windows builds (keep trees separate).
-
-## Android
-
-Unchanged by the Windows workstream. Primary mobile path remains Jetpack Compose.
+See also: `desktop/README.md`, `docs/ELECTRON_RETIRED.md`.

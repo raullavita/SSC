@@ -1,18 +1,20 @@
 #include "SscSession.h"
 
-#include <QSysInfo>
+#include <QStandardPaths>
+#include <QDir>
+#include <QUuid>
 
 SscSession::SscSession(QObject *parent)
     : QObject(parent)
     , m_settings(QStringLiteral("SuperSecureChat"), QStringLiteral("SSC"))
 {
-    // Non-secret prefs only — access tokens stay in memory until Qt Keychain/libsignal FFI
     m_userId = m_settings.value(QStringLiteral("user_id")).toString();
     m_displayName = m_settings.value(QStringLiteral("display_name")).toString();
+    m_username = m_settings.value(QStringLiteral("username")).toString();
     if (!m_settings.contains(QStringLiteral("device_id"))) {
         m_settings.setValue(QStringLiteral("device_id"), QStringLiteral("1"));
     }
-    // Purge any legacy plaintext token left by older scaffold builds
+    // Never persist access token (audit H3)
     if (m_settings.contains(QStringLiteral("access_token"))) {
         m_settings.remove(QStringLiteral("access_token"));
     }
@@ -25,6 +27,7 @@ bool SscSession::loggedIn() const
 
 QString SscSession::userId() const { return m_userId; }
 QString SscSession::displayName() const { return m_displayName; }
+QString SscSession::username() const { return m_username; }
 QString SscSession::accessToken() const { return m_token; }
 
 QString SscSession::deviceId() const
@@ -32,12 +35,24 @@ QString SscSession::deviceId() const
     return m_settings.value(QStringLiteral("device_id"), QStringLiteral("1")).toString();
 }
 
-void SscSession::saveSession(const QString &token, const QString &userId, const QString &displayName)
+QString SscSession::signalStorePath() const
+{
+    const QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(base);
+    // libsignalSession nests ssc-signal under this path
+    return base;
+}
+
+void SscSession::saveSession(const QString &token, const QString &userId, const QString &displayName,
+                             const QString &username)
 {
     m_token = token;
     m_userId = userId;
     m_displayName = displayName;
-    // Never write bearer token to disk (audit H3) — session is process-lifetime until Keychain lands
+    if (!username.isEmpty()) {
+        m_username = username;
+        m_settings.setValue(QStringLiteral("username"), username);
+    }
     m_settings.setValue(QStringLiteral("user_id"), userId);
     m_settings.setValue(QStringLiteral("display_name"), displayName);
     m_settings.remove(QStringLiteral("access_token"));
@@ -49,8 +64,10 @@ void SscSession::clear()
     m_token.clear();
     m_userId.clear();
     m_displayName.clear();
+    m_username.clear();
     m_settings.remove(QStringLiteral("access_token"));
     m_settings.remove(QStringLiteral("user_id"));
     m_settings.remove(QStringLiteral("display_name"));
+    m_settings.remove(QStringLiteral("username"));
     emit changed();
 }

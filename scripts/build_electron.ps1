@@ -8,9 +8,12 @@ Remove-Item Env:WIN_CSC_LINK -ErrorAction SilentlyContinue
 Remove-Item Env:CSC_KEY_PASSWORD -ErrorAction SilentlyContinue
 $env:CSC_IDENTITY_AUTO_DISCOVERY = "false"
 
-# Windows shipping client (libsignal 0.96.4 parity with Android). Do not use SAC_COMPAT builds for E2EE.
+# LEGACY: Electron installer is NOT the Windows product UI.
+# Prefer: .\scripts\build_desktop_windows.ps1  (native Qt + crypto-worker)
+# Kept only for emergency/historical rebuilds.
 $Version = "0.4.0"
 $Build = "15"
+Write-Host "WARN: Electron is retired as the Windows product path. Use build_desktop_windows.ps1 for Qt."
 
 Write-Host "Building frontend for Windows installed client v$Version/$Build..."
 Push-Location "$Root\frontend"

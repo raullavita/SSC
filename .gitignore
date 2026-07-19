@@ -66,3 +66,7 @@ htmlcov/
 # Large artifacts (deploy via scripts only)
 frontend/public/downloads/*.apk
 frontend/public/downloads/*.exe
+# Local toolchains / desktop build
+.ssc-tools/
+desktop/build/
+dist/windows-qt/
