@@ -20,6 +20,7 @@ import {
 import ChatPreferencesSection, {
   loadChatPreferenceDefaults,
 } from '../components/settings/ChatPreferencesSection';
+import SettingsSection from '../components/settings/SettingsSection';
 import InviteQr from '../components/InviteQr';
 import BroadcastListsPanel from '../components/BroadcastListsPanel';
 import AbuseReportPanel from '../components/AbuseReportPanel';
@@ -28,6 +29,10 @@ import BackupPanel from '../components/BackupPanel';
 import RecoveryPanel from '../components/RecoveryPanel';
 import styles from './Settings.module.css';
 
+/**
+ * P4: Settings IA — grouped sections instead of one long dump.
+ * Account → Privacy → Chats → Broadcast → Devices → Backup → Advanced → Danger
+ */
 export default function Settings() {
   const { user, loading, logout } = useAuth();
   const [privacy, setPrivacy] = useState({
@@ -39,7 +44,6 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [panicConfirm, setPanicConfirm] = useState('');
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [preferredLang, setPreferredLang] = useState(() => getPreferredLanguage());
   const [translationReady, setTranslationReady] = useState(() => getTranslationConfig().enabled);
   const [footprintOk, setFootprintOk] = useState(null);
@@ -58,7 +62,9 @@ export default function Settings() {
   }, [user]);
 
   if (!loading && !user) return <Navigate to="/login" replace />;
-  if (!loading && user && needsUsernameSetup(user)) return <Navigate to="/setup-username" replace />;
+  if (!loading && user && needsUsernameSetup(user)) {
+    return <Navigate to="/setup-username" replace />;
+  }
   if (loading) return <div className={styles.page}>Loading…</div>;
 
   function notifyPrefChange(text) {
@@ -119,58 +125,87 @@ export default function Settings() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link to="/chat" className={styles.back}>
-          ← Back
+        <Link to="/chat" className={styles.back} aria-label="Back to chats">
+          ‹ Chats
         </Link>
         <h1>Settings</h1>
       </header>
 
-      <section className={styles.section}>
-        <h2>Profile</h2>
+      {/* 1. Account */}
+      <SettingsSection id="account" title="Account" defaultOpen>
         <p className={styles.account}>
           <strong>{user.display_name || 'SSC user'}</strong>
           {user.username && <span className={styles.handle}>@{user.username}</span>}
         </p>
         {user.username ? (
-          <>
-            <button type="button" className={styles.logout} onClick={copyInvite}>
+          <div className={styles.accountActions}>
+            <button type="button" className={styles.secondaryBtn} onClick={copyInvite}>
               Copy invite link
             </button>
             <InviteQr username={user.username} />
-          </>
+          </div>
         ) : (
           <Link to="/setup-username" className={styles.linkBtn}>
             Set your @username
           </Link>
         )}
-      </section>
+        <button type="button" onClick={logout} className={styles.logoutBtn}>
+          Log out
+        </button>
+      </SettingsSection>
 
-      <ChatPreferencesSection
-        sealedSender={chatPrefs.sealedSender}
-        linkPreviews={chatPrefs.linkPreviews}
-        autoTranslate={chatPrefs.autoTranslate}
-        pushRichLabels={Boolean(privacy.push_rich_labels)}
-        saving={saving}
-        onSealedSenderChange={(enabled) => {
-          setChatPrefs((prev) => ({ ...prev, sealedSender: enabled }));
-          notifyPrefChange(enabled ? 'Sealed sender enabled' : 'Sealed sender disabled');
-        }}
-        onLinkPreviewsChange={(enabled) => {
-          setChatPrefs((prev) => ({ ...prev, linkPreviews: enabled }));
-          notifyPrefChange(enabled ? 'Link previews enabled' : 'Link previews disabled');
-        }}
-        onAutoTranslateChange={(enabled) => {
-          setChatPrefs((prev) => ({ ...prev, autoTranslate: enabled }));
-          notifyPrefChange(enabled ? 'Auto-translate enabled' : 'Auto-translate disabled');
-        }}
-        onPushRichLabelsChange={(enabled) => savePrivacy({ push_rich_labels: enabled })}
-      />
+      {/* 2. Privacy */}
+      <SettingsSection id="privacy" title="Privacy" defaultOpen>
+        <label className={styles.row}>
+          <input
+            type="checkbox"
+            checked={Boolean(privacy.last_seen_visible)}
+            onChange={(e) => savePrivacy({ last_seen_visible: e.target.checked })}
+            disabled={saving}
+          />
+          <span>Show last seen</span>
+        </label>
+        <label className={styles.row}>
+          <input
+            type="checkbox"
+            checked={Boolean(privacy.read_receipts)}
+            onChange={(e) => savePrivacy({ read_receipts: e.target.checked })}
+            disabled={saving}
+          />
+          <span>Read receipts</span>
+        </label>
+      </SettingsSection>
 
-      <section className={styles.section}>
-        <h2>Language</h2>
+      {/* 3. Chats & notifications (includes language) */}
+      <SettingsSection id="chats" title="Chat & notifications" defaultOpen>
+        <ChatPreferencesSection
+          embedded
+          sealedSender={chatPrefs.sealedSender}
+          linkPreviews={chatPrefs.linkPreviews}
+          autoTranslate={chatPrefs.autoTranslate}
+          pushRichLabels={Boolean(privacy.push_rich_labels)}
+          saving={saving}
+          onSealedSenderChange={(enabled) => {
+            setChatPrefs((prev) => ({ ...prev, sealedSender: enabled }));
+            notifyPrefChange(enabled ? 'Sealed sender enabled' : 'Sealed sender disabled');
+          }}
+          onLinkPreviewsChange={(enabled) => {
+            setChatPrefs((prev) => ({ ...prev, linkPreviews: enabled }));
+            notifyPrefChange(enabled ? 'Link previews enabled' : 'Link previews disabled');
+          }}
+          onAutoTranslateChange={(enabled) => {
+            setChatPrefs((prev) => ({ ...prev, autoTranslate: enabled }));
+            notifyPrefChange(enabled ? 'Auto-translate enabled' : 'Auto-translate disabled');
+          }}
+          onPushRichLabelsChange={(enabled) => savePrivacy({ push_rich_labels: enabled })}
+        />
+
+        <div className={styles.divider} />
+
+        <h3 className={styles.subheading}>Language</h3>
         <p className={styles.hint}>
-          Auto-translate is controlled in Chat &amp; notifications above. SSC provides translation
-          from the server when enabled — no API keys or setup on your device.
+          Auto-translate is controlled above. SSC translates on the server when enabled — no keys on
+          your device.
         </p>
         {getAutoTranslateEnabled() && !translationReady && (
           <p className={styles.warning}>
@@ -202,78 +237,51 @@ export default function Settings() {
             ? 'available on SSC servers'
             : 'not enabled on the server yet — messages stay in their original language'}
         </p>
-      </section>
+      </SettingsSection>
 
-      <section className={styles.section}>
-        <h2>Privacy</h2>
-        <label className={styles.row}>
-          <input
-            type="checkbox"
-            checked={Boolean(privacy.last_seen_visible)}
-            onChange={(e) => savePrivacy({ last_seen_visible: e.target.checked })}
-            disabled={saving}
-          />
-          <span>Show last seen</span>
-        </label>
-        <label className={styles.row}>
-          <input
-            type="checkbox"
-            checked={Boolean(privacy.read_receipts)}
-            onChange={(e) => savePrivacy({ read_receipts: e.target.checked })}
-            disabled={saving}
-          />
-          <span>Read receipts</span>
-        </label>
-      </section>
-
-      <section className={styles.section}>
-        <h2>Broadcast lists</h2>
+      {/* 4. Broadcast — secondary */}
+      <SettingsSection id="broadcast" title="Broadcast lists" defaultOpen={false}>
         <BroadcastListsPanel onMessage={setMessage} />
-      </section>
+      </SettingsSection>
 
-      <section className={styles.section}>
-        <h2>Backup &amp; restore</h2>
+      {/* 5. Devices */}
+      <SettingsSection id="devices" title="Devices" defaultOpen={false}>
+        <p className={styles.hint}>Link another phone or desktop and manage multi-device sync.</p>
+        <Link to="/link-device" className={styles.linkBtn}>
+          Linked devices &amp; sync →
+        </Link>
+      </SettingsSection>
+
+      {/* 6. Backup */}
+      <SettingsSection id="backup" title="Backup & recovery" defaultOpen={false}>
         <BackupPanel userId={user.id} onMessage={setMessage} />
-      </section>
+        <div className={styles.divider} />
+        <h3 className={styles.subheading}>Recovery</h3>
+        <RecoveryPanel onMessage={setMessage} />
+      </SettingsSection>
 
-      <section className={styles.section}>
-        <h2>Security check</h2>
+      {/* 7. Advanced */}
+      <SettingsSection id="advanced" title="Advanced" defaultOpen={false}>
+        <h3 className={styles.subheading}>Security check</h3>
         <p className={styles.hint}>
           Scan local storage for tokens or other data that should not persist on this device.
         </p>
-        <button type="button" className={styles.logout} onClick={runFootprintCheck}>
+        <button type="button" className={styles.secondaryBtn} onClick={runFootprintCheck}>
           Run footprint audit
         </button>
         {footprintOk === true && <p className={styles.toastInline}>Footprint clean</p>}
         {footprintOk === false && (
           <p className={styles.warning}>Review footprint issues above.</p>
         )}
-      </section>
 
-      <section className={styles.section}>
-        <button type="button" className={styles.toggle} onClick={() => setShowAdvanced((v) => !v)}>
-          {showAdvanced ? '▼ Hide advanced' : '▶ Advanced'}
-        </button>
-        {showAdvanced && (
-          <div className={styles.advanced}>
-            <Link to="/link-device" className={styles.linkBtn}>
-              Linked devices
-            </Link>
-            <RecoveryPanel onMessage={setMessage} />
-            <AbuseReportPanel onMessage={setMessage} />
-            <BlockedUsersPanel />
-          </div>
-        )}
-      </section>
+        <div className={styles.divider} />
+        <h3 className={styles.subheading}>Safety</h3>
+        <AbuseReportPanel onMessage={setMessage} />
+        <BlockedUsersPanel />
+      </SettingsSection>
 
-      <section className={styles.section}>
-        <button type="button" onClick={logout} className={styles.logout}>
-          Log out
-        </button>
-      </section>
-
-      <section className={`${styles.section} ${styles.danger}`}>
-        <h2>Delete everything</h2>
+      {/* 8. Danger zone */}
+      <SettingsSection id="danger" title="Delete everything" defaultOpen={false} danger>
         <p className={styles.hint}>Type DELETE to wipe this account and device data.</p>
         <input
           type="text"
@@ -281,6 +289,7 @@ export default function Settings() {
           value={panicConfirm}
           onChange={(e) => setPanicConfirm(e.target.value)}
           placeholder="DELETE"
+          autoComplete="off"
         />
         <button
           type="button"
@@ -290,9 +299,13 @@ export default function Settings() {
         >
           Panic wipe
         </button>
-      </section>
+      </SettingsSection>
 
-      {message && <p className={styles.toast}>{message}</p>}
+      {message && (
+        <p className={styles.toast} role="status">
+          {message}
+        </p>
+      )}
     </div>
   );
 }

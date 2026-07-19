@@ -5,6 +5,36 @@ All notable changes to SSC (Super Secure Chat) are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 SSC is open source under [AGPL-3.0](LICENSE); see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for libsignal attribution.
 
+## [0.4.0] - 2026-07-19
+
+### Changed (native rebuild — build 15)
+
+- **Android is pure Jetpack Compose** — **no WebView**, no React messenger UI in the APK
+- **Architecture locked:** Compose (Android) · SwiftUI (iOS planned) · Qt Quick (desktop planned) · backend unchanged
+- **Native stack:** `SscHttpClient`, encrypted session store, OkHttp WebSocket realtime, SQLite message cache, FCM register, libsignal 1:1 + group sender-key path
+- **Product path:** Electron / WebView hybrid **retired** (see `memory/NATIVE_CLIENT_CHARTER.md`)
+
+### Added (Android Compose parity)
+
+- Auth: login, register, Google OAuth path, recovery, panic wipe, username + invite share
+- Messaging: multi-device ciphertexts, groups + sender keys, reply/edit/delete, typing, thread filter, read ticks
+- Sealed sender + disappearing defaults; media files + voice notes; stories; encrypted polls + votes
+- Reactions (emoji picker + aggregates); pin/mute; global privacy; broadcast lists; encrypted backup
+- Prekey status + auto-replenish; group members + leave
+- **Calls:** 1:1 mesh WebRTC audio/video; **group mediasoup SFU** join/produce/consume; video tiles; mute/cam
+- Free sideload docs: `docs/FREE_DISTRIBUTION.md`
+
+### Added (backend / SFU)
+
+- SFU room credential fan-out (`sfu_room` WS) on create
+- SFU server: `existingProducers` for late joiners, peer cleanup, `getProducers`
+- Production SFU + TURN wiring docs: `docs/LIVE_SFU_HARDEN.md`
+
+### Added
+
+- Parity tracker: `memory/NATIVE_ANDROID_PARITY.md`
+- iOS / Qt desktop scaffolds under `ios/` and `desktop/`
+
 ## [0.3.1] - 2026-07-06
 
 ### Added (build 12)

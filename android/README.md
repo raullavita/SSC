@@ -1,43 +1,23 @@
-# SSC Android
+# SSC Android — native Jetpack Compose
 
-Installed Android client — polished WebView shell with native `libsignal-android` crypto bridge (Step 5 + Step 17).
+**Architecture (locked):** Pure native UI. **No WebView.** No React bundle in `assets/www`.
+
+See `memory/NATIVE_CLIENT_CHARTER.md` and `memory/NATIVE_ANDROID_PARITY.md`.
 
 ## Stack
 
-- **WebView** loads the **bundled React app** from `assets/www/` (same installed UI as Windows Electron — sign-in on launch, not the marketing site)
-- **`X-SSC-Client: android/0.3.1/12`** injected on all `/api/` requests from the WebView
-- **`window.sscCrypto`** exposed via `SscNativeBridge` + `assets/ssc_crypto_bridge.js` — API matches Electron `preload.js`
-- **`window.sscTranslate`** exposed via `SscNativeBridge` + `assets/ssc_translate_bridge.js` — ML Kit on-device translation (no text leaves device)
-- **libsignal-android 0.96.4** — file-backed stores under `filesDir/ssc-signal/` (sessions, prekeys, sender keys)
+| Layer | Tech |
+|-------|------|
+| UI | Jetpack Compose + Material 3 |
+| Crypto | `libsignal-android` 0.96.4 (`LibsignalSession`) |
+| API | Kotlin `SscHttpClient` + Bearer session |
+| Push | Firebase Cloud Messaging |
+| Package | `com.supersecurechat.app` |
 
-## Native shell polish (Step 17)
+## Current milestone
 
-| Feature | Details |
-|---------|---------|
-| Splash screen | SSC dark theme + animated icon (`Theme.SSC.Splash`) |
-| Deep links | `ssc://link-device`, `ssc://add/{username}`, HTTPS app links |
-| Pull to refresh | `SwipeRefreshLayout` around the WebView |
-| Offline retry | Native error panel with retry when the main frame fails |
-| File chooser | Backup restore + attachments via `onShowFileChooser` |
-| Edge-to-edge | Dark status/navigation bars matching web shell |
-
-Injected globals for the web app:
-
-- `window.__SSC_ANDROID_SHELL = '1'`
-- `window.__SSC_ANDROID_FEATURES = 'splash_screen,deep_links,...'`
-
-## Crypto API (window.sscCrypto)
-
-| Method | Purpose |
-|--------|---------|
-| `configure` | Set `localUserId` / `deviceId` |
-| `generatePreKeyBundle` | Upload prekeys to API |
-| `establishSession` | X3DH session with peer bundle |
-| `encryptMessage` / `decryptMessage` | 1:1 Signal protocol |
-| `encryptBytes` | Attachment encryption |
-| `computeSafetyNumber` | Safety number fingerprint |
-| `wipeLocalData` | Panic wipe local crypto state |
-| `configureGroupKeys` + group methods | Group sender keys (Step 2 parity) |
+- **A0–A3 foundation:** Login/register, conversation list, thread, 1:1 encrypt/send path, settings shell
+- **Parity goal:** Full feature set vs former React installed app (checklist in `NATIVE_ANDROID_PARITY.md`)
 
 ## Build
 
@@ -45,50 +25,42 @@ Injected globals for the web app:
 .\scripts\build_android.ps1
 ```
 
-This builds the React bundle (`REACT_APP_SSC_PLATFORM=android`, `LANDING_ONLY=false`), copies it into `app/src/main/assets/www/`, then runs Gradle → `SSC-0.3.1.apk`.
+Or from `android/`:
 
-**Architecture:** One React installed-client UI (shared with Electron). Android is a thin native shell (WebView + libsignal bridges + OAuth). There is no separate native chat UI.
-
-## Firebase project apps (super-chat-b0992)
-
-| Firebase nickname | Package / type | Use for SSC |
-|-------------------|----------------|-------------|
-| **SSC Installed** | `com.supersecurechat.app` | **Yes** — this APK (download from site / App Distribution) |
-| **SSC** | `chat.ssc.secure` | **No** — old package name; safe to ignore or delete in Firebase console |
-| **SSC Web** | Web app | Website / Hosting analytics only (not the installed Android app) |
-
-Copy `google-services.json` from Firebase (**SSC Installed** → download config) to `android/app/google-services.json` (gitignored). The file may list multiple Android clients; Gradle picks the entry matching `applicationId`.
-
-Push: FCM token is injected as `window.sscPushToken` so `pushRegister.js` can call `/api/push/register`.
-
-## Firebase App Distribution (testers)
-
-```powershell
-.\scripts\distribute_android.ps1
+```bat
+gradlew.bat assembleRelease
 ```
 
-APK: `app/build/outputs/apk/release/app-release.apk`
+APK: `android/app/build/outputs/apk/release/`
 
-Requires Android SDK 35, JDK 17, Kotlin 2.2.20, and `local.properties` with `sdk.dir`.
+Requires Android SDK 35, JDK 17, Kotlin 2.2.x.
 
-## Release signing (free — no Play Store)
+## What was removed
 
-```powershell
-.\scripts\create_android_keystore.ps1
-.\scripts\build_android.ps1
+- WebView shell loading React from `assets/www`
+- JS crypto bridges as the product path (`window.sscCrypto`)
+- Electron/React as the Android UI source
+
+Legacy bridge Kotlin classes may remain in-tree for reference during port; they are not used by `MainActivity`.
+
+## Client identity
+
+```
+X-SSC-Client: android/0.4.0/15
+X-SSC-Native-Bridge: v1
+X-SSC-Device-Id: 1   (primary; linked devices later)
+Authorization: Bearer <ws_token from login>
 ```
 
-- Keystore: `%USERPROFILE%\.ssc\ssc-release.jks` (never commit)
-- Credentials: `%USERPROFILE%\.ssc\android-signing.env` (never commit)
-- `build_android.ps1` loads signing env automatically
+## Verify
 
-**Back up** the `.jks` file and password. Losing either blocks future updates for users who installed that APK.
+```powershell
+# Android compile + APK
+cd android; .\gradlew.bat :app:assembleDebug
 
-Sideload only (no Play Store yet). Enable “Install unknown apps” on the device when installing.
+# Backend (from repo)
+cd backend; python -m pytest tests -q
+```
 
-Dependencies resolve from [Signal's Maven repository](https://build-artifacts.signal.org/libraries/maven/) (`settings.gradle.kts`).
+Last green: Compose `assembleDebug` OK · SFU room fan-out + video tiles · sfu tests green (v0.4.0 / build 15)
 
-## Notes
-
-- Production web builds with `REACT_APP_SSC_REQUIRE_LIBCRYPTO=true` require `window.sscCrypto` — the native bridge satisfies `cryptoPolicy.js`.
-- `@JavascriptInterface` calls run on a background executor; results resolve via Promise-based `ssc_crypto_bridge.js`.

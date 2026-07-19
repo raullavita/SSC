@@ -43,12 +43,28 @@ def test_frontend_installed_shell_hash_router():
     assert "INSTALLED_SHELL_PLATFORMS" in index
 
 
-def test_android_webview_shell_build():
+def test_android_native_compose_build():
+    """Product Android client is Jetpack Compose — no WebView/React assets bundle."""
     gradle = (REPO / "android" / "app" / "build.gradle.kts").read_text(encoding="utf-8")
     script = (REPO / "scripts" / "build_android.ps1").read_text(encoding="utf-8")
+    main = (
+        REPO
+        / "android"
+        / "app"
+        / "src"
+        / "main"
+        / "java"
+        / "com"
+        / "supersecurechat"
+        / "app"
+        / "MainActivity.kt"
+    ).read_text(encoding="utf-8")
     assert "com.supersecurechat.app" in gradle
-    assert "SSC_WEB_URL" in gradle
-    assert "android_asset/www/index.html" in gradle
-    assert "versionCode = 14" in gradle
-    assert "assets/www" in script
+    assert "compose = true" in gradle
+    assert "SSC_WEB_URL" not in gradle
+    assert "versionCode = 15" in gradle
+    assert "assets/www" not in script
+    assert "import android.webkit.WebView" not in main
+    assert "SscApp" in main
+    assert "setContent" in main
     assert "assembleRelease" in script or "bundleRelease" in script

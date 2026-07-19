@@ -43,7 +43,7 @@ if (-not $exists) {
         --zone=$Zone `
         --project=$Project `
         --container-image=$Image `
-        --container-env="SFU_PORT=4443,SFU_INTERNAL_SECRET=$Secret,SFU_ANNOUNCED_IP=$ip"
+        --container-env="SFU_PORT=4443,SFU_ALLOW_HTTP=1,SFU_INTERNAL_SECRET=$Secret,SFU_ANNOUNCED_IP=$ip"
 }
 
 Write-Host "Ensuring firewall rules..."

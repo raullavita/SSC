@@ -99,3 +99,7 @@ Clients call `POST /api/sfu/rooms/{room_id}/end` when a group call ends. API for
 | No TURN relay | coturn running; `SSC_TURN_SECRET` matches turnserver.conf |
 | WSS cert errors | Caddy running; DNS points to current IP |
 | API can't reach SFU | Cloud Run VPC + SFU internal URL uses public GCE IP:4443 |
+| Late joiner silent | Redeploy SFU so join returns `existingProducers` (2026-07 harden) |
+| ICE candidates 0.0.0.0 | Set `SFU_ANNOUNCED_IP` to GCE public IP |
+
+Live Android checklist: `docs/LIVE_SFU_HARDEN.md`.

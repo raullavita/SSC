@@ -83,6 +83,61 @@ async def test_end_sfu_room_deletes_mediasoup_room(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_create_sfu_room_fans_out_credentials(monkeypatch):
+    """Host create publishes sfu_room invite to other participants + conversation topic."""
+    fake_db = FakeDatabase()
+    _patch(monkeypatch, fake_db)
+
+    provision_mock = AsyncMock(return_value=(True, "provisioned"))
+    monkeypatch.setattr("routers.sfu.provision_sfu_room", provision_mock)
+    monkeypatch.setattr("routers.sfu.SFU_WS_URL", "wss://sfu.example/ws")
+    publish_mock = AsyncMock()
+    monkeypatch.setattr("routers.sfu.ws_hub.publish", publish_mock)
+
+    app = create_app()
+    app.state.enforce_installed_client = True
+    transport = ASGITransport(app=app)
+
+    async with AsyncClient(transport=transport, base_url="http://test", headers=CLIENT) as client:
+        reg = await client.post(
+            "/api/auth/register",
+            json={"email": "host2@example.com", "password": "password123", "display_name": "Host2"},
+        )
+        assert reg.status_code == 200
+        host_id = reg.json()["user"]["id"]
+
+        await fake_db.conversations.insert_one(
+            {
+                "_id": "conv_sfu_fanout",
+                "type": "group",
+                "participants": [host_id, "peer_a", "peer_b"],
+            }
+        )
+
+        created = await client.post(
+            "/api/sfu/rooms",
+            json={"conversation_id": "conv_sfu_fanout", "expected_participants": 2},
+            cookies=reg.cookies,
+        )
+        assert created.status_code == 200, created.text
+        body = created.json()
+        assert body["room_id"]
+        assert body["join_token"]
+        assert body["ws_url"] == "wss://sfu.example/ws"
+
+    provision_mock.assert_awaited_once()
+    topics = [c.args[0] for c in publish_mock.await_args_list]
+    assert "user:peer_a" in topics
+    assert "user:peer_b" in topics
+    assert "conversation:conv_sfu_fanout" in topics
+    # Host should not receive a user:host invite
+    assert f"user:{host_id}" not in topics
+    payloads = [c.args[1] for c in publish_mock.await_args_list]
+    assert all(p.get("type") == "sfu_room" for p in payloads)
+    assert all(p.get("join_token") == body["join_token"] for p in payloads)
+
+
+@pytest.mark.asyncio
 async def test_call_end_triggers_sfu_delete_for_sfu_session(monkeypatch):
     fake_db = FakeDatabase()
     _patch(monkeypatch, fake_db)

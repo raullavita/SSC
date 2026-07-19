@@ -2,10 +2,12 @@
   display: grid;
   grid-template-columns: 360px 1fr;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--ssc-bg, #0b141a);
 }
 
 .sidebar {
+  position: relative;
   background: var(--ssc-surface, #111b21);
   border-right: 1px solid var(--ssc-border, #2a3942);
   display: flex;
@@ -13,6 +15,15 @@
   padding: 0;
   gap: 0;
   overflow: hidden;
+  min-height: 0;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  background: #0b141a;
+  min-height: 0;
+  min-width: 0;
 }
 
 .sideTop {
@@ -218,35 +229,162 @@
 
 .convItem {
   display: flex;
-  align-items: center;
-  gap: 0.15rem;
+  align-items: stretch;
+  gap: 0;
+  margin: 0 0.35rem 0.15rem;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.convItemActive {
+  background: rgba(42, 57, 66, 0.85);
 }
 
 .convMuted {
-  opacity: 0.72;
+  opacity: 0.78;
 }
 
 .convPinned {
-  border-left: 2px solid #00a884;
+  box-shadow: inset 3px 0 0 #00a884;
+}
+
+.convMainBtn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  padding: 0.7rem 0.55rem 0.7rem 0.65rem !important;
+  border: none;
+  background: transparent !important;
+  color: var(--ssc-text, #e9edef);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.convMainBtn:hover {
+  background: #2a3942 !important;
+}
+
+.convItemActive .convMainBtn,
+.convItemActive .convMainBtn:hover {
+  background: transparent !important;
+}
+
+.convAvatar {
+  position: relative;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.convOnlineDot {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #00a884;
+  border: 2px solid var(--ssc-surface, #111b21);
+}
+
+.convBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.convTopLine,
+.convBottomLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.convName {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ssc-text, #e9edef);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.convPinMark {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.convTime {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--ssc-text-dim, #667781);
+}
+
+.convTimeUnread {
+  color: var(--ssc-accent, #00a884);
+  font-weight: 600;
+}
+
+.convPreview {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  color: var(--ssc-text-muted, #8696a0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.convMutedIcon {
+  font-size: 0.75rem;
 }
 
 .convActions {
   display: flex;
-  gap: 0.1rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.05rem;
   flex-shrink: 0;
+  padding-right: 0.25rem;
+  opacity: 0.35;
+}
+
+.convItem:hover .convActions,
+.convItem:focus-within .convActions {
+  opacity: 0.9;
 }
 
 .convActions button {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 0.75rem;
-  opacity: 0.6;
-  padding: 0.2rem;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 6px;
+  line-height: 1;
 }
 
 .convActions button:hover {
-  opacity: 1;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .convMeta {
@@ -258,12 +396,13 @@
 .unreadBadge {
   background: #00a884;
   color: #0b141a;
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 700;
   border-radius: 10px;
-  padding: 0.1rem 0.4rem;
-  min-width: 1rem;
+  padding: 0.12rem 0.45rem;
+  min-width: 1.15rem;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .verifyBtn {
@@ -288,37 +427,279 @@
   cursor: pointer;
 }
 
+/* P2 — compact header icon buttons + overflow menu */
+.headerIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ssc-text-muted, #8696a0);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+.headerIconBtn:hover,
+.headerIconBtnActive {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ssc-text, #e9edef);
+}
+
+.headerIconBtn:active {
+  background: rgba(0, 168, 132, 0.12);
+  color: var(--ssc-accent, #00a884);
+}
+
+.threadMenu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 30;
+  min-width: 12.5rem;
+  max-width: min(18rem, 90vw);
+  padding: 0.35rem 0;
+  background: var(--ssc-surface-elevated, #1f2c34);
+  border: 1px solid var(--ssc-border, #2a3942);
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+}
+
+.threadMenuItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--ssc-text, #e9edef);
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.threadMenuItem:hover:not(:disabled) {
+  background: rgba(0, 168, 132, 0.12);
+}
+
+.threadMenuItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.threadMenuHint {
+  font-size: 0.72rem;
+  color: var(--ssc-text-dim, #667781);
+  font-weight: 500;
+}
+
+.threadMenuMeta {
+  padding: 0.45rem 1rem 0.55rem;
+  font-size: 0.75rem;
+  color: var(--ssc-text-dim, #667781);
+  line-height: 1.35;
+}
+
+.threadSubtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
 .convEmpty {
   padding: 1.5rem 1rem;
   text-align: center;
   color: var(--ssc-text-dim, #667781);
   font-size: 0.85rem;
+  line-height: 1.5;
 }
 
-.convList button {
-  width: 100%;
-  text-align: left;
-  padding: 0.75rem 0.65rem;
+.listAlerts {
+  padding: 0 1.1rem 0.35rem;
+}
+
+/* P1 — FAB + new-chat sheet */
+.fab {
+  position: absolute;
+  right: 1rem;
+  bottom: 1.15rem;
+  bottom: calc(1.15rem + env(safe-area-inset-bottom, 0px));
+  width: 3.5rem;
+  height: 3.5rem;
   border: none;
-  background: transparent;
-  color: var(--ssc-text, #e9edef);
-  border-radius: 10px;
+  border-radius: 50%;
+  background: var(--ssc-accent, #00a884);
+  color: #0b141a;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
   cursor: pointer;
-  font-size: 0.88rem;
-  font-weight: 500;
-  transition: background 0.12s;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background 0.12s ease;
 }
 
-.convList button.active,
-.convList button:hover {
-  background: #2a3942;
+.fab:hover {
+  background: var(--ssc-accent-hover, #06cf9c);
 }
 
-.thread {
+.fab:active {
+  transform: scale(0.96);
+}
+
+.fabIcon {
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+.sheetRoot {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
   display: flex;
   flex-direction: column;
-  background: #0b141a;
+  justify-content: flex-end;
 }
+
+.sheetBackdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.sheetPanel {
+  position: relative;
+  z-index: 1;
+  max-height: min(85%, 36rem);
+  display: flex;
+  flex-direction: column;
+  background: var(--ssc-surface, #111b21);
+  border-radius: 16px 16px 0 0;
+  border-top: 1px solid var(--ssc-border, #2a3942);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.sheetTitle {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ssc-text, #e9edef);
+}
+
+.sheetClose {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ssc-text-muted, #8696a0);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.sheetClose:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ssc-text, #e9edef);
+}
+
+.sheetTabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0 0.75rem 0.65rem;
+  overflow-x: auto;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheetTab {
+  flex: 0 0 auto;
+  border: 1px solid var(--ssc-border, #2a3942);
+  background: transparent;
+  color: var(--ssc-text-muted, #8696a0);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sheetTabActive {
+  border-color: var(--ssc-accent, #00a884);
+  background: rgba(0, 168, 132, 0.15);
+  color: var(--ssc-accent, #00a884);
+}
+
+.sheetBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.25rem 1rem 1rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sheetFooter {
+  flex-shrink: 0;
+  padding: 0.65rem 1rem 0.85rem;
+  border-top: 1px solid var(--ssc-border, #2a3942);
+}
+
+.sheetFooterLink {
+  display: block;
+  color: var(--ssc-text-muted, #8696a0);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.sheetFooterLink:hover {
+  color: var(--ssc-accent, #00a884);
+}
+
+/* Desktop: sheet sits over the list column as a card */
+@media (min-width: 769px) {
+  .sheetRoot {
+    justify-content: center;
+    padding: 1.25rem;
+  }
+
+  .sheetPanel {
+    border-radius: 14px;
+    max-height: min(80vh, 34rem);
+    border: 1px solid var(--ssc-border, #2a3942);
+  }
+
+  .sheetBackdrop {
+    border-radius: 0;
+  }
+}
+
+/* legacy .convList button styles superseded by .convMainBtn (P5) */
 
 .callBar {
   display: flex;
@@ -337,24 +718,29 @@
 }
 
 .threadHeader {
-  padding: 1rem 1.25rem;
+  padding: 0.55rem 0.75rem 0.55rem 0.65rem;
   border-bottom: 1px solid #2a3942;
   color: #aebac1;
+  background: var(--ssc-surface-elevated, #1f2c34);
+  flex-shrink: 0;
 }
 
 .threadTitleRow {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  flex-wrap: nowrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  min-height: 2.75rem;
 }
 
 .threadHeaderActions {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.15rem;
+  flex-shrink: 0;
+  position: relative;
 }
 
 .threadMetaChip {
@@ -480,7 +866,14 @@
 
 .homeLink {
   color: #667781;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
+  text-decoration: none;
+  padding: 0.5rem 1.1rem 0.75rem;
+  display: block;
+}
+
+.homeLink:hover {
+  color: var(--ssc-accent, #00a884);
 }
 
 .convRow {
@@ -488,6 +881,25 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
+}
+
+/* denser list on mobile */
+.layoutMobile .convMainBtn {
+  padding: 0.65rem 0.5rem 0.65rem 0.55rem !important;
+}
+
+.layoutMobile .convAvatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 0.8rem;
+}
+
+.layoutMobile .sideTop {
+  padding: 0.85rem 1rem 0.65rem;
+}
+
+.layoutMobile .convSearchWrap {
+  padding: 0.5rem 0.85rem 0.65rem;
 }
 
 .presenceDot {
@@ -513,6 +925,14 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.25rem;
+}
+
+.threadTitleMain {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 0.1rem;
 }
 
 .searchBar {
@@ -680,33 +1100,157 @@
   padding: 2rem;
 }
 
+/* -------------------------------------------------------------------------- */
+/* P0 — Mobile / tablet shell: full-screen list OR full-screen thread only   */
+/* -------------------------------------------------------------------------- */
+
+.layoutMobile {
+  grid-template-columns: 1fr;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
+  /* Notch / home indicator (Android + iOS WebView) */
+  padding-top: env(safe-area-inset-top, 0);
+  padding-right: env(safe-area-inset-right, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-left: env(safe-area-inset-left, 0);
+}
+
+/* List home: only sidebar */
+.layoutMobileList .thread {
+  display: none !important;
+}
+
+.layoutMobileList .sidebar {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  border-right: none;
+}
+
+/* Open chat: only thread */
+.layoutMobileChat .sidebar {
+  display: none !important;
+}
+
+.layoutMobileChat .thread {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.layoutMobile .sidebar,
+.layoutMobile .thread {
+  min-height: 0;
+}
+
+.layoutMobile .convList {
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.layoutMobile .messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.layoutMobile .threadHeader {
+  flex-shrink: 0;
+  padding: 0.4rem 0.5rem 0.4rem 0.35rem;
+}
+
+.layoutMobile .threadTitle {
+  flex: 1;
+  min-width: 0;
+  flex-wrap: nowrap;
+  gap: 0.2rem;
+}
+
+.layoutMobile .threadTitleMain {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.05rem;
+}
+
+.layoutMobile .threadTitleMain strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  color: var(--ssc-text, #e9edef);
+}
+
+.layoutMobile .threadHeaderActions {
+  flex-shrink: 0;
+  gap: 0;
+}
+
+/* Always use compact title on open thread (desktop + mobile) */
+.threadTitleMain strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ssc-text, #e9edef);
+}
+
+.layoutMobile .searchBar {
+  flex-shrink: 0;
+  padding: 0.45rem 0.75rem;
+}
+
+.layoutMobile .sideTop {
+  flex-shrink: 0;
+  padding-top: 0.75rem;
+}
+
+.layoutMobile .profileRow {
+  flex-shrink: 0;
+}
+
+.mobileBack {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ssc-accent, #00a884);
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobileBack:active {
+  background: rgba(0, 168, 132, 0.12);
+}
+
+.layoutMobile .mobileBack {
+  display: inline-flex;
+}
+
+.mobileBackIcon {
+  display: block;
+  transform: translateY(-1px);
+}
+
 @media (max-width: 768px) {
-  .layout {
+  /* Fallback when JS layout flag lags: still stack panes */
+  .layout:not(.layoutMobile) {
     grid-template-columns: 1fr;
-  }
-
-  .layoutMobile .sidebar {
-    max-height: none;
-  }
-
-  .layoutMobileChat .sidebar {
-    display: none;
-  }
-
-  .layoutMobileChat .thread {
-    min-height: 100vh;
-  }
-
-  .mobileBack {
-    display: inline-block;
-    margin-right: 0.5rem;
-    margin-bottom: 0.35rem;
-    padding: 0.35rem 0.6rem;
-    border: 1px solid var(--ssc-border, #2a3942);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--ssc-accent, #00a884);
-    font-size: 0.9rem;
-    cursor: pointer;
   }
 }

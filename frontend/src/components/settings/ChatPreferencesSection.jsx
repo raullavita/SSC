@@ -36,10 +36,12 @@ export default function ChatPreferencesSection({
   onAutoTranslateChange,
   onPushRichLabelsChange,
   saving = false,
+  /** When true, skip outer section chrome (parent SettingsSection provides title). */
+  embedded = false,
 }) {
-  return (
-    <section className={styles.section}>
-      <h2>Chat &amp; notifications</h2>
+  const body = (
+    <>
+      {!embedded && <h2>Chat &amp; notifications</h2>}
       <p className={styles.intro}>
         Privacy-first defaults. Message content is never sent to SSC servers for these features.
       </p>
@@ -91,8 +93,14 @@ export default function ChatPreferencesSection({
         label="Push notification labels"
         hint="Show contact or group name on push alerts. Never includes message text. Off by default."
       />
-    </section>
+    </>
   );
+
+  if (embedded) {
+    return <div className={styles.embedded}>{body}</div>;
+  }
+
+  return <section className={styles.section}>{body}</section>;
 }
 
 export function loadChatPreferenceDefaults() {

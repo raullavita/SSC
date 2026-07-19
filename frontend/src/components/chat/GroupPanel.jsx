@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useGroupChat } from '../../chat/useGroupChat';
 import styles from './GroupPanel.module.css';
 
-export default function GroupPanel({ onGroupCreated }) {
+export default function GroupPanel({ onGroupCreated, defaultExpanded = false }) {
   const { groups, loadGroups, createGroup, leaveGroup, dissolveGroup, loading, error } =
     useGroupChat();
   const [name, setName] = useState('');
   const [members, setMembers] = useState('');
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(Boolean(defaultExpanded));
 
   useEffect(() => {
     if (expanded) loadGroups();

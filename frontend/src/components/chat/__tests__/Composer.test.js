@@ -28,33 +28,29 @@ describe('Composer', () => {
     jest.clearAllMocks();
   });
 
-  it('renders message input and toolbar controls', () => {
+  it('renders main row: tools, message, voice (empty draft)', () => {
     render(<Composer {...defaultProps} />);
 
     expect(screen.getByLabelText('Message')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
-    expect(screen.getByTitle('Voice message')).toBeInTheDocument();
-    expect(screen.getByTitle('Attach file')).toBeInTheDocument();
-    expect(screen.getByTitle('Translate draft')).toBeInTheDocument();
-    expect(screen.getByLabelText('Your language')).toBeInTheDocument();
-    expect(screen.getByLabelText('Translation target')).toBeInTheDocument();
-    expect(screen.getByLabelText('Disappearing timer')).toBeInTheDocument();
+    expect(screen.getByLabelText('Message tools')).toBeInTheDocument();
+    expect(screen.getByLabelText('Voice message')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Send')).not.toBeInTheDocument();
   });
 
-  it('updates draft and enables send when text is present', () => {
+  it('shows send when draft has text', () => {
     const onDraftChange = jest.fn();
     render(<Composer {...defaultProps} draft="hello" onDraftChange={onDraftChange} />);
 
     fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'hi' } });
     expect(onDraftChange).toHaveBeenCalledWith('hi');
-    expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled();
+    expect(screen.getByLabelText('Send')).toBeEnabled();
   });
 
   it('submits the form when send is clicked', () => {
     const onSend = jest.fn((e) => e.preventDefault());
     render(<Composer {...defaultProps} draft="hello" onSend={onSend} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Send' }));
+    fireEvent.click(screen.getByLabelText('Send'));
     expect(onSend).toHaveBeenCalled();
   });
 
@@ -73,10 +69,11 @@ describe('Composer', () => {
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument();
   });
 
-  it('renders poll button when onCreatePoll is provided', () => {
+  it('opens tools panel with poll when onCreatePoll is provided', () => {
     const onCreatePoll = jest.fn();
     render(<Composer {...defaultProps} onCreatePoll={onCreatePoll} />);
 
+    fireEvent.click(screen.getByLabelText('Message tools'));
     fireEvent.click(screen.getByTitle('Create poll'));
     expect(onCreatePoll).toHaveBeenCalled();
   });
@@ -85,11 +82,11 @@ describe('Composer', () => {
     render(<Composer {...defaultProps} draft="hello" disabled />);
 
     expect(screen.getByLabelText('Message')).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
-    expect(screen.getByTitle('Voice message')).toBeDisabled();
+    expect(screen.getByLabelText('Send')).toBeDisabled();
+    expect(screen.getByLabelText('Message tools')).toBeDisabled();
   });
 
-  it('renders broadcast list selector when lists are provided', () => {
+  it('renders broadcast list in tools when lists are provided', () => {
     const onBroadcastSend = jest.fn();
     render(
       <Composer
@@ -100,9 +97,20 @@ describe('Composer', () => {
       />
     );
 
+    fireEvent.click(screen.getByLabelText('Message tools'));
     const select = screen.getByLabelText('Broadcast list');
     expect(select).toBeInTheDocument();
     fireEvent.change(select, { target: { value: 'bl_1' } });
     expect(onBroadcastSend).toHaveBeenCalledWith('bl_1');
+  });
+
+  it('exposes translate and disappear controls in tools panel', () => {
+    render(<Composer {...defaultProps} draft="hello" />);
+    fireEvent.click(screen.getByLabelText('Message tools'));
+    expect(screen.getByTitle('Translate draft')).toBeInTheDocument();
+    expect(screen.getByLabelText('Your language')).toBeInTheDocument();
+    expect(screen.getByLabelText('Translation target')).toBeInTheDocument();
+    expect(screen.getByLabelText('Disappearing timer')).toBeInTheDocument();
+    expect(screen.getByTitle('Attach file')).toBeInTheDocument();
   });
 });

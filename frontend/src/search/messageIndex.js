@@ -4,6 +4,7 @@
  */
 
 import MiniSearch from 'minisearch';
+import { setConversationPreview } from '../chat/home/conversationPreviews';
 
 const indexes = new Map();
 
@@ -22,7 +23,28 @@ function getIndex(conversationId) {
 }
 
 export function indexMessage(conversationId, message) {
-  if (!conversationId || !message?.id || !message?.text) return;
+  if (!conversationId || !message?.id) return;
+
+  // Local list preview (plaintext only — already decrypted on this device)
+  if (message.text) {
+    setConversationPreview(conversationId, {
+      text: message.text,
+      at: message.created_at,
+      kind: 'text',
+    });
+  } else if (message.attachment) {
+    setConversationPreview(conversationId, {
+      kind: message.attachment?.kind === 'voice' ? 'voice' : 'attachment',
+      at: message.created_at,
+    });
+  } else if (message.poll) {
+    setConversationPreview(conversationId, {
+      kind: 'poll',
+      at: message.created_at,
+    });
+  }
+
+  if (!message.text) return;
   const idx = getIndex(conversationId);
   try {
     idx.add({
@@ -46,13 +68,8 @@ export function indexMessages(conversationId, messages) {
   const idx = getIndex(conversationId);
   idx.removeAll();
   for (const m of messages) {
-    if (m?.id && m?.text) {
-      idx.add({
-        id: m.id,
-        text: m.text,
-        sender_id: m.sender_id,
-        created_at: m.created_at,
-      });
+    if (m?.id) {
+      indexMessage(conversationId, m);
     }
   }
 }

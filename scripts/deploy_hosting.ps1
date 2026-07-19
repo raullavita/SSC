@@ -24,9 +24,9 @@ if (-not $SkipBuild) {
         # Never share frontend/build with electron/android builds (race wipes landing UI).
         $env:REACT_APP_SSC_PLATFORM = "web"
         $env:REACT_APP_SSC_LANDING_ONLY = "true"
-        $env:REACT_APP_SSC_VERSION = "0.3.1"
-        $env:REACT_APP_SSC_BUILD = "14"
-        $env:REACT_APP_SSC_RELEASE_TAG = "v0.3.1"
+        $env:REACT_APP_SSC_VERSION = "0.4.0"
+        $env:REACT_APP_SSC_BUILD = "15"
+        $env:REACT_APP_SSC_RELEASE_TAG = "v0.4.0"
         $env:REACT_APP_SSC_REQUIRE_LIBCRYPTO = "false"
         $env:REACT_APP_API_URL = $(if ($env:REACT_APP_API_URL) { $env:REACT_APP_API_URL } else { "https://api.supersecurechat.com" })
         # Absolute asset paths for Firebase Hosting (Electron uses PUBLIC_URL=. separately).

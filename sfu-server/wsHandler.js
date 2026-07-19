@@ -1,5 +1,10 @@
 /**
- * mediasoup WebSocket signaling — Engine 11
+ * mediasoup WebSocket signaling — Engine 11 (live-hardened)
+ *
+ * Live fixes vs first cut:
+ * - join returns existingProducers (late joiners hear/see current speakers)
+ * - peer disconnect closes producers and notifies room (producerClosed)
+ * - getProducers action for explicit refresh
  */
 
 const WebSocket = require('ws');
@@ -15,19 +20,46 @@ function attachWebSocket(server, roomManager) {
       try {
         msg = JSON.parse(String(raw));
       } catch {
-        ws.send(JSON.stringify({ action: 'error', error: 'invalid_json' }));
+        safeSend(ws, { action: 'error', error: 'invalid_json' });
         return;
       }
 
       try {
         await handleMessage(ws, msg, ctx, roomManager);
       } catch (err) {
-        ws.send(JSON.stringify({ action: 'error', error: err.message || 'handler_failed' }));
+        safeSend(ws, { action: 'error', error: err.message || 'handler_failed' });
       }
+    });
+
+    ws.on('close', () => {
+      cleanupPeer(ctx, roomManager);
     });
   });
 
   return wss;
+}
+
+function cleanupPeer(ctx, roomManager) {
+  if (!ctx.roomId || !ctx.peerId) return;
+  const closed = roomManager.removePeer(ctx.roomId, ctx.peerId);
+  const room = roomManager.getRoom(ctx.roomId);
+  if (room && closed.length) {
+    for (const producerId of closed) {
+      broadcast(room, ctx.peerId, {
+        action: 'producerClosed',
+        peerId: ctx.peerId,
+        producerId,
+      });
+    }
+    broadcast(room, ctx.peerId, {
+      action: 'peerLeft',
+      peerId: ctx.peerId,
+    });
+  }
+  ctx.room = null;
+  ctx.peer = null;
+  ctx.roomId = null;
+  ctx.peerId = null;
 }
 
 async function handleMessage(ws, msg, ctx, roomManager) {
@@ -37,65 +69,88 @@ async function handleMessage(ws, msg, ctx, roomManager) {
     const { roomId, joinToken, peerId } = msg;
     const check = roomManager.validateJoin(roomId, joinToken);
     if (!check.ok) {
-      ws.send(JSON.stringify({ action: 'error', error: check.reason }));
+      safeSend(ws, { action: 'error', error: check.reason });
       return;
+    }
+    // Replace stale same peerId (reconnect)
+    if (peerId && check.room.peers.has(peerId)) {
+      roomManager.removePeer(roomId, peerId);
     }
     ctx.roomId = roomId;
     ctx.peerId = peerId || `peer-${Date.now()}`;
     ctx.room = check.room;
     ctx.peer = roomManager.addPeer(roomId, ctx.peerId);
     ctx.peer.ws = ws;
-    ws.on('close', () => {
-      if (ctx.room?.peers) ctx.room.peers.delete(ctx.peerId);
+
+    const existingProducers = roomManager.listExistingProducers(roomId, ctx.peerId);
+    safeSend(ws, {
+      action: 'joined',
+      peerId: ctx.peerId,
+      rtpCapabilities: ctx.room.router.rtpCapabilities,
+      existingProducers,
     });
-    ws.send(
-      JSON.stringify({
-        action: 'joined',
-        peerId: ctx.peerId,
-        rtpCapabilities: ctx.room.router.rtpCapabilities,
-      })
-    );
+    broadcast(ctx.room, ctx.peerId, {
+      action: 'peerJoined',
+      peerId: ctx.peerId,
+    });
     return;
   }
 
   if (!ctx.room || !ctx.peer) {
-    ws.send(JSON.stringify({ action: 'error', error: 'not_joined' }));
+    safeSend(ws, { action: 'error', error: 'not_joined' });
     return;
   }
 
   switch (action) {
     case 'getRouterRtpCapabilities': {
-      ws.send(
-        JSON.stringify({
-          action: 'routerRtpCapabilities',
-          rtpCapabilities: ctx.room.router.rtpCapabilities,
-        })
-      );
+      safeSend(ws, {
+        action: 'routerRtpCapabilities',
+        rtpCapabilities: ctx.room.router.rtpCapabilities,
+      });
+      break;
+    }
+
+    case 'getProducers': {
+      safeSend(ws, {
+        action: 'producers',
+        producers: roomManager.listExistingProducers(ctx.roomId, ctx.peerId),
+      });
       break;
     }
 
     case 'createWebRtcTransport': {
       const { direction } = msg;
+      const announcedIp = process.env.SFU_ANNOUNCED_IP || undefined;
       const transport = await ctx.room.router.createWebRtcTransport({
-        listenIps: [{ ip: '0.0.0.0', announcedIp: process.env.SFU_ANNOUNCED_IP || undefined }],
+        listenIps: [{ ip: '0.0.0.0', announcedIp }],
         enableUdp: true,
         enableTcp: true,
         preferUdp: true,
+        initialAvailableOutgoingBitrate: 1_000_000,
       });
       ctx.peer.transports.set(transport.id, transport);
       transport.on('dtlsstatechange', (state) => {
-        if (state === 'closed') transport.close();
+        if (state === 'closed' || state === 'failed') {
+          try {
+            transport.close();
+          } catch {
+            /* ignore */
+          }
+        }
       });
-      ws.send(
-        JSON.stringify({
-          action: 'webRtcTransportCreated',
-          direction,
-          id: transport.id,
-          iceParameters: transport.iceParameters,
-          iceCandidates: transport.iceCandidates,
-          dtlsParameters: transport.dtlsParameters,
-        })
-      );
+      transport.on('icestatechange', (state) => {
+        if (state === 'disconnected' || state === 'closed') {
+          // keep open briefly; client may reconnect
+        }
+      });
+      safeSend(ws, {
+        action: 'webRtcTransportCreated',
+        direction,
+        id: transport.id,
+        iceParameters: transport.iceParameters,
+        iceCandidates: transport.iceCandidates,
+        dtlsParameters: transport.dtlsParameters,
+      });
       break;
     }
 
@@ -103,19 +158,27 @@ async function handleMessage(ws, msg, ctx, roomManager) {
       const transport = ctx.peer.transports.get(msg.transportId);
       if (!transport) throw new Error('transport_not_found');
       await transport.connect({ dtlsParameters: msg.dtlsParameters });
-      ws.send(JSON.stringify({ action: 'webRtcTransportConnected', transportId: msg.transportId }));
+      safeSend(ws, {
+        action: 'webRtcTransportConnected',
+        transportId: msg.transportId,
+      });
       break;
     }
 
     case 'produce': {
       const transport = ctx.peer.transports.get(msg.transportId);
       if (!transport) throw new Error('transport_not_found');
+      if (!msg.kind || !msg.rtpParameters) throw new Error('produce_missing_params');
       const producer = await transport.produce({
         kind: msg.kind,
         rtpParameters: msg.rtpParameters,
+        appData: { peerId: ctx.peerId },
       });
       ctx.peer.producers.set(producer.id, producer);
-      ws.send(JSON.stringify({ action: 'produced', id: producer.id }));
+      producer.on('transportclose', () => {
+        ctx.peer.producers.delete(producer.id);
+      });
+      safeSend(ws, { action: 'produced', id: producer.id, kind: producer.kind });
       broadcast(ctx.room, ctx.peerId, {
         action: 'newProducer',
         peerId: ctx.peerId,
@@ -128,7 +191,13 @@ async function handleMessage(ws, msg, ctx, roomManager) {
     case 'consume': {
       const transport = ctx.peer.transports.get(msg.transportId);
       if (!transport) throw new Error('transport_not_found');
-      if (!ctx.room.router.canConsume({ producerId: msg.producerId, rtpCapabilities: msg.rtpCapabilities })) {
+      if (!msg.producerId || !msg.rtpCapabilities) throw new Error('consume_missing_params');
+      if (
+        !ctx.room.router.canConsume({
+          producerId: msg.producerId,
+          rtpCapabilities: msg.rtpCapabilities,
+        })
+      ) {
         throw new Error('cannot_consume');
       }
       const consumer = await transport.consume({
@@ -137,15 +206,25 @@ async function handleMessage(ws, msg, ctx, roomManager) {
         paused: true,
       });
       ctx.peer.consumers.set(consumer.id, consumer);
-      ws.send(
-        JSON.stringify({
-          action: 'consumed',
-          id: consumer.id,
+      consumer.on('transportclose', () => {
+        ctx.peer.consumers.delete(consumer.id);
+      });
+      consumer.on('producerclose', () => {
+        ctx.peer.consumers.delete(consumer.id);
+        safeSend(ws, {
+          action: 'producerClosed',
           producerId: msg.producerId,
-          kind: consumer.kind,
-          rtpParameters: consumer.rtpParameters,
-        })
-      );
+          consumerId: consumer.id,
+        });
+      });
+      safeSend(ws, {
+        action: 'consumed',
+        id: consumer.id,
+        producerId: msg.producerId,
+        kind: consumer.kind,
+        rtpParameters: consumer.rtpParameters,
+        producerPaused: consumer.producerPaused,
+      });
       break;
     }
 
@@ -153,21 +232,44 @@ async function handleMessage(ws, msg, ctx, roomManager) {
       const consumer = ctx.peer.consumers.get(msg.consumerId);
       if (!consumer) throw new Error('consumer_not_found');
       await consumer.resume();
-      ws.send(JSON.stringify({ action: 'consumerResumed', consumerId: msg.consumerId }));
+      safeSend(ws, { action: 'consumerResumed', consumerId: msg.consumerId });
+      break;
+    }
+
+    case 'closeProducer': {
+      const producer = ctx.peer.producers.get(msg.producerId);
+      if (!producer) throw new Error('producer_not_found');
+      producer.close();
+      ctx.peer.producers.delete(msg.producerId);
+      broadcast(ctx.room, ctx.peerId, {
+        action: 'producerClosed',
+        peerId: ctx.peerId,
+        producerId: msg.producerId,
+      });
+      safeSend(ws, { action: 'producerClosed', producerId: msg.producerId });
       break;
     }
 
     default:
-      ws.send(JSON.stringify({ action: 'error', error: `unknown_action:${action}` }));
+      safeSend(ws, { action: 'error', error: `unknown_action:${action}` });
   }
 }
 
 function broadcast(room, fromPeerId, payload) {
   for (const [peerId, peer] of room.peers) {
     if (peerId === fromPeerId) continue;
-    if (peer.ws && peer.ws.readyState === 1) {
-      peer.ws.send(JSON.stringify(payload));
+    if (peer.ws && peer.ws.readyState === WebSocket.OPEN) {
+      safeSend(peer.ws, payload);
     }
+  }
+}
+
+function safeSend(ws, payload) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  try {
+    ws.send(JSON.stringify(payload));
+  } catch {
+    /* ignore */
   }
 }
 

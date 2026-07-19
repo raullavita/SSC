@@ -48,6 +48,8 @@ class SfuSession {
     this.rtpCapabilities = null;
     this.connected = false;
     this.remoteConsumers = new Map();
+    /** producerId -> consumerId for close events */
+    this.producerToConsumer = new Map();
   }
 
   async connect() {
@@ -84,7 +86,29 @@ class SfuSession {
       if (msg.action === 'newProducer') {
         this._onNewProducer(msg);
       }
+      if (msg.action === 'producerClosed' && msg.producerId) {
+        const consumerId = msg.consumerId || this.producerToConsumer.get(msg.producerId);
+        const consumer = consumerId ? this.remoteConsumers.get(consumerId) : null;
+        if (consumer) {
+          try {
+            consumer.close();
+          } catch {
+            /* ignore */
+          }
+          this.remoteConsumers.delete(consumerId);
+        }
+        this.producerToConsumer.delete(msg.producerId);
+      }
     });
+
+    // Late joiners: consume producers already in the room
+    const existing = Array.isArray(joined.existingProducers) ? joined.existingProducers : [];
+    for (const ep of existing) {
+      if (ep?.producerId) {
+        // fire-and-forget; recv transport created on demand
+        this._onNewProducer({ producerId: ep.producerId, kind: ep.kind });
+      }
+    }
 
     return this;
   }
@@ -177,6 +201,7 @@ class SfuSession {
       (m) => m.action === 'consumerResumed' && m.consumerId === consumer.id
     );
     this.remoteConsumers.set(consumer.id, consumer);
+    this.producerToConsumer.set(producerId, consumer.id);
     if (this.onRemoteTrack && consumer.track) {
       this.onRemoteTrack({
         producerId,

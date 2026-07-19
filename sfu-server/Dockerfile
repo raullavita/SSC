@@ -11,9 +11,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install --omit=dev
-COPY server.js roomManager.js wsHandler.js ./
+# All runtime JS modules (internalAuth + devHttp required by server.js)
+COPY server.js roomManager.js wsHandler.js internalAuth.js devHttp.js ./
 
 ENV SFU_PORT=4443
+# Behind Caddy TLS terminator on the host; allow plain HTTP on :4443
+ENV SFU_ALLOW_HTTP=1
 EXPOSE 4443
 EXPOSE 40000-49999/udp
 

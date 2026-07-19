@@ -78,10 +78,29 @@ async def create_sfu_room(
             "call_type": "sfu",
             "status": "active",
             "sfu_provisioned": True,
+            "join_token": token,
+            "ws_url": SFU_WS_URL,
             "created_at": now,
             "expires_at": default_expires_at(),
         }
     )
+
+    # Fan out room credentials so other conversation members can join
+    # (same join_token is room-scoped on the mediasoup server).
+    invite = {
+        "type": "sfu_room",
+        "room_id": room_id,
+        "join_token": token,
+        "ws_url": SFU_WS_URL,
+        "conversation_id": body.conversation_id,
+        "from": user_id,
+        "provider": "mediasoup",
+    }
+    for pid in participants:
+        if pid == user_id:
+            continue
+        await ws_hub.publish(f"user:{pid}", invite)
+    await ws_hub.publish(f"conversation:{body.conversation_id}", invite)
 
     return {
         "room_id": room_id,

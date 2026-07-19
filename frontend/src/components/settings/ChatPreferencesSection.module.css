@@ -6,6 +6,10 @@
   margin-bottom: 1rem;
 }
 
+.embedded {
+  margin: 0;
+}
+
 .section h2 {
   margin: 0 0 0.5rem;
   font-size: 1rem;

@@ -2,55 +2,55 @@
 
 [![CI](https://github.com/raullavita/SSC/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/raullavita/SSC/actions/workflows/ci.yml)
 
-**Install-only E2E encrypted messenger** — Android + Windows desktop.
+**Open-source, install-only, end-to-end encrypted messenger.**  
+Primary product client: **native Android (Jetpack Compose + libsignal)** — no WebView.
 
 | | |
 |---|---|
-| **Website** | https://www.supersecurechat.com (info + downloads) |
+| **Website** | https://www.supersecurechat.com (info + downloads only) |
 | **API** | https://api.supersecurechat.com |
 | **Source** | https://github.com/raullavita/SSC |
-| **License** | [AGPL-3.0](LICENSE) — source must remain available to network users |
+| **License** | [AGPL-3.0](LICENSE) |
 | **Contact** | contact@supersecurechat.com |
 
-## Open source & AGPL compliance
+## What is SSC?
 
-SSC is **open source** under the [GNU Affero General Public License v3.0](LICENSE). Anyone interacting with a modified SSC service over a network may request the corresponding source code.
+SSC is a privacy-first chat app: messages and call signaling are encrypted on your device with **Signal’s libsignal** before they hit the server. The API stores **ciphertext only** — it cannot read your chats.
 
-We use **[Signal libsignal](https://github.com/signalapp/libsignal)** (`@signalapp/libsignal-client` on desktop, `libsignal-android` on Android) for end-to-end encryption. libsignal is **AGPL-3.0** — see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for full attribution and dependency licenses.
+- **Native Android** is the main product path (Compose UI, multi-device E2EE, groups, calls, SFU).
+- **Free distribution** — sideload APK with your own keystore; no Play Store fee required ([docs/FREE_DISTRIBUTION.md](docs/FREE_DISTRIBUTION.md)).
+- **Website** is landing + downloads only — the messenger does **not** run in the browser.
+- **iOS (SwiftUI)** and **desktop (Qt Quick)** scaffolds exist; production E2EE on those platforms is next.
 
-- **Repository:** https://github.com/raullavita/SSC  
-- **License:** [LICENSE](LICENSE)  
-- **Third-party notices:** [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)  
-- **libsignal upstream:** https://github.com/signalapp/libsignal  
+## Open source & AGPL
 
-## Open-source stack (we build on OSS — not reinvent)
+SSC is **AGPL-3.0**. We use **[Signal libsignal](https://github.com/signalapp/libsignal)** (`libsignal-android` on Android). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-SSC uses maintained open-source projects for heavy lifting:
+Anyone interacting with a **modified** SSC network service may request corresponding source.
 
-| Layer | OSS project |
-|-------|-------------|
-| **E2E crypto** | [Signal libsignal](https://github.com/signalapp/libsignal) (`@signalapp/libsignal-client`, `libsignal-android`) |
-| **Group calls (SFU)** | [mediasoup](https://mediasoup.org/) |
-| **Push** | [Firebase Admin SDK](https://firebase.google.com/docs/admin/setup) (FCM) |
-| **1:1 calls** | WebRTC (browser/Electron) + encrypted signaling |
-| **API** | [FastAPI](https://fastapi.tiangolo.com/) + Motor (MongoDB) + Redis |
-| **Desktop** | [Electron](https://www.electronjs.org/) + electron-builder |
-| **Frontend** | React 18 |
+## Stack (OSS first)
 
-Translation is optional and user-controlled.
+| Layer | Project |
+|-------|---------|
+| **E2E crypto** | [Signal libsignal](https://github.com/signalapp/libsignal) |
+| **Group calls (SFU)** | [mediasoup](https://mediasoup.org/) + coturn TURN |
+| **API** | [FastAPI](https://fastapi.tiangolo.com/) + MongoDB + Redis |
+| **Android** | Kotlin + Jetpack Compose + OkHttp + WebRTC |
+| **Push** | Firebase Cloud Messaging |
+| **Website** | React landing (Firebase Hosting) |
 
-## Status
+## Status (v0.4.0 / build 15)
 
 | Component | State |
 |-----------|--------|
-| Engines 1–13 | Complete (retention, Signal, messaging) |
-| Engine 14 | FCM push + mediasoup SFU live (gate) |
-| Auth | Email/password + Google OAuth |
-| Chat | E2EE messages, reactions, files, voice notes |
-| Calls | WebRTC mesh + mediasoup SFU for large groups |
-| Production API | Live |
-| Website | Professional landing + OSS compliance at [supersecurechat.com](https://www.supersecurechat.com) |
-| Latest release | [v0.3.1 (build 14)](https://github.com/raullavita/SSC/releases/tag/v0.3.1) — same files as [supersecurechat.com](https://www.supersecurechat.com#download) |
+| **Android Compose** | Active — auth, E2EE 1:1 + groups, reactions, polls, stories, files/voice, privacy, backup, FCM |
+| **Calls** | 1:1 mesh WebRTC + **production mediasoup SFU** + TURN |
+| **API** | Live at api.supersecurechat.com |
+| **Website** | Landing + OSS compliance at [supersecurechat.com](https://www.supersecurechat.com) |
+| **iOS / Qt desktop** | Native scaffolds (no WebView product path) |
+| **Electron / WebView hybrid** | Retired as product messenger |
+
+Parity notes: [`memory/NATIVE_ANDROID_PARITY.md`](memory/NATIVE_ANDROID_PARITY.md) · SFU ops: [`docs/LIVE_SFU_HARDEN.md`](docs/LIVE_SFU_HARDEN.md)
 
 ## Quick start (local dev)
 
@@ -63,70 +63,50 @@ pip install -r requirements.txt
 copy .env.example .env
 uvicorn server:app --reload --port 8000
 
-# Frontend
+# Website / React landing (optional)
 cd frontend
 yarn install
-copy .env.example .env
 yarn start
 ```
 
-- UI: http://localhost:3000  
-- API health: http://localhost:8000/api/health
+- Landing/dev UI: http://localhost:3000  
+- API health: http://localhost:8000/api/health  
 
-## Client architecture (one UI)
-
-| Platform | Shell | UI |
-|----------|-------|-----|
-| Windows / macOS | Electron | Shared React installed-client bundle |
-| Android | WebView + native bridges | **Same** React bundle (`assets/www/`) |
-| Website | Firebase Hosting | Landing + downloads |
-
-Native code on mobile/desktop is limited to crypto (libsignal), OAuth, push hooks, and device APIs — not a second chat UI.
-
-## Build installed clients
+## Build free Android APK (no store fees)
 
 ```powershell
-.\scripts\rebuild_clients.ps1   # Electron + Android (recommended)
-.\scripts\build_electron.ps1     # → electron\dist\SSC-Setup-0.3.1.exe
-.\scripts\build_android.ps1      # → android\app\build\outputs\apk\release\SSC-0.3.1.apk
+.\scripts\create_android_keystore.ps1   # once
+.\scripts\build_android.ps1             # release APK for sideload
+# or: cd android; .\gradlew.bat :app:assembleDebug
 ```
 
-Local API override:
+See [docs/FREE_DISTRIBUTION.md](docs/FREE_DISTRIBUTION.md) and [android/README.md](android/README.md).
 
-```powershell
-$env:REACT_APP_API_URL = "http://YOUR_LAN_IP:8000"
-.\scripts\rebuild_clients.ps1
-```
+## Client architecture (locked — native only)
+
+| Platform | UI | Status |
+|----------|-----|--------|
+| **Android** | Jetpack Compose | **Active** (0.4.0 / 15) |
+| **iOS** | SwiftUI | Scaffold under `ios/` |
+| **Windows / macOS** | Qt Quick | Scaffold under `desktop/` |
+| **Website** | React | Landing only |
+
+See [`memory/NATIVE_CLIENT_CHARTER.md`](memory/NATIVE_CLIENT_CHARTER.md).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). **Help wanted** issues are open — tests, docs, Android/Windows polish.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-1. Pick an [open help-wanted issue](https://github.com/raullavita/SSC/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
-2. Fork → one focused PR against `main`
-3. Ensure `pytest` and `yarn test:ci` pass
+1. Pick a [help-wanted issue](https://github.com/raullavita/SSC/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+2. Fork → focused PR against `main`
+3. `pytest` (backend) and relevant client checks
 
-Commenting on an issue does **not** reserve it. All external PRs are reviewed before merge.
-
-**Do not** post production secrets, API keys, or personal emails in issues or PRs.
-
-## Reviews & feedback
-
-Installed SSC? Tell us what works and what does not:
-
-- **Website:** https://www.supersecurechat.com — **Reviews & feedback** section
-- **GitHub:** [Issues](https://github.com/raullavita/SSC/issues/new/choose) for bugs and feature requests
+**Do not** post production secrets, API keys, or personal data in issues/PRs.
 
 ## Security
 
-Report vulnerabilities privately: [SECURITY.md](SECURITY.md) — not via public issues with exploit details.
+Report vulnerabilities per [SECURITY.md](SECURITY.md) / [docs/SECURITY.md](docs/SECURITY.md).
 
-## Architecture
+## License
 
-Policy charters: `memory/`. Engine gates: `backend/scripts/run_engine*_gate.py`.
-
-```powershell
-cd backend
-python scripts/run_engine13_gate.py
-python -m pytest tests/ -q
-```
+[AGPL-3.0](LICENSE) · [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)

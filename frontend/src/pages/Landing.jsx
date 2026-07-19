@@ -5,12 +5,12 @@ import { api } from '../lib/api';
 import styles from './Landing.module.css';
 
 const LANDING_ONLY = process.env.REACT_APP_SSC_LANDING_ONLY === 'true';
-const RELEASE_TAG = process.env.REACT_APP_SSC_RELEASE_TAG || 'v0.3.1';
+const RELEASE_TAG = process.env.REACT_APP_SSC_RELEASE_TAG || 'v0.4.0';
 const RELEASE_BASE =
   process.env.REACT_APP_SSC_RELEASE_URL ||
   `https://github.com/raullavita/SSC/releases/download/${RELEASE_TAG}`;
-const VERSION = process.env.REACT_APP_SSC_VERSION || '0.3.1';
-const BUILD = process.env.REACT_APP_SSC_BUILD || '14';
+const VERSION = process.env.REACT_APP_SSC_VERSION || '0.4.0';
+const BUILD = process.env.REACT_APP_SSC_BUILD || '15';
 const GITHUB_REPO = 'https://github.com/raullavita/SSC';
 const LIBSIGNAL_REPO = 'https://github.com/signalapp/libsignal';
 
@@ -44,17 +44,18 @@ function LandingPublic() {
 
       <header className={styles.hero}>
         <p className={styles.badge}>
-          v{VERSION} (build {BUILD}) — install-only messenger
+          v{VERSION} (build {BUILD}) — native install-only messenger
         </p>
         <h1 className={styles.title}>Messaging you can verify.</h1>
         <p className={styles.tagline}>
-          Super Secure Chat is end-to-end encrypted messaging for installed Android and Windows
-          clients. Your messages never leave your device in plaintext. This website is for
-          downloads and information only.
+          Super Secure Chat is an <strong>open-source, end-to-end encrypted</strong> messenger.
+          The primary client is a <strong>native Android app</strong> (Jetpack Compose + Signal
+          libsignal) — no WebView. This website is for downloads and information only; chat
+          never runs in the browser.
         </p>
         <div className={styles.heroActions}>
           <a className={styles.primaryBtn} href="#download">
-            Get the app
+            Download Android APK
           </a>
           <a className={styles.secondaryBtn} href={GITHUB_REPO} target="_blank" rel="noopener noreferrer">
             View source on GitHub
@@ -68,36 +69,36 @@ function LandingPublic() {
           <article className={styles.card}>
             <h3>End-to-end encryption</h3>
             <p>
-              Signal Protocol (PQXDH / Kyber) on every installed client. The server stores
-              ciphertext only — it cannot read your conversations.
+              Signal Protocol (PQXDH / Kyber) via libsignal. The server stores ciphertext only —
+              it cannot read your conversations.
+            </p>
+          </article>
+          <article className={styles.card}>
+            <h3>Native Android first</h3>
+            <p>
+              Pure Jetpack Compose UI with multi-device E2EE, groups, reactions, polls, stories,
+              voice notes, files, and privacy controls. Free sideload — no Play Store fee required.
             </p>
           </article>
           <article className={styles.card}>
             <h3>Calls &amp; groups</h3>
             <p>
-              1:1 and group voice/video via WebRTC, with TURN for NAT traversal and an SFU for
-              larger groups. Encrypted signaling end to end.
-            </p>
-          </article>
-          <article className={styles.card}>
-            <h3>Rich messaging</h3>
-            <p>
-              Reactions, voice notes, file sharing, stories, polls, and disappearing messages —
-              all encrypted like ordinary chat.
+              1:1 mesh WebRTC audio/video with encrypted signaling. Group calls via{' '}
+              <strong>mediasoup SFU</strong> + TURN for NAT — production SFU is live.
             </p>
           </article>
           <article className={styles.card}>
             <h3>Privacy by default</h3>
             <p>
-              Sealed sender, safety numbers, panic wipe, link previews off by default, and
-              metadata minimization across the API.
+              Sealed sender, safety numbers, panic wipe, disappearing messages, read-receipt
+              controls, and metadata minimization across the API.
             </p>
           </article>
           <article className={styles.card}>
-            <h3>Installed app</h3>
+            <h3>Open source (AGPL-3.0)</h3>
             <p>
-              Sign up, messaging, calls, and encryption run inside the Android APK or Windows
-              desktop installer you download from GitHub Releases.
+              Full source on GitHub. Built on Signal libsignal, mediasoup, FastAPI, and other OSS —
+              not a closed crypto black box.
             </p>
           </article>
         </div>
@@ -108,7 +109,10 @@ function LandingPublic() {
         <ol className={styles.steps}>
           <li>
             <strong>Install</strong>
-            <span>Download the Windows installer or Android APK from GitHub Releases.</span>
+            <span>
+              Sideload the Android APK (or build from source). Free distribution path documented
+              in the repo — no paid store required.
+            </span>
           </li>
           <li>
             <strong>Sign up</strong>
@@ -233,20 +237,27 @@ function LandingPublic() {
               </td>
             </tr>
             <tr>
-              <td>Desktop</td>
+              <td>Android client</td>
               <td>
-                <a href="https://www.electronjs.org/" target="_blank" rel="noopener noreferrer">
-                  Electron
-                </a>
+                Kotlin +{' '}
+                <a href="https://developer.android.com/jetpack/compose" target="_blank" rel="noopener noreferrer">
+                  Jetpack Compose
+                </a>{' '}
+                + libsignal-android
               </td>
             </tr>
             <tr>
-              <td>UI</td>
+              <td>Website</td>
               <td>
                 <a href="https://react.dev/" target="_blank" rel="noopener noreferrer">
                   React
-                </a>
+                </a>{' '}
+                landing only (not the messenger)
               </td>
+            </tr>
+            <tr>
+              <td>iOS / desktop</td>
+              <td>SwiftUI + Qt Quick scaffolds (native path; no WebView)</td>
             </tr>
           </tbody>
         </table>
@@ -309,27 +320,15 @@ function LandingPublic() {
           Download v{VERSION} (build {BUILD})
         </h2>
         <p className={styles.lead}>
-          Install the app to sign up and chat. Same build {BUILD} binaries on this site and{' '}
-          <a href={`${GITHUB_REPO}/releases/tag/${RELEASE_TAG}`}>GitHub {RELEASE_TAG}</a>.
+          The product messenger is the <strong>native Android app</strong>. Sideload the APK —
+          free path, no Play Store fee. Source and release assets live on{' '}
+          <a href={`${GITHUB_REPO}/releases`}>GitHub Releases</a>.
         </p>
         <div className={styles.platforms}>
           <div className={styles.platform}>
-            <div className={styles.platformIcon}>🖥</div>
-            <strong>Windows</strong>
-            <span>Desktop installer (Electron + libsignal)</span>
-            <a
-              className={styles.downloadBtn}
-              href={`${RELEASE_BASE}/SSC-Setup-${VERSION}.exe`}
-              download
-            >
-              Download for Windows
-            </a>
-            <span className={styles.muted}>Build locally: scripts/build_electron.ps1</span>
-          </div>
-          <div className={styles.platform}>
             <div className={styles.platformIcon}>📱</div>
-            <strong>Android</strong>
-            <span>Native Android app (Kotlin + libsignal-android)</span>
+            <strong>Android (primary)</strong>
+            <span>Jetpack Compose · libsignal-android · no WebView</span>
             <a
               className={styles.downloadBtn}
               href={`${RELEASE_BASE}/SSC-${VERSION}.apk`}
@@ -337,15 +336,33 @@ function LandingPublic() {
             >
               Download APK
             </a>
-            <span className={styles.muted}>Build locally: scripts/build_android_native.ps1 · Firebase testers</span>
+            <span className={styles.muted}>
+              Or build: <code>scripts/build_android.ps1</code> · see{' '}
+              <a href={`${GITHUB_REPO}/blob/main/docs/FREE_DISTRIBUTION.md`}>FREE_DISTRIBUTION.md</a>
+            </span>
+          </div>
+          <div className={styles.platform}>
+            <div className={styles.platformIcon}>🖥</div>
+            <strong>Windows / desktop</strong>
+            <span>Qt Quick scaffold (native path). Older Electron builds may still be on Releases.</span>
+            <a
+              className={styles.downloadBtn}
+              href={`${GITHUB_REPO}/releases`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub Releases
+            </a>
+            <span className={styles.muted}>Build desktop: <code>desktop/</code> (Qt)</span>
           </div>
         </div>
         <p className={styles.muted}>
-          <a href={`${GITHUB_REPO}/releases/tag/${RELEASE_TAG}`}>GitHub release {RELEASE_TAG} (build {BUILD})</a>
-          {' · '}
           <a href={`${GITHUB_REPO}/releases`}>All releases</a>
           {' · '}
-          API: <a href="https://api.supersecurechat.com/api/health">api.supersecurechat.com</a>
+          API:{' '}
+          <a href="https://api.supersecurechat.com/api/health">api.supersecurechat.com</a>
+          {' · '}
+          Source: <a href={GITHUB_REPO}>{GITHUB_REPO.replace('https://', '')}</a>
         </p>
       </section>
 

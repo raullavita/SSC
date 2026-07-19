@@ -1,23 +1,20 @@
+/**
+ * Chat home screen — orchestration only.
+ * UI lives under components/chat/home/*; display helpers under chat/home/*.
+ */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import AuthSplash from '../components/AuthSplash';
 import CallModal from '../components/chat/CallModal';
-import Composer from '../components/chat/Composer';
-import GroupPanel from '../components/chat/GroupPanel';
-import MessageBubble from '../components/chat/MessageBubble';
-import StoriesBar from '../components/chat/StoriesBar';
-import GroupE2EBadge from '../components/chat/GroupE2EBadge';
-import GroupE2EBanner from '../components/chat/GroupE2EBanner';
-import SafetyVerifyButton from '../components/chat/SafetyVerifyButton';
 import SafetyVerifyModal from '../components/chat/SafetyVerifyModal';
-import TrustBanner from '../components/chat/TrustBanner';
-import ChatPrivacyPanel from '../components/chat/ChatPrivacyPanel';
-import UserLookup from '../components/chat/UserLookup';
+import {
+  ConversationSidebar,
+  ChatThread,
+} from '../components/chat/home';
 import { useCall } from '../chat/useCall';
 import { useGroupCall } from '../calls/useGroupCall';
 import { useChatMessages } from '../chat/useChatMessages';
 import { useReactions } from '../chat/useReactions';
-import FriendRequestsPanel from '../components/FriendRequestsPanel';
 import { useTrustState } from '../chat/useTrustState';
 import { useConversationPrivacy } from '../chat/useConversationPrivacy';
 import { effectivePrivacy } from '../lib/conversationPrivacy';
@@ -43,17 +40,15 @@ import {
 } from '../lib/chatPrefs';
 import { fetchLanguages, translateText, TranslationError } from '../lib/translation';
 import { startPresenceHeartbeat, stopPresenceHeartbeat } from '../lib/presence';
-import { enrichDirectReadReceipts } from '../lib/readReceipts';
 import { searchMessages } from '../search/messageIndex';
 import { getInstalledClientHeader } from '../lib/installedClient';
 import { checkBlockedBy } from '../lib/abuseReport';
 import { getLocalDeviceId } from '../lib/deviceLink';
 import { runMessageRecordMaintenance } from '../signal/messageRecords';
 import { handleDecryptRetryRequest } from '../signal/sesameRetry';
-import { ensureNotificationPermission, showDesktopNotification } from '../lib/desktopNotify';
+import { showDesktopNotification } from '../lib/desktopNotify';
 import { registerDeviceAndPrekeys } from '../signal/signalBridge';
-import { getPeerTrust } from '../lib/trustStore';
-import { isAndroidShell, isInstalledApp } from '../lib/appMode';
+import { isInstalledApp } from '../lib/appMode';
 import { needsUsernameSetup } from '../lib/onboarding';
 import {
   bumpUnread,
@@ -61,12 +56,19 @@ import {
   patchConversationInList,
 } from '../lib/conversationMeta';
 import { shouldAutoTranslate } from '../lib/languageDetect';
-import EncryptionStatusChip from '../components/chat/EncryptionStatusChip';
+import {
+  filterConversations,
+  getThreadTitle,
+  sortConversations,
+} from '../chat/home/displayUtils';
+import { useMobileLayout } from '../chat/home/useMobileLayout';
+import { useConversationDirectory } from '../chat/home/useConversationDirectory';
 import styles from './ChatHome.module.css';
 
 export default function ChatHome() {
   const location = useLocation();
-  const { user, wsToken, loading, logout } = useAuth();
+  const { user, wsToken, loading } = useAuth();
+  const isMobileLayout = useMobileLayout();
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
@@ -74,7 +76,6 @@ export default function ChatHome() {
   const [chatError, setChatError] = useState(null);
   const [translateTarget, setTranslateTarget] = useState('en');
   const [userLang, setUserLang] = useState(() => getPreferredLanguage());
-
   const [languages, setLanguages] = useState(['en', 'es', 'fr', 'de']);
   const [translatedPreview, setTranslatedPreview] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,6 +97,7 @@ export default function ChatHome() {
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
   const [broadcastLists, setBroadcastLists] = useState([]);
+  const [newChatOpen, setNewChatOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const messageRefs = useRef({});
 
@@ -172,7 +174,8 @@ export default function ChatHome() {
       }
 
       if (payload.message?.sender_id && payload.message.sender_id !== user?.id) {
-        const inBackground = convId !== activeId || document.hidden || !document.hasFocus();
+        const inBackground =
+          convId !== activeId || document.hidden || !document.hasFocus();
         if (inBackground) {
           showDesktopNotification({
             title: 'SSC',
@@ -190,6 +193,7 @@ export default function ChatHome() {
     enabled: Boolean(user),
     onEvent: handleUserSync,
   });
+
   const {
     trust,
     safetyNumber,
@@ -199,6 +203,7 @@ export default function ChatHome() {
     resetTrust,
     refresh: refreshTrust,
   } = useTrustState(!isGroup ? active?.peer_id : null);
+
   const peerIds = useMemo(
     () => conversations.map((c) => c.peer_id).filter(Boolean),
     [conversations]
@@ -244,9 +249,12 @@ export default function ChatHome() {
   );
 
   const storyPeerId = active?.peer_id || peerIds[0] || null;
-  const { byUser: storiesByUser, loading: storiesLoading, postStory, removeStory } = useStories(
-    user?.id
-  );
+  const {
+    byUser: storiesByUser,
+    loading: storiesLoading,
+    postStory,
+    removeStory,
+  } = useStories(user?.id);
 
   const {
     messages,
@@ -291,26 +299,21 @@ export default function ChatHome() {
   const { togglePin, toggleMute } = useConversationMeta(handleMetaUpdated);
   const { patchPrivacy } = useConversationPrivacy(handleMetaUpdated);
 
-  const sortedConversations = useMemo(() => {
-    return [...conversations].sort((a, b) => {
-      if (Boolean(a.pinned) !== Boolean(b.pinned)) {
-        return a.pinned ? -1 : 1;
-      }
-      const ta = a.updated_at ? new Date(a.updated_at).getTime() : 0;
-      const tb = b.updated_at ? new Date(b.updated_at).getTime() : 0;
-      return tb - ta;
-    });
-  }, [conversations]);
+  const sortedConversations = useMemo(
+    () => sortConversations(conversations),
+    [conversations]
+  );
+  const { titleFor } = useConversationDirectory(conversations);
 
   const filteredConversations = useMemo(() => {
     const q = convFilter.trim().toLowerCase();
     if (!q) return sortedConversations;
     return sortedConversations.filter((c) => {
-      const label =
-        c.type === 'group' ? String(c.group_id || c.id) : String(c.peer_id || c.id);
-      return label.toLowerCase().includes(q);
+      const label = String(titleFor(c) || '').toLowerCase();
+      const raw = filterConversations([c], convFilter);
+      return label.includes(q) || raw.length > 0;
     });
-  }, [sortedConversations, convFilter]);
+  }, [sortedConversations, convFilter, titleFor]);
 
   const { uploadFile, downloadFile, uploading, error: fileError } = useFileTransfer(
     activeId,
@@ -368,9 +371,7 @@ export default function ChatHome() {
 
   const messageById = useMemo(() => {
     const map = {};
-    for (const m of messages) {
-      map[m.id] = m;
-    }
+    for (const m of messages) map[m.id] = m;
     return map;
   }, [messages]);
 
@@ -464,7 +465,9 @@ export default function ChatHome() {
   const installed = isInstalledApp();
 
   if (!loading && !user) return <Navigate to="/login" replace />;
-  if (!loading && user && needsUsernameSetup(user)) return <Navigate to="/setup-username" replace />;
+  if (!loading && user && needsUsernameSetup(user)) {
+    return <Navigate to="/setup-username" replace />;
+  }
   if (loading) return <AuthSplash />;
 
   async function startChat(participantId) {
@@ -636,484 +639,194 @@ export default function ChatHome() {
     return parent.text?.slice(0, 80) || parent.attachment?.name || 'Attachment';
   }
 
-  function getThreadTitle() {
-    if (!active) return '';
-    if (isGroup) return `Group ${active.group_id || active.id}`;
-    if (active.peer_id && nameForId) {
-      const label = nameForId(active.peer_id, user?.id);
-      if (label && label !== active.peer_id.slice(0, 10)) return label;
+  async function onPostPoll() {
+    const options = pollOptions.map((o) => o.trim()).filter(Boolean);
+    if (!pollQuestion.trim() || options.length < 2) return;
+    setChatError(null);
+    try {
+      await sendPoll(pollQuestion, options);
+      setPollQuestion('');
+      setPollOptions(['', '']);
+      setShowPollForm(false);
+    } catch (err) {
+      const msg = formatApiError(err, 'Poll could not be posted');
+      setChatError(msg);
+      setListError(msg);
     }
-    return active.peer_id;
   }
 
-  function getInitials(name) {
-    const parts = String(name || '')
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-    if (!parts.length) return '?';
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  const mobileChatOpen = isMobileLayout && Boolean(activeId);
+  const threadTitle =
+    (active && titleFor(active)) ||
+    getThreadTitle(active, {
+      isGroup,
+      nameForId,
+      userId: user?.id,
+    });
+
+  function selectConversation(id) {
+    setActiveId(id);
+    setSearchQuery('');
+    setInlineTranslations({});
+    setReplyTo(null);
   }
 
-  const displayName = user.display_name || user.email?.split('@')[0] || user.id;
-
-  const mobileChat = isAndroidShell() && Boolean(activeId);
+  // P0: mobile = full-screen list OR full-screen thread (never both)
+  const layoutClassName = [
+    styles.layout,
+    isMobileLayout ? styles.layoutMobile : '',
+    isMobileLayout && !activeId ? styles.layoutMobileList : '',
+    mobileChatOpen ? styles.layoutMobileChat : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div
-      className={`${styles.layout} ${isAndroidShell() ? styles.layoutMobile : ''} ${
-        mobileChat ? styles.layoutMobileChat : ''
-      }`}
-    >
-      <aside className={styles.sidebar}>
-        <header className={styles.sideTop}>
-          <div className={styles.brandRow}>
-            <div className={styles.appLogo} aria-hidden="true">
-              ssc
-            </div>
-            <h1 className={styles.sideTitle}>Chats</h1>
-          </div>
-          <div className={styles.sideActions}>
-            <Link to="/settings" className={styles.iconBtn} title="Settings" aria-label="Settings">
-              ⚙
-            </Link>
-          </div>
-        </header>
+    <div className={layoutClassName}>
+      <ConversationSidebar
+        convFilter={convFilter}
+        onConvFilterChange={setConvFilter}
+        storiesByUser={storiesByUser}
+        userId={user?.id}
+        peerIds={peerIds}
+        storiesLoading={storiesLoading}
+        storyPeerId={storyPeerId}
+        onPostStory={postStory}
+        onDeleteStory={removeStory}
+        onStartChat={startChat}
+        onFriendAccepted={(conversationId) => {
+          loadConversations();
+          setActiveId(conversationId);
+          setNewChatOpen(false);
+        }}
+        onGroupCreated={(conversationId) => {
+          onGroupCreated(conversationId);
+          setNewChatOpen(false);
+        }}
+        listError={listError}
+        fileError={fileError}
+        conversations={filteredConversations}
+        activeId={activeId}
+        presenceMap={presenceMap}
+        titleFor={titleFor}
+        onSelectConversation={selectConversation}
+        onTogglePin={togglePin}
+        onToggleMute={toggleMute}
+        showWebsiteLink={!installed}
+        newChatOpen={newChatOpen}
+        onOpenNewChat={() => setNewChatOpen(true)}
+        onCloseNewChat={() => setNewChatOpen(false)}
+      />
 
-        <div className={styles.profileRow}>
-          <div className={styles.avatar} aria-hidden="true">
-            {getInitials(displayName)}
-          </div>
-          <div className={styles.profileMeta}>
-            <strong className={styles.profileName}>{displayName}</strong>
-            <span className={styles.profileStatus}>End-to-end encrypted</span>
-          </div>
-          <button type="button" onClick={logout} className={styles.logout} title="Sign out">
-            Sign out
-          </button>
-        </div>
-
-        <label className={styles.convSearchWrap}>
-          <span className={styles.srOnly}>Search conversations</span>
-          <input
-            className={styles.convSearch}
-            placeholder="Search chats"
-            value={convFilter}
-            onChange={(e) => setConvFilter(e.target.value)}
-          />
-        </label>
-
-        <StoriesBar
-          byUser={storiesByUser}
-          userId={user?.id}
-          peerIds={peerIds}
-          loading={storiesLoading}
-          onPost={(text) => postStory(text, { peerId: storyPeerId })}
-          onDelete={removeStory}
-        />
-
-        <UserLookup onStartChat={startChat} />
-        <FriendRequestsPanel
-          onAccepted={(conversationId) => {
-            loadConversations();
-            setActiveId(conversationId);
-          }}
-        />
-        <GroupPanel onGroupCreated={onGroupCreated} />
-
-        {listError && <p className={styles.error}>{String(listError)}</p>}
-        {fileError && <p className={styles.error}>{String(fileError)}</p>}
-
-        <ul className={styles.convList}>
-          {filteredConversations.length === 0 && convFilter.trim() && (
-            <li className={styles.convEmpty}>No chats match your search.</li>
-          )}
-          {filteredConversations.map((c) => (
-            <li
-              key={c.id}
-              className={`${styles.convItem} ${c.muted ? styles.convMuted : ''} ${
-                c.pinned ? styles.convPinned : ''
-              }`}
-            >
-              <button
-                type="button"
-                className={c.id === activeId ? styles.active : ''}
-                onClick={() => {
-                  setActiveId(c.id);
-                  setSearchQuery('');
-                  setInlineTranslations({});
-                  setReplyTo(null);
-                }}
-              >
-                <span className={styles.convRow}>
-                  <span>
-                    {c.pinned ? '📌 ' : ''}
-                    {c.muted ? '🔇 ' : ''}
-                    {c.type === 'group' ? `👥 ${c.group_id}` : c.peer_id || c.id}
-                    {c.type === 'group' && <GroupE2EBadge compact />}
-                    {c.type !== 'group' && c.peer_id && getPeerTrust(c.peer_id).status === 'verified' && (
-                      <span className={styles.trustVerified} title="Verified"> ✓</span>
-                    )}
-                    {c.type !== 'group' && c.peer_id && getPeerTrust(c.peer_id).status === 'changed' && (
-                      <span className={styles.trustChanged} title="Safety number changed"> ⚠</span>
-                    )}
-                  </span>
-                  <span className={styles.convMeta}>
-                    {c.unread_count > 0 && c.id !== activeId && (
-                      <span className={styles.unreadBadge}>{c.unread_count}</span>
-                    )}
-                    {presenceMap[c.peer_id] && (
-                      <span className={styles.presenceDot} title={presenceMap[c.peer_id]}>
-                        {presenceMap[c.peer_id] === 'Online' ? '●' : ''}
-                      </span>
-                    )}
-                  </span>
-                </span>
-              </button>
-              <span className={styles.convActions}>
-                <button
-                  type="button"
-                  title={c.pinned ? 'Unpin' : 'Pin'}
-                  onClick={() => togglePin(c.id, !c.pinned)}
-                >
-                  {c.pinned ? '📌' : '📍'}
-                </button>
-                <button
-                  type="button"
-                  title={c.muted ? 'Unmute' : 'Mute'}
-                  onClick={() => toggleMute(c.id, !c.muted)}
-                >
-                  {c.muted ? '🔇' : '🔔'}
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
-        <Link to="/link-device" className={styles.syncLink}>
-          Linked devices &amp; sync
-        </Link>
-        {!installed && (
-          <Link to="/" className={styles.homeLink}>
-            ← Website
-          </Link>
-        )}
-      </aside>
-
-      <main className={styles.thread}>
-        {!active ? (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyLogo} aria-hidden="true">
-              ssc
-            </div>
-            <h2 className={styles.emptyTitle}>Super Secure Chat</h2>
-            <p className={styles.emptySub}>
-              Select a conversation on the left, or start a new encrypted chat above.
-            </p>
-            <p className={styles.emptyHint}>Messages are encrypted on your device before they leave.</p>
-          </div>
-        ) : (
-          <>
-            <header className={styles.threadHeader}>
-              <div className={styles.threadTitleRow}>
-                <div className={styles.threadTitle}>
-                  {mobileChat && (
-                    <button
-                      type="button"
-                      className={styles.mobileBack}
-                      onClick={() => setActiveId(null)}
-                      aria-label="Back to chats"
-                    >
-                      ← Chats
-                    </button>
-                  )}
-                  <span>
-                    Chat with <strong>{getThreadTitle()}</strong>
-                  </span>
-                  {presenceMap[active.peer_id] && (
-                    <span className={styles.presenceLabel}>{presenceMap[active.peer_id]}</span>
-                  )}
-                  {peerTyping && <span className={styles.typing}>typing…</span>}
-                  {active?.muted && (
-                    <span className={styles.threadMetaChip} title="Notifications muted">
-                      Muted
-                    </span>
-                  )}
-                  {active?.pinned && (
-                    <span className={styles.threadMetaChip} title="Pinned chat">
-                      Pinned
-                    </span>
-                  )}
-                </div>
-                <div className={styles.threadHeaderActions}>
-                  {!isGroup && (
-                    <EncryptionStatusChip error={chatError || listError} compact />
-                  )}
-                  {isGroup && <GroupE2EBadge />}
-                  {!isGroup && active?.peer_id && (
-                    <SafetyVerifyButton
-                      trust={trust}
-                      disabled={trustLoading}
-                      onClick={() => setShowSafetyVerify(true)}
-                    />
-                  )}
-                  <button
-                    type="button"
-                    className={styles.privacyBtn}
-                    onClick={() => setShowPrivacyPanel((v) => !v)}
-                  >
-                    Privacy
-                  </button>
-                </div>
-              </div>
-              {!isGroup ? (
-                <div className={styles.callBar}>
-                  <button type="button" onClick={() => startCall(false)}>
-                    📞 Call
-                  </button>
-                  <button type="button" onClick={() => startCall(true)}>
-                    📹 Video
-                  </button>
-                </div>
-              ) : (
-                <div className={styles.callBar}>
-                  <button type="button" onClick={() => startGroupCall(false)}>
-                    📞 Group call
-                  </button>
-                  <button type="button" onClick={() => startGroupCall(true)}>
-                    📹 Group video
-                  </button>
-                  {groupCallError && <span className={styles.muted}>{groupCallError}</span>}
-                  {groupCallMode === 'sfu' && (
-                    <span className={styles.muted}>SFU ({groupParticipantCount} participants)</span>
-                  )}
-                </div>
-              )}
-            </header>
-
-            {isGroup && <GroupE2EBanner />}
-
-            {!isGroup && (
-              <TrustBanner trust={trust} onVerify={() => setShowSafetyVerify(true)} />
-            )}
-
-            <ChatPrivacyPanel
-              open={showPrivacyPanel}
-              onClose={() => setShowPrivacyPanel(false)}
-              overrides={active?.privacy || {}}
-              globalSettings={globalPrivacy}
-              onPatch={async (patch) => {
-                if (!activeId) return;
-                await patchPrivacy(activeId, patch);
-              }}
-            />
-
-            <div className={styles.searchBar}>
-              <input
-                placeholder="Search messages (local, encrypted index)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchHits.length > 0 && (
-                <ul className={styles.searchHits}>
-                  {searchHits.map((hit) => (
-                    <li key={hit.id}>
-                      <button type="button" onClick={() => scrollToMessage(hit.id)}>
-                        {hit.text}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className={styles.messages}>
-              {messagesLoading && <p className={styles.muted}>Loading messages…</p>}
-              {messagesError && !messagesLoading && (
-                <div className={styles.messagesError}>
-                  <p>{messagesError}</p>
-                  <button type="button" onClick={() => reloadMessages()}>
-                    Retry
-                  </button>
-                </div>
-              )}
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  ref={(el) => {
-                    messageRefs.current[m.id] = el;
-                  }}
-                >
-                  <MessageBubble
-                    message={m}
-                    isOutgoing={m.sender_id === user.id}
-                    userId={user.id}
-                    inlineTranslation={inlineTranslations[m.id]}
-                    reactions={reactionsByTarget[m.id] || []}
-                    replyPreview={getReplyPreview(m)}
-                    highlighted={highlightedId === m.id}
-                    onReply={setReplyTo}
-                    onEdit={onEditMessage}
-                    onDelete={onDeleteMessage}
-                    onForward={setForwardingMessage}
-                    onReaction={sendReaction}
-                    reactionPending={isReactionPending(m.id)}
-                    onTranslate={onTranslateMessage}
-                    downloadFile={downloadFile}
-                    readReceipts={enrichDirectReadReceipts(
-                      readByMessage[m.id] || [],
-                      isGroup ? null : active?.peer_id
-                    )}
-                    isGroup={isGroup}
-                    nameForId={nameForId}
-                    poll={m.poll}
-                    pollTallies={m.poll_id ? pollMeta[m.poll_id]?.tallies : undefined}
-                    pollViewerVote={m.poll_id ? pollMeta[m.poll_id]?.viewerVote : null}
-                    onPollVote={
-                      m.poll_id
-                        ? (index) => votePoll(m.poll_id, index)
-                        : undefined
-                    }
-                    disappearingRemaining={remainingById[m.id]}
-                    onRetryDecrypt={() => reloadMessages()}
-                  />
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {replyTo && (
-              <div className={styles.replyBar}>
-                <span>
-                  Replying to:{' '}
-                  {replyTo.text?.slice(0, 60) || replyTo.attachment?.name || 'Message'}
-                </span>
-                <button type="button" onClick={() => setReplyTo(null)}>
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {editingMessage && (
-              <div className={styles.replyBar}>
-                <span>Editing message</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingMessage(null);
-                    setDraft('');
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {forwardingMessage && (
-              <div className={styles.replyBar}>
-                <span>Forward to:</span>
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const conv = conversations.find((c) => c.id === e.target.value);
-                    if (conv) onForwardToConversation(conv);
-                  }}
-                >
-                  <option value="">Choose chat…</option>
-                  {conversations
-                    .filter((c) => c.id !== activeId)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.type === 'group' ? `Group ${c.id.slice(0, 8)}` : c.peer_id?.slice(0, 12)}
-                      </option>
-                    ))}
-                </select>
-                <button type="button" onClick={() => setForwardingMessage(null)}>
-                  ✕
-                </button>
-              </div>
-            )}
-
-            {showPollForm && !isGroup && (
-              <div className={styles.replyBar}>
-                <input
-                  placeholder="Poll question"
-                  value={pollQuestion}
-                  onChange={(e) => setPollQuestion(e.target.value)}
-                />
-                {pollOptions.map((opt, idx) => (
-                  <input
-                    key={`poll-opt-${idx}`}
-                    placeholder={`Option ${idx + 1}`}
-                    value={opt}
-                    onChange={(e) => {
-                      const next = [...pollOptions];
-                      next[idx] = e.target.value;
-                      setPollOptions(next);
-                    }}
-                  />
-                ))}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const options = pollOptions.map((o) => o.trim()).filter(Boolean);
-                    if (!pollQuestion.trim() || options.length < 2) return;
-                    setChatError(null);
-                    try {
-                      await sendPoll(pollQuestion, options);
-                      setPollQuestion('');
-                      setPollOptions(['', '']);
-                      setShowPollForm(false);
-                    } catch (err) {
-                      const msg = formatApiError(err, 'Poll could not be posted');
-                      setChatError(msg);
-                      setListError(msg);
-                    }
-                  }}
-                >
-                  Post poll
-                </button>
-                <button type="button" onClick={() => setShowPollForm(false)}>
-                  Cancel
-                </button>
-              </div>
-            )}
-
-            <Composer
-              error={chatError}
-              draft={draft}
-              onDraftChange={(value) => {
-                setDraft(value);
-                onDraftChange(value);
-              }}
-              onSend={onSend}
-              onTranslate={onTranslateDraft}
-              translatedPreview={translatedPreview}
-              onUseTranslation={() => {
-                if (translatedPreview) {
-                  setDraft(translatedPreview);
-                  setTranslatedPreview('');
-                }
-              }}
-              onDismissTranslation={() => setTranslatedPreview('')}
-              translateTarget={translateTarget}
-              onTranslateTargetChange={setTranslateTarget}
-              userLang={userLang}
-              onUserLangChange={onUserLangChange}
-              languages={languages}
-              disappearingSeconds={disappearingSeconds}
-              onDisappearingChange={setDisappearingSeconds}
-              recording={recording}
-              onVoiceToggle={() => (recording ? stopRecording() : startRecording())}
-              uploading={uploading}
-              onFileSelected={onFileSelected}
-              onCreatePoll={!isGroup && active?.peer_id ? () => setShowPollForm(true) : undefined}
-              broadcastLists={broadcastLists}
-              onBroadcastSend={broadcastLists.length ? onBroadcastSend : undefined}
-            />
-          </>
-        )}
-      </main>
+      <ChatThread
+        active={active}
+        isGroup={isGroup}
+        mobileChat={mobileChatOpen}
+        onMobileBack={() => setActiveId(null)}
+        threadTitle={threadTitle}
+        presenceLabel={presenceMap[active?.peer_id]}
+        peerTyping={peerTyping}
+        encryptionError={chatError || listError}
+        trust={trust}
+        trustLoading={trustLoading}
+        onOpenSafetyVerify={() => setShowSafetyVerify(true)}
+        showPrivacyPanel={showPrivacyPanel}
+        onTogglePrivacy={() => setShowPrivacyPanel((v) => !v)}
+        onClosePrivacy={() => setShowPrivacyPanel(false)}
+        onPatchPrivacy={async (patch) => {
+          if (!activeId) return;
+          await patchPrivacy(activeId, patch);
+        }}
+        globalPrivacy={globalPrivacy}
+        onStartAudioCall={() => startCall(false)}
+        onStartVideoCall={() => startCall(true)}
+        onStartGroupAudioCall={() => startGroupCall(false)}
+        onStartGroupVideoCall={() => startGroupCall(true)}
+        groupCallError={groupCallError}
+        groupCallMode={groupCallMode}
+        groupParticipantCount={groupParticipantCount}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        searchHits={searchHits}
+        onSelectSearchHit={scrollToMessage}
+        messages={messages}
+        messagesLoading={messagesLoading}
+        messagesError={messagesError}
+        onReloadMessages={() => reloadMessages()}
+        userId={user.id}
+        inlineTranslations={inlineTranslations}
+        reactionsByTarget={reactionsByTarget}
+        getReplyPreview={getReplyPreview}
+        highlightedId={highlightedId}
+        onReply={setReplyTo}
+        onEdit={onEditMessage}
+        onDelete={onDeleteMessage}
+        onForward={setForwardingMessage}
+        onReaction={sendReaction}
+        isReactionPending={isReactionPending}
+        onTranslateMessage={onTranslateMessage}
+        downloadFile={downloadFile}
+        readByMessage={readByMessage}
+        nameForId={nameForId}
+        pollMeta={pollMeta}
+        remainingById={remainingById}
+        votePoll={votePoll}
+        messageRefs={messageRefs}
+        messagesEndRef={messagesEndRef}
+        replyTo={replyTo}
+        onClearReply={() => setReplyTo(null)}
+        editingMessage={editingMessage}
+        onClearEdit={() => {
+          setEditingMessage(null);
+          setDraft('');
+        }}
+        forwardingMessage={forwardingMessage}
+        conversations={conversations}
+        activeId={activeId}
+        onForwardTo={onForwardToConversation}
+        onClearForward={() => setForwardingMessage(null)}
+        showPollForm={showPollForm}
+        pollQuestion={pollQuestion}
+        pollOptions={pollOptions}
+        onPollQuestionChange={setPollQuestion}
+        onPollOptionChange={(idx, value) => {
+          const next = [...pollOptions];
+          next[idx] = value;
+          setPollOptions(next);
+        }}
+        onPostPoll={onPostPoll}
+        onCancelPoll={() => setShowPollForm(false)}
+        chatError={chatError}
+        draft={draft}
+        onDraftChange={(value) => {
+          setDraft(value);
+          onDraftChange(value);
+        }}
+        onSend={onSend}
+        onTranslateDraft={onTranslateDraft}
+        translatedPreview={translatedPreview}
+        onUseTranslation={() => {
+          if (translatedPreview) {
+            setDraft(translatedPreview);
+            setTranslatedPreview('');
+          }
+        }}
+        onDismissTranslation={() => setTranslatedPreview('')}
+        translateTarget={translateTarget}
+        onTranslateTargetChange={setTranslateTarget}
+        userLang={userLang}
+        onUserLangChange={onUserLangChange}
+        languages={languages}
+        disappearingSeconds={disappearingSeconds}
+        onDisappearingChange={setDisappearingSeconds}
+        recording={recording}
+        onVoiceToggle={() => (recording ? stopRecording() : startRecording())}
+        uploading={uploading}
+        onFileSelected={onFileSelected}
+        onCreatePoll={() => setShowPollForm(true)}
+        broadcastLists={broadcastLists}
+        onBroadcastSend={onBroadcastSend}
+      />
 
       <SafetyVerifyModal
         open={showSafetyVerify}
@@ -1132,7 +845,7 @@ export default function ChatHome() {
       <CallModal
         open={callOpen || groupCallOpen}
         status={groupCallOpen ? groupCallStatus : callStatus}
-        peerLabel={isGroup ? getThreadTitle() : active?.peer_id}
+        peerLabel={isGroup ? threadTitle : active?.peer_id}
         isVideo={Boolean(activeCall?.video) || groupRemoteStreams.length > 0}
         localStream={groupCallOpen ? groupLocalStream : localStream}
         remoteStream={groupCallOpen ? groupRemoteStreams[0] || null : remoteStream}
