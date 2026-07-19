@@ -18,7 +18,7 @@ if (-not (Test-Path $EnvProd)) {
 }
 
 if (-not $SkipBuild) {
-    Write-Host "Building React production bundle (landing-only; installed clients use build_electron/build_android)..."
+    Write-Host "Building React production bundle (landing-only website; apps are Android Compose + Windows Qt)..."
     Push-Location $Frontend
     try {
         # Never share frontend/build with electron/android builds (race wipes landing UI).

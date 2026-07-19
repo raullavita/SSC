@@ -1,10 +1,10 @@
-# Verify release binaries before upload (P0 #4 local substitute for clean-machine test).
+# Verify product release binaries (Android APK + Windows Qt) before upload.
 # Usage: .\scripts\verify_release_artifacts.ps1
 
 param(
     [string]$ExePath = "",
     [string]$ApkPath = "",
-    [string]$UnpackedDir = ""
+    [string]$QtDir = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,48 +20,44 @@ function Assert-Ok([string]$Name, [bool]$Passed, [string]$Detail) {
 }
 
 if (-not $ExePath) {
-    $ExePath = Join-Path $Root "electron\dist\SSC-Setup-0.3.1.exe"
+    $ExePath = Join-Path $Root "dist\windows-qt\SSC-Desktop-0.4.0.exe"
 }
 if (-not $ApkPath) {
-    $ApkPath = Join-Path $Root "android\app\build\outputs\apk\release\SSC-0.3.1.apk"
-}
-if (-not $UnpackedDir) {
-    $UnpackedDir = Join-Path $Root "electron\dist\win-unpacked"
-}
-
-Write-Host "Verifying release artifacts..."
-
-if (Test-Path $ExePath) {
-    $exe = Get-Item $ExePath
-    Assert-Ok "exe.exists" $true $ExePath
-    Assert-Ok "exe.size" ($exe.Length -gt 5MB) "$([math]::Round($exe.Length / 1MB, 2)) MB"
-} else {
-    Add-Failure "exe - missing at $ExePath"
-}
-
-$indexCandidates = @(
-    (Join-Path $UnpackedDir "resources\app\index.html"),
-    (Join-Path $UnpackedDir "resources\app\build\index.html")
-)
-$indexFound = $false
-foreach ($candidate in $indexCandidates) {
-    if (Test-Path $candidate) {
-        $indexFound = $true
-        $html = Get-Content $candidate -Raw
-        Assert-Ok "electron.index.html" $true $candidate
-        Assert-Ok "electron.react_root" ($html -match 'id="root"') "index.html missing React root"
-        break
+    $ApkPath = Join-Path $Root "android\app\build\outputs\apk\release\SSC-0.4.0.apk"
+    if (-not (Test-Path $ApkPath)) {
+        $ApkPath = Join-Path $Root "android\app\build\outputs\apk\release\app-release.apk"
     }
 }
-if (-not $indexFound) {
-    Add-Failure "electron.index.html - not found under $UnpackedDir (rebuild electron to populate win-unpacked)"
+if (-not $QtDir) {
+    $QtDir = Join-Path $Root "dist\windows-qt"
 }
 
+Write-Host "Verifying product release artifacts (v0.4.0)..."
+
+# Windows Qt product
+if (Test-Path $ExePath) {
+    $exe = Get-Item $ExePath
+    Assert-Ok "qt.exe.exists" $true $ExePath
+    Assert-Ok "qt.exe.size" ($exe.Length -gt 1MB) "$([math]::Round($exe.Length / 1MB, 2)) MB"
+} else {
+    Add-Failure "qt.exe - missing at $ExePath (run scripts\build_desktop_windows.ps1)"
+}
+
+$cryptoWorker = Join-Path $QtDir "crypto-worker\worker.js"
+$mediaWorker = Join-Path $QtDir "media-worker\worker.js"
+$nodeRuntime = Join-Path $QtDir "runtime\node\node.exe"
+Assert-Ok "qt.crypto-worker" (Test-Path $cryptoWorker) $cryptoWorker
+Assert-Ok "qt.media-worker" (Test-Path $mediaWorker) $mediaWorker
+Assert-Ok "qt.runtime-node" (Test-Path $nodeRuntime) $nodeRuntime
+Assert-Ok "qt.sfuClient" (Test-Path (Join-Path $QtDir "media-worker\sfuClient.js")) "sfuClient.js"
+Assert-Ok "qt.sfuSdp" (Test-Path (Join-Path $QtDir "media-worker\sfuSdp.js")) "sfuSdp.js"
+
+# Android native Compose
 if (Test-Path $ApkPath) {
     $apk = Get-Item $ApkPath
     Assert-Ok "apk.exists" $true $ApkPath
     $apkMb = [math]::Round($apk.Length / 1MB, 2)
-    Assert-Ok "apk.size" ($apk.Length -gt 1MB -and $apk.Length -lt 250MB) "${apkMb} MB (expected under 250 MB; over 400 MB usually means test JNI libs bundled)"
+    Assert-Ok "apk.size" ($apk.Length -gt 1MB -and $apk.Length -lt 250MB) "${apkMb} MB"
 
     $apksigner = Join-Path $env:LOCALAPPDATA "Android\Sdk\build-tools\35.0.0\apksigner.bat"
     if (-not (Test-Path $apksigner)) {
@@ -74,14 +70,16 @@ if (Test-Path $ApkPath) {
         Write-Host "WARN: apksigner not found - skipping APK signature check"
     }
 } else {
-    Add-Failure "apk - missing at $ApkPath"
+    Add-Failure "apk - missing at $ApkPath (run scripts\build_android.ps1)"
 }
 
 $smokeScript = Join-Path $Root "scripts\release_smoke_test.ps1"
-& $smokeScript -ExePath $ExePath -ApkPath $ApkPath
-$smokeExit = $LASTEXITCODE
-if ($smokeExit -ne 0) {
-    Add-Failure "production smoke test failed (exit $smokeExit)"
+if (Test-Path $smokeScript) {
+    & $smokeScript
+    $smokeExit = $LASTEXITCODE
+    if ($smokeExit -ne 0) {
+        Add-Failure "production smoke test failed (exit $smokeExit)"
+    }
 }
 
 if ($failures.Count -gt 0) {

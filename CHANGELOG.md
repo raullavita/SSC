@@ -10,9 +10,9 @@ SSC is open source under [AGPL-3.0](LICENSE); see [THIRD_PARTY_NOTICES.md](THIRD
 ### Changed (native rebuild — build 15)
 
 - **Android is pure Jetpack Compose** — **no WebView**, no React messenger UI in the APK
-- **Architecture locked:** Compose (Android) · SwiftUI (iOS planned) · Qt Quick (desktop planned) · backend unchanged
+- **Architecture locked:** Compose (Android) · SwiftUI (iOS planned) · **Qt Quick Windows shipped** · backend unchanged
 - **Native stack:** `SscHttpClient`, encrypted session store, OkHttp WebSocket realtime, SQLite message cache, FCM register, libsignal 1:1 + group sender-key path
-- **Product path:** Electron / WebView hybrid **retired** (see `memory/NATIVE_CLIENT_CHARTER.md`)
+- **Product path:** Electron / WebView hybrid **retired** as Windows UI (see `docs/ELECTRON_RETIRED.md`, `docs/WINDOWS_CLIENT.md`)
 
 ### Added (Android Compose parity)
 
@@ -24,6 +24,14 @@ SSC is open source under [AGPL-3.0](LICENSE); see [THIRD_PARTY_NOTICES.md](THIRD
 - **Calls:** 1:1 mesh WebRTC audio/video; **group mediasoup SFU** join/produce/consume; video tiles; mute/cam
 - Free sideload docs: `docs/FREE_DISTRIBUTION.md`
 
+### Added (Windows Qt product — build 15)
+
+- Native Qt 6 Quick/QML client matching Android dark palette and messaging surface
+- libsignal via Node **crypto-worker** 0.96.4 (multi-device Sesame, group sender keys, sealed sender, safety numbers)
+- Realtime WebSocket, local SQLite search, file + voice-note encrypt/send
+- 1:1 call signaling + WebRTC media-worker; **SFU join/produce/consume** (mediasoup WS)
+- Portable package: `dist/windows-qt/SSC-Desktop-0.4.0.exe` + runtime/node + workers
+
 ### Added (backend / SFU)
 
 - SFU room credential fan-out (`sfu_room` WS) on create
@@ -33,7 +41,7 @@ SSC is open source under [AGPL-3.0](LICENSE); see [THIRD_PARTY_NOTICES.md](THIRD
 ### Added
 
 - Parity tracker: `memory/NATIVE_ANDROID_PARITY.md`
-- iOS / Qt desktop scaffolds under `ios/` and `desktop/`
+- iOS scaffold under `ios/`; Windows product under `desktop/`
 
 ## [0.3.1] - 2026-07-06
 

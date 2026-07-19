@@ -49,13 +49,13 @@ function LandingPublic() {
         <h1 className={styles.title}>Messaging you can verify.</h1>
         <p className={styles.tagline}>
           Super Secure Chat is an <strong>open-source, end-to-end encrypted</strong> messenger.
-          The primary client is a <strong>native Android app</strong> (Jetpack Compose + Signal
-          libsignal) — no WebView. This website is for downloads and information only; chat
-          never runs in the browser.
+          Product clients are <strong>native Android</strong> (Jetpack Compose + libsignal) and
+          <strong> Windows Qt</strong> — no browser chat, no WebView shell. This website is for
+          downloads and information only.
         </p>
         <div className={styles.heroActions}>
           <a className={styles.primaryBtn} href="#download">
-            Download Android APK
+            Download apps
           </a>
           <a className={styles.secondaryBtn} href={GITHUB_REPO} target="_blank" rel="noopener noreferrer">
             View source on GitHub
@@ -320,8 +320,8 @@ function LandingPublic() {
           Download v{VERSION} (build {BUILD})
         </h2>
         <p className={styles.lead}>
-          The product messenger is the <strong>native Android app</strong>. Sideload the APK —
-          free path, no Play Store fee. Source and release assets live on{' '}
+          Install the <strong>native Android</strong> or <strong>Windows Qt</strong> client.
+          Free sideload path — no store fee. Source and release assets live on{' '}
           <a href={`${GITHUB_REPO}/releases`}>GitHub Releases</a>.
         </p>
         <div className={styles.platforms}>
@@ -343,17 +343,18 @@ function LandingPublic() {
           </div>
           <div className={styles.platform}>
             <div className={styles.platformIcon}>🖥</div>
-            <strong>Windows / desktop</strong>
-            <span>Qt Quick scaffold (native path). Older Electron builds may still be on Releases.</span>
+            <strong>Windows (Qt native)</strong>
+            <span>Qt Quick · libsignal crypto-worker · Android interop</span>
             <a
               className={styles.downloadBtn}
-              href={`${GITHUB_REPO}/releases`}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`${RELEASE_BASE}/SSC-Desktop-${VERSION}-windows.zip`}
+              download
             >
-              GitHub Releases
+              Download Windows
             </a>
-            <span className={styles.muted}>Build desktop: <code>desktop/</code> (Qt)</span>
+            <span className={styles.muted}>
+              Portable zip (EXE + runtime + workers) · build: <code>scripts/build_desktop_windows.ps1</code>
+            </span>
           </div>
         </div>
         <p className={styles.muted}>

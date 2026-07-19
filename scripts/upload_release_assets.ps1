@@ -1,6 +1,7 @@
-# Upload Windows installer, latest.yml, blockmap, and optional Android APK to GitHub release v0.3.1
+# Upload product release assets to GitHub Releases (v0.4.0).
+# Product Windows client is Qt (SSC-Desktop-*.exe), not Electron SSC-Setup-*.
 param(
-    [string]$Tag = "v0.3.1",
+    [string]$Tag = "v0.4.0",
     [string]$ProjectRoot = (Split-Path $PSScriptRoot -Parent),
     [int]$MaxRetries = 3
 )
@@ -17,7 +18,23 @@ $headers = @{
     "X-GitHub-Api-Version" = "2022-11-28"
 }
 
-$release = Invoke-RestMethod -Uri "https://api.github.com/repos/raullavita/SSC/releases/tags/$Tag" -Headers $headers
+function Ensure-Release {
+    try {
+        return Invoke-RestMethod -Uri "https://api.github.com/repos/raullavita/SSC/releases/tags/$Tag" -Headers $headers
+    } catch {
+        Write-Host "Creating release $Tag..."
+        $body = @{
+            tag_name   = $Tag
+            name       = "SSC $Tag"
+            body       = "SSC $Tag — Android Compose + Windows Qt 0.4.0/15. See CHANGELOG.md."
+            draft      = $false
+            prerelease = $false
+        } | ConvertTo-Json
+        return Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/raullavita/SSC/releases" -Headers $headers -Body $body -ContentType "application/json"
+    }
+}
+
+$release = Ensure-Release
 
 function Upload-Asset {
     param(
@@ -32,7 +49,7 @@ function Upload-Asset {
     if ($old) {
         Invoke-RestMethod -Method Delete -Uri "https://api.github.com/repos/raullavita/SSC/releases/assets/$($old.id)" -Headers $headers | Out-Null
         Write-Host "Removed old $Name ($($old.size) bytes)"
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/raullavita/SSC/releases/tags/$Tag" -Headers $script:headers
+        $script:release = Invoke-RestMethod -Uri "https://api.github.com/repos/raullavita/SSC/releases/tags/$Tag" -Headers $script:headers
     }
     $uploadUrl = "https://uploads.github.com/repos/raullavita/SSC/releases/$($release.id)/assets?name=$([uri]::EscapeDataString($Name))"
     $sizeMb = [math]::Round((Get-Item $Path).Length / 1MB, 1)
@@ -50,49 +67,34 @@ function Upload-Asset {
     }
 }
 
-$exe = Join-Path $ProjectRoot "dist\SSC-Setup-0.3.1.exe"
-if (-not (Test-Path $exe)) {
-    $exe = Join-Path $ProjectRoot "electron\dist\SSC-Setup-0.3.1.exe"
+# Product Windows: portable Qt package (zip folder if present, else EXE)
+$qtExe = Join-Path $ProjectRoot "dist\windows-qt\SSC-Desktop-0.4.0.exe"
+$qtZip = Join-Path $ProjectRoot "dist\SSC-Desktop-0.4.0-windows.zip"
+if ((Test-Path $qtExe) -and -not (Test-Path $qtZip)) {
+    Write-Host "Creating portable zip from dist\windows-qt..."
+    if (Test-Path $qtZip) { Remove-Item $qtZip -Force }
+    Compress-Archive -Path (Join-Path $ProjectRoot "dist\windows-qt\*") -DestinationPath $qtZip -Force
 }
-$latestYml = Join-Path $ProjectRoot "electron\dist\latest.yml"
-$blockmap = Join-Path $ProjectRoot "electron\dist\SSC-Setup-0.3.1.exe.blockmap"
-$apk = Join-Path $ProjectRoot "android\app\build\outputs\apk\release\SSC-0.3.1.apk"
+
+$apk = Join-Path $ProjectRoot "android\app\build\outputs\apk\release\SSC-0.4.0.apk"
+if (-not (Test-Path $apk)) {
+    $apk = Join-Path $ProjectRoot "dist\SSC-0.4.0.apk"
+}
 if (-not (Test-Path $apk)) {
     $apk = Join-Path $ProjectRoot "android\app\build\outputs\apk\release\app-release.apk"
 }
 
-Upload-Asset -Path $exe -Name "SSC-Setup-0.3.1.exe"
-Upload-Asset -Path $latestYml -Name "latest.yml"
-Upload-Asset -Path $blockmap -Name "SSC-Setup-0.3.1.exe.blockmap"
+if (Test-Path $qtZip) {
+    Upload-Asset -Path $qtZip -Name "SSC-Desktop-0.4.0-windows.zip"
+}
+if (Test-Path $qtExe) {
+    Upload-Asset -Path $qtExe -Name "SSC-Desktop-0.4.0.exe"
+}
 if (Test-Path $apk) {
-    $apkDestName = "SSC-0.3.1.apk"
-    if ((Split-Path $apk -Leaf) -ne $apkDestName) {
-        $copy = Join-Path $env:TEMP $apkDestName
-        Copy-Item $apk $copy -Force
-        Upload-Asset -Path $copy -Name $apkDestName
-    } else {
-        Upload-Asset -Path $apk -Name $apkDestName
-    }
+    Upload-Asset -Path $apk -Name "SSC-0.4.0.apk"
 } else {
     Write-Warning "Android APK not found - skip APK upload"
 }
 
-$body = @{
-    name = "v0.3.1 build 14"
-    body = @"
-## v0.3.1 build 14
-
-- Cloud backup with panic wipe
-- Broadcast list create/edit/delete with contact picker
-- Read receipts + encryption status chip
-- Electron auto-update feed (latest.yml)
-- Android client build 14
-
-### Downloads
-- SSC-Setup-0.3.1.exe (Windows)
-- SSC-0.3.1.apk (Android)
-"@
-} | ConvertTo-Json
-
-Invoke-RestMethod -Method Patch -Uri "https://api.github.com/repos/raullavita/SSC/releases/$($release.id)" -Headers $headers -Body $body -ContentType 'application/json' | Select-Object name, updated_at
-Write-Host "GitHub release assets upload complete."
+Write-Host "Release assets upload complete for $Tag"
+Write-Host "https://github.com/raullavita/SSC/releases/tag/$Tag"

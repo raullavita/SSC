@@ -9,16 +9,17 @@ param(
     [string]$PackageName = "com.supersecurechat.app",
     [string]$TesterGroup = "ssc-testers",
     [string]$Testers = "raullavita1988@gmail.com,smashmaxxx@gmail.com,velvetnightshub@gmail.com",
-    [string]$ReleaseNotes = "SSC v0.3.1 build 12 - Android WebView shell with libsignal bridge, multi-device E2EE, Sesame retry."
+    [string]$ReleaseNotes = "SSC v0.4.0 build 15 — native Jetpack Compose, libsignal 0.96.4, multi-device Sesame, SFU group calls, E2EE Android↔Windows Qt interop."
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $PSScriptRoot
+$Version = "0.4.0"
 
 if (-not $ApkPath) {
     $candidates = @(
-        (Join-Path $Root "dist\SSC-0.3.1.apk"),
-        (Join-Path $Root "android\app\build\outputs\apk\release\SSC-0.3.1.apk"),
+        (Join-Path $Root "dist\SSC-$Version.apk"),
+        (Join-Path $Root "android\app\build\outputs\apk\release\SSC-$Version.apk"),
         (Join-Path $Root "android\app\build\outputs\apk\release\app-release.apk")
     )
     $ApkPath = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
@@ -53,9 +54,8 @@ if ($TesterGroup) {
 firebase @distArgs
 
 $consoleUrl = "https://console.firebase.google.com/project/$Project/appdistribution/app/android:$($AppId.Split(':')[-1])/releases"
-$testerUrl = "https://appdistribution.firebase.google.com/testerapps/$($AppId -replace ':','%3A')/releases"
 Write-Host ""
 Write-Host "Firebase App Distribution upload complete."
 Write-Host "Console (use SSC Installed, not legacy SSC): $consoleUrl"
-Write-Host "Tester portal (open on phone, sign in with Google): https://appdistribution.firebase.google.com/"
+Write-Host "Tester portal: https://appdistribution.firebase.google.com/"
 Write-Host "Testers: $($testerList -join ', ')"
