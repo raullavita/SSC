@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -384,7 +385,17 @@ void SscCallEngine::joinSfuRoom(const QString &wsUrl, const QString &roomId, con
                   }
                   m_sfuRoomId = roomId;
                   const int existing = result.value(QStringLiteral("existingProducers")).toInt();
-                  m_sfuState = QStringLiteral("joined (peers producers: %1)").arg(existing);
+                  const int consumed = result.value(QStringLiteral("consumed")).toInt();
+                  const auto produced = result.value(QStringLiteral("produced")).toArray();
+                  const auto mediaErrs = result.value(QStringLiteral("mediaErrors")).toArray();
+                  m_sfuState = QStringLiteral("joined · produced %1 · consumed %2 · known %3")
+                                   .arg(produced.size())
+                                   .arg(consumed)
+                                   .arg(existing);
+                  if (!mediaErrs.isEmpty()) {
+                      m_sfuState += QStringLiteral(" · warn:")
+                                    + mediaErrs.at(0).toString().left(40);
+                  }
                   emit sfuChanged();
                   emit sfuJoined(roomId, existing);
               });

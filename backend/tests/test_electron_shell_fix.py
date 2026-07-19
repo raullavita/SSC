@@ -53,6 +53,11 @@ def test_windows_qt_desktop_product_path():
     assert "sendVoiceNote" in api or "uploadEncryptedAttachment" in api
     assert (REPO / "desktop" / "crypto-worker" / "worker.js").is_file()
     assert (REPO / "desktop" / "media-worker" / "sfuClient.js").is_file()
+    assert (REPO / "desktop" / "media-worker" / "sfuSdp.js").is_file()
+    sfu = (REPO / "desktop" / "media-worker" / "sfuClient.js").read_text(encoding="utf-8")
+    assert "startMedia" in sfu
+    assert "produce" in sfu
+    assert "consume" in sfu
     assert (REPO / "desktop" / "src" / "SscLocalCache.cpp").is_file()
     assert (REPO / "desktop" / "src" / "SscVoiceRecorder.cpp").is_file()
 

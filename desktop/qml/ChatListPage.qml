@@ -610,15 +610,20 @@ Page {
             sfuDialog.wsUrl = wsUrl
             sfuDialog.joinToken = joinToken || ""
             sfuInfo.text = "Room " + roomId + "\nWS: " + wsUrl
-                           + "\n" + (sscCalls.sfuState || "ready to join")
+                           + "\n" + (sscCalls.sfuState || "joining…")
             sfuDialog.open()
+            // Auto-join mediasoup (Android CallCoordinator parity)
+            if (roomId.length && wsUrl.length)
+                sscCalls.joinSfuRoom(wsUrl, roomId, joinToken || "")
         }
     }
     Connections {
         target: sscCalls
         function onSfuJoined(roomId, existingProducers) {
-            sfuInfo.text = "Joined " + roomId + "\nExisting producers: " + existingProducers
+            sfuInfo.text = "Joined " + roomId
+                           + "\nKnown producers: " + existingProducers
                            + "\n" + (sscCalls.sfuState || "")
+                           + "\n(audio produce + consume active)"
         }
     }
     Dialog {

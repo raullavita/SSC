@@ -79,20 +79,25 @@ async function handle(cmd, args = {}) {
       joinToken: args.joinToken,
       peerId: args.peerId,
       wrtc,
+      publishAudio: args.publishAudio !== false,
+      publishVideo: !!args.publishVideo,
     });
     const joined = await client.connectAndJoin(Number(args.timeoutMs) || 15000);
-    await client.createTransport('send');
-    await client.createTransport('recv');
-    const media = await client.prepareMedia();
+    // Full media path: send/recv transports, DTLS, produce audio, consume remotes
+    const media = await client.startMedia();
     sfuSessions.set(roomId, client);
     return {
       joined: true,
       roomId,
-      peerId: joined.peerId,
+      peerId: joined.peerId || (media && media.peerId),
       existingProducers: joined.existingProducers,
       hasRtpCapabilities: joined.hasRtpCapabilities,
-      sendTransportId: client.sendTransport && client.sendTransport.id,
-      recvTransportId: client.recvTransport && client.recvTransport.id,
+      sendTransportId: media.sendTransportId || (client.sendTransport && client.sendTransport.id),
+      recvTransportId: media.recvTransportId || (client.recvTransport && client.recvTransport.id),
+      produced: media.produced || [],
+      consumed: media.consumed || 0,
+      remoteTrackCount: media.remoteTrackCount || 0,
+      mediaErrors: media.errors || [],
       media,
     };
   }

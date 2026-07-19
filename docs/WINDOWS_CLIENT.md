@@ -60,15 +60,29 @@ Crypto-worker + libsignal live under `crypto-worker/`.
 | Local message search (SQLite) | Yes |
 | Safety number | Yes |
 | Sealed sender toggle | Yes |
-| SFU room provision + join (signaling/transports) | Yes (mediasoup WS; media best-effort) |
+| SFU room provision + join (produce/consume) | Yes (mediasoup WS + DTLS + audio produce + consume) |
 | File download/open | Yes |
 | Voice notes (record + `[voice:id]`) | Yes (WinMM WAV → encrypted file) |
 
 ## Android ↔ Windows
 
 1. Android Compose APK 0.4.0  
-2. Run from `dist/windows-qt/` (EXE + runtime + crypto-worker)  
+2. Run from `dist/windows-qt/` (EXE + runtime + crypto-worker + media-worker)  
 3. Two accounts → direct chat → both directions  
+
+### Suggested A↔W checklist
+
+| # | Flow | Expect |
+|---|------|--------|
+| 1 | Login both (Android + Windows) | Prekeys upload; WS online |
+| 2 | Direct message each way | Decrypt plaintext bubbles |
+| 3 | Reply / react / edit / delete | UI updates both sides |
+| 4 | File attach Windows → Android | `[file]` open works |
+| 5 | Voice note Windows 🎤 | `[voice:id]`; open plays WAV |
+| 6 | 1:1 audio 📞 / video 📹 | Ring + connect state |
+| 7 | Safety number | Same digits both sides |
+| 8 | Group SFU (Windows hosts **SFU**) | Auto-join; Android joins room |
+| 9 | Sealed sender toggle | Settings switch persists |
 
 ## Why a small Node worker?
 
