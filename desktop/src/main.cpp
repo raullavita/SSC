@@ -2,12 +2,11 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
-#include <QStandardPaths>
-#include <QDir>
 
 #include "SscApiClient.h"
 #include "SscSession.h"
 #include "SscCryptoBridge.h"
+#include "SscTurnstileHelper.h"
 
 int main(int argc, char *argv[])
 {
@@ -21,8 +20,8 @@ int main(int argc, char *argv[])
     SscSession session;
     SscCryptoBridge crypto;
     SscApiClient api(&session, &crypto);
+    SscTurnstileHelper turnstile;
 
-    // Start crypto worker early (configure after login with user id)
     crypto.start(session.signalStorePath());
 
     QQmlApplicationEngine engine;
@@ -30,8 +29,7 @@ int main(int argc, char *argv[])
     engine.rootContext()->setContextProperty(QStringLiteral("sscSession"), &session);
     engine.rootContext()->setContextProperty(QStringLiteral("sscApi"), &api);
     engine.rootContext()->setContextProperty(QStringLiteral("sscCrypto"), &crypto);
-
-    // Theme singleton import path for filesystem load during dev
+    engine.rootContext()->setContextProperty(QStringLiteral("sscTurnstile"), &turnstile);
     engine.addImportPath(QCoreApplication::applicationDirPath() + QStringLiteral("/qml"));
 
     const QUrl url(QStringLiteral("qrc:/qt/qml/SuperSecureChat/qml/Main.qml"));

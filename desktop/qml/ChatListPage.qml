@@ -27,7 +27,7 @@ Page {
             }
             ToolButton {
                 text: "⚙"
-                onClicked: stack.push(settingsComponent)
+                onClicked: ApplicationWindow.window.openSettings()
             }
             ToolButton {
                 text: "⎋"
@@ -36,43 +36,92 @@ Page {
         }
     }
 
-    footer: ToolBar {
-        Material.background: Theme.surface
-        visible: newChatRow.visible
-        height: newChatRow.visible ? implicitHeight : 0
-    }
-
-    // New chat FAB-like bar
+    // New chat / group panel
     Rectangle {
         id: newChatRow
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        height: 64
+        height: visible ? panelCol.implicitHeight + 16 : 0
         color: Theme.surface
         visible: false
-        RowLayout {
-            anchors.fill: parent
+        z: 5
+        ColumnLayout {
+            id: panelCol
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
             anchors.margins: 8
-            TextField {
-                id: peerIdField
+            spacing: 8
+            Label {
+                text: panelMode.currentIndex === 0 ? "New chat" : "New group"
+                color: Theme.primary
+                font.bold: true
+            }
+            TabBar {
+                id: panelMode
                 Layout.fillWidth: true
-                placeholderText: "Peer user id"
+                TabButton { text: "Direct" }
+                TabButton { text: "Group" }
+            }
+            TextField {
+                id: peerQuery
+                visible: panelMode.currentIndex === 0
+                Layout.fillWidth: true
+                placeholderText: "Username or user id"
+                color: Theme.onSurface
+                background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
+                onTextChanged: if (text.length >= 2) sscApi.searchUsers(text)
+            }
+            TextField {
+                id: groupName
+                visible: panelMode.currentIndex === 1
+                Layout.fillWidth: true
+                placeholderText: "Group name"
                 color: Theme.onSurface
                 background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
             }
-            Button {
-                text: "Open"
-                Material.background: Theme.primary
-                onClicked: {
-                    sscApi.startNewDirect(peerIdField.text)
-                    newChatRow.visible = false
+            TextField {
+                id: groupMembers
+                visible: panelMode.currentIndex === 1
+                Layout.fillWidth: true
+                placeholderText: "Member user ids (comma-separated)"
+                color: Theme.onSurface
+                background: Rectangle { color: Theme.surfaceVariant; radius: 8 }
+            }
+            Repeater {
+                model: panelMode.currentIndex === 0 ? sscApi.userSearchResults : []
+                delegate: Button {
+                    Layout.fillWidth: true
+                    text: (modelData.display_name || modelData.username || modelData.id || "") +
+                          (modelData.username ? " @" + modelData.username : "")
+                    onClicked: {
+                        const id = modelData.id || modelData._id || peerQuery.text
+                        sscApi.startNewDirect(id)
+                        newChatRow.visible = false
+                    }
                 }
             }
-            Button {
-                text: "Cancel"
-                flat: true
-                onClicked: newChatRow.visible = false
+            RowLayout {
+                Layout.fillWidth: true
+                Button {
+                    text: panelMode.currentIndex === 0 ? "Open chat" : "Create group"
+                    Material.background: Theme.primary
+                    Material.foreground: Theme.onPrimary
+                    onClicked: {
+                        if (panelMode.currentIndex === 0) {
+                            sscApi.startNewDirect(peerQuery.text)
+                        } else {
+                            sscApi.createGroup(groupName.text, groupMembers.text)
+                        }
+                        newChatRow.visible = false
+                    }
+                }
+                Button {
+                    text: "Cancel"
+                    flat: true
+                    onClicked: newChatRow.visible = false
+                }
             }
         }
     }
@@ -81,6 +130,7 @@ Page {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.margins: 20
+        anchors.bottomMargin: newChatRow.visible ? newChatRow.height + 20 : 20
         width: 56
         height: 56
         text: "+"
@@ -93,7 +143,7 @@ Page {
 
     SplitView {
         anchors.fill: parent
-        anchors.bottomMargin: newChatRow.visible ? 64 : 0
+        anchors.bottomMargin: newChatRow.visible ? newChatRow.height : 0
         orientation: Qt.Horizontal
 
         ListView {
@@ -145,15 +195,15 @@ Page {
             }
         }
 
-        // Thread pane (Android ChatThreadScreen analogue)
         Page {
             background: Rectangle { color: Theme.background }
             header: ToolBar {
                 Material.background: Theme.surface
                 Label {
                     anchors.centerIn: parent
-                    text: sscApi.activeConversationId ? (sscApi.activePeerId || sscApi.activeConversationId)
-                                                      : "Select a chat"
+                    text: sscApi.activeConversationId
+                          ? (sscApi.activePeerId || sscApi.activeConversationId)
+                          : "Select a chat"
                     color: Theme.onSurface
                     font.bold: true
                 }
@@ -171,7 +221,6 @@ Page {
                     clip: true
                     model: sscApi.messages
                     spacing: 6
-                    verticalLayoutDirection: ListView.BottomToTop
 
                     delegate: Item {
                         width: ListView.view.width
@@ -182,7 +231,7 @@ Page {
                             anchors.left: mine ? undefined : parent.left
                             anchors.right: mine ? parent.right : undefined
                             anchors.margins: 8
-                            width: Math.min(parent.width * 0.75, msgText.implicitWidth + 24)
+                            width: Math.min(parent.width * 0.75, Math.max(80, msgText.implicitWidth + 24))
                             radius: 12
                             color: mine ? Theme.bubbleMine : Theme.bubblePeer
                             implicitHeight: msgText.implicitHeight + 16
@@ -197,6 +246,7 @@ Page {
                             }
                         }
                     }
+                    onCountChanged: if (count > 0) positionViewAtEnd()
                 }
 
                 RowLayout {

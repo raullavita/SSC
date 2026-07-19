@@ -13,7 +13,7 @@ Page {
             anchors.fill: parent
             ToolButton {
                 text: "←"
-                onClicked: stack.pop()
+                onClicked: ApplicationWindow.window.goBack()
             }
             Label {
                 text: "Settings"
@@ -75,7 +75,7 @@ Page {
             Material.foreground: "#FFFFFF"
             onClicked: {
                 sscApi.logout()
-                stack.pop(null)
+                ApplicationWindow.window.openLogin()
             }
         }
         Item { Layout.fillHeight: true }

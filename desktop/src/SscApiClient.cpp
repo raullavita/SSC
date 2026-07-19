@@ -4,8 +4,10 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QUrlQuery>
+#include <QUrl>
 #include <QTimer>
 #include <QDateTime>
+#include <QRegularExpression>
 
 SscApiClient::SscApiClient(SscSession *session, SscCryptoBridge *crypto, QObject *parent)
     : QObject(parent)
@@ -467,5 +469,142 @@ void SscApiClient::startNewDirect(const QString &peerUserId)
         const QString id = conv.value(QStringLiteral("id")).toString(conv.value(QStringLiteral("_id")).toString());
         refreshConversations();
         openConversation(id, peerUserId.trimmed());
+    });
+}
+
+void SscApiClient::searchUsers(const QString &query)
+{
+    const QString q = query.trimmed();
+    m_userSearchResults = {};
+    emit userSearchResultsChanged();
+    if (q.isEmpty()) {
+        return;
+    }
+    // Prefer username lookup; falls back to treating input as user id for chat open
+    const QString path = QStringLiteral("/api/users/lookup/%1").arg(QString::fromUtf8(QUrl::toPercentEncoding(q)));
+    auto *reply = m_nam.get(makeRequest(path));
+    connect(reply, &QNetworkReply::finished, this, [this, reply, q]() {
+        reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) {
+            // try by-username path
+            auto *r2 = m_nam.get(makeRequest(QStringLiteral("/api/users/by-username/%1").arg(q)));
+            connect(r2, &QNetworkReply::finished, this, [this, r2, q]() {
+                r2->deleteLater();
+                if (r2->error() != QNetworkReply::NoError) {
+                    // still allow direct id usage
+                    m_userSearchResults = QJsonArray{QJsonObject{
+                        {QStringLiteral("id"), q},
+                        {QStringLiteral("display_name"), q},
+                        {QStringLiteral("username"), QString()},
+                    }};
+                    emit userSearchResultsChanged();
+                    return;
+                }
+                auto obj = QJsonDocument::fromJson(r2->readAll()).object();
+                auto user = obj.value(QStringLiteral("user")).toObject();
+                if (user.isEmpty()) {
+                    user = obj;
+                }
+                m_userSearchResults = QJsonArray{user};
+                emit userSearchResultsChanged();
+            });
+            return;
+        }
+        auto obj = QJsonDocument::fromJson(reply->readAll()).object();
+        auto user = obj.value(QStringLiteral("user")).toObject();
+        if (user.isEmpty()) {
+            user = obj;
+        }
+        m_userSearchResults = QJsonArray{user};
+        emit userSearchResultsChanged();
+    });
+}
+
+void SscApiClient::createGroup(const QString &name, const QString &memberIdsCsv)
+{
+    setBusy(true);
+    QJsonArray members;
+    const auto parts = memberIdsCsv.split(QRegularExpression(QStringLiteral("[,\\s]+")), Qt::SkipEmptyParts);
+    for (const auto &p : parts) {
+        members.append(p.trimmed());
+    }
+    QJsonObject body{
+        {QStringLiteral("name"), name.trimmed()},
+        {QStringLiteral("member_ids"), members},
+    };
+    auto *reply = m_nam.post(makeRequest(QStringLiteral("/api/groups")),
+                             QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        setBusy(false);
+        if (reply->error() != QNetworkReply::NoError) {
+            const auto b = reply->readAll();
+            const auto obj = QJsonDocument::fromJson(b).object();
+            setError(obj.value(QStringLiteral("detail")).toString(reply->errorString()));
+            return;
+        }
+        setStatus(QStringLiteral("Group created"));
+        refreshConversations();
+    });
+}
+
+void SscApiClient::verifyRecovery(const QString &email, const QString &passphrase, const QString &captchaToken)
+{
+    setBusy(true);
+    setError({});
+    QJsonObject body{
+        {QStringLiteral("email"), email.trimmed()},
+        {QStringLiteral("recovery_passphrase"), passphrase},
+    };
+    if (!captchaToken.isEmpty()) {
+        body.insert(QStringLiteral("captcha_token"), captchaToken);
+    }
+    auto *reply = m_nam.post(makeRequest(QStringLiteral("/api/auth/recovery/verify")),
+                             QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        setBusy(false);
+        if (reply->error() != QNetworkReply::NoError) {
+            const auto b = reply->readAll();
+            const auto obj = QJsonDocument::fromJson(b).object();
+            setError(obj.value(QStringLiteral("detail")).toString(reply->errorString()));
+            return;
+        }
+        const auto obj = QJsonDocument::fromJson(reply->readAll()).object();
+        m_recoveryToken = obj.value(QStringLiteral("recovery_token")).toString();
+        if (m_recoveryToken.isEmpty()) {
+            setError(QStringLiteral("missing_recovery_token"));
+            return;
+        }
+        emit recoveryTokenReady(m_recoveryToken);
+        setStatus(QStringLiteral("Recovery verified — set a new password"));
+    });
+}
+
+void SscApiClient::resetPassword(const QString &recoveryToken, const QString &newPassword)
+{
+    setBusy(true);
+    QJsonObject body{
+        {QStringLiteral("recovery_token"), recoveryToken},
+        {QStringLiteral("new_password"), newPassword},
+    };
+    auto *reply = m_nam.post(makeRequest(QStringLiteral("/api/auth/recovery/reset-password")),
+                             QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        reply->deleteLater();
+        setBusy(false);
+        if (reply->error() != QNetworkReply::NoError) {
+            const auto b = reply->readAll();
+            const auto obj = QJsonDocument::fromJson(b).object();
+            setError(obj.value(QStringLiteral("detail")).toString(reply->errorString()));
+            return;
+        }
+        const auto obj = QJsonDocument::fromJson(reply->readAll()).object();
+        if (obj.contains(QStringLiteral("ws_token"))) {
+            applyAuth(obj);
+        } else {
+            setStatus(QStringLiteral("Password reset — please sign in"));
+            emit loginFailed(QStringLiteral("reset_ok_login_required"));
+        }
     });
 }

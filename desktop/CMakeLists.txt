@@ -19,6 +19,8 @@ qt_add_executable(ssc_desktop
     src/SscSession.h
     src/SscCryptoBridge.cpp
     src/SscCryptoBridge.h
+    src/SscTurnstileHelper.cpp
+    src/SscTurnstileHelper.h
 )
 
 qt_add_qml_module(ssc_desktop
@@ -30,6 +32,7 @@ qt_add_qml_module(ssc_desktop
         qml/ChatListPage.qml
         qml/ChatThreadPage.qml
         qml/SettingsPage.qml
+        qml/RecoveryPage.qml
         qml/Theme.qml
     RESOURCES
         qml/qmldir

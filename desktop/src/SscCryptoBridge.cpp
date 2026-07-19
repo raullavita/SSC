@@ -31,6 +31,18 @@ QString SscCryptoBridge::resolveNode() const
     if (!fromEnv.isEmpty() && QFileInfo::exists(fromEnv)) {
         return fromEnv;
     }
+    const QString appDir = QCoreApplication::applicationDirPath();
+    // Prefer bundled portable Node next to the EXE (no system install required)
+    const QStringList bundled = {
+        appDir + QStringLiteral("/runtime/node/node.exe"),
+        appDir + QStringLiteral("/node/node.exe"),
+        appDir + QStringLiteral("/runtime/node.exe"),
+    };
+    for (const auto &c : bundled) {
+        if (QFileInfo::exists(c)) {
+            return c;
+        }
+    }
 #ifdef Q_OS_WIN
     const QStringList candidates = {
         QStringLiteral("C:/Program Files/nodejs/node.exe"),

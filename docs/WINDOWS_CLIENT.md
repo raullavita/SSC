@@ -30,7 +30,8 @@ $env:PATH = "C:\Users\smash\ssc\.ssc-tools\Qt\Tools\mingw1310_64\bin;$env:PATH"
 
 Output: `dist\windows-qt\SSC-Desktop-0.4.0.exe` (+ `crypto-worker/`).
 
-Runtime needs **Node** on PATH so the crypto-worker can run libsignal (bundled next to the EXE).
+Runtime ships a **portable Node** under `runtime/node/node.exe` (no system Node install required).
+Crypto-worker + libsignal live under `crypto-worker/`.
 
 ## Android ↔ Windows test
 

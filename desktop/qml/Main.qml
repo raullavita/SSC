@@ -18,8 +18,13 @@ ApplicationWindow {
     Material.background: Theme.background
     Material.foreground: Theme.onSurface
 
-    // Exposed for child pages
-    property alias stack: stack
+    property alias stackView: stack
+
+    function openRecovery() { stack.push(recoveryComponent) }
+    function openSettings() { stack.push(settingsComponent) }
+    function openChats() { stack.replace(chatListComponent) }
+    function openLogin() { stack.replace(loginComponent) }
+    function goBack() { if (stack.depth > 1) stack.pop() }
 
     StackView {
         id: stack
@@ -57,5 +62,9 @@ ApplicationWindow {
     Component {
         id: settingsComponent
         SettingsPage { objectName: "settings" }
+    }
+    Component {
+        id: recoveryComponent
+        RecoveryPage { objectName: "recovery" }
     }
 }

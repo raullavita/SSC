@@ -23,6 +23,7 @@ class SscApiClient : public QObject
     Q_PROPERTY(bool captchaRequired READ captchaRequired NOTIFY configChanged)
     Q_PROPERTY(bool busy READ busy NOTIFY busyChanged)
     Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
+    Q_PROPERTY(QJsonArray userSearchResults READ userSearchResults NOTIFY userSearchResultsChanged)
 public:
     explicit SscApiClient(SscSession *session, SscCryptoBridge *crypto, QObject *parent = nullptr);
 
@@ -35,6 +36,7 @@ public:
     bool captchaRequired() const { return m_captchaRequired; }
     bool busy() const { return m_busy; }
     QString statusText() const { return m_statusText; }
+    QJsonArray userSearchResults() const { return m_userSearchResults; }
 
     Q_INVOKABLE void loadPublicConfig();
     Q_INVOKABLE void login(const QString &email, const QString &password);
@@ -46,6 +48,11 @@ public:
     Q_INVOKABLE void sendMessage(const QString &conversationId, const QString &plaintext);
     Q_INVOKABLE void ensurePrekeys();
     Q_INVOKABLE void startNewDirect(const QString &peerUserId);
+    /** Lookup by username or user id; fills userSearchResults. */
+    Q_INVOKABLE void searchUsers(const QString &query);
+    Q_INVOKABLE void createGroup(const QString &name, const QString &memberIdsCsv);
+    Q_INVOKABLE void verifyRecovery(const QString &email, const QString &passphrase, const QString &captchaToken);
+    Q_INVOKABLE void resetPassword(const QString &recoveryToken, const QString &newPassword);
 
 signals:
     void conversationsChanged();
@@ -58,6 +65,8 @@ signals:
     void loginSucceeded();
     void loginFailed(const QString &detail);
     void registered();
+    void userSearchResultsChanged();
+    void recoveryTokenReady(const QString &token);
 
 private:
     void setError(const QString &e);
@@ -86,4 +95,6 @@ private:
     bool m_busy = false;
     QString m_statusText;
     int m_decryptIndex = 0;
+    QJsonArray m_userSearchResults;
+    QString m_recoveryToken;
 };
