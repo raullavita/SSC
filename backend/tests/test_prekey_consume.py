@@ -25,6 +25,7 @@ async def env(monkeypatch):
         "routers.prekeys",
         "routers.devices",
         "routers.conversations",
+        "routers.friend_requests",
         "deps",
         "core.token_revocation",
     ):
@@ -77,6 +78,18 @@ async def test_fetch_consumes_one_prekey(env):
 
     up = await ac.put("/api/prekeys/bundle", json=_bundle("1", 3), headers=CLIENT, cookies=reg_b.cookies)
     assert up.status_code == 200
+
+    fr = await ac.post(
+        "/api/friend_requests",
+        json={"to_user_id": bob_id},
+        headers=CLIENT,
+        cookies=reg_a.cookies,
+    )
+    await ac.post(
+        f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+        headers=CLIENT,
+        cookies=reg_b.cookies,
+    )
 
     conv = await ac.post(
         "/api/conversations",

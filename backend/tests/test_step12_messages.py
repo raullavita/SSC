@@ -33,6 +33,7 @@ def _patch(monkeypatch, fake_db):
     for mod in (
         "routers.auth",
         "routers.conversations",
+        "routers.friend_requests",
         "routers.messages",
         "deps",
         "push",
@@ -68,6 +69,16 @@ async def test_edit_message_within_window(monkeypatch):
         )
         reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
 
         conv = await client.post(
             "/api/conversations",
@@ -116,6 +127,16 @@ async def test_edit_message_denied_for_non_sender(monkeypatch):
         )
         bob_id = reg_b.json()["user"]["id"]
 
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
+
         conv = await client.post(
             "/api/conversations",
             json={"participant_id": bob_id},
@@ -158,6 +179,16 @@ async def test_delete_for_me_hides_from_list(monkeypatch):
             json={"email": "del_b@example.com", "password": "password123", "display_name": "DelB"},
         )
         bob_id = reg_b.json()["user"]["id"]
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
 
         conv = await client.post(
             "/api/conversations",
@@ -206,6 +237,16 @@ async def test_delete_for_everyone_tombstone(monkeypatch):
         )
         bob_id = reg_b.json()["user"]["id"]
 
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
+
         conv = await client.post(
             "/api/conversations",
             json={"participant_id": bob_id},
@@ -251,6 +292,16 @@ async def test_forward_message_with_metadata(monkeypatch):
             json={"email": "fwd_b@example.com", "password": "password123", "display_name": "FwdB"},
         )
         bob_id = reg_b.json()["user"]["id"]
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
 
         conv = await client.post(
             "/api/conversations",
@@ -298,6 +349,16 @@ async def test_attachment_protocol_creates_attachment_message(monkeypatch):
             json={"email": "attach_b@example.com", "password": "password123", "display_name": "AttachB"},
         )
         bob_id = reg_b.json()["user"]["id"]
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
 
         conv = await client.post(
             "/api/conversations",

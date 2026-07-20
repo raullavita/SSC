@@ -20,7 +20,7 @@ async def _no_redis():
 def _patch(monkeypatch, fake_db):
     monkeypatch.setattr("db.get_database", lambda: fake_db)
     monkeypatch.setattr("db.get_redis", _no_redis)
-    for mod in ("routers.auth", "routers.conversations", "routers.users", "deps", "core.token_revocation"):
+    for mod in ("routers.auth", "routers.conversations", "routers.friend_requests", "routers.users", "deps", "core.token_revocation"):
         monkeypatch.setattr(f"{mod}.get_database", lambda: fake_db)
     monkeypatch.setattr("core.token_revocation.get_redis", _no_redis)
 
@@ -47,6 +47,16 @@ async def test_list_reads_route_metadata_minimal(monkeypatch):
         assert reg_b.status_code == 200
         sender_id = reg_a.json()["user"]["id"]
         reader_id = reg_b.json()["user"]["id"]
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": reader_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
 
         conv = await client.post(
             "/api/conversations",
