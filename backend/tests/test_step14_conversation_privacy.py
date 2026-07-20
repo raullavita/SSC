@@ -31,6 +31,7 @@ def _patch(monkeypatch, fake_db):
     for mod in (
         "routers.auth",
         "routers.conversations",
+        "routers.friend_requests",
         "routers.messages",
         "routers.typing",
         "routers.presence",
@@ -70,6 +71,16 @@ async def test_patch_conversation_privacy_returns_overrides(monkeypatch):
             json={"email": "priv_b@example.com", "password": "password123", "display_name": "PrivB"},
         )
         bob_id = reg_b.json()["user"]["id"]
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
 
         conv = await client.post(
             "/api/conversations",
@@ -116,12 +127,26 @@ async def test_typing_suppressed_when_chat_override_off(monkeypatch):
         )
         bob_id = reg_b.json()["user"]["id"]
 
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
+
         conv = await client.post(
             "/api/conversations",
             json={"participant_id": bob_id},
             cookies=reg_a.cookies,
         )
         conv_id = conv.json()["conversation"]["id"]
+
+        # Reset mock call count accumulated during friend-request setup before
+        # testing the typing-suppression behaviour.
+        publish_mock.reset_mock()
 
         await client.patch(
             f"/api/conversations/{conv_id}/privacy",
@@ -161,6 +186,16 @@ async def test_read_receipts_use_per_chat_override(monkeypatch):
         )
         alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
 
         conv = await client.post(
             "/api/conversations",

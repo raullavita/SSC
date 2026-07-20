@@ -24,6 +24,7 @@ def _patch(monkeypatch, fake_db):
     for mod in (
         "routers.auth",
         "routers.conversations",
+        "routers.friend_requests",
         "routers.messages",
         "routers.calls",
         "push",
@@ -55,8 +56,22 @@ async def test_signal_v1_dm_send_persists_message(monkeypatch):
     transport = ASGITransport(app=app)
 
     _alice, alice_cookies = await _register(transport, "e8a@example.com", "Alice")
-    bob, _ = await _register(transport, "e8b@example.com", "Bob")
+    bob, bob_cookies = await _register(transport, "e8b@example.com", "Bob")
     bob_id = bob["user"]["id"]
+
+    # Establish friendship so DM creation succeeds
+    async with AsyncClient(transport=transport, base_url="http://test") as setup_ac:
+        fr = await setup_ac.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            headers=CLIENT,
+            cookies=alice_cookies,
+        )
+        await setup_ac.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            headers=CLIENT,
+            cookies=bob_cookies,
+        )
 
     async with AsyncClient(transport=transport, base_url="http://test", cookies=alice_cookies) as ac:
         conv = await ac.post(

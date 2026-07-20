@@ -24,6 +24,7 @@ def _patch_db(monkeypatch, fake_db: FakeDatabase) -> None:
     monkeypatch.setattr("db.get_redis", _no_redis)
     monkeypatch.setattr("routers.auth.get_database", lambda: fake_db)
     monkeypatch.setattr("routers.conversations.get_database", lambda: fake_db)
+    monkeypatch.setattr("routers.friend_requests.get_database", lambda: fake_db)
     monkeypatch.setattr("routers.messages.get_database", lambda: fake_db)
     monkeypatch.setattr("deps.get_database", lambda: fake_db)
     monkeypatch.setattr("core.token_revocation.get_database", lambda: fake_db)
@@ -79,6 +80,20 @@ async def test_create_conversation_and_send_message(messaging_env):
     fake_db, transport = messaging_env
     alice, alice_cookies = await _register(transport, "alice2@example.com", "Alice")
     bob, bob_cookies = await _register(transport, "bob2@example.com", "Bob")
+
+    # Establish friendship so DM creation succeeds
+    async with AsyncClient(transport=transport, base_url="http://test") as setup_ac:
+        fr = await setup_ac.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob["user"]["id"]},
+            headers=CLIENT,
+            cookies=alice_cookies,
+        )
+        await setup_ac.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            headers=CLIENT,
+            cookies=bob_cookies,
+        )
 
     async with AsyncClient(transport=transport, base_url="http://test", cookies=alice_cookies) as alice_ac:
         conv_resp = await alice_ac.post(
