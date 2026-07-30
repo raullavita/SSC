@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/8"}
 
@@ -54,9 +55,19 @@ async def test_signal_v1_dm_send_persists_message(monkeypatch):
     app.state.enforce_installed_client = True
     transport = ASGITransport(app=app)
 
-    _alice, alice_cookies = await _register(transport, "e8a@example.com", "Alice")
+    alice, alice_cookies = await _register(transport, "e8a@example.com", "Alice")
     bob, _ = await _register(transport, "e8b@example.com", "Bob")
+    await seed_accepted_friendship(fake_db, alice["user"]["id"], bob["user"]["id"])
     bob_id = bob["user"]["id"]
+
+    await fake_db.friend_requests.insert_one(
+        {
+            "_id": "fr_e8int",
+            "from_user_id": alice["user"]["id"],
+            "to_user_id": bob_id,
+            "status": "accepted",
+        }
+    )
 
     async with AsyncClient(transport=transport, base_url="http://test", cookies=alice_cookies) as ac:
         conv = await ac.post(

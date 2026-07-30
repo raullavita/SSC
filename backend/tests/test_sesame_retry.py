@@ -54,7 +54,7 @@ async def test_retry_request_notifies_sender(monkeypatch):
     app.state.enforce_installed_client = True
     transport = ASGITransport(app=app)
 
-    reg_a, cookies_a = await _register(transport, "alice@example.com", "Alice")
+    reg_a, _cookies_a = await _register(transport, "alice@example.com", "Alice")
     reg_b, cookies_b = await _register(transport, "bob@example.com", "Bob")
     alice_id = reg_a["user"]["id"]
     bob_id = reg_b["user"]["id"]

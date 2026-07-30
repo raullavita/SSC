@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from core.short_lived_tokens import consume_token, issue_token
 
 _NAMESPACE = "oauth_code"
@@ -14,7 +12,7 @@ async def issue_oauth_code(user_id: str) -> str:
     return await issue_token(_NAMESPACE, {"user_id": user_id}, _TTL_SECONDS)
 
 
-async def consume_oauth_code(code: str) -> Optional[str]:
+async def consume_oauth_code(code: str) -> str | None:
     record = await consume_token(_NAMESPACE, code)
     if not record:
         return None

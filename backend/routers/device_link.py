@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from core.ids import new_link_token_id
 from core.device_id_policy import allocate_linked_device_id, is_valid_device_id
+from core.ids import new_link_token_id
 from core.multi_device_policy import (
     MAX_DEVICES_PER_USER,
     build_device_link_deep_link,

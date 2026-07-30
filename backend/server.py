@@ -9,15 +9,19 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
-from core.release_policy import RELEASE_VERSION
 from core.firebase_init import ensure_firebase
 from core.lifespan import bootstrap_database
 from core.rate_limit import require_redis_for_production_rate_limits
+from core.release_policy import RELEASE_VERSION
 from core.session_production import validate_production_redis
 from core.startup_gates import validate_production_startup
 from core.ws_hub import ws_hub
 from db import close_connections, get_database
-from middleware import AbuseRateLimitMiddleware, InstalledClientMiddleware, SecurityHeadersMiddleware
+from middleware import (
+    AbuseRateLimitMiddleware,
+    InstalledClientMiddleware,
+    SecurityHeadersMiddleware,
+)
 from routers import include_routers
 
 logger = logging.getLogger("ssc")

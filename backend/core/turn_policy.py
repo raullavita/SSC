@@ -9,6 +9,7 @@ import os
 import time
 from typing import Any
 
+
 def _default_turn_enabled() -> str:
     prod = os.getenv("SSC_ENV", "development") == "production"
     return "true" if prod else "false"

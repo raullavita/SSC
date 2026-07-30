@@ -17,6 +17,7 @@ from core.conversation_privacy_policy import (
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
@@ -69,7 +70,13 @@ async def test_patch_conversation_privacy_returns_overrides(monkeypatch):
             "/api/auth/register",
             json={"email": "priv_b@example.com", "password": "password123", "display_name": "PrivB"},
         )
+        alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
+
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_priv1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
+        )
 
         conv = await client.post(
             "/api/conversations",
@@ -114,7 +121,13 @@ async def test_typing_suppressed_when_chat_override_off(monkeypatch):
             "/api/auth/register",
             json={"email": "type_b@example.com", "password": "password123", "display_name": "TypeB"},
         )
+        alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
+
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_typing1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
+        )
 
         conv = await client.post(
             "/api/conversations",
@@ -159,8 +172,13 @@ async def test_read_receipts_use_per_chat_override(monkeypatch):
             "/api/auth/register",
             json={"email": "read_b@example.com", "password": "password123", "display_name": "ReadB"},
         )
+        await seed_accepted_friendship(fake_db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
         alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_rr1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
+        )
 
         conv = await client.post(
             "/api/conversations",

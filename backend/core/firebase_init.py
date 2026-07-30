@@ -29,7 +29,7 @@ def ensure_firebase() -> bool:
         logger.debug("firebase-admin not installed")
         return False
 
-    if firebase_admin._apps:  # noqa: SLF001
+    if firebase_admin._apps:
         _initialized = True
         return True
 
@@ -42,7 +42,7 @@ def ensure_firebase() -> bool:
         _initialized = True
         logger.info("Firebase Admin initialized for FCM push")
         return True
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.exception("Firebase Admin init failed")
         return False
 
