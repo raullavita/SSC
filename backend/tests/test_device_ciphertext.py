@@ -8,6 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 VALID_CT = base64.b64encode(b"x" * 32).decode("ascii")
@@ -42,7 +43,7 @@ async def env(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_send_device_ciphertexts(env):
-    ac, _db = env
+    ac, db = env
     reg_a = await ac.post(
         "/api/auth/register",
         json={"email": "a@example.com", "password": "password123", "display_name": "A"},
@@ -53,6 +54,7 @@ async def test_send_device_ciphertexts(env):
         json={"email": "b@example.com", "password": "password123", "display_name": "B"},
         headers=CLIENT,
     )
+    await seed_accepted_friendship(db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
     b_id = reg_b.json()["user"]["id"]
 
     conv = await ac.post(

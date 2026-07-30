@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from core.session_policy import SESSION_COOKIE_NAME
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 VALID_B64 = base64.b64encode(b"hello engine 3").decode()
@@ -79,6 +80,7 @@ async def test_create_conversation_and_send_message(messaging_env):
     fake_db, transport = messaging_env
     alice, alice_cookies = await _register(transport, "alice2@example.com", "Alice")
     bob, bob_cookies = await _register(transport, "bob2@example.com", "Bob")
+    await seed_accepted_friendship(fake_db, alice["user"]["id"], bob["user"]["id"])
 
     async with AsyncClient(transport=transport, base_url="http://test", cookies=alice_cookies) as alice_ac:
         conv_resp = await alice_ac.post(

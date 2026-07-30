@@ -19,6 +19,7 @@ from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
@@ -66,7 +67,7 @@ async def test_edit_message_within_window(monkeypatch):
             "/api/auth/register",
             json={"email": "bob@example.com", "password": "password123", "display_name": "Bob"},
         )
-        reg_a.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
         bob_id = reg_b.json()["user"]["id"]
 
         conv = await client.post(
@@ -114,6 +115,7 @@ async def test_edit_message_denied_for_non_sender(monkeypatch):
             "/api/auth/register",
             json={"email": "b1@example.com", "password": "password123", "display_name": "B1"},
         )
+        await seed_accepted_friendship(fake_db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
         bob_id = reg_b.json()["user"]["id"]
 
         conv = await client.post(
@@ -157,6 +159,7 @@ async def test_delete_for_me_hides_from_list(monkeypatch):
             "/api/auth/register",
             json={"email": "del_b@example.com", "password": "password123", "display_name": "DelB"},
         )
+        await seed_accepted_friendship(fake_db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
         bob_id = reg_b.json()["user"]["id"]
 
         conv = await client.post(
@@ -204,6 +207,7 @@ async def test_delete_for_everyone_tombstone(monkeypatch):
             "/api/auth/register",
             json={"email": "tomb_b@example.com", "password": "password123", "display_name": "TombB"},
         )
+        await seed_accepted_friendship(fake_db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
         bob_id = reg_b.json()["user"]["id"]
 
         conv = await client.post(
@@ -250,6 +254,7 @@ async def test_forward_message_with_metadata(monkeypatch):
             "/api/auth/register",
             json={"email": "fwd_b@example.com", "password": "password123", "display_name": "FwdB"},
         )
+        await seed_accepted_friendship(fake_db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
         bob_id = reg_b.json()["user"]["id"]
 
         conv = await client.post(
@@ -297,6 +302,7 @@ async def test_attachment_protocol_creates_attachment_message(monkeypatch):
             "/api/auth/register",
             json={"email": "attach_b@example.com", "password": "password123", "display_name": "AttachB"},
         )
+        await seed_accepted_friendship(fake_db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
         bob_id = reg_b.json()["user"]["id"]
 
         conv = await client.post(

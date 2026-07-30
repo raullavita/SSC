@@ -7,6 +7,7 @@ from httpx import ASGITransport, AsyncClient
 
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
@@ -73,6 +74,7 @@ async def test_fetch_consumes_one_prekey(env):
         json={"email": "bob@example.com", "password": "password123", "display_name": "Bob"},
         headers=CLIENT,
     )
+    await seed_accepted_friendship(db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
     bob_id = reg_b.json()["user"]["id"]
 
     up = await ac.put("/api/prekeys/bundle", json=_bundle("1", 3), headers=CLIENT, cookies=reg_b.cookies)
