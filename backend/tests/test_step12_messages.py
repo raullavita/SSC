@@ -19,6 +19,7 @@ from core.message_lifecycle_policy import (
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
@@ -68,6 +69,7 @@ async def test_edit_message_within_window(monkeypatch):
         )
         alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_edit1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
@@ -120,6 +122,7 @@ async def test_edit_message_denied_for_non_sender(monkeypatch):
         )
         alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_edit2", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
@@ -168,6 +171,7 @@ async def test_delete_for_me_hides_from_list(monkeypatch):
         )
         alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_del1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
@@ -220,6 +224,7 @@ async def test_delete_for_everyone_tombstone(monkeypatch):
         )
         alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_tomb1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
@@ -271,6 +276,7 @@ async def test_forward_message_with_metadata(monkeypatch):
         )
         alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_fwd1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
@@ -323,6 +329,7 @@ async def test_attachment_protocol_creates_attachment_message(monkeypatch):
         )
         alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_att1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}

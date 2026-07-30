@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 VALID_CT = base64.b64encode(b"x" * 32).decode("ascii")
@@ -56,6 +57,7 @@ async def test_send_device_ciphertexts(env):
     )
     a_id = reg_a.json()["user"]["id"]
     b_id = reg_b.json()["user"]["id"]
+    await seed_accepted_friendship(db, a_id, b_id)
 
     await db.friend_requests.insert_one(
         {"_id": "fr_dc", "from_user_id": a_id, "to_user_id": b_id, "status": "accepted"}
