@@ -6,6 +6,8 @@ import hashlib
 import logging
 from datetime import datetime, timezone
 
+from redis.exceptions import RedisError
+
 from core.session_policy import SESSION_COLLECTION
 from core.session_ttl import session_expires_at
 from db import get_database, get_redis
@@ -23,7 +25,7 @@ async def _redis_set_session(jti: str, user_id: str, ttl_seconds: int) -> None:
         return
     try:
         await redis.setex(f"session:{jti}", ttl_seconds, user_id)
-    except Exception as exc:
+    except RedisError as exc:
         logger.warning("redis_set_session failed for jti=%s: %s", jti, exc)
 
 
@@ -34,7 +36,7 @@ async def _redis_revoke(jti: str, ttl_seconds: int) -> None:
     try:
         await redis.delete(f"session:{jti}")
         await redis.setex(f"revoked:{jti}", ttl_seconds, "1")
-    except Exception as exc:
+    except RedisError as exc:
         logger.warning("redis_revoke failed for jti=%s: %s", jti, exc)
 
 
@@ -70,7 +72,7 @@ async def is_session_revoked(jti: str) -> bool:
             active = await redis.get(f"session:{jti}")
             if active:
                 return False
-        except Exception as exc:
+        except RedisError as exc:
             logger.warning("redis session lookup failed for jti=%s: %s", jti, exc)
 
     return False

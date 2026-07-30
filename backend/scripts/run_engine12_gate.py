@@ -72,6 +72,7 @@ def main() -> int:
         cwd=BACKEND_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     checks.append(
         {
@@ -86,6 +87,7 @@ def main() -> int:
         cwd=BACKEND_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     checks.append(
         {

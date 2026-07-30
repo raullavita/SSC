@@ -138,10 +138,9 @@ def public_message(
         "created_at": created,
     }
     device_map = doc.get("device_ciphertexts") or {}
-    if isinstance(device_map, dict) and device_map and viewer_device_id:
-        if viewer_device_id in device_map:
-            out["device_ciphertexts"] = {viewer_device_id: device_map[viewer_device_id]}
-            out["target_device_id"] = viewer_device_id
+    if isinstance(device_map, dict) and device_map and viewer_device_id and viewer_device_id in device_map:
+        out["device_ciphertexts"] = {viewer_device_id: device_map[viewer_device_id]}
+        out["target_device_id"] = viewer_device_id
     if is_tombstone(doc):
         out["message_kind"] = "deleted"
         out.pop("ciphertext", None)
