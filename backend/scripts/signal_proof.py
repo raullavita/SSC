@@ -11,10 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def main() -> int:
-    from core.engine8 import engine8_complete  # noqa: PLC0415
-    from core.signal_policy import SIGNAL_PROTOCOL_V1  # noqa: PLC0415
-    import routers.messages as messages_module  # noqa: PLC0415
-    import routers.prekeys as prekeys_module  # noqa: PLC0415
+    import routers.messages as messages_module
+    import routers.prekeys as prekeys_module
+    from core.engine8 import engine8_complete
+    from core.signal_policy import SIGNAL_PROTOCOL_V1
 
     checks = []
 

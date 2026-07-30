@@ -43,7 +43,7 @@ async def test_lookup_returns_id_and_display_name_only(monkeypatch):
     app.state.enforce_installed_client = True
     transport = ASGITransport(app=app)
 
-    alice, alice_cookies = await _register(transport, "lookup@example.com", "Alice")
+    _alice, alice_cookies = await _register(transport, "lookup@example.com", "Alice")
     bob, _ = await _register(transport, "target@example.com", "Bob Target")
     bob_id = bob["user"]["id"]
 

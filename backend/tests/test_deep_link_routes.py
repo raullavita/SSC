@@ -27,7 +27,7 @@ def _route_from_deep_link(raw_url: str) -> str:
         if host == "add":
             username = path_part.lstrip("/").strip()
             return f"/add/{username}{query}" if username else "/"
-    except Exception:
+    except (ValueError, IndexError, AttributeError):
         return "/"
     return "/"
 

@@ -43,7 +43,7 @@ def check() -> bool:
 
     if is_production:
         try:
-            from core.deploy_policy import production_env_valid  # noqa: PLC0415
+            from core.deploy_policy import production_env_valid
 
             prod_ok, missing = production_env_valid(dict(os.environ))
             for item in missing:
@@ -61,8 +61,11 @@ def check() -> bool:
 
     if is_production:
         try:
-            from core.captcha import captcha_required  # noqa: PLC0415
-            from core.device_attestation import attestation_configured, require_device_attestation  # noqa: PLC0415
+            from core.captcha import captcha_required
+            from core.device_attestation import (
+                attestation_configured,
+                require_device_attestation,
+            )
 
             if captcha_required() and not os.getenv("SSC_TURNSTILE_SECRET", "").strip():
                 print("FAIL: SSC_TURNSTILE_SECRET missing — required when SSC_CAPTCHA_REQUIRED=true")

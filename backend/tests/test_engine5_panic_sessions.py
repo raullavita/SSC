@@ -50,7 +50,7 @@ async def test_panic_wipe_requires_session(panic_client):
 
 @pytest.mark.asyncio
 async def test_panic_wipe_revokes_sessions(panic_client, monkeypatch):
-    ac, db = panic_client
+    ac, _db = panic_client
     revoke_mock = AsyncMock(return_value=2)
     monkeypatch.setattr("routers.panic.revoke_all_user_sessions", revoke_mock)
 

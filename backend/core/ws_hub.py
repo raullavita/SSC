@@ -72,7 +72,7 @@ class WsHub:
                     bucket.discard(ws)
 
     async def publish(self, topic: str, payload: dict[str, Any]) -> None:
-        from db import get_redis  # noqa: PLC0415
+        from db import get_redis
 
         redis = await get_redis()
         if redis is not None:
@@ -85,7 +85,7 @@ class WsHub:
         await self.publish_local(topic, payload)
 
     async def start_redis_listener(self) -> None:
-        from db import get_redis  # noqa: PLC0415
+        from db import get_redis
 
         redis = await get_redis()
         if redis is None:
@@ -104,7 +104,7 @@ class WsHub:
                     topic = data["topic"]
                     payload = data["payload"]
                     await self.publish_local(topic, payload)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     logger.exception("ws redis fanout decode failed")
 
         self._redis_task = asyncio.create_task(_listen())

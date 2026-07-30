@@ -8,13 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from config import get_settings
-from core.abuse_policy import prekey_fetch_limiter
 from core.abuse_enforcement import is_abuse_rate_limited
+from core.abuse_policy import prekey_fetch_limiter
 from core.block_policy import interaction_blocked
 from core.device_id_policy import is_valid_device_id
+from core.pqxdh_policy import validate_kyber_prekey
 from core.prekey_consume import consume_one_prekey, count_prekeys
 from core.prekey_policy import prekey_fetch_allowed
-from core.pqxdh_policy import validate_kyber_prekey
 from core.signal_policy import (
     FORBIDDEN_PREKEY_FIELDS,
     public_prekey_bundle,

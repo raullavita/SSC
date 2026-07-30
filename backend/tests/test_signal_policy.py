@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 import json
 
-
 from core import signal_policy as sp
 
 
@@ -50,7 +49,7 @@ def test_production_rejects_placeholder_protocol(monkeypatch):
 
 def test_production_rejects_group_dev_protocol(monkeypatch):
     monkeypatch.setenv("SSC_ENV", "production")
-    ok, detail = sp.validate_protocol_for_env(sp.GROUP_SENDER_KEY_DEV_PROTOCOL)
+    ok, _detail = sp.validate_protocol_for_env(sp.GROUP_SENDER_KEY_DEV_PROTOCOL)
     assert ok is False
 
 
@@ -65,5 +64,5 @@ def test_production_rejects_dev_envelope_ciphertext(monkeypatch):
 
 def test_development_allows_group_dev_protocol(monkeypatch):
     monkeypatch.setenv("SSC_ENV", "development")
-    ok, detail = sp.validate_protocol_for_env(sp.GROUP_SENDER_KEY_DEV_PROTOCOL)
+    ok, _detail = sp.validate_protocol_for_env(sp.GROUP_SENDER_KEY_DEV_PROTOCOL)
     assert ok is True

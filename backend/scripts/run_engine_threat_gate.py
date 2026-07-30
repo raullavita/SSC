@@ -17,6 +17,7 @@ def _run_pytest(target: str) -> dict:
         cwd=BACKEND_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     return {
         "name": f"pytest:{target}",

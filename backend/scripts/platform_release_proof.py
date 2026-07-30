@@ -11,8 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def main() -> int:
-    from core.engine11 import engine11_complete  # noqa: PLC0415
-    from core.platform_release_policy import engine11_platform_release_ready  # noqa: PLC0415
+    from core.engine11 import engine11_complete
+    from core.platform_release_policy import (
+        engine11_platform_release_ready,
+    )
 
     repo = Path(__file__).resolve().parents[2]
     checks = []

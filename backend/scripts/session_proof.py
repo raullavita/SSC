@@ -11,12 +11,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def main() -> int:
-    from core.auth_tokens import issue_access_token  # noqa: PLC0415
-    from core.engine5 import engine5_complete  # noqa: PLC0415
-    from core.session_cookie import set_session_cookie  # noqa: PLC0415
-    from core.session_policy import SESSION_COOKIE_NAME  # noqa: PLC0415
-    from core.session_ttl import session_expires_at  # noqa: PLC0415
-    import routers.auth as auth_module  # noqa: PLC0415
+    import routers.auth as auth_module
+    from core.auth_tokens import issue_access_token
+    from core.engine5 import engine5_complete
+    from core.session_cookie import set_session_cookie
+    from core.session_policy import SESSION_COOKIE_NAME
+    from core.session_ttl import session_expires_at
 
     checks = []
 

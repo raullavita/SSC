@@ -23,7 +23,7 @@ def _file_absent(rel: str) -> dict:
 
 def main() -> int:
     sys.path.insert(0, str(BACKEND_ROOT))
-    from core.engine13 import engine13_complete  # noqa: PLC0415
+    from core.engine13 import engine13_complete
 
     checks: list[dict] = [
         {
@@ -73,6 +73,7 @@ def main() -> int:
         cwd=BACKEND_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     checks.append(
         {
@@ -87,6 +88,7 @@ def main() -> int:
         cwd=BACKEND_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     checks.append(
         {

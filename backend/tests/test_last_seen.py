@@ -6,7 +6,11 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from core.last_seen import coarse_last_seen, default_privacy_settings, last_seen_for_viewer
+from core.last_seen import (
+    coarse_last_seen,
+    default_privacy_settings,
+    last_seen_for_viewer,
+)
 from tests.fake_mongo import FakeDatabase
 
 

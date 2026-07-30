@@ -46,9 +46,7 @@ def verify_sfu_request(
     if headers.get("x-ssc-sfu-secret") != secret and headers.get("X-SSC-SFU-Secret") != secret:
         # Allow legacy secret-only auth when HMAC not required
         legacy = headers.get("x-ssc-sfu-secret") or headers.get("X-SSC-SFU-Secret")
-        if legacy == secret and not sfu_hmac_required():
-            return True
-        return False
+        return bool(legacy == secret and not sfu_hmac_required())
 
     ts_raw = headers.get("x-ssc-sfu-timestamp") or headers.get("X-SSC-SFU-Timestamp")
     nonce = headers.get("x-ssc-sfu-nonce") or headers.get("X-SSC-SFU-Nonce")

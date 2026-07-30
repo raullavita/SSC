@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from core.push_payload import build_generic_push
 from core.ios_shell_policy import step_ios_shell_ready
+from core.push_payload import build_generic_push
 from server import create_app
 from tests.fake_mongo import FakeDatabase
 

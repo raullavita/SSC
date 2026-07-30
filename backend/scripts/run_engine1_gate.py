@@ -25,6 +25,7 @@ def _run_pytest_multiple(targets: list[str]) -> tuple[bool, str]:
         cwd=BACKEND_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     ok = result.returncode == 0
     detail = "ok" if ok else (result.stdout + result.stderr)[-500:]
@@ -33,7 +34,7 @@ def _run_pytest_multiple(targets: list[str]) -> tuple[bool, str]:
 
 def main() -> int:
     sys.path.insert(0, str(BACKEND_ROOT))
-    from core.retention_policy import engine1_complete  # noqa: PLC0415
+    from core.retention_policy import engine1_complete
 
     checks: list[dict] = []
 

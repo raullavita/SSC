@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
@@ -47,6 +48,11 @@ async def test_list_reads_route_metadata_minimal(monkeypatch):
         assert reg_b.status_code == 200
         sender_id = reg_a.json()["user"]["id"]
         reader_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, sender_id, reader_id)
+
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_s9", "from_user_id": sender_id, "to_user_id": reader_id, "status": "accepted"}
+        )
 
         conv = await client.post(
             "/api/conversations",

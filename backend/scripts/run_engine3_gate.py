@@ -19,7 +19,7 @@ def _check_file(rel: str) -> dict:
 
 def main() -> int:
     sys.path.insert(0, str(BACKEND_ROOT))
-    from core.engine3 import engine3_complete  # noqa: PLC0415
+    from core.engine3 import engine3_complete
 
     checks: list[dict] = [
         {
@@ -58,6 +58,7 @@ def main() -> int:
         cwd=BACKEND_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     checks.append(
         {
