@@ -28,6 +28,7 @@ async def env(monkeypatch):
         "routers.auth",
         "routers.messages",
         "routers.conversations",
+        "routers.friend_requests",
         "deps",
         "core.token_revocation",
         "push",
@@ -61,6 +62,18 @@ async def test_send_device_ciphertexts(env):
 
     await db.friend_requests.insert_one(
         {"_id": "fr_dc", "from_user_id": a_id, "to_user_id": b_id, "status": "accepted"}
+    )
+
+    fr = await ac.post(
+        "/api/friend_requests",
+        json={"to_user_id": b_id},
+        headers=CLIENT,
+        cookies=reg_a.cookies,
+    )
+    await ac.post(
+        f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+        headers=CLIENT,
+        cookies=reg_b.cookies,
     )
 
     conv = await ac.post(
