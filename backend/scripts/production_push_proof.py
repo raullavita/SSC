@@ -11,11 +11,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def main() -> int:
-    from core.engine14 import engine14_complete, engine14_push_wired, engine14_sfu_live  # noqa: PLC0415
-    import push as push_module  # noqa: PLC0415
-    from core.push_payload import build_generic_push  # noqa: PLC0415
-
     import os
+
+    import push as push_module
+    from core.engine14 import (
+        engine14_complete,
+        engine14_push_wired,
+        engine14_sfu_live,
+    )
+    from core.push_payload import build_generic_push
 
     os.environ.setdefault("SSC_SFU_WS_URL", "wss://sfu.supersecurechat.com")
     payload = build_generic_push({})

@@ -52,7 +52,7 @@ def test_scrub_recursive_nested_forbidden():
 
 
 def test_auth_user_payload_shape():
-    from routers.auth import _user_payload  # noqa: PLC0415
+    from routers.auth import _user_payload
 
     out = _user_payload(
         {

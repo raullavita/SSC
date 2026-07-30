@@ -9,10 +9,14 @@ from pydantic import BaseModel, EmailStr, Field
 
 from core.captcha import verify_captcha
 from core.passwords import hash_password
-from core.recovery_crypto import hash_recovery_passphrase, needs_rehash, verify_recovery_passphrase
+from core.recovery_crypto import (
+    hash_recovery_passphrase,
+    needs_rehash,
+    verify_recovery_passphrase,
+)
 from core.recovery_policy import RECOVERY_KEY_MAX_LEN, RECOVERY_KEY_MIN_LEN
 from core.session_issue import issue_user_session
-from core.short_lived_tokens import issue_token, consume_token
+from core.short_lived_tokens import consume_token, issue_token
 from db import get_database
 from deps import get_client_header, get_current_user_id
 

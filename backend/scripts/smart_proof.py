@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def main() -> int:
-    from core.engine12 import engine12_complete  # noqa: PLC0415
+    from core.engine12 import engine12_complete
 
     repo = Path(__file__).resolve().parents[2]
     checks = []

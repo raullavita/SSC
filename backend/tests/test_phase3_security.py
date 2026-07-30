@@ -11,7 +11,12 @@ from core.device_attestation import (
     build_test_attestation_token,
     verify_attestation_token,
 )
-from core.password_crypto import hash_password, legacy_pbkdf2_hash, needs_rehash, verify_password
+from core.password_crypto import (
+    hash_password,
+    legacy_pbkdf2_hash,
+    needs_rehash,
+    verify_password,
+)
 from core.sfu_internal_auth import sign_sfu_request, verify_sfu_request
 from core.ws_subscribe_tokens import (
     consume_subscribe_token,

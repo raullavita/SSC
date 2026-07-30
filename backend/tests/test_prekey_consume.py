@@ -7,6 +7,7 @@ from httpx import ASGITransport, AsyncClient
 
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
@@ -25,7 +26,6 @@ async def env(monkeypatch):
         "routers.prekeys",
         "routers.devices",
         "routers.conversations",
-        "routers.friend_requests",
         "deps",
         "core.token_revocation",
     ):
@@ -74,22 +74,16 @@ async def test_fetch_consumes_one_prekey(env):
         json={"email": "bob@example.com", "password": "password123", "display_name": "Bob"},
         headers=CLIENT,
     )
+    await seed_accepted_friendship(db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
     bob_id = reg_b.json()["user"]["id"]
+    alice_id = reg_a.json()["user"]["id"]
+
+    await db.friend_requests.insert_one(
+        {"_id": "fr_pk", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
+    )
 
     up = await ac.put("/api/prekeys/bundle", json=_bundle("1", 3), headers=CLIENT, cookies=reg_b.cookies)
     assert up.status_code == 200
-
-    fr = await ac.post(
-        "/api/friend_requests",
-        json={"to_user_id": bob_id},
-        headers=CLIENT,
-        cookies=reg_a.cookies,
-    )
-    await ac.post(
-        f"/api/friend_requests/{fr.json()['request']['id']}/accept",
-        headers=CLIENT,
-        cookies=reg_b.cookies,
-    )
 
     conv = await ac.post(
         "/api/conversations",

@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
@@ -24,7 +25,6 @@ def _patch(monkeypatch, fake_db):
     for mod in (
         "routers.auth",
         "routers.conversations",
-        "routers.friend_requests",
         "routers.messages",
         "deps",
         "push",
@@ -55,19 +55,18 @@ async def test_send_signal_v1_message(monkeypatch):
     transport = ASGITransport(app=app)
 
     alice, alice_cookies = await _register(transport, "sig@example.com", "Sig")
-    bob, bob_cookies = await _register(transport, "sig2@example.com", "Sig2")
+    bob, _ = await _register(transport, "sig2@example.com", "Sig2")
+    await seed_accepted_friendship(fake_db, alice["user"]["id"], bob["user"]["id"])
     peer_id = bob["user"]["id"]
 
-    async with AsyncClient(transport=transport, base_url="http://test", cookies=alice_cookies) as ac:
-        fr = await ac.post(
-            "/api/friend_requests",
-            json={"to_user_id": peer_id},
-            headers=CLIENT,
-        )
-        fr_id = fr.json()["request"]["id"]
-
-    async with AsyncClient(transport=transport, base_url="http://test", cookies=bob_cookies) as bob_ac:
-        await bob_ac.post(f"/api/friend_requests/{fr_id}/accept", headers=CLIENT)
+    await fake_db.friend_requests.insert_one(
+        {
+            "_id": "fr_e8msg",
+            "from_user_id": alice["user"]["id"],
+            "to_user_id": peer_id,
+            "status": "accepted",
+        }
+    )
 
     async with AsyncClient(transport=transport, base_url="http://test", cookies=alice_cookies) as ac:
         conv = await ac.post(

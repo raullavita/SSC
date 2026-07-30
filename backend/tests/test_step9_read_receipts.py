@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
@@ -20,7 +21,7 @@ async def _no_redis():
 def _patch(monkeypatch, fake_db):
     monkeypatch.setattr("db.get_database", lambda: fake_db)
     monkeypatch.setattr("db.get_redis", _no_redis)
-    for mod in ("routers.auth", "routers.conversations", "routers.friend_requests", "routers.users", "deps", "core.token_revocation"):
+    for mod in ("routers.auth", "routers.conversations", "routers.users", "deps", "core.token_revocation"):
         monkeypatch.setattr(f"{mod}.get_database", lambda: fake_db)
     monkeypatch.setattr("core.token_revocation.get_redis", _no_redis)
 
@@ -47,15 +48,10 @@ async def test_list_reads_route_metadata_minimal(monkeypatch):
         assert reg_b.status_code == 200
         sender_id = reg_a.json()["user"]["id"]
         reader_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, sender_id, reader_id)
 
-        fr = await client.post(
-            "/api/friend_requests",
-            json={"to_user_id": reader_id},
-            cookies=reg_a.cookies,
-        )
-        await client.post(
-            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
-            cookies=reg_b.cookies,
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_s9", "from_user_id": sender_id, "to_user_id": reader_id, "status": "accepted"}
         )
 
         conv = await client.post(

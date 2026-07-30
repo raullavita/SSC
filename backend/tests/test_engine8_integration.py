@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/8"}
 
@@ -24,7 +25,6 @@ def _patch(monkeypatch, fake_db):
     for mod in (
         "routers.auth",
         "routers.conversations",
-        "routers.friend_requests",
         "routers.messages",
         "routers.calls",
         "push",
@@ -55,23 +55,19 @@ async def test_signal_v1_dm_send_persists_message(monkeypatch):
     app.state.enforce_installed_client = True
     transport = ASGITransport(app=app)
 
-    _alice, alice_cookies = await _register(transport, "e8a@example.com", "Alice")
-    bob, bob_cookies = await _register(transport, "e8b@example.com", "Bob")
+    alice, alice_cookies = await _register(transport, "e8a@example.com", "Alice")
+    bob, _ = await _register(transport, "e8b@example.com", "Bob")
+    await seed_accepted_friendship(fake_db, alice["user"]["id"], bob["user"]["id"])
     bob_id = bob["user"]["id"]
 
-    # Establish friendship so DM creation succeeds
-    async with AsyncClient(transport=transport, base_url="http://test") as setup_ac:
-        fr = await setup_ac.post(
-            "/api/friend_requests",
-            json={"to_user_id": bob_id},
-            headers=CLIENT,
-            cookies=alice_cookies,
-        )
-        await setup_ac.post(
-            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
-            headers=CLIENT,
-            cookies=bob_cookies,
-        )
+    await fake_db.friend_requests.insert_one(
+        {
+            "_id": "fr_e8int",
+            "from_user_id": alice["user"]["id"],
+            "to_user_id": bob_id,
+            "status": "accepted",
+        }
+    )
 
     async with AsyncClient(transport=transport, base_url="http://test", cookies=alice_cookies) as ac:
         conv = await ac.post(

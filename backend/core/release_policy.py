@@ -19,5 +19,5 @@ GITHUB_RELEASE_DOWNLOAD_BASE = (
 
 def step18_release_ready() -> bool:
     return bool(RELEASE_VERSION) and (
-        RELEASE_VERSION.startswith("0.3.") or RELEASE_VERSION.startswith("0.4.")
+        RELEASE_VERSION.startswith(("0.3.", "0.4."))
     )

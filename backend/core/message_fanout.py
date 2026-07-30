@@ -5,7 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from core.block_policy import should_deliver_to_participant
-from core.device_ciphertext_policy import filter_message_doc_for_devices, participant_device_ids
+from core.device_ciphertext_policy import (
+    filter_message_doc_for_devices,
+    participant_device_ids,
+)
 from core.metadata_policy import public_message, scrub_payload
 from core.ws_hub import ws_hub
 

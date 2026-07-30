@@ -9,16 +9,17 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.message_lifecycle_policy import (
     DELETE_FOR_EVERYONE_WINDOW_SECONDS,
     EDIT_WINDOW_SECONDS,
     can_delete_for_everyone,
     can_edit_message,
 )
-from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 from server import create_app
 from tests.fake_mongo import FakeDatabase
+from tests.helpers import seed_accepted_friendship
 
 CLIENT = {"X-SSC-Client": "electron/0.3.0/3"}
 
@@ -33,7 +34,6 @@ def _patch(monkeypatch, fake_db):
     for mod in (
         "routers.auth",
         "routers.conversations",
-        "routers.friend_requests",
         "routers.messages",
         "deps",
         "push",
@@ -67,17 +67,12 @@ async def test_edit_message_within_window(monkeypatch):
             "/api/auth/register",
             json={"email": "bob@example.com", "password": "password123", "display_name": "Bob"},
         )
-        reg_a.json()["user"]["id"]
+        alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
-        fr = await client.post(
-            "/api/friend_requests",
-            json={"to_user_id": bob_id},
-            cookies=reg_a.cookies,
-        )
-        await client.post(
-            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
-            cookies=reg_b.cookies,
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_edit1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
         )
 
         conv = await client.post(
@@ -125,16 +120,12 @@ async def test_edit_message_denied_for_non_sender(monkeypatch):
             "/api/auth/register",
             json={"email": "b1@example.com", "password": "password123", "display_name": "B1"},
         )
+        alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
-        fr = await client.post(
-            "/api/friend_requests",
-            json={"to_user_id": bob_id},
-            cookies=reg_a.cookies,
-        )
-        await client.post(
-            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
-            cookies=reg_b.cookies,
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_edit2", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
         )
 
         conv = await client.post(
@@ -178,16 +169,12 @@ async def test_delete_for_me_hides_from_list(monkeypatch):
             "/api/auth/register",
             json={"email": "del_b@example.com", "password": "password123", "display_name": "DelB"},
         )
+        alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
-        fr = await client.post(
-            "/api/friend_requests",
-            json={"to_user_id": bob_id},
-            cookies=reg_a.cookies,
-        )
-        await client.post(
-            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
-            cookies=reg_b.cookies,
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_del1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
         )
 
         conv = await client.post(
@@ -235,16 +222,12 @@ async def test_delete_for_everyone_tombstone(monkeypatch):
             "/api/auth/register",
             json={"email": "tomb_b@example.com", "password": "password123", "display_name": "TombB"},
         )
+        alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
-        fr = await client.post(
-            "/api/friend_requests",
-            json={"to_user_id": bob_id},
-            cookies=reg_a.cookies,
-        )
-        await client.post(
-            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
-            cookies=reg_b.cookies,
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_tomb1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
         )
 
         conv = await client.post(
@@ -291,16 +274,12 @@ async def test_forward_message_with_metadata(monkeypatch):
             "/api/auth/register",
             json={"email": "fwd_b@example.com", "password": "password123", "display_name": "FwdB"},
         )
+        alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
-        fr = await client.post(
-            "/api/friend_requests",
-            json={"to_user_id": bob_id},
-            cookies=reg_a.cookies,
-        )
-        await client.post(
-            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
-            cookies=reg_b.cookies,
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_fwd1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
         )
 
         conv = await client.post(
@@ -348,16 +327,12 @@ async def test_attachment_protocol_creates_attachment_message(monkeypatch):
             "/api/auth/register",
             json={"email": "attach_b@example.com", "password": "password123", "display_name": "AttachB"},
         )
+        alice_id = reg_a.json()["user"]["id"]
         bob_id = reg_b.json()["user"]["id"]
+        await seed_accepted_friendship(fake_db, alice_id, bob_id)
 
-        fr = await client.post(
-            "/api/friend_requests",
-            json={"to_user_id": bob_id},
-            cookies=reg_a.cookies,
-        )
-        await client.post(
-            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
-            cookies=reg_b.cookies,
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_att1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
         )
 
         conv = await client.post(

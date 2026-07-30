@@ -145,9 +145,7 @@ async def db_conversation_muted(user_id: str, conversation_id: str) -> bool:
 
 def _is_fcm_token(token: str) -> bool:
     """Electron/desktop clients use local OS notifications, not FCM."""
-    if not token or token.startswith("ssc-electron-"):
-        return False
-    return True
+    return bool(token and not token.startswith("ssc-electron-"))
 
 
 async def _dispatch_fcm(token: str, payload: dict[str, Any]) -> bool:
@@ -157,7 +155,7 @@ async def _dispatch_fcm(token: str, payload: dict[str, Any]) -> bool:
         return False
 
     try:
-        from firebase_admin import messaging  # noqa: PLC0415
+        from firebase_admin import messaging
 
         message = messaging.Message(
             token=token,
@@ -169,6 +167,6 @@ async def _dispatch_fcm(token: str, payload: dict[str, Any]) -> bool:
         )
         messaging.send(message)
         return True
-    except Exception:  # noqa: BLE001
+    except Exception:
         logger.exception("FCM send failed")
         return False

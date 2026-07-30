@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from bson import ObjectId
+from bson.errors import InvalidId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from core.retention_policy import COLLECTIONS
@@ -25,7 +26,7 @@ def _build_filter(policy_name: str, user_id: str) -> dict[str, Any] | None:
     if policy.panic_match == "object_id":
         try:
             return {field: ObjectId(user_id)}
-        except Exception:
+        except InvalidId:
             return {field: user_id}
     if policy.panic_match == "contains":
         return {field: user_id}

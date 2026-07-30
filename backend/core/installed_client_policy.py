@@ -105,7 +105,10 @@ def validate_request(
         bridge = (native_bridge or "").strip()
         if bridge != NATIVE_BRIDGE_VALUE:
             return False, "native_bridge_required"
-    from core.device_attestation import require_device_attestation, verify_attestation_token
+    from core.device_attestation import (
+        require_device_attestation,
+        verify_attestation_token,
+    )
 
     if require_device_attestation():
         ok, detail = verify_attestation_token(identity.platform, device_attest)

@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import time
-from typing import Dict
 
 from config import get_settings
 from db import get_redis
 
 _STATE_TTL_SEC = 600
 _REDIS_PREFIX = "ssc:oauth_state:"
-_memory_states: Dict[str, tuple[float, str]] = {}
+_memory_states: dict[str, tuple[float, str]] = {}
 
 
 def _purge_memory() -> None:

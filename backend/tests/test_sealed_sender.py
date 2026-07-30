@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from core.sealed_sender_policy import (
+    engine9_sealed_sender_ready,
     mark_sealed,
     public_message_sealed,
-    engine9_sealed_sender_ready,
 )
 
 
