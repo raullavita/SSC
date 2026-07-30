@@ -18,7 +18,7 @@ def _check_file(rel: str) -> dict:
 
 def main() -> int:
     sys.path.insert(0, str(BACKEND_ROOT))
-    from core.engine10 import engine10_complete  # noqa: PLC0415
+    from core.engine10 import engine10_complete
 
     checks: list[dict] = [
         {

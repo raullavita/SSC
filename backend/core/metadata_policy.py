@@ -91,7 +91,9 @@ def public_conversation(
 
 
 def _public_privacy_from_meta(meta: dict[str, Any]) -> dict[str, Any]:
-    from core.conversation_privacy_policy import public_conversation_privacy  # noqa: PLC0415
+    from core.conversation_privacy_policy import (
+        public_conversation_privacy,
+    )
 
     return public_conversation_privacy(meta)
 
@@ -101,9 +103,12 @@ def public_message(
     viewer_id: str | None = None,
     viewer_device_id: str | None = None,
 ) -> dict[str, Any]:
-    from core.device_ciphertext_policy import resolve_viewer_ciphertext  # noqa: PLC0415
-    from core.message_lifecycle_policy import is_hidden_for_viewer, is_tombstone  # noqa: PLC0415
-    from core.sealed_sender_policy import (  # noqa: PLC0415
+    from core.device_ciphertext_policy import resolve_viewer_ciphertext
+    from core.message_lifecycle_policy import (
+        is_hidden_for_viewer,
+        is_tombstone,
+    )
+    from core.sealed_sender_policy import (
         SEALED_ENVELOPE_FLAG,
         is_sealed_protocol,
         public_message_sealed,

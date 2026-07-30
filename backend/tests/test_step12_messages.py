@@ -9,13 +9,13 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.message_lifecycle_policy import (
     DELETE_FOR_EVERYONE_WINDOW_SECONDS,
     EDIT_WINDOW_SECONDS,
     can_delete_for_everyone,
     can_edit_message,
 )
-from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.signal_policy import SIGNAL_PROTOCOL_V1
 from server import create_app
 from tests.fake_mongo import FakeDatabase

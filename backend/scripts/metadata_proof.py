@@ -11,14 +11,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def main() -> int:
-    from core.metadata_policy import (  # noqa: PLC0415
+    import push as push_module
+    from core.metadata_policy import (
         FORBIDDEN_RESPONSE_FIELDS,
         engine4_metadata_policy_ready,
         scrub_payload,
     )
-    from core.push_payload import build_generic_push  # noqa: PLC0415
-    from routers.auth import _user_payload  # noqa: PLC0415
-    import push as push_module  # noqa: PLC0415
+    from core.push_payload import build_generic_push
+    from routers.auth import _user_payload
 
     checks = []
 

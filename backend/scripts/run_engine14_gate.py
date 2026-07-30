@@ -22,7 +22,7 @@ def main() -> int:
     os.environ.setdefault("SSC_SFU_WS_URL", "wss://sfu.supersecurechat.com")
     os.environ.setdefault("SSC_SFU_ENABLED", "true")
     sys.path.insert(0, str(BACKEND_ROOT))
-    from core.engine14 import engine14_complete  # noqa: PLC0415
+    from core.engine14 import engine14_complete
 
     checks: list[dict] = [
         {

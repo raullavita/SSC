@@ -11,10 +11,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
 def main() -> int:
-    from core.engine9 import engine9_complete  # noqa: PLC0415
-    from core.sealed_sender_policy import SEALED_ENVELOPE_FLAG  # noqa: PLC0415
-    import routers.messages as messages_module  # noqa: PLC0415
-    import routers.groups as groups_module  # noqa: PLC0415
+    import routers.groups as groups_module
+    import routers.messages as messages_module
+    from core.engine9 import engine9_complete
+    from core.sealed_sender_policy import SEALED_ENVELOPE_FLAG
 
     checks = []
 
