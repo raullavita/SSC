@@ -57,7 +57,7 @@ async def test_signal_v1_dm_send_persists_message(monkeypatch):
 
     alice, alice_cookies = await _register(transport, "e8a@example.com", "Alice")
     bob, _ = await _register(transport, "e8b@example.com", "Bob")
-    await seed_accepted_friendship(fake_db, _alice["user"]["id"], bob["user"]["id"])
+    await seed_accepted_friendship(fake_db, alice["user"]["id"], bob["user"]["id"])
     bob_id = bob["user"]["id"]
 
     await fake_db.friend_requests.insert_one(
