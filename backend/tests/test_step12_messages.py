@@ -34,6 +34,7 @@ def _patch(monkeypatch, fake_db):
     for mod in (
         "routers.auth",
         "routers.conversations",
+        "routers.friend_requests",
         "routers.messages",
         "deps",
         "push",
@@ -73,6 +74,16 @@ async def test_edit_message_within_window(monkeypatch):
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_edit1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
+        )
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
         )
 
         conv = await client.post(
@@ -128,6 +139,16 @@ async def test_edit_message_denied_for_non_sender(monkeypatch):
             {"_id": "fr_edit2", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
         )
 
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
+
         conv = await client.post(
             "/api/conversations",
             json={"participant_id": bob_id},
@@ -175,6 +196,16 @@ async def test_delete_for_me_hides_from_list(monkeypatch):
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_del1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
+        )
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
         )
 
         conv = await client.post(
@@ -230,6 +261,16 @@ async def test_delete_for_everyone_tombstone(monkeypatch):
             {"_id": "fr_tomb1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
         )
 
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
+        )
+
         conv = await client.post(
             "/api/conversations",
             json={"participant_id": bob_id},
@@ -280,6 +321,16 @@ async def test_forward_message_with_metadata(monkeypatch):
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_fwd1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
+        )
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
         )
 
         conv = await client.post(
@@ -333,6 +384,16 @@ async def test_attachment_protocol_creates_attachment_message(monkeypatch):
 
         await fake_db.friend_requests.insert_one(
             {"_id": "fr_att1", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
+        )
+
+        fr = await client.post(
+            "/api/friend_requests",
+            json={"to_user_id": bob_id},
+            cookies=reg_a.cookies,
+        )
+        await client.post(
+            f"/api/friend_requests/{fr.json()['request']['id']}/accept",
+            cookies=reg_b.cookies,
         )
 
         conv = await client.post(
