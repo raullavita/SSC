@@ -9,7 +9,6 @@ from pydantic import BaseModel, Field
 
 from core.retention_policy import default_expires_at
 from core.sfu_client import delete_sfu_room, provision_sfu_room
-from core.ws_hub import ws_hub
 from core.sfu_policy import (
     MAX_SFU_PARTICIPANTS,
     SFU_ENABLED,
@@ -17,6 +16,7 @@ from core.sfu_policy import (
     new_sfu_room_id,
     sfu_room_token,
 )
+from core.ws_hub import ws_hub
 from db import get_database
 from deps import get_client_header, get_current_user_id
 

@@ -8,11 +8,17 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
 from core.abuse_enforcement import is_abuse_rate_limited
-from core.block_policy import interaction_blocked, reachable_participants
 from core.abuse_policy import msg_rate_limiter
-from core.new_account_policy import enforce_new_account_dm
+from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
+from core.block_policy import interaction_blocked, reachable_participants
+from core.device_ciphertext_policy import validate_send_ciphertexts
+from core.feature_policy import validate_disappearing_seconds
 from core.ids import new_message_id
-from core.message_fanout import fanout_message, fanout_message_deleted, fanout_message_edited
+from core.message_fanout import (
+    fanout_message,
+    fanout_message_deleted,
+    fanout_message_edited,
+)
 from core.message_lifecycle_policy import (
     DELETE_SCOPES,
     can_delete_for_everyone,
@@ -21,14 +27,12 @@ from core.message_lifecycle_policy import (
     is_hidden_for_viewer,
     tombstone_update,
 )
-from core.read_receipts import increment_unread
 from core.metadata_policy import public_message
-from core.retention_policy import default_expires_at
-from core.feature_policy import validate_disappearing_seconds
-from core.sealed_sender_policy import mark_sealed
-from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
+from core.new_account_policy import enforce_new_account_dm
 from core.reaction_policy import SIGNAL_PROTOCOL_REACTION
-from core.device_ciphertext_policy import validate_send_ciphertexts
+from core.read_receipts import increment_unread
+from core.retention_policy import default_expires_at
+from core.sealed_sender_policy import mark_sealed
 from core.signal_policy import (
     GROUP_SENDER_KEY_DIST_PROTOCOL,
     SIGNAL_PROTOCOL_V1,

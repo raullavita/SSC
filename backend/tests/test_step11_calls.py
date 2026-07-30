@@ -75,7 +75,7 @@ async def test_end_call_declined_sends_missed_push(monkeypatch):
         assert end.json()["reason"] == "declined"
 
     push_mock.assert_awaited()
-    args, kwargs = push_mock.await_args
+    args, _kwargs = push_mock.await_args
     assert args[0] == caller_id
     publish_mock.assert_awaited()
 

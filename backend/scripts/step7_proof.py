@@ -13,8 +13,8 @@ REPO_ROOT = BACKEND_ROOT.parent
 
 def main() -> int:
     sys.path.insert(0, str(BACKEND_ROOT))
-    from core.poll_policy import engine7_polls_ready  # noqa: PLC0415
-    from core.story_policy import engine7_stories_ready  # noqa: PLC0415
+    from core.poll_policy import engine7_polls_ready
+    from core.story_policy import engine7_stories_ready
 
     checks: list[dict] = [
         {"name": "stories_policy_ready", "passed": engine7_stories_ready(), "detail": ""},
@@ -72,6 +72,7 @@ def main() -> int:
         cwd=BACKEND_ROOT,
         capture_output=True,
         text=True,
+        check=False,
     )
     checks.append(
         {

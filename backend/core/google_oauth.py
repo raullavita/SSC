@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 
 import httpx
 
+
 def _google_client_id() -> str:
     return (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
 

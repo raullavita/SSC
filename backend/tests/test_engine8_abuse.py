@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from core.abuse_policy import (
+    engine8_abuse_policy_ready,
     file_magic_blocked,
     file_upload_allowed,
-    engine8_abuse_policy_ready,
     mime_hint_allowed,
     spam_score_heuristic,
 )

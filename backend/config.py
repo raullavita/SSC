@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from typing import ClassVar
 
 from dotenv import load_dotenv
 
@@ -41,7 +42,7 @@ class Settings:
     jwt_secret: str = os.getenv("JWT_SECRET", "dev-only-change-me")
     libretranslate_api_key: str | None = os.getenv("LIBRETRANSLATE_API_KEY")
     api_prefix: str = "/api"
-    cors_origins: list[str] = [
+    cors_origins: ClassVar[list[str]] = [
         o.strip()
         for o in os.getenv("CORS_ORIGINS", _default_cors_origins()).split(",")
         if o.strip()

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from core.client_version_policy import client_meets_minimum, min_client_build, min_client_version
+from core.client_version_policy import (
+    client_meets_minimum,
+    min_client_build,
+    min_client_version,
+)
 from core.installed_client_policy import parse_client_header, validate_request
 from core.recovery_crypto import (
     hash_recovery_passphrase,
@@ -12,7 +16,11 @@ from core.recovery_crypto import (
     needs_rehash,
     verify_recovery_passphrase,
 )
-from core.short_lived_tokens import clear_memory_tokens_for_tests, consume_token, issue_token
+from core.short_lived_tokens import (
+    clear_memory_tokens_for_tests,
+    consume_token,
+    issue_token,
+)
 
 
 @pytest.fixture(autouse=True)

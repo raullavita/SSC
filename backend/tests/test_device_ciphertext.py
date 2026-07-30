@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -42,7 +43,7 @@ async def env(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_send_device_ciphertexts(env):
-    ac, _db = env
+    ac, db = env
     reg_a = await ac.post(
         "/api/auth/register",
         json={"email": "a@example.com", "password": "password123", "display_name": "A"},
@@ -53,7 +54,12 @@ async def test_send_device_ciphertexts(env):
         json={"email": "b@example.com", "password": "password123", "display_name": "B"},
         headers=CLIENT,
     )
+    a_id = reg_a.json()["user"]["id"]
     b_id = reg_b.json()["user"]["id"]
+
+    await db.friend_requests.insert_one(
+        {"_id": "fr_dc", "from_user_id": a_id, "to_user_id": b_id, "status": "accepted"}
+    )
 
     conv = await ac.post(
         "/api/conversations",

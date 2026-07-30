@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import json
 import os
 import re
@@ -68,7 +69,7 @@ def is_dev_ciphertext(ciphertext: str) -> bool:
         raw = base64.b64decode(ciphertext, validate=True)
         payload = json.loads(raw.decode("utf-8"))
         return payload.get("type") in DEV_CIPHERTEXT_TYPES
-    except Exception:
+    except (ValueError, UnicodeDecodeError):
         return False
 
 
@@ -83,7 +84,7 @@ def is_valid_base64(value: str) -> bool:
         return False
     try:
         raw = base64.b64decode(value, validate=True)
-    except Exception:
+    except binascii.Error:
         return False
     return len(raw) > 0
 

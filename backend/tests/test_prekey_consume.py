@@ -74,6 +74,11 @@ async def test_fetch_consumes_one_prekey(env):
         headers=CLIENT,
     )
     bob_id = reg_b.json()["user"]["id"]
+    alice_id = reg_a.json()["user"]["id"]
+
+    await db.friend_requests.insert_one(
+        {"_id": "fr_pk", "from_user_id": alice_id, "to_user_id": bob_id, "status": "accepted"}
+    )
 
     up = await ac.put("/api/prekeys/bundle", json=_bundle("1", 3), headers=CLIENT, cookies=reg_b.cookies)
     assert up.status_code == 200

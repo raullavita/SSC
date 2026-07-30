@@ -66,7 +66,9 @@ async def last_seen_for_viewer(
     settings = pmap.get(subject_id, default_privacy_settings())
     visible = bool(settings.get("last_seen_visible", False))
     if conversation_id:
-        from core.conversation_privacy_policy import effective_last_seen_visible  # noqa: PLC0415
+        from core.conversation_privacy_policy import (
+            effective_last_seen_visible,
+        )
 
         meta = await db.conversation_meta.find_one(
             {"user_id": subject_id, "conversation_id": conversation_id}
