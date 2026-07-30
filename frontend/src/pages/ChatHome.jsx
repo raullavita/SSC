@@ -367,7 +367,7 @@ export default function ChatHome() {
   const searchHits = useMemo(() => {
     if (!activeId || !searchQuery.trim()) return [];
     return searchMessages(activeId, searchQuery);
-  }, [activeId, searchQuery, messages]);
+  }, [activeId, searchQuery]);
 
   const messageById = useMemo(() => {
     const map = {};

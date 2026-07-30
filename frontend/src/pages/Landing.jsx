@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import SiteFeedbackPanel from '../components/SiteFeedbackPanel';
 import { api } from '../lib/api';
 import styles from './Landing.module.css';

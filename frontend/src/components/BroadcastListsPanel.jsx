@@ -53,6 +53,7 @@ export default function BroadcastListsPanel({ onMessage }) {
 
   useEffect(() => {
     refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function toggleRecipient(id) {
