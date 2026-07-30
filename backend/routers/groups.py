@@ -9,9 +9,9 @@ from pydantic import BaseModel, Field
 
 from core.group_membership import dissolve_group, leave_group, remove_group_member
 from core.group_policy import MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS, public_group
-from core.username_policy import public_user_lookup
 from core.ids import new_conversation_id, new_group_id
 from core.retention_policy import default_expires_at
+from core.username_policy import public_user_lookup
 from db import get_database
 from deps import get_client_header, get_current_user_id
 

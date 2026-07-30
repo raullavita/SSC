@@ -33,6 +33,6 @@ def engine9_sfu_ready() -> bool:
 
 def engine11_sfu_signaling_ready() -> bool:
     """Engine 11 — mediasoup server signaling + backend provisioning wired."""
-    from core.sfu_client import engine11_sfu_wired  # noqa: PLC0415
+    from core.sfu_client import engine11_sfu_wired
 
     return engine11_sfu_wired()

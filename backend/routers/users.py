@@ -86,7 +86,7 @@ async def set_username(
     if current.get("username") and current.get("username") != username:
         raise HTTPException(status_code=409, detail="username_locked")
     if current.get("username") == username:
-        from routers.auth import _user_payload  # noqa: PLC0415
+        from routers.auth import _user_payload
 
         return {"user": _user_payload(current)}
 
@@ -99,6 +99,6 @@ async def set_username(
     if not user:
         raise HTTPException(status_code=404, detail="user_not_found")
 
-    from routers.auth import _user_payload  # noqa: PLC0415
+    from routers.auth import _user_payload
 
     return {"user": _user_payload(user)}

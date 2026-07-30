@@ -6,7 +6,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from core.oauth_state import clear_oauth_states_for_tests, consume_oauth_state, store_oauth_state
+from core.oauth_state import (
+    clear_oauth_states_for_tests,
+    consume_oauth_state,
+    store_oauth_state,
+)
 from core.rate_limit import RateLimiter
 from core.startup_gates import validate_production_startup
 

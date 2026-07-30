@@ -11,6 +11,8 @@ from pydantic import BaseModel, EmailStr, Field
 
 from core.auth_tokens import decode_access_token
 from core.captcha import verify_captcha
+from core.google_oauth import _frontend_url as frontend_url
+from core.google_oauth import _oauth_finish_url as oauth_finish_url
 from core.google_oauth import (
     build_google_auth_url,
     exchange_code_for_profile,
@@ -18,8 +20,6 @@ from core.google_oauth import (
     google_oauth_configured,
     verify_id_token,
 )
-from core.google_oauth import _frontend_url as frontend_url
-from core.google_oauth import _oauth_finish_url as oauth_finish_url
 from core.ids import new_user_id
 from core.last_seen import default_privacy_settings
 from core.oauth_exchange import consume_oauth_code, issue_oauth_code

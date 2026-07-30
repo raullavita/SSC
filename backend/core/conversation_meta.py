@@ -20,7 +20,7 @@ async def get_meta_map(db, user_id: str, conversation_ids: list[str]) -> dict[st
             "muted": bool(doc.get("muted")),
             "unread_count": int(doc.get("unread_count", 0)),
         }
-        for api_key, db_key in PRIVACY_OVERRIDE_DB_FIELDS.items():
+        for db_key in PRIVACY_OVERRIDE_DB_FIELDS.values():
             if db_key in doc:
                 row[db_key] = doc[db_key]
         out[doc["conversation_id"]] = row

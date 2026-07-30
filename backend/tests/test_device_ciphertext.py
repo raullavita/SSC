@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -54,8 +55,13 @@ async def test_send_device_ciphertexts(env):
         json={"email": "b@example.com", "password": "password123", "display_name": "B"},
         headers=CLIENT,
     )
-    await seed_accepted_friendship(db, reg_a.json()["user"]["id"], reg_b.json()["user"]["id"])
+    a_id = reg_a.json()["user"]["id"]
     b_id = reg_b.json()["user"]["id"]
+    await seed_accepted_friendship(db, a_id, b_id)
+
+    await db.friend_requests.insert_one(
+        {"_id": "fr_dc", "from_user_id": a_id, "to_user_id": b_id, "status": "accepted"}
+    )
 
     conv = await ac.post(
         "/api/conversations",

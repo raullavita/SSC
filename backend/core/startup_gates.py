@@ -55,8 +55,11 @@ def validate_production_startup(settings: Settings) -> None:
         if not origin.startswith("https://"):
             raise RuntimeError(f"production_cors_https_required: {origin}")
 
-    from core.captcha import captcha_required  # noqa: PLC0415
-    from core.device_attestation import attestation_configured, require_device_attestation  # noqa: PLC0415
+    from core.captcha import captcha_required
+    from core.device_attestation import (
+        attestation_configured,
+        require_device_attestation,
+    )
 
     if captcha_required() and not (os.getenv("SSC_TURNSTILE_SECRET") or "").strip():
         raise RuntimeError("production_captcha_secret_missing: SSC_TURNSTILE_SECRET required")

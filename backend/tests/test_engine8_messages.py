@@ -59,6 +59,15 @@ async def test_send_signal_v1_message(monkeypatch):
     await seed_accepted_friendship(fake_db, alice["user"]["id"], bob["user"]["id"])
     peer_id = bob["user"]["id"]
 
+    await fake_db.friend_requests.insert_one(
+        {
+            "_id": "fr_e8msg",
+            "from_user_id": alice["user"]["id"],
+            "to_user_id": peer_id,
+            "status": "accepted",
+        }
+    )
+
     async with AsyncClient(transport=transport, base_url="http://test", cookies=alice_cookies) as ac:
         conv = await ac.post(
             "/api/conversations",

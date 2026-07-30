@@ -7,15 +7,15 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from core.abuse_enforcement import is_abuse_rate_limited
 from core.conversation_meta import get_meta_map, upsert_meta, upsert_privacy_meta
 from core.conversation_privacy_policy import validate_disappearing_default
-from core.read_receipts import list_read_receipts_for_sender, mark_conversation_read
-from core.ids import direct_conversation_key, new_conversation_id
 from core.group_policy import public_group_conversation
+from core.ids import direct_conversation_key, new_conversation_id
 from core.metadata_policy import public_conversation
-from core.retention_policy import default_expires_at
-from core.abuse_enforcement import is_abuse_rate_limited
 from core.new_account_policy import enforce_new_account_dm
+from core.read_receipts import list_read_receipts_for_sender, mark_conversation_read
+from core.retention_policy import default_expires_at
 from db import get_database
 from deps import get_client_header, get_current_user_id
 

@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from core.push_rich_policy import merge_push_data, push_body_for_kind, sanitize_push_label
+from core.push_rich_policy import (
+    merge_push_data,
+    push_body_for_kind,
+    sanitize_push_label,
+)
 
 GENERIC_TITLE = "SSC"
 GENERIC_BODY = "New message"

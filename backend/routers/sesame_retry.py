@@ -9,9 +9,9 @@ from pydantic import BaseModel, Field
 
 from core.block_policy import interaction_blocked
 from core.device_ciphertext_policy import validate_send_ciphertexts
-from core.retention_policy import default_expires_at
 from core.message_fanout import fanout_message_edited
 from core.metadata_policy import public_message, scrub_payload
+from core.retention_policy import default_expires_at
 from core.signal_policy import SIGNAL_PROTOCOL_V1, validate_protocol_for_env
 from core.ws_hub import ws_hub
 from db import get_database
