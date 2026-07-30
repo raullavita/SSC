@@ -48,6 +48,10 @@ async def test_list_reads_route_metadata_minimal(monkeypatch):
         sender_id = reg_a.json()["user"]["id"]
         reader_id = reg_b.json()["user"]["id"]
 
+        await fake_db.friend_requests.insert_one(
+            {"_id": "fr_s9", "from_user_id": sender_id, "to_user_id": reader_id, "status": "accepted"}
+        )
+
         conv = await client.post(
             "/api/conversations",
             json={"participant_id": reader_id},
