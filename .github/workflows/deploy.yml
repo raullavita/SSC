@@ -12,6 +12,9 @@ on:
           - validate
           - docker-build
 
+permissions:
+  contents: read
+
 jobs:
   validate-production-ready:
     runs-on: ubuntu-latest
