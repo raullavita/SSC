@@ -21,7 +21,7 @@
     "qrcode": "1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0",
+    "react-router-dom": "^7.18.0",
     "react-scripts": "5.0.1"
   },
   "devDependencies": {
@@ -53,9 +53,13 @@
     "serialize-javascript": "^7.0.5",
     "postcss": "^8.5.18",
     "underscore": "^1.13.8",
-    "@tootallnate/once": "^2.0.1"
+    "@tootallnate/once": "^2.0.1",
+    "svgo": ">=2.8.3"
   },
   "jest": {
+    "moduleNameMapper": {
+      "^react-router/dom$": "<rootDir>/node_modules/react-router/dist/development/dom-export.js"
+    },
     "transformIgnorePatterns": [
       "node_modules/(?!(react-router|react-router-dom|franc-min|trigram-utils|n-gram|collapse-white-space|minisearch)/)"
     ]
