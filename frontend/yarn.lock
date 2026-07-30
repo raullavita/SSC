@@ -2210,10 +2210,10 @@
   resolved "https://registry.npmjs.org/@rushstack/eslint-patch/-/eslint-patch-1.16.1.tgz"
   integrity sha512-TvZbIpeKqGQQ7X0zSCvPH9riMSFQFSggnfBjFZ1mEoILW+UuXCKwOoPcgjMwiUtRqFZ8jWhPJc4um14vC6I4ag==
 
-"@signalapp/libsignal-client@0.96.4":
-  version "0.96.4"
-  resolved "https://registry.npmjs.org/@signalapp/libsignal-client/-/libsignal-client-0.96.4.tgz"
-  integrity sha512-alldCRkl1uTt1RW1Aszrg0Dj4eWMCQvcAf6H7nIx5TFkM10m+pskQM+CgLa6ZbdHifIKEV9e/vAFFif8XxSWWA==
+"@signalapp/libsignal-client@0.99.0":
+  version "0.99.0"
+  resolved "https://registry.yarnpkg.com/@signalapp/libsignal-client/-/libsignal-client-0.99.0.tgz#6673be22598f2652fe7e027de26ca8fdceca1a20"
+  integrity sha512-L8NU2S58Zc7PQmbK3/myY7DW/pXqS42+HzKDT7zMkHqV80PlSVLUIXfN1rJlAUeDnmdat+HJCJKkTbRJH3q6gA==
   dependencies:
     node-gyp-build "^4.8.0"
     type-fest "^4.26.0"
