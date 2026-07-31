@@ -17,7 +17,6 @@ from core.password_crypto import (
     needs_rehash,
     verify_password,
 )
-from core.sfu_internal_auth import sign_sfu_request, verify_sfu_request
 from core.ws_subscribe_tokens import (
     consume_subscribe_token,
     issue_subscribe_token,
