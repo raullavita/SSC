@@ -44,6 +44,10 @@ DEFAULT_DEV_STUN: list[dict[str, str]] = [
 
 
 def _turn_password(username: str, secret: str) -> str:
+    # NOTE: HMAC-SHA1 is mandated by the coturn TURN REST API spec
+    # (draft-uberti-behave-turn-rest-00 / RFC 8656 §9.2).  SHA-1 is used
+    # here as a protocol requirement, not as a general-purpose hash.  The
+    # credential is short-lived (TURN_TTL_SECONDS) and not used for storage.
     digest = hmac.new(secret.encode("utf-8"), username.encode("utf-8"), hashlib.sha1).digest()
     return base64.b64encode(digest).decode("ascii")
 

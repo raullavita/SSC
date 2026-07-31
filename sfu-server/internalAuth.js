@@ -1,3 +1,10 @@
+/**
+ * SFU internal request authentication — HMAC-SHA256 + nonce (Phase 3).
+ *
+ * Authentication is based entirely on the HMAC-SHA256 signature over
+ * (timestamp, nonce, method, path, body).  The shared secret is the HMAC key
+ * and is never accepted or expected in any plaintext request header.
+ */
 const crypto = require('crypto');
 
 const INTERNAL_SECRET = process.env.SFU_INTERNAL_SECRET || 'ssc-sfu-dev-secret';
@@ -9,18 +16,11 @@ function header(req, name) {
 }
 
 function verifyInternalAuth(req, method, path, bodyBuf) {
-  const secretHeader = header(req, 'x-ssc-sfu-secret');
-  if (secretHeader !== INTERNAL_SECRET) {
-    return false;
-  }
-  if (!REQUIRE_HMAC) {
-    return true;
-  }
   const ts = header(req, 'x-ssc-sfu-timestamp');
   const nonce = header(req, 'x-ssc-sfu-nonce');
   const sig = header(req, 'x-ssc-sfu-signature');
   if (!ts || !nonce || !sig) {
-    return false;
+    return !REQUIRE_HMAC;
   }
   const tsNum = Number(ts);
   if (!Number.isFinite(tsNum) || Math.abs(Math.floor(Date.now() / 1000) - tsNum) > MAX_SKEW_SEC) {
