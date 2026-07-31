@@ -434,7 +434,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   });
 
@@ -538,7 +538,7 @@ async function performShellFetch(url, method, headers, body) {
 }
 
 ipcMain.handle('ssc-shell:open-oauth', async (_evt, url) => {
-  if (typeof url !== 'string' || !url.startsWith('http')) {
+  if (typeof url !== 'string' || !url.startsWith('https://')) {
     throw new Error('invalid_oauth_url');
   }
   await shell.openExternal(url);

@@ -124,11 +124,34 @@ def test_device_attest_desktop_platforms(monkeypatch):
         assert ok is True, f"{platform}: {detail}"
 
 
-def test_sfu_hmac_sign_and_verify():
+def test_sfu_hmac_sign_and_verify(monkeypatch):
+    monkeypatch.setenv("SSC_SFU_INTERNAL_SECRET", "test-secret-32chars-xxxxxxxxxx")
+    # Re-import to pick up the monkeypatched env
+    import importlib
+    import core.sfu_internal_auth as sfu_auth
+    importlib.reload(sfu_auth)
     body = json.dumps({"room_id": "r1", "join_token": "jt"}).encode()
-    headers = sign_sfu_request("POST", "/internal/rooms", body)
+    headers = sfu_auth.sign_sfu_request("POST", "/internal/rooms", body)
+    # The plaintext secret must NOT appear in the signed headers
+    assert "X-SSC-SFU-Secret" not in headers
+    assert "x-ssc-sfu-secret" not in {k.lower() for k in headers}
     lowered = {k.lower(): v for k, v in headers.items()}
-    assert verify_sfu_request("POST", "/internal/rooms", body, lowered, secret=headers["X-SSC-SFU-Secret"])
+    assert sfu_auth.verify_sfu_request(
+        "POST", "/internal/rooms", body, lowered, secret=sfu_auth.SFU_INTERNAL_SECRET
+    )
+
+
+def test_sfu_hmac_wrong_secret_rejected(monkeypatch):
+    monkeypatch.setenv("SSC_SFU_INTERNAL_SECRET", "test-secret-32chars-xxxxxxxxxx")
+    import importlib
+    import core.sfu_internal_auth as sfu_auth
+    importlib.reload(sfu_auth)
+    body = b'{"room_id":"r2"}'
+    headers = sfu_auth.sign_sfu_request("POST", "/internal/rooms", body)
+    lowered = {k.lower(): v for k, v in headers.items()}
+    assert not sfu_auth.verify_sfu_request(
+        "POST", "/internal/rooms", body, lowered, secret="wrong-secret"
+    )
 
 
 def test_ws_subscribe_required_flag(monkeypatch):

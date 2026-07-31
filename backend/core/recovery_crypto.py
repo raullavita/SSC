@@ -1,4 +1,11 @@
-"""Recovery passphrase hashing — Argon2id with legacy SHA256 migration (Phase 2)."""
+"""Recovery passphrase hashing — Argon2id with legacy SHA256 migration (Phase 2).
+
+New hashes always use Argon2id.  The legacy SHA-256 path exists solely to
+verify old stored hashes during the Phase-2 migration; it is never used to
+create new hashes.  Scanner alerts on the SHA-256 usage are expected and
+intentional — this is a read-only compatibility path, not a security-sensitive
+storage algorithm.
+"""
 
 from __future__ import annotations
 
