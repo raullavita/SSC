@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import secrets
 from datetime import datetime, timezone
+from urllib.parse import urlencode, urlsplit, urlunsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
@@ -158,10 +159,17 @@ async def login(
     return await _issue_auth_response(user, response)
 
 
-def _oauth_return_url(client: str) -> str:
+def _safe_return_url(client: str) -> str:
     if client == "installed":
         return oauth_finish_url()
     return f"{frontend_url()}/auth/google"
+
+
+def _append_query(url: str, **params: str) -> str:
+    parsed = urlsplit(url)
+    query = dict(item.split("=", 1) if "=" in item else (item, "") for item in parsed.query.split("&") if item)
+    query.update({k: v for k, v in params.items() if v is not None})
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment))
 
 
 @router.get("/google/start")
@@ -187,14 +195,14 @@ async def google_callback(
     oauth_client = await consume_oauth_state(state)
     if not oauth_client:
         return RedirectResponse(f"{oauth_finish_url()}?error=oauth_state_invalid")
-    return_url = _oauth_return_url(oauth_client)
+    return_url = _safe_return_url(oauth_client)
     try:
         profile = await exchange_code_for_profile(code)
         user = await _find_or_create_google_user(profile)
         oauth_code = await issue_oauth_code(user["_id"])
-        return RedirectResponse(f"{return_url}?oauth_code={oauth_code}")
+        return RedirectResponse(_append_query(return_url, oauth_code=oauth_code))
     except ValueError:
-        return RedirectResponse(f"{return_url}?error=oauth_failed")
+        return RedirectResponse(_append_query(return_url, error="oauth_failed"))
 
 
 @router.post("/google/exchange")
