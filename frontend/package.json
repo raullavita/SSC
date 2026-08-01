@@ -14,7 +14,7 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
-    "@signalapp/libsignal-client": "0.99.0",
+    "@signalapp/libsignal-client": "0.99.1",
     "franc-min": "^6.2.0",
     "mediasoup-client": "3.21.0",
     "minisearch": "^7.2.0",
