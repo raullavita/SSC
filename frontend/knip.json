@@ -7,7 +7,7 @@
     "src/**/*.test.{js,jsx}"
   ],
   "project": ["src/**/*.{js,jsx}"],
-  "ignoreBinaries": ["eslint"],
+  "ignoreBinaries": ["eslint", "audit"],
   "ignoreDependencies": ["webpack", "@testing-library/user-event", "eslint-config-react-app"],
   "ignoreIssues": {
     "src/lib/abuseReport.js": ["exports"]
