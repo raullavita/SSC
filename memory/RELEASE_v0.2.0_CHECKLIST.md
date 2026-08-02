@@ -3,6 +3,7 @@
 **Issue:** #20  
 **Tag:** `v0.2.0`  
 **Date:** 2026-07-05
+**Status:** Archived (shipped)
 
 ## Pre-release verification
 
@@ -47,13 +48,13 @@
 
 ## Open-source compliance (AGPL / libsignal)
 
-- [ ] `LICENSE` (AGPL-3.0) committed on `main`
-- [ ] `THIRD_PARTY_NOTICES.md` lists libsignal 0.96.4 with AGPL notice
-- [ ] README links to GitHub source and license
-- [ ] Landing page **Open source & compliance** section links to repo + libsignal upstream
-- [ ] GitHub repo is public at https://github.com/raullavita/SSC
+- [x] `LICENSE` (AGPL-3.0) committed on `main`
+- [x] `THIRD_PARTY_NOTICES.md` lists libsignal 0.96.4 with AGPL notice
+- [x] README links to GitHub source and license
+- [x] Landing page **Open source & compliance** section links to repo + libsignal upstream
+- [x] GitHub repo is public at https://github.com/raullavita/SSC
 
 ## Post-release
 
-- [ ] Close GitHub issue #20
-- [ ] Mark Step 8 complete in `memory/ROADMAP.md`
+- [x] Close GitHub issue #20
+- [x] Mark Step 8 complete in `memory/ROADMAP.md`
