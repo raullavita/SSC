@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $PSScriptRoot
-$Apk = Join-Path $Root "dist\SSC-Native-0.3.1-build9.apk"
+$Apk = Join-Path $Root "dist\SSC-Native-0.4.0-build15.apk"
 $AdbCandidates = @(
     "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe",
     "$env:USERPROFILE\AppData\Local\Android\Sdk\platform-tools\adb.exe"
