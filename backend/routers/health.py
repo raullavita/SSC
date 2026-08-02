@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from config import get_settings
+from core.abuse_metrics import abuse_metrics_snapshot
 from core.firebase_init import firebase_ready
 from core.release_policy import RELEASE_VERSION
 from core.sfu_policy import SFU_ENABLED, SFU_WS_URL
@@ -37,6 +38,7 @@ async def health() -> dict:
             "enabled": SFU_ENABLED,
             "ws_url": SFU_WS_URL if SFU_ENABLED else None,
         },
+        "abuse_metrics": abuse_metrics_snapshot(),
         "version": RELEASE_VERSION,
     }
 

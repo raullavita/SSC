@@ -13,6 +13,9 @@ async def test_health_returns_status(client):
     assert "status" in body
     assert "mongo" in body
     assert "redis" in body
+    assert "abuse_metrics" in body
+    assert "rate_limits" in body["abuse_metrics"]
+    assert "rejections" in body["abuse_metrics"]
     assert body["env"] in ("development", "production", "test")
 
 

@@ -12,6 +12,7 @@ from core.abuse_enforcement import (
     record_user_block,
     remove_user_block,
 )
+from core.abuse_metrics import record_rate_limit
 from core.abuse_policy import spam_score_heuristic
 from db import get_database
 from deps import get_client_header, get_current_user_id
@@ -41,6 +42,7 @@ async def report_abuse(
         raise HTTPException(status_code=400, detail="cannot_report_self")
 
     if not await abuse_report_limiter.allow(f"abuse_report:{user_id}"):
+        record_rate_limit("abuse_report")
         raise HTTPException(status_code=429, detail="abuse_report_rate_limited")
 
     db = get_database()

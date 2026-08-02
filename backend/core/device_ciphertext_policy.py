@@ -6,6 +6,7 @@ import base64
 import binascii
 import os
 
+from core.abuse_metrics import record_rejection
 from core.signal_policy import SIGNAL_PROTOCOL_V1, validate_signal_ciphertext
 
 MAX_DEVICE_CIPHERTEXT_TARGETS = int(os.getenv("SSC_MAX_DEVICE_CIPHERTEXT_TARGETS", "12"))
@@ -13,6 +14,11 @@ MAX_DEVICE_ID_LENGTH = int(os.getenv("SSC_MAX_DEVICE_ID_LENGTH", "64"))
 MAX_TOTAL_DEVICE_CIPHERTEXT_BYTES = int(
     os.getenv("SSC_MAX_TOTAL_DEVICE_CIPHERTEXT_BYTES", str(2 * 1024 * 1024))
 )
+
+
+def _reject(reason: str) -> tuple[bool, str]:
+    record_rejection(reason)
+    return False, reason
 
 
 def validate_send_ciphertexts(
@@ -24,30 +30,33 @@ def validate_send_ciphertexts(
     """Accept legacy single ciphertext or a non-empty per-device map."""
     if device_ciphertexts:
         if not isinstance(device_ciphertexts, dict) or not device_ciphertexts:
-            return False, "device_ciphertexts_empty"
+            return _reject("device_ciphertexts_empty")
         if len(device_ciphertexts) > MAX_DEVICE_CIPHERTEXT_TARGETS:
-            return False, "device_ciphertexts_too_many_targets"
+            return _reject("device_ciphertexts_too_many_targets")
         total_bytes = 0
         for device_id, blob in device_ciphertexts.items():
             normalized_device_id = str(device_id or "").strip()
             if not normalized_device_id:
-                return False, "device_ciphertexts_invalid_device_id"
+                return _reject("device_ciphertexts_invalid_device_id")
             if len(normalized_device_id) > MAX_DEVICE_ID_LENGTH:
-                return False, "device_ciphertexts_device_id_too_long"
+                return _reject("device_ciphertexts_device_id_too_long")
             ok, detail = validate_signal_ciphertext(blob, protocol)
             if not ok:
-                return False, f"device_{normalized_device_id}:{detail}"
+                return _reject(f"device_{normalized_device_id}:{detail}")
             try:
                 total_bytes += len(base64.b64decode(blob, validate=True))
             except (ValueError, binascii.Error):
-                return False, f"device_{normalized_device_id}:invalid_ciphertext_encoding"
+                return _reject(f"device_{normalized_device_id}:invalid_ciphertext_encoding")
             if total_bytes > MAX_TOTAL_DEVICE_CIPHERTEXT_BYTES:
-                return False, "device_ciphertexts_total_too_large"
+                return _reject("device_ciphertexts_total_too_large")
         return True, ""
 
     if not ciphertext:
-        return False, "ciphertext_required"
-    return validate_signal_ciphertext(ciphertext, protocol)
+        return _reject("ciphertext_required")
+    ok, detail = validate_signal_ciphertext(ciphertext, protocol)
+    if not ok:
+        return _reject(detail)
+    return True, ""
 
 
 def resolve_viewer_ciphertext(

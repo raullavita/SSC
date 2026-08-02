@@ -10,6 +10,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from config import get_settings
+from core.abuse_metrics import record_rate_limit
 from core.abuse_policy import auth_rate_limiter, feedback_rate_limiter
 from core.installed_client_policy import (
     INSTALLED_CLIENT_HEADER,
@@ -63,8 +64,10 @@ class AbuseRateLimitMiddleware(BaseHTTPMiddleware):
         client_ip = request.client.host if request.client else "unknown"
         ip_key = _privacy_rate_key(client_ip)
         if path.endswith(("/auth/login", "/auth/register")) and not await auth_rate_limiter.allow(f"auth:{ip_key}"):
+            record_rate_limit("auth")
             return JSONResponse(status_code=429, content={"detail": "auth_rate_limited"})
         if path.endswith("/public/feedback") and request.method.upper() == "POST" and not await feedback_rate_limiter.allow(f"feedback:{ip_key}"):
+            record_rate_limit("feedback")
             return JSONResponse(status_code=429, content={"detail": "feedback_rate_limited"})
         return await call_next(request)
 

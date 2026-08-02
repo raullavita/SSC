@@ -28,6 +28,7 @@ async def _no_redis():
 @pytest.fixture(autouse=True)
 def isolate_external_services(monkeypatch):
     """Avoid hanging on localhost Mongo/Redis when services are not running."""
+    from core.abuse_metrics import clear_abuse_metrics_for_tests
     from core.abuse_enforcement import abuse_report_limiter
     from core.abuse_policy import (
         auth_rate_limiter,
@@ -51,6 +52,7 @@ def isolate_external_services(monkeypatch):
     abuse_report_limiter.clear()
     clear_oauth_states_for_tests()
     clear_memory_tokens_for_tests()
+    clear_abuse_metrics_for_tests()
 
     monkeypatch.setenv("SSC_REQUIRE_NATIVE_BRIDGE", "false")
     monkeypatch.setenv("SSC_REQUIRE_DEVICE_ATTEST", "false")
