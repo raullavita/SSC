@@ -1,8 +1,8 @@
 # Build SSC Android release APK (WebView shell + native libsignal bridges).
 # Output is tagged SSC-Native-* for distribution; same Gradle target as build_android.ps1.
 param(
-    [string]$Version = "0.3.1",
-    [string]$Build = "14"
+    [string]$Version = "0.4.0",
+    [string]$Build = "15"
 )
 
 $ErrorActionPreference = "Stop"
