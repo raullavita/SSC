@@ -10,6 +10,10 @@ from core.rate_limit import RateLimiter
 MSG_RATE_LIMIT = int(os.getenv("SSC_MSG_RATE_LIMIT", "60"))
 MSG_RATE_WINDOW_SEC = int(os.getenv("SSC_MSG_RATE_WINDOW_SEC", "60"))
 
+# Per-user-per-conversation burst guard.
+CONV_MSG_RATE_LIMIT = int(os.getenv("SSC_CONV_MSG_RATE_LIMIT", "30"))
+CONV_MSG_RATE_WINDOW_SEC = int(os.getenv("SSC_CONV_MSG_RATE_WINDOW_SEC", "60"))
+
 # Per-IP auth attempt limit.
 AUTH_RATE_LIMIT = int(os.getenv("SSC_AUTH_RATE_LIMIT", "20"))
 AUTH_RATE_WINDOW_SEC = int(os.getenv("SSC_AUTH_RATE_WINDOW_SEC", "300"))
@@ -31,6 +35,11 @@ BLOCKED_FILE_MAGIC: tuple[bytes, ...] = (
 )
 
 msg_rate_limiter = RateLimiter("msg", MSG_RATE_LIMIT, MSG_RATE_WINDOW_SEC)
+conv_msg_rate_limiter = RateLimiter(
+    "msg_conv",
+    CONV_MSG_RATE_LIMIT,
+    CONV_MSG_RATE_WINDOW_SEC,
+)
 auth_rate_limiter = RateLimiter("auth", AUTH_RATE_LIMIT, AUTH_RATE_WINDOW_SEC)
 feedback_rate_limiter = RateLimiter("feedback", FEEDBACK_RATE_LIMIT, FEEDBACK_RATE_WINDOW_SEC)
 file_rate_limiter = RateLimiter("file", MAX_FILES_PER_HOUR, 3600)
@@ -88,4 +97,4 @@ def spam_score_heuristic(text_sample: str) -> int:
 
 
 def engine8_abuse_policy_ready() -> bool:
-    return MSG_RATE_LIMIT > 0 and MAX_FILE_BYTES > 0
+    return MSG_RATE_LIMIT > 0 and CONV_MSG_RATE_LIMIT > 0 and MAX_FILE_BYTES > 0

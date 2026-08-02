@@ -8,7 +8,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field, model_validator
 
 from core.abuse_enforcement import is_abuse_rate_limited
-from core.abuse_policy import msg_rate_limiter
+from core.abuse_policy import conv_msg_rate_limiter, msg_rate_limiter
 from core.attachment_policy import SIGNAL_PROTOCOL_ATTACHMENT
 from core.block_policy import interaction_blocked, reachable_participants
 from core.device_ciphertext_policy import validate_send_ciphertexts
@@ -126,6 +126,8 @@ async def send_message(
 ) -> dict:
     if not await msg_rate_limiter.allow(f"msg:{user_id}"):
         raise HTTPException(status_code=429, detail="message_rate_limited")
+    if not await conv_msg_rate_limiter.allow(f"msg_conv:{user_id}:{conversation_id}"):
+        raise HTTPException(status_code=429, detail="conversation_message_rate_limited")
 
     protocol = body.protocol or SIGNAL_PROTOCOL_V1
     if body.sealed and protocol == SIGNAL_PROTOCOL_V1:

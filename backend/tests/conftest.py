@@ -31,6 +31,7 @@ def isolate_external_services(monkeypatch):
     from core.abuse_enforcement import abuse_report_limiter
     from core.abuse_policy import (
         auth_rate_limiter,
+        conv_msg_rate_limiter,
         feedback_rate_limiter,
         file_rate_limiter,
         msg_rate_limiter,
@@ -43,6 +44,7 @@ def isolate_external_services(monkeypatch):
     auth_rate_limiter.clear()
     feedback_rate_limiter.clear()
     msg_rate_limiter.clear()
+    conv_msg_rate_limiter.clear()
     file_rate_limiter.clear()
     prekey_fetch_limiter.clear()
     new_account_dm_limiter.clear()

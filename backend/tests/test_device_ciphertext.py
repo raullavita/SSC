@@ -109,6 +109,48 @@ async def test_send_device_ciphertexts(env):
 
 
 @pytest.mark.asyncio
+async def test_conversation_message_rate_limited(env, monkeypatch):
+    ac, db = env
+
+    class _BlockLimiter:
+        async def allow(self, _key: str) -> bool:
+            return False
+
+    monkeypatch.setattr("routers.messages.conv_msg_rate_limiter", _BlockLimiter())
+
+    reg_a = await ac.post(
+        "/api/auth/register",
+        json={"email": "ca@example.com", "password": "password123", "display_name": "CA"},
+        headers=CLIENT,
+    )
+    reg_b = await ac.post(
+        "/api/auth/register",
+        json={"email": "cb@example.com", "password": "password123", "display_name": "CB"},
+        headers=CLIENT,
+    )
+    a_id = reg_a.json()["user"]["id"]
+    b_id = reg_b.json()["user"]["id"]
+    await seed_accepted_friendship(db, a_id, b_id)
+
+    conv = await ac.post(
+        "/api/conversations",
+        json={"participant_id": b_id},
+        headers=CLIENT,
+        cookies=reg_a.cookies,
+    )
+    conv_id = conv.json()["conversation"]["id"]
+
+    send = await ac.post(
+        f"/api/conversations/{conv_id}/messages",
+        json={"ciphertext": VALID_CT, "protocol": "signal_v1"},
+        headers=CLIENT,
+        cookies=reg_a.cookies,
+    )
+    assert send.status_code == 429
+    assert send.json()["detail"] == "conversation_message_rate_limited"
+
+
+@pytest.mark.asyncio
 async def test_fanout_redacts_device_map_on_conversation_topic(env, monkeypatch):
     from core.message_fanout import fanout_message
 
