@@ -15,6 +15,7 @@ import sys
 import time
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 # Keep limits high so the harness measures throughput/latency, not intentional 429 guards.
 os.environ.setdefault("SSC_MSG_RATE_LIMIT", "100000")
@@ -22,16 +23,6 @@ os.environ.setdefault("SSC_CONV_MSG_RATE_LIMIT", "100000")
 os.environ.setdefault("SSC_AUTH_RATE_LIMIT", "100000")
 os.environ.setdefault("SSC_PREKEY_FETCH_LIMIT", "100000")
 os.environ.setdefault("SSC_NEW_ACCOUNT_GRACE_HOURS", "0")
-
-BACKEND_ROOT = Path(__file__).resolve().parents[1]
-if str(BACKEND_ROOT) not in sys.path:
-    sys.path.insert(0, str(BACKEND_ROOT))
-
-from httpx import ASGITransport, AsyncClient
-
-from server import create_app
-from tests.fake_mongo import FakeDatabase
-from tests.helpers import seed_accepted_friendship
 
 CLIENT_HEADERS = {
     "X-SSC-Client": "android/0.4.0/15",
@@ -45,7 +36,7 @@ async def _no_redis():
     return None
 
 
-def _patch_runtime_db(fake_db: FakeDatabase) -> None:
+def _patch_runtime_db(fake_db: Any) -> None:
     """Patch modules that imported get_database/get_redis by name."""
     import db
     import deps
@@ -84,7 +75,7 @@ def _percentile(values: list[float], q: float) -> float:
     return values_sorted[lo] * (1.0 - frac) + values_sorted[hi] * frac
 
 
-async def _register_user(ac: AsyncClient, idx: int) -> tuple[str, dict]:
+async def _register_user(ac: Any, idx: int) -> tuple[str, dict]:
     email = f"soak{idx}@example.com"
     display_name = f"Soak{idx}"
     resp = await ac.post(
@@ -99,7 +90,7 @@ async def _register_user(ac: AsyncClient, idx: int) -> tuple[str, dict]:
 
 
 async def _send_once(
-    ac: AsyncClient,
+    ac: Any,
     conversation_id: str,
     cookies: dict,
     idx: int,
@@ -130,6 +121,16 @@ async def _send_once(
 
 
 async def run_soak(args: argparse.Namespace) -> int:
+    backend_root = Path(__file__).resolve().parents[1]
+    if str(backend_root) not in sys.path:
+        sys.path.insert(0, str(backend_root))
+
+    from httpx import ASGITransport, AsyncClient
+
+    from server import create_app
+    from tests.fake_mongo import FakeDatabase
+    from tests.helpers import seed_accepted_friendship
+
     fake_db = FakeDatabase()
     _patch_runtime_db(fake_db)
 
