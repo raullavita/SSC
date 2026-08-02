@@ -189,11 +189,19 @@ SSC cannot out-scale Signal/WhatsApp/Telegram on network size, but it can be **b
 
 ---
 
-## Step 18 — Release v0.3.0
+## Step 18 — Release v0.3.0 (historical baseline)
 
 **Goal:** First release with attached Electron + Android binaries after Steps 10–17.
 
 **Shipped (2026-07-05):** Version **0.3.0** across API/clients, `CHANGELOG.md`, `RELEASE_v0.3.0_CHECKLIST.md`, `release_policy.py`, `SSC-Setup-0.3.0.exe` + `SSC-0.3.0.apk` on GitHub Releases, `step18_proof.py`.
+
+---
+
+## Step 19 — Native product line release v0.4.0 ✅
+
+**Goal:** Ship the native-product baseline with Android Compose + Windows Qt as the primary client surfaces.
+
+**Shipped (2026-07-19):** Version **0.4.0 / build 15** across API and native clients, Android Compose parity shipped, Windows Qt package `dist/windows-qt/SSC-Desktop-0.4.0.exe` shipped, Electron/WebView path marked retired for product UI, release notes in `CHANGELOG.md`, and checklist captured in `memory/RELEASE_v0.4.0_CHECKLIST.md`.
 
 ---
 
