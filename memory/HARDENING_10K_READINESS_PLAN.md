@@ -106,9 +106,21 @@ Acceptance criteria (Day 90)
 ## Immediate Execution Queue (This Week)
 1. Ship the current abuse hardening patch set (done in branch).
 2. Add metrics for new conversation throttle and device ciphertext rejection paths.
-3. Run broader backend tests and staged soak test for message flows.
+3. Run broader backend tests and staged soak test for message flows. (done)
 4. Remediate the frontend high dependency advisory.
 5. Open dedicated epic for cross-platform session interop fix with reproducible test matrix.
+
+## Soak Validation Evidence (2026-08-02)
+- Harness: backend/scripts/message_soak_test.py
+- Runner: scripts/run_backend_message_soak.ps1
+- Command (quick stage):
+	- C:/Users/smash/.ssc-tools/python312/python.exe scripts/message_soak_test.py --users 4 --messages-per-conversation 30 --concurrency 8 --max-error-rate 0.02 --max-p95-ms 300
+- Result (quick stage):
+	- passed=true, total_messages=90, error_rate=0.0, p95_ms=93.88
+- Command (default stage):
+	- C:/Users/smash/.ssc-tools/python312/python.exe scripts/message_soak_test.py --users 8 --messages-per-conversation 120 --concurrency 24 --max-error-rate 0.01 --max-p95-ms 250
+- Result (default stage):
+	- passed=true, total_messages=840, error_rate=0.0, p95_ms=154.732
 
 ## Ownership and Cadence
 - Engineering lead: backend hardening, load test implementation, runtime SLOs.
